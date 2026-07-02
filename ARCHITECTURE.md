@@ -1,7 +1,7 @@
 # Words Learning App For Mimi Architecture
 
 Created: 2026-07-02 23:30 AEST
-Last updated: 2026-07-03 01:15 AEST
+Last updated: 2026-07-03 01:48 AEST
 
 ## Current State
 
@@ -60,7 +60,8 @@ Responsibilities:
 - add Chinese meaning, example, PTE context, and notes
 - record self-rated rarity
 - normalize duplicate candidates without losing original user input
-- record `created_at` and timezone-aware dates
+- record `created_at` and timezone-aware dates automatically by default
+- allow the user to modify added time when backfilling older words, while keeping system-maintained write/update timestamps
 - do not ask for initial proficiency; new words start as `new`
 
 ### Text File Import
@@ -194,6 +195,7 @@ This is a planning model, not a committed database schema.
 - case, punctuation, plural forms, and verb tenses
 - missed review days and large overdue backlog
 - self-rated rarity that conflicts with review performance
+- backfilled added time that differs from actual write time
 - timezone changes between Australia and other regions
 - accidental deletion or destructive migration
 - offline or slow mobile usage

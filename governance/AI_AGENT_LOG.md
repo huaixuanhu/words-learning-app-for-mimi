@@ -1,5 +1,20 @@
 # AI Agent Log
 
+## 2026-07-03 01:48 AEST
+
+- Task: update Stage 1 time-field rules so added time is recorded automatically by default while retaining a user option to modify added time.
+- Plan agreed: yes. The user confirmed the proposed documentation-only update.
+- Changed files:
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_STAGE1_PRODUCT_MVP.md`
+- Reason: align the MVP capture workflow with the user preference for automatic timestamps while supporting backfilled older vocabulary.
+- Validation:
+  - Passed: `find . -maxdepth 3 -type f | sort`
+  - Passed: `rg -n "created_at|timezone|添加时间|modify added time|backfilled|write/update|自动记录|修改添加时间" plan_docs/PLAN_V1_STAGE1_PRODUCT_MVP.md ARCHITECTURE.md CHANGELOG.md governance/AI_AGENT_LOG.md`
+- Safety notes: local documentation files only. No application code, database schema, Vercel deployment, credential access, external API calls, or persistent user-data mutation was performed.
+
 ## 2026-07-03 01:15 AEST
 
 - Task: create Stage 1 product MVP design for manual entry, `.txt` batch import, import preview, and four fixed review ratings.

@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 2026-07-03 01:48 AEST
+
+- Updated the Stage 1 product plan so added time defaults to automatic recording while preserving a “modify added time” option for backfilled words.
+- Clarified that timezone defaults to automatic device timezone capture and that actual write/update timestamps should remain system-maintained.
+- Reason: reduce daily-entry friction while preserving a safe path for importing or manually adding older vocabulary.
+
 ## 2026-07-03 01:15 AEST
 
 - Added Stage 1 product MVP design plan for manual entry, `.txt` batch import, import preview, and four fixed review ratings.

@@ -1,7 +1,7 @@
 # Words Learning App For Mimi Stage 1: Product MVP Design
 
 Created: 2026-07-03 01:15 AEST
-Last updated: 2026-07-03 01:15 AEST
+Last updated: 2026-07-03 01:48 AEST
 
 Source plan:
 
@@ -20,6 +20,7 @@ Input evidence:
 - 用户确认第一版需要支持 manual entry（手动录入）和 text file import（文本文件导入）。
 - 用户明确 `.docx` 和 PDF import（导入）留到后续处理。
 - 用户取消 initial proficiency（初始熟练度）区分：新词统一作为生词进入系统，熟练度由第一次 review rating（复习评分）产生。
+- 用户确认添加时间默认自动记录，但保留“修改添加时间”选项，方便补录旧词。
 
 Consumer / next stage:
 
@@ -38,6 +39,7 @@ This is a derived product design plan for Stage 1. It is not an independent peer
 - 第一版支持 `.txt` text file import，也支持 paste text（粘贴文本）作为同一条 import parser（导入解析器）路径。
 - 新词不设置 initial proficiency；系统在第一次复习前只知道它是新词。
 - 每个词可以保留 self-rated rarity（自评生僻度），但它不是熟练度。
+- 添加时间和 timezone（时区）默认自动记录；添加时间保留可修改选项。
 - 四档 review rating 固定为：
   - 完全忘记了
   - 有点忘记了
@@ -95,13 +97,15 @@ This is a derived product design plan for Stage 1. It is not an independent peer
 - `notes`: 备注，可选。
 - `rarity_score`: 自评生僻度，1 到 5，可选但推荐。
 - `source`: 默认 `manual`。
-- `created_at`: 系统自动记录。
-- `timezone`: 系统自动记录或由用户设置。
+- `created_at`: 系统默认自动记录；用户可通过“修改添加时间”覆盖，用于补录旧词。
+- `timezone`: 默认自动记录当前设备 timezone；后续可在设置中调整。
 
 字段原则：
 
 - `rarity_score` 表示“这个词有多生僻”，不表示“我会不会”。
 - 新增后不要求用户判断熟练度。
+- 日常添加默认不要求用户手动选择时间；“修改添加时间”建议放在 advanced option（高级选项）里。
+- 用户修改 `created_at` 时，系统仍应自动维护实际写入或更新时间，避免后续审计、导出和排序混乱。
 - 允许 word 和 phrase 共存。
 - 空白、大小写和首尾标点需要规范化，但原始输入要保留。
 
@@ -245,6 +249,7 @@ Preview 必须显示：
 - first review creates review state.
 - four ratings produce different due times.
 - timezone-aware `created_at` and `due_at`.
+- modified added time persists without losing system-maintained write/update timestamps.
 - export includes imported and manually added words.
 
 ## Open Questions
