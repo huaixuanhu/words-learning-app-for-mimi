@@ -10,10 +10,11 @@
   - deleted `.Rhistory`
 - Reason: remove accidental local noise and establish version control before continuing product design and app scaffolding.
 - Validation:
-  - Pending: `git status --short --untracked-files=all`
-  - Pending: `git remote -v`
-  - Pending: `git log --oneline --decorate -1`
-- Safety notes: local cleanup and version-control setup only. No application code, Vercel deployment, credential editing, database creation, or production data mutation is intended.
+  - Passed: `git init -b main`
+  - Passed: `git remote add origin https://github.com/huaixuanhu/words-learning-app-for-mimi.git`
+  - Passed: `git commit -m "Initialize project governance"`
+  - Blocked: `GIT_TERMINAL_PROMPT=0 git push -u origin main` because local GitHub HTTPS credentials were not available.
+- Safety notes: local cleanup and version-control setup only. No application code, Vercel deployment, credential editing, database creation, or production data mutation was performed. GitHub push was attempted once in non-interactive mode and stopped at credential authentication.
 
 ## 2026-07-02 23:30 AEST
 
