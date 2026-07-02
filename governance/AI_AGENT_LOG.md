@@ -1,5 +1,21 @@
 # AI Agent Log
 
+## 2026-07-03 01:15 AEST
+
+- Task: create Stage 1 product MVP design for manual entry, `.txt` batch import, import preview, and four fixed review ratings.
+- Plan agreed: yes. The user confirmed starting the first design step and clarified that first version should read text files while `.docx` and PDF stay later.
+- Changed files:
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE1_PRODUCT_MVP.md`
+- Reason: capture updated requirements before app scaffold and prevent stale initial-proficiency assumptions from drifting into implementation.
+- Validation:
+  - Passed: `find . -maxdepth 3 -type f | sort`
+  - Passed: `rg -n "PLAN_V1_STAGE1_PRODUCT_MVP|txt|docx|PDF|initial proficiency|review rating|Source plan|Derived from" .`
+- Safety notes: local documentation files only. No application code, Vercel deployment, credential editing, database creation, external API calls, or persistent user-data mutation was performed.
+
 ## 2026-07-03 00:16 AEST
 
 - Task: delete accidental `.Rhistory`, initialize a local Git repository, connect the user-provided GitHub remote, create the first commit, and try to push.

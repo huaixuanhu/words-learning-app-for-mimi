@@ -1,7 +1,7 @@
 # Words Learning App For Mimi PLAN V1 Master
 
 Created: 2026-07-02 23:30 AEST
-Last updated: 2026-07-02 23:30 AEST
+Last updated: 2026-07-03 01:15 AEST
 
 Source plan:
 
@@ -32,8 +32,9 @@ This is the parent product and implementation plan. Child plans must cite this f
 ## Scope
 
 - Build a vocabulary learning web app for adding words, storing study context, and reviewing flashcards.
+- Support both manual entry and first-version `.txt` text file import.
 - Record creation time and review history.
-- Let the user input self-rated rarity.
+- Let the user input self-rated rarity, while keeping it separate from proficiency.
 - Use Spaced Repetition（间隔重复）and a practical Forgetting Curve（遗忘曲线）model to schedule review.
 - Prepare for GitHub and Vercel deployment after local validation.
 - Keep personal study data private and exportable.
@@ -45,6 +46,7 @@ This is the parent product and implementation plan. Child plans must cite this f
 - No paid service setup without separate approval.
 - No AI-generated definitions or examples until data sharing and quality boundaries are designed.
 - No multi-user social features in the MVP.
+- No `.docx` or PDF import in the first version.
 
 ## Governance Baseline
 
@@ -78,6 +80,7 @@ Exit criteria:
 
 - Define first-screen workflow.
 - Define add-word fields.
+- Define `.txt` import workflow.
 - Define flashcard feedback buttons.
 - Define MVP storage strategy.
 - Define privacy and export behavior.
@@ -98,6 +101,7 @@ Exit criteria:
 Exit criteria:
 
 - Add, edit, archive, search, and list vocabulary items.
+- Import a batch of words from `.txt` or pasted text after preview.
 - Record timestamps.
 - Handle duplicate candidates.
 - Validate empty and malformed input.
@@ -146,15 +150,17 @@ MVP scheduler should prioritize clarity:
 - New words get short first intervals.
 - Correct reviews increase interval.
 - Failed reviews shorten interval and increase priority.
-- Self-rated rarity influences initial difficulty.
-- Actual review feedback gradually outweighs initial rarity.
+- New words do not have initial proficiency.
+- The first review rating creates the first meaningful review state.
+- Self-rated rarity may help sorting or backlog priority, but it must not pretend to know proficiency.
+- Actual review feedback drives scheduling over time.
 
 FSRS（Free Spaced Repetition Scheduler，自由间隔重复调度算法）is a candidate later. It should be introduced only after reviewing library fit, data requirements, and migration impact.
 
 ## Data And Privacy Assumptions
 
 - Default user model is private single-user.
-- Study data includes words, examples, self-ratings, review timestamps, and performance.
+- Study data includes words, examples, import batches, self-rated rarity, review timestamps, and performance.
 - No third-party data sharing by default.
 - Export should exist before production-only persistence becomes the only storage path.
 
@@ -165,6 +171,7 @@ FSRS（Free Spaced Repetition Scheduler，自由间隔重复调度算法）is a 
 - Should examples support audio or images in a later stage?
 - Should the first database be local SQLite for development, Postgres for production, or a single Postgres path from the start?
 - What daily review load feels right for Mimi?
+- What `.txt` import shape does Mimi naturally produce: one word per line, comma-separated, or word plus Chinese meaning?
 
 ## Child Plan Rule
 

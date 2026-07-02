@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 2026-07-03 01:15 AEST
+
+- Added Stage 1 product MVP design plan for manual entry, `.txt` batch import, import preview, and four fixed review ratings.
+- Updated architecture and master plan to remove initial proficiency assumptions and defer `.docx` and PDF import to later stages.
+- Reason: align the first-generation design with the updated user requirement before application scaffolding.
+
 ## 2026-07-03 00:16 AEST
 
 - Removed accidental local `.Rhistory` file before Git bootstrap.
