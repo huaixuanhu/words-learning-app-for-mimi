@@ -1,11 +1,11 @@
 # Words Learning App For Mimi Architecture
 
 Created: 2026-07-02 23:30 AEST
-Last updated: 2026-07-04 00:27 AEST
+Last updated: 2026-07-04 01:14 AEST
 
 ## Current State
 
-This repository is in Stage 2 local app scaffold. It contains collaboration rules, architecture notes, master and stage plans, changelog, AI agent log, a lightweight Tier 1 governance preflight, and a minimal Next.js App Router application.
+This repository is in Stage 3 local vocabulary CRUD and text import. It contains collaboration rules, architecture notes, master and stage plans, changelog, AI agent log, a lightweight Tier 1 governance preflight, and a minimal Next.js App Router application with browser-local vocabulary mutations.
 
 Current local stack:
 
@@ -14,11 +14,12 @@ Current local stack:
 - TypeScript 5.9.3
 - Tailwind CSS 4.3.2
 - ESLint 9.39.4
+- Vitest 4.1.9 for vocabulary domain unit tests
 - npm with `package-lock.json`
 - `lucide-react` 0.562.0 for simple interface icons
 - npm `overrides` pins PostCSS（CSS 处理器）to 8.5.16 so the Next.js nested PostCSS copy resolves to the patched version.
 
-The scaffold uses local static placeholder data only. Durable storage, real mutations, authentication, deployment, and external integrations have not been implemented.
+Stage 3 stores local vocabulary data in browser `localStorage`（本地浏览器存储）under `mimi-pte-vocabulary-v1`. This enables local add, edit, archive, restore, search, and import preview flows without remote services. Durable database storage, authentication, deployment, and external integrations have not been implemented.
 
 The GitHub repository URL was provided by the user:
 
@@ -87,7 +88,7 @@ Responsibilities:
 - allow the user to modify added time when backfilling older words, while keeping system-maintained write/update timestamps
 - do not ask for initial proficiency; new words start as `new`
 
-Current scaffold route: `/add`. It shows the planned fields and browser-side automatic timezone / added-time controls, but the save action is disabled until a later persistence stage.
+Current route: `/add`. It saves manual vocabulary items into local browser storage, records device timezone automatically, defaults added time to the current time, and keeps a “修改添加时间” option for backfilled words.
 
 ### Text File Import
 
@@ -101,7 +102,7 @@ Responsibilities:
 - report invalid rows and duplicate candidates
 - defer `.docx`, PDF, OCR, and complex document parsing to later stages
 
-Current scaffold route: `/import`. It shows `.txt` file input, paste text, and a static preview table. The real parser and save flow are deferred to Stage 3.
+Current route: `/import`. It accepts `.txt` files or pasted text, runs a conservative parser, shows preview rows, reports total/new/duplicate/invalid counts, and saves accepted candidates into a recorded import batch.
 
 ### Vocabulary Store
 
@@ -113,7 +114,7 @@ Responsibilities:
 - preserve import batch metadata for batch-created vocabulary items
 - keep schema migration behavior explicit once a real database is introduced
 
-Current scaffold route: `/library`. It renders static placeholder rows only.
+Current route: `/library`. It reads from local browser storage and supports search, active/archived/all filters, edit, archive, and restore. Stage 3 intentionally omits hard delete.
 
 ### Review Scheduler
 
@@ -128,7 +129,7 @@ Responsibilities:
 
 Initial scheduler should be explainable and deterministic. FSRS（Free Spaced Repetition Scheduler，自由间隔重复调度算法）can be evaluated after enough review history exists or if a TypeScript library is chosen deliberately.
 
-Current scaffold route: `/review`. It renders one static flashcard and the four planned rating buttons. Scheduling updates are deferred to Stage 4.
+Current route: `/review`. It reads the first active local vocabulary item into a simple flashcard frame and keeps the four planned rating buttons. Scheduling updates are deferred to Stage 4.
 
 ### Flashcard Review
 
@@ -142,7 +143,7 @@ Responsibilities:
 
 ### Storage Adapter
 
-Development storage can start local and simple. Production storage should use a Postgres（关系型数据库）provider suitable for Vercel deployment, such as a Vercel Marketplace integration. Provider choice requires a separate plan because storage affects user data and migrations.
+Development storage currently uses browser `localStorage`（本地浏览器存储）through `src/lib/vocabulary/local-storage-repository.ts`. Production storage should use a Postgres（关系型数据库）provider suitable for Vercel deployment, such as a Vercel Marketplace integration. Provider choice requires a separate plan because storage affects user data and migrations.
 
 ### Import And Export
 
@@ -177,6 +178,8 @@ This is a planning model, not a committed database schema.
 - `import_batch_id`
 - `created_at`
 - `updated_at`
+- `system_created_at`
+- `timezone`
 - `archived_at`
 
 ### Import Batch
@@ -240,17 +243,17 @@ Current local validation commands:
 - `npm run governance:preflight`
 - `npm run lint`
 - `npm run typecheck`
+- `npm run test`
 - `npm run build`
 - `npm audit --json`
 - `npm run dev` plus browser smoke check
 
-No unit test suite exists yet because the scaffold has no durable business logic. Later validation should cover:
+Current unit tests cover vocabulary normalization, import parsing, duplicate candidate handling, repository updates, timestamp preservation, archive/restore, and import batch commits. Later validation should cover:
 
 - duplicate card behavior
 - empty deck behavior
 - due card selection
 - timezone scheduling
 - import and export round trip
-- import preview and duplicate handling
 - first review rating creation of review state
 - storage migration safety

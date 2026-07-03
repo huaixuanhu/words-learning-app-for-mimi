@@ -1,5 +1,54 @@
 # AI Agent Log
 
+## 2026-07-04 01:14 AEST
+
+- Task: implement Stage 3 local vocabulary CRUD and `.txt` / pasted text import after the user confirmed the Stage 3 design.
+- Plan agreed: yes. The user confirmed the Stage 3 design and requested rigorous implementation according to the agreed plan and rules.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `package.json`
+  - `package-lock.json`
+  - `vitest.config.ts`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE3_VOCABULARY_CRUD_IMPORT.md`
+  - `src/app/page.tsx`
+  - `src/app/import/page.tsx`
+  - `src/app/library/page.tsx`
+  - `src/app/review/page.tsx`
+  - `src/components/add-word-form.tsx`
+  - `src/components/vocabulary/home-dashboard.tsx`
+  - `src/components/vocabulary/import-workspace.tsx`
+  - `src/components/vocabulary/use-vocabulary-data.ts`
+  - `src/components/vocabulary/vocabulary-library.tsx`
+  - `src/lib/stage-two-data.ts`
+  - `src/lib/vocabulary/import-parser.ts`
+  - `src/lib/vocabulary/import-parser.test.ts`
+  - `src/lib/vocabulary/local-storage-repository.ts`
+  - `src/lib/vocabulary/normalize.ts`
+  - `src/lib/vocabulary/normalize.test.ts`
+  - `src/lib/vocabulary/repository.ts`
+  - `src/lib/vocabulary/repository.test.ts`
+  - `src/lib/vocabulary/types.ts`
+- Reason: complete Stage 3's local feature layer before scheduler, durable persistence, export, deployment, or polished visual design work.
+- Implementation notes:
+  - Added browser `localStorage` storage under `mimi-pte-vocabulary-v1`.
+  - Manual add now saves real local vocabulary items and records editable `createdAt`, system-maintained `systemCreatedAt`, `updatedAt`, and timezone.
+  - Import preview now parses `.txt` files and pasted text, marks duplicate/invalid rows, allows candidate edits, and records import batches.
+  - Library supports search, active/archived/all filters, edit, archive, and restore. Hard delete remains omitted.
+  - Review page reads the first active local item but does not implement Stage 4 scheduling.
+- Validation:
+  - Passed: `npm run lint`
+  - Passed: `npm run typecheck`
+  - Passed: `npm run test` with 3 test files and 9 tests.
+  - Passed: `npm run build`
+  - Passed: `npm audit --json` with 0 total vulnerabilities.
+  - Passed: `npm run governance:preflight`
+  - Passed: local dev server smoke check for `/`, `/add`, `/import`, `/library`, and `/review` at `http://localhost:3000`.
+- Safety notes: local source, documentation, package metadata, and browser-local study-data code only. No database creation, migration, remote persistent data mutation, Vercel deployment, GitHub push, credential access, `.env` editing, external API integration, analytics, AI generation, email, payment, or production action was performed. Stage 3 data is local browser `localStorage`, so it is not a durable backup or cross-device storage.
+
 ## 2026-07-04 00:27 AEST
 
 - Task: upgrade the repository governance setup to `human-ai-governance v0.2.0` with version markers and a light preflight scaffold.

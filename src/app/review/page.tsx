@@ -1,19 +1,32 @@
+"use client";
+
 import { AppShell } from "@/components/app-shell";
 import { SimplePanel } from "@/components/simple-panel";
-import { reviewRatings, sampleVocabulary } from "@/lib/stage-two-data";
+import { useVocabularyData } from "@/components/vocabulary/use-vocabulary-data";
+import { reviewRatings } from "@/lib/stage-two-data";
+import { getActiveVocabularyItems } from "@/lib/vocabulary/repository";
 
 export default function ReviewPage() {
-  const card = sampleVocabulary[0];
+  const { data, isLoaded } = useVocabularyData();
+  const card = getActiveVocabularyItems(data)[0];
 
   return (
-    <AppShell title="开始复习" subtitle="Flashcard scaffold">
+    <AppShell title="开始复习" subtitle="Local flashcard scaffold">
       <div className="grid gap-4 md:grid-cols-[1fr_320px]">
         <SimplePanel title="Card">
           <div className="grid min-h-64 place-items-center rounded-md border border-[#dfddd6] bg-[#f8f7f4] p-6 text-center">
-            <div>
-              <p className="text-4xl font-semibold">{card.surfaceText}</p>
-              <p className="mt-4 text-base text-[#66645c]">{card.example}</p>
-            </div>
+            {card ? (
+              <div>
+                <p className="text-4xl font-semibold">{card.surfaceText}</p>
+                <p className="mt-4 text-base text-[#66645c]">
+                  {card.example || card.meaningZh || "No example yet"}
+                </p>
+              </div>
+            ) : (
+              <p className="text-sm leading-6 text-[#66645c]">
+                {isLoaded ? "还没有可复习的本地词条。" : "Loading local vocabulary..."}
+              </p>
+            )}
           </div>
           <div className="mt-4 grid gap-2 sm:grid-cols-2">
             {reviewRatings.map((rating) => (

@@ -1,7 +1,7 @@
 # Words Learning App For Mimi PLAN V1 Master
 
 Created: 2026-07-02 23:30 AEST
-Last updated: 2026-07-03 01:15 AEST
+Last updated: 2026-07-04 01:14 AEST
 
 Source plan:
 
@@ -97,6 +97,8 @@ Exit criteria:
 - First smoke test path is documented.
 
 ### Stage 3: Vocabulary CRUD
+
+Status: implemented locally on 2026-07-04 in `plan_docs/PLAN_V1_STAGE3_VOCABULARY_CRUD_IMPORT.md`.
 
 Exit criteria:
 

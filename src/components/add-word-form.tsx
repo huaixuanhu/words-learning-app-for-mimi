@@ -1,7 +1,11 @@
 "use client";
 
 import { CalendarClock, ChevronDown, Save } from "lucide-react";
+import type { FormEvent } from "react";
 import { useEffect, useState } from "react";
+import { useVocabularyData } from "@/components/vocabulary/use-vocabulary-data";
+import { addVocabularyItem } from "@/lib/vocabulary/repository";
+import { normalizeRarityScore } from "@/lib/vocabulary/normalize";
 
 function toDateTimeLocalValue(date: Date) {
   const offsetMs = date.getTimezoneOffset() * 60_000;
@@ -9,9 +13,12 @@ function toDateTimeLocalValue(date: Date) {
 }
 
 export function AddWordForm() {
+  const { data, commit } = useVocabularyData();
   const [addedAt, setAddedAt] = useState("");
   const [timezone, setTimezone] = useState("Detecting");
   const [showAddedTime, setShowAddedTime] = useState(false);
+  const [rarityScore, setRarityScore] = useState("");
+  const [message, setMessage] = useState("");
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -22,8 +29,41 @@ export function AddWordForm() {
     return () => window.clearTimeout(timer);
   }, []);
 
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+    const now = new Date().toISOString();
+
+    try {
+      const result = addVocabularyItem(
+        data,
+        {
+          surfaceText: String(formData.get("word_or_phrase") ?? ""),
+          meaningZh: String(formData.get("meaning_zh") ?? ""),
+          example: String(formData.get("example") ?? ""),
+          notes: String(formData.get("notes") ?? ""),
+          rarityScore: normalizeRarityScore(rarityScore),
+          source: "manual",
+          createdAt: addedAt ? new Date(addedAt).toISOString() : now,
+          timezone,
+        },
+        now,
+      );
+
+      commit(result.data);
+      form.reset();
+      setRarityScore("");
+      setAddedAt(toDateTimeLocalValue(new Date()));
+      setMessage(`已保存 ${result.item.surfaceText}`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "保存失败");
+    }
+  };
+
   return (
-    <form className="grid gap-4" aria-label="Add word">
+    <form className="grid gap-4" aria-label="Add word" onSubmit={handleSubmit}>
       <label className="grid gap-2">
         <span className="text-sm font-medium">Word or phrase</span>
         <input
@@ -75,6 +115,8 @@ export function AddWordForm() {
                 name="rarity_score"
                 type="radio"
                 value={score}
+                checked={rarityScore === String(score)}
+                onChange={(event) => setRarityScore(event.target.value)}
               />
               {score}
             </label>
@@ -122,13 +164,14 @@ export function AddWordForm() {
       ) : null}
 
       <button
-        type="button"
-        disabled
-        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-[#517056] px-4 text-sm font-semibold text-white opacity-70"
+        type="submit"
+        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-[#517056] px-4 text-sm font-semibold text-white"
       >
         <Save aria-hidden="true" className="size-4" />
         保存
       </button>
+
+      {message ? <p className="text-sm text-[#517056]">{message}</p> : null}
     </form>
   );
 }

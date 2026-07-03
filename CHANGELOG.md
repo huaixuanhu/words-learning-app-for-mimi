@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## 2026-07-04 01:14 AEST
+
+- Implemented Stage 3 local vocabulary CRUD and text import using browser `localStorage` under `mimi-pte-vocabulary-v1`.
+- Added vocabulary domain types, normalization, conservative `.txt` / pasted text import parsing, duplicate/invalid candidate handling, and local repository operations.
+- Enabled manual add, library search/edit/archive/restore, import preview/save, and a local-data-backed review scaffold.
+- Added `Vitest` with unit tests for normalization, parser, duplicate handling, repository mutations, timestamps, archive/restore, and import batch commits.
+- Updated architecture, README, AGENTS, master plan, and Stage 3 plan to reflect the new local data flow and validation commands.
+- Reason: complete the agreed Stage 3 local feature layer while keeping production database, deployment, credentials, external APIs, analytics, and destructive data operations out of scope.
+
 ## 2026-07-04 00:27 AEST
 
 - Added the `human-ai-governance v0.2.0` marker to `AGENTS.md`.

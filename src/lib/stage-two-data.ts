@@ -1,13 +1,4 @@
-import {
-  Archive,
-  BookOpen,
-  Download,
-  Home,
-  ListPlus,
-  RotateCcw,
-  Settings,
-  Upload,
-} from "lucide-react";
+import { BookOpen, Download, Home, ListPlus, RotateCcw, Settings, Upload } from "lucide-react";
 
 export const appNavItems = [
   { href: "/", label: "首页", icon: Home },
@@ -47,55 +38,4 @@ export const reviewRatings = [
   { label: "完全记得", value: "remembered", interval: "拉长间隔" },
 ] as const;
 
-export const sampleVocabulary = [
-  {
-    id: "sample-1",
-    surfaceText: "allocate",
-    meaningZh: "分配",
-    example: "The study schedule allocates more time to weak words.",
-    source: "manual",
-    status: "new",
-    rarityScore: 3,
-    createdAt: "2026-07-03T02:04:00+10:00",
-  },
-  {
-    id: "sample-2",
-    surfaceText: "coherent",
-    meaningZh: "连贯的",
-    example: "A coherent answer is easier to score well in PTE.",
-    source: "txt_file",
-    status: "learning",
-    rarityScore: 4,
-    createdAt: "2026-07-03T02:04:00+10:00",
-  },
-] as const;
-
-export const importPreviewRows = [
-  {
-    line: 1,
-    raw: "allocate - 分配",
-    surfaceText: "allocate",
-    meaningZh: "分配",
-    status: "new",
-  },
-  {
-    line: 2,
-    raw: "coherent, ambiguous",
-    surfaceText: "coherent",
-    meaningZh: "",
-    status: "duplicate candidate",
-  },
-  {
-    line: 3,
-    raw: "",
-    surfaceText: "",
-    meaningZh: "",
-    status: "invalid",
-  },
-] as const;
-
 export const defaultSessionLimit = 24;
-export const stageTwoNotice =
-  "Stage 2 scaffold only. Storage and real mutations start in later stages.";
-
-export const archiveIcon = Archive;
