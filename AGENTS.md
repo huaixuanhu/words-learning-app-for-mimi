@@ -1,5 +1,7 @@
 # AGENTS.md
 
+<!-- Generated/adapted from human-ai-governance v0.2.0 -->
+
 ## Collaboration
 
 - Use strict low-hallucination mode. If a claim is uncertain and can drift, verify it from a reliable source before treating it as current.
@@ -91,6 +93,7 @@ Forbidden without explicit approval:
 Current local validation is:
 
 ```bash
+npm run governance:preflight
 npm run lint
 npm run typecheck
 npm run build

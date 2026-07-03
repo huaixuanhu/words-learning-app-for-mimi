@@ -1,11 +1,11 @@
 # Words Learning App For Mimi Architecture
 
 Created: 2026-07-02 23:30 AEST
-Last updated: 2026-07-03 19:23 AEST
+Last updated: 2026-07-04 00:27 AEST
 
 ## Current State
 
-This repository is in Stage 2 local app scaffold. It contains collaboration rules, architecture notes, master and stage plans, changelog, AI agent log, and a minimal Next.js App Router application.
+This repository is in Stage 2 local app scaffold. It contains collaboration rules, architecture notes, master and stage plans, changelog, AI agent log, a lightweight Tier 1 governance preflight, and a minimal Next.js App Router application.
 
 Current local stack:
 
@@ -237,6 +237,7 @@ This is a planning model, not a committed database schema.
 
 Current local validation commands:
 
+- `npm run governance:preflight`
 - `npm run lint`
 - `npm run typecheck`
 - `npm run build`

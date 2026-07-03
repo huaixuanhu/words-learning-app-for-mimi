@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "governance:preflight": "python3 governance/preflight.py --tier 1 --require-skill-marker"
   },
   "dependencies": {
     "lucide-react": "^0.562.0",

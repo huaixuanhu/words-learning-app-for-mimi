@@ -1,5 +1,26 @@
 # AI Agent Log
 
+## 2026-07-04 00:27 AEST
+
+- Task: upgrade the repository governance setup to `human-ai-governance v0.2.0` with version markers and a light preflight scaffold.
+- Plan agreed: yes. The user confirmed the proposed migration plan after read-only inspection.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `governance/preflight.py`
+  - `package.json`
+  - `plan_docs/PLAN_V1_STAGE2_APP_SCAFFOLD.md`
+- Reason: record the current human-ai-governance skill version in a durable local governance file and add a Tier 1 preflight command without over-governing the local scaffold.
+- Validation:
+  - Passed: `npm run governance:preflight`
+  - Passed: `npm run lint`
+  - Passed: `npm run typecheck`
+  - Passed: `npm run build`
+- Safety notes: local governance files, package scripts, and documentation only. No durable study-data mutation, database migration, Vercel deployment, GitHub push, credential access, `.env` editing, external API integration, analytics, AI generation, email, payment, or production action was performed.
+
 ## 2026-07-03 19:23 AEST
 
 - Task: fix the residual npm security risk from `next -> postcss`.

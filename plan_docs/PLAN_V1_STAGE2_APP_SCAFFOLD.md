@@ -1,7 +1,7 @@
 # Words Learning App For Mimi Stage 2: App Scaffold
 
 Created: 2026-07-03 02:04 AEST
-Last updated: 2026-07-03 19:23 AEST
+Last updated: 2026-07-04 00:27 AEST
 
 Source plan:
 
@@ -52,6 +52,7 @@ Exit Criteria:
 
 Validation Plan:
 
+- `npm run governance:preflight`
 - `npm run lint`
 - `npm run typecheck`
 - `npm run build`
@@ -72,6 +73,7 @@ Implementation Outcome:
 - Added `npm run typecheck`.
 - Preserved existing `AGENTS.md` instead of accepting the generated scaffold copy.
 - Removed unused default Next.js / Vercel public SVG assets.
+- Added a lightweight Tier 1 governance preflight after upgrading the local governance marker to `human-ai-governance v0.2.0`.
 
 Current Versions:
 

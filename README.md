@@ -5,6 +5,7 @@ Stage 2 local scaffold for a mobile-first PTE vocabulary flashcard app.
 ## Commands
 
 ```bash
+npm run governance:preflight
 npm run lint
 npm run typecheck
 npm run build

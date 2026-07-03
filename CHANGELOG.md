@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## 2026-07-04 00:27 AEST
+
+- Added the `human-ai-governance v0.2.0` marker to `AGENTS.md`.
+- Added a lightweight Tier 1 `governance/preflight.py` scaffold and an npm `governance:preflight` command.
+- Updated validation documentation to include the local governance preflight without introducing Tier 2 or Tier 3 requirements.
+- Reason: migrate the existing project governance to the updated skill marker and preflight scaffold while keeping this local app scaffold appropriately lightweight.
+
 ## 2026-07-03 19:23 AEST
 
 - Fixed the residual `npm audit` moderate findings by adding a root npm `overrides` entry that resolves `postcss` to 8.5.16 across the dependency tree.
