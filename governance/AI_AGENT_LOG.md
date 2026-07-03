@@ -1,5 +1,63 @@
 # AI Agent Log
 
+## 2026-07-03 19:23 AEST
+
+- Task: fix the residual npm security risk from `next -> postcss`.
+- Plan agreed: yes. The user explicitly requested fixing the current residual risk.
+- Changed files:
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `package.json`
+  - `package-lock.json`
+  - `plan_docs/PLAN_V1_STAGE2_APP_SCAFFOLD.md`
+- Reason: remove the moderate PostCSS audit finding while staying on stable `next@16.2.10`.
+- Investigation:
+  - `npm audit --json` identified GHSA-qx2v-qp2m-jg93 / CVE-2026-41305 through `next -> postcss@8.4.31`.
+  - GitHub advisory and CVE sources identify patched PostCSS versions as 8.5.10 and later.
+  - `npm view next version` returned `16.2.10`; `npm view next@latest dependencies.postcss` returned `8.4.31`.
+  - `npm view next@canary dependencies.postcss` returned `8.5.10`, but canary was avoided for this stable scaffold.
+  - npm official documentation supports root `overrides` for replacing vulnerable transitive dependencies.
+- Validation:
+  - Passed: `npm install` with `found 0 vulnerabilities`
+  - Passed: `npm audit --json` with 0 total vulnerabilities
+  - Passed: `npm ls next postcss @tailwindcss/postcss tailwindcss --all`, showing `next@16.2.10 -> postcss@8.5.16 deduped`
+  - Passed: `npm run lint`
+  - Passed: `npm run typecheck`
+  - Passed: `npm run build`
+- Safety notes: local dependency metadata and documentation only. No app feature behavior, database, persistent study-data mutation, Vercel deployment, GitHub push, credential access, `.env` editing, external API integration, analytics, AI generation, email, payment, or production action was performed.
+
+## 2026-07-03 02:21 AEST
+
+- Task: implement Stage 2 local app scaffold with minimal UI frame only.
+- Plan agreed: yes. The user confirmed Stage 2 implementation and clarified that UI should remain a simplest framework, with polished visual design deferred to a later dedicated stage.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `.gitignore`
+  - `eslint.config.mjs`
+  - `next.config.ts`
+  - `package.json`
+  - `package-lock.json`
+  - `postcss.config.mjs`
+  - `tsconfig.json`
+  - `plan_docs/PLAN_V1_STAGE2_APP_SCAFFOLD.md`
+  - `src/app/**`
+  - `src/components/**`
+  - `src/lib/**`
+- Reason: create a runnable local Next.js app shell that reflects the agreed Stage 1 product boundaries before later CRUD, scheduler, persistence, and visual-design stages.
+- Validation:
+  - Passed: `npm run lint`
+  - Passed: `npm run typecheck`
+  - Passed: `npm run build`
+  - Passed: HTTP smoke checks for `/`, `/add`, `/import`, and `/review`
+  - Passed: Chrome smoke check for homepage and `/add`
+  - Passed: “修改添加时间” expands `Created at` and `Timezone`, with timezone detected as `Australia/Melbourne`
+  - Residual: `npm audit --json` reports 2 moderate severity findings through `next -> postcss`; npm audit only offered a semver-major downgrade to old Next.js, so no force fix was applied.
+- Safety notes: local application scaffold and documentation only. No database, persistent study-data mutation, Vercel deployment, GitHub push, credential access, `.env` editing, external API integration, analytics, AI generation, email, payment, or production action was performed.
+
 ## 2026-07-03 01:48 AEST
 
 - Task: update Stage 1 time-field rules so added time is recorded automatically by default while retaining a user option to modify added time.

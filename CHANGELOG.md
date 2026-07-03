@@ -1,5 +1,20 @@
 # CHANGELOG
 
+## 2026-07-03 19:23 AEST
+
+- Fixed the residual `npm audit` moderate findings by adding a root npm `overrides` entry that resolves `postcss` to 8.5.16 across the dependency tree.
+- Confirmed `next@latest` is still 16.2.10 and still declares `postcss: 8.4.31`; avoided switching to canary Next.js and avoided npm's unsafe downgrade path.
+- Validation now reports 0 vulnerabilities and the app still passes lint, typecheck, and production build.
+- Reason: remove the known PostCSS security finding while staying on the stable Next.js release line.
+
+## 2026-07-03 02:12 AEST
+
+- Added Stage 2 app scaffold with Next.js App Router, TypeScript, Tailwind CSS, ESLint, npm, and minimal routes for home, add, import, review, library, export, and settings.
+- Added the Stage 2 child plan and updated validation commands from file inventory to `npm run lint`, `npm run typecheck`, `npm run build`, and local dev-server smoke testing.
+- Kept UI intentionally minimal so final visual design can be handled in a later dedicated stage.
+- Recorded residual `npm audit` moderate findings through `next -> postcss`; no force downgrade was applied.
+- Reason: create a runnable local application shell while preserving the agreed Stage 1 product boundaries and governance rules.
+
 ## 2026-07-03 01:48 AEST
 
 - Updated the Stage 1 product plan so added time defaults to automatic recording while preserving a “modify added time” option for backfilled words.

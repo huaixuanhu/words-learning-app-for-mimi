@@ -14,10 +14,11 @@
 
 - Project root: `/Users/anoria/Documents/python_coding/small_project/learningWordsformimi`
 - User-provided GitHub repository: `https://github.com/huaixuanhu/words-learning-app-for-mimi.git`
-- Current stage: governance bootstrap only. No application code exists yet.
+- Current stage: Stage 2 local app scaffold. No durable storage or production deployment exists yet.
 - Intended product: a mobile-first vocabulary flashcard web app for PTE study.
 - Intended hosting: GitHub plus Vercel, with deployment only after explicit approval.
-- Intended application stack: likely Next.js, TypeScript, Tailwind CSS, and Postgres-compatible storage. Final stack requires a separate plan agreement.
+- Current application stack: Next.js App Router, TypeScript, Tailwind CSS, ESLint, npm, and local static placeholder data.
+- Intended production storage remains Postgres-compatible storage. Final provider choice requires a separate plan agreement.
 
 ## Runtime And Environment
 
@@ -87,10 +88,13 @@ Forbidden without explicit approval:
 
 ## Current Validation
 
-Until the app is scaffolded, the minimum validation is:
+Current local validation is:
 
 ```bash
-find . -maxdepth 3 -type f | sort
+npm run lint
+npm run typecheck
+npm run build
+npm run dev
 ```
 
-After the app is scaffolded, replace this section with real lint, typecheck, unit test, and smoke test commands.
+No unit test suite exists yet because business logic and persistence have not been implemented.

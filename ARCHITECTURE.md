@@ -1,11 +1,24 @@
 # Words Learning App For Mimi Architecture
 
 Created: 2026-07-02 23:30 AEST
-Last updated: 2026-07-03 01:48 AEST
+Last updated: 2026-07-03 19:23 AEST
 
 ## Current State
 
-This repository is in governance and product-design bootstrap. It currently contains collaboration rules, architecture notes, a master plan, a Stage 1 MVP product plan, changelog, and AI agent log. Application code has not been scaffolded yet.
+This repository is in Stage 2 local app scaffold. It contains collaboration rules, architecture notes, master and stage plans, changelog, AI agent log, and a minimal Next.js App Router application.
+
+Current local stack:
+
+- Next.js 16.2.10
+- React 19.2.4
+- TypeScript 5.9.3
+- Tailwind CSS 4.3.2
+- ESLint 9.39.4
+- npm with `package-lock.json`
+- `lucide-react` 0.562.0 for simple interface icons
+- npm `overrides` pins PostCSS（CSS 处理器）to 8.5.16 so the Next.js nested PostCSS copy resolves to the patched version.
+
+The scaffold uses local static placeholder data only. Durable storage, real mutations, authentication, deployment, and external integrations have not been implemented.
 
 The GitHub repository URL was provided by the user:
 
@@ -44,13 +57,23 @@ app shell / routing
 
 ### App Shell
 
-Likely Next.js with TypeScript. The exact framework version and routing mode must be confirmed from current official docs before scaffold.
+Implemented as a Next.js App Router scaffold under `src/app`.
 
 Responsibilities:
 
 - mobile-first layout
 - navigation between add, list, review, and settings views
 - private-by-default study experience
+
+Current routes:
+
+- `/`
+- `/add`
+- `/import`
+- `/review`
+- `/library`
+- `/export`
+- `/settings`
 
 ### Word Capture
 
@@ -64,6 +87,8 @@ Responsibilities:
 - allow the user to modify added time when backfilling older words, while keeping system-maintained write/update timestamps
 - do not ask for initial proficiency; new words start as `new`
 
+Current scaffold route: `/add`. It shows the planned fields and browser-side automatic timezone / added-time controls, but the save action is disabled until a later persistence stage.
+
 ### Text File Import
 
 Responsibilities:
@@ -76,6 +101,8 @@ Responsibilities:
 - report invalid rows and duplicate candidates
 - defer `.docx`, PDF, OCR, and complex document parsing to later stages
 
+Current scaffold route: `/import`. It shows `.txt` file input, paste text, and a static preview table. The real parser and save flow are deferred to Stage 3.
+
 ### Vocabulary Store
 
 Responsibilities:
@@ -85,6 +112,8 @@ Responsibilities:
 - support search, filter, edit, archive, and export
 - preserve import batch metadata for batch-created vocabulary items
 - keep schema migration behavior explicit once a real database is introduced
+
+Current scaffold route: `/library`. It renders static placeholder rows only.
 
 ### Review Scheduler
 
@@ -98,6 +127,8 @@ Responsibilities:
 - treat the first review rating as the starting point for review state
 
 Initial scheduler should be explainable and deterministic. FSRS（Free Spaced Repetition Scheduler，自由间隔重复调度算法）can be evaluated after enough review history exists or if a TypeScript library is chosen deliberately.
+
+Current scaffold route: `/review`. It renders one static flashcard and the four planned rating buttons. Scheduling updates are deferred to Stage 4.
 
 ### Flashcard Review
 
@@ -121,6 +152,8 @@ Responsibilities:
 - support first-version import from `.txt` files and pasted text
 - defer `.docx` and PDF import until a later document-parsing stage
 - protect against duplicate imports, malformed rows, and timezone drift
+
+Current scaffold route: `/export`. It shows CSV and JSON export targets with disabled actions until persistence exists.
 
 ### Deployment Boundary
 
@@ -202,7 +235,15 @@ This is a planning model, not a committed database schema.
 
 ## Validation Boundary
 
-No application validation exists yet. Current validation is file inventory only. Once the app exists, validation should cover:
+Current local validation commands:
+
+- `npm run lint`
+- `npm run typecheck`
+- `npm run build`
+- `npm audit --json`
+- `npm run dev` plus browser smoke check
+
+No unit test suite exists yet because the scaffold has no durable business logic. Later validation should cover:
 
 - duplicate card behavior
 - empty deck behavior
