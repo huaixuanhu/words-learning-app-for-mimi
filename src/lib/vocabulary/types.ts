@@ -1,3 +1,5 @@
+import type { ReviewEvent, ReviewSettings, ReviewState } from "@/lib/review/types";
+
 export type VocabularySource = "manual" | "txt_file" | "pasted_text";
 
 export type VocabularyStatus = "new" | "archived";
@@ -49,9 +51,12 @@ export type ImportCandidate = {
 };
 
 export type VocabularyData = {
-  schemaVersion: 1;
+  schemaVersion: 2;
   items: VocabularyItem[];
   importBatches: ImportBatch[];
+  reviewStates: ReviewState[];
+  reviewEvents: ReviewEvent[];
+  settings: ReviewSettings;
   updatedAt: string;
 };
 

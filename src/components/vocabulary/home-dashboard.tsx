@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { defaultSessionLimit, primaryActions } from "@/lib/stage-two-data";
+import { primaryActions } from "@/lib/stage-two-data";
 import { getActiveVocabularyItems, getArchivedVocabularyItems } from "@/lib/vocabulary/repository";
 import { useVocabularyData } from "./use-vocabulary-data";
 import { SimplePanel } from "@/components/simple-panel";
+import { DEFAULT_SESSION_LIMIT } from "@/lib/review/settings";
 
 export function HomeDashboard() {
   const { data, isLoaded } = useVocabularyData();
@@ -47,7 +48,9 @@ export function HomeDashboard() {
             </div>
             <div className="rounded-md bg-[#f8f7f4] p-3">
               <dt className="text-xs font-medium text-[#66645c]">Limit</dt>
-              <dd className="mt-1 text-2xl font-semibold">{defaultSessionLimit}</dd>
+              <dd className="mt-1 text-2xl font-semibold">
+                {isLoaded ? data.settings.sessionLimit : DEFAULT_SESSION_LIMIT}
+              </dd>
             </div>
           </dl>
         </SimplePanel>

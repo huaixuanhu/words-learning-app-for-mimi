@@ -1,4 +1,5 @@
 import { BookOpen, Download, Home, ListPlus, RotateCcw, Settings, Upload } from "lucide-react";
+import type { ReviewRating } from "@/lib/review/types";
 
 export const appNavItems = [
   { href: "/", label: "首页", icon: Home },
@@ -36,6 +37,8 @@ export const reviewRatings = [
   { label: "有点忘记了", value: "hard", interval: "短间隔复习" },
   { label: "模糊记得", value: "vague", interval: "中等短间隔" },
   { label: "完全记得", value: "remembered", interval: "拉长间隔" },
-] as const;
-
-export const defaultSessionLimit = 24;
+] as const satisfies readonly {
+  label: string;
+  value: ReviewRating;
+  interval: string;
+}[];

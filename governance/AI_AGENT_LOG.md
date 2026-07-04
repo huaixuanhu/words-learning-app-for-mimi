@@ -1,5 +1,53 @@
 # AI Agent Log
 
+## 2026-07-04 23:42 AEST
+
+- Task: implement Stage 4 local review scheduler, flashcards, and customizable session limit after the user confirmed the revised Stage 4 plan.
+- Plan agreed: yes. The user confirmed Stage 4 execution and added that future embedding（向量嵌入）/ FSRS（Free Spaced Repetition Scheduler，自由间隔重复调度算法）direction must be documented, while `sessionLimit` must be user-customizable and actually affect review.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE4_REVIEW_SCHEDULER_FLASHCARDS.md`
+  - `src/app/page.tsx`
+  - `src/app/review/page.tsx`
+  - `src/app/settings/page.tsx`
+  - `src/components/review/review-session.tsx`
+  - `src/components/settings/review-settings-form.tsx`
+  - `src/components/vocabulary/home-dashboard.tsx`
+  - `src/lib/review/repository.ts`
+  - `src/lib/review/repository.test.ts`
+  - `src/lib/review/scheduler.ts`
+  - `src/lib/review/scheduler.test.ts`
+  - `src/lib/review/settings.ts`
+  - `src/lib/review/settings.test.ts`
+  - `src/lib/review/types.ts`
+  - `src/lib/stage-two-data.ts`
+  - `src/lib/vocabulary/local-storage-repository.ts`
+  - `src/lib/vocabulary/local-storage-repository.test.ts`
+  - `src/lib/vocabulary/repository.ts`
+  - `src/lib/vocabulary/types.ts`
+- Reason: close the local review loop before durable persistence, export/backup, deployment, polished visual design, or advanced scheduling.
+- Implementation notes:
+  - Upgraded local browser storage shape to schema version 2 with additive migration from version 1.
+  - Added `reviewStates`, `reviewEvents`, and `settings` while preserving existing vocabulary and import batches.
+  - Added a deterministic Stage 4 scheduler with due-first queue selection, new-card fallback, and saved `sessionLimit` enforcement.
+  - Added `/review` session UI for card reveal, four-rating submission, review event creation, review state updates, and next-card progression.
+  - Added `/settings` session limit and timezone saving, with safe session limit normalization.
+  - Documented that fixed rules are an MVP bootstrap and later scheduling should evaluate embedding and FSRS through a separate explicit plan.
+- Validation:
+  - Passed: `npm run test` with 7 test files and 20 tests.
+  - Passed: `npm run typecheck`
+  - Passed: `npm run lint`
+  - Passed: `npm run build`
+  - Passed: `npm audit --json` with 0 vulnerabilities.
+  - Passed: `npm run governance:preflight`
+  - Passed: local dev server smoke checks for `/`, `/review`, and `/settings` on `http://localhost:3000`.
+- Safety notes: local source, documentation, and browser-local study-data code only. No database creation, remote migration, remote persistent data mutation, Vercel deployment, GitHub push, credential access, `.env` editing, external API integration, embedding generation, FSRS implementation, analytics, AI generation, email, payment, notification, or production action was performed. Stage 4 review history remains browser `localStorage`, so it is not a durable backup or cross-device storage.
+
 ## 2026-07-04 01:14 AEST
 
 - Task: implement Stage 3 local vocabulary CRUD and `.txt` / pasted text import after the user confirmed the Stage 3 design.

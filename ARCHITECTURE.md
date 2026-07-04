@@ -1,11 +1,11 @@
 # Words Learning App For Mimi Architecture
 
 Created: 2026-07-02 23:30 AEST
-Last updated: 2026-07-04 01:14 AEST
+Last updated: 2026-07-04 23:42 AEST
 
 ## Current State
 
-This repository is in Stage 3 local vocabulary CRUD and text import. It contains collaboration rules, architecture notes, master and stage plans, changelog, AI agent log, a lightweight Tier 1 governance preflight, and a minimal Next.js App Router application with browser-local vocabulary mutations.
+This repository is in Stage 4 local review scheduler and flashcards. It contains collaboration rules, architecture notes, master and stage plans, changelog, AI agent log, a lightweight Tier 1 governance preflight, and a minimal Next.js App Router application with browser-local vocabulary and review mutations.
 
 Current local stack:
 
@@ -19,7 +19,7 @@ Current local stack:
 - `lucide-react` 0.562.0 for simple interface icons
 - npm `overrides` pins PostCSS（CSS 处理器）to 8.5.16 so the Next.js nested PostCSS copy resolves to the patched version.
 
-Stage 3 stores local vocabulary data in browser `localStorage`（本地浏览器存储）under `mimi-pte-vocabulary-v1`. This enables local add, edit, archive, restore, search, and import preview flows without remote services. Durable database storage, authentication, deployment, and external integrations have not been implemented.
+Stage 4 stores local study data in browser `localStorage`（本地浏览器存储）under `mimi-pte-vocabulary-v1`, with schema version 2. This enables local add, edit, archive, restore, search, import preview, review sessions, review history, and review settings without remote services. Durable database storage, authentication, deployment, and external integrations have not been implemented.
 
 The GitHub repository URL was provided by the user:
 
@@ -127,9 +127,9 @@ Responsibilities:
 - expose scheduling decisions in a debuggable way
 - treat the first review rating as the starting point for review state
 
-Initial scheduler should be explainable and deterministic. FSRS（Free Spaced Repetition Scheduler，自由间隔重复调度算法）can be evaluated after enough review history exists or if a TypeScript library is chosen deliberately.
+Stage 4 implements an explainable deterministic scheduler for the local MVP. The fixed rules are a bootstrap only. Later scheduling work should evaluate embedding（向量嵌入）for semantic similarity, confusing pairs, and queue ordering, and evaluate FSRS（Free Spaced Repetition Scheduler，自由间隔重复调度算法）for memory scheduling after reviewing data requirements, migration impact, and explainability.
 
-Current route: `/review`. It reads the first active local vocabulary item into a simple flashcard frame and keeps the four planned rating buttons. Scheduling updates are deferred to Stage 4.
+Current route: `/review`. It creates a local review session from due cards first and new cards second, obeys the saved `sessionLimit`, lets the learner flip a card, records one of four ratings, appends `ReviewEvent`, and updates `ReviewState`.
 
 ### Flashcard Review
 
@@ -141,9 +141,22 @@ Responsibilities:
 - update review state
 - avoid overwhelming the user with too many cards in one session
 
+Current implementation keeps a minimal UI frame and exposes session count, completed count, and remaining count. Polished visual design remains deferred.
+
+### Review Settings
+
+Responsibilities:
+
+- store `sessionLimit`
+- store local timezone used by review settings
+- normalize invalid limits into safe bounds
+- make review queue selection obey the saved limit
+
+Current route: `/settings`. It can save session limit and timezone to local browser storage. The default session limit is 24, with safe bounds of 1 to 80.
+
 ### Storage Adapter
 
-Development storage currently uses browser `localStorage`（本地浏览器存储）through `src/lib/vocabulary/local-storage-repository.ts`. Production storage should use a Postgres（关系型数据库）provider suitable for Vercel deployment, such as a Vercel Marketplace integration. Provider choice requires a separate plan because storage affects user data and migrations.
+Development storage currently uses browser `localStorage`（本地浏览器存储）through `src/lib/vocabulary/local-storage-repository.ts`. The local migration path upgrades schema version 1 vocabulary data to schema version 2 by adding `reviewStates`, `reviewEvents`, and `settings`. Production storage should use a Postgres（关系型数据库）provider suitable for Vercel deployment, such as a Vercel Marketplace integration. Provider choice requires a separate plan because storage affects user data and migrations.
 
 ### Import And Export
 
@@ -202,8 +215,10 @@ This is a planning model, not a committed database schema.
 - `last_reviewed_at`
 - `review_count`
 - `lapse_count`
+- `interval_minutes`
 - `difficulty`
 - `stability`
+- `updated_at`
 
 ### Review Event
 
@@ -213,7 +228,15 @@ This is a planning model, not a committed database schema.
 - `rating`
 - `previous_due_at`
 - `next_due_at`
+- `previous_interval_minutes`
+- `next_interval_minutes`
 - `elapsed_ms`
+
+### Review Settings
+
+- `session_limit`
+- `timezone`
+- `updated_at`
 
 ## Safety And Privacy
 
@@ -230,6 +253,7 @@ This is a planning model, not a committed database schema.
 - invalid, empty, or duplicated import rows
 - case, punctuation, plural forms, and verb tenses
 - missed review days and large overdue backlog
+- local migration from version 1 to version 2
 - self-rated rarity that conflicts with review performance
 - backfilled added time that differs from actual write time
 - timezone changes between Australia and other regions
@@ -248,12 +272,10 @@ Current local validation commands:
 - `npm audit --json`
 - `npm run dev` plus browser smoke check
 
-Current unit tests cover vocabulary normalization, import parsing, duplicate candidate handling, repository updates, timestamp preservation, archive/restore, and import batch commits. Later validation should cover:
+Current unit tests cover vocabulary normalization, import parsing, duplicate candidate handling, repository updates, timestamp preservation, archive/restore, import batch commits, local schema migration, review settings, due-first queue selection, scheduler intervals, and review event/state updates. Later validation should cover:
 
 - duplicate card behavior
 - empty deck behavior
-- due card selection
 - timezone scheduling
 - import and export round trip
-- first review rating creation of review state
-- storage migration safety
+- embedding or FSRS migration safety when those later stages are explicitly approved

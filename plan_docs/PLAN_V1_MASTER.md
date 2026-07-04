@@ -1,7 +1,7 @@
 # Words Learning App For Mimi PLAN V1 Master
 
 Created: 2026-07-02 23:30 AEST
-Last updated: 2026-07-04 01:14 AEST
+Last updated: 2026-07-04 23:42 AEST
 
 Source plan:
 
@@ -110,11 +110,14 @@ Exit criteria:
 
 ### Stage 4: Review Scheduler And Flashcards
 
+Status: implemented locally on 2026-07-04 in `plan_docs/PLAN_V1_STAGE4_REVIEW_SCHEDULER_FLASHCARDS.md`.
+
 Exit criteria:
 
 - Due cards are selected deterministically.
 - Review feedback updates next due time.
 - Missed-day backlog is smoothed.
+- Session limit is customizable and affects review queue selection.
 - Edge cases are tested.
 
 ### Stage 5: Persistence, Export, And Backup
@@ -157,7 +160,7 @@ MVP scheduler should prioritize clarity:
 - Self-rated rarity may help sorting or backlog priority, but it must not pretend to know proficiency.
 - Actual review feedback drives scheduling over time.
 
-FSRS（Free Spaced Repetition Scheduler，自由间隔重复调度算法）is a candidate later. It should be introduced only after reviewing library fit, data requirements, and migration impact.
+The fixed Stage 4 scheduler is only an MVP bootstrap. A later stage should evaluate embedding（向量嵌入）support for semantic similarity（语义相似度）, confusing pairs, and review queue ordering. FSRS（Free Spaced Repetition Scheduler，自由间隔重复调度算法）is also a candidate later, but should be introduced only after reviewing library fit, data requirements, migration impact, privacy, and explainability.
 
 ## Data And Privacy Assumptions
 

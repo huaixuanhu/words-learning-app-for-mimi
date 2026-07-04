@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## 2026-07-04 23:42 AEST
+
+- Implemented Stage 4 local review scheduler and flashcards on top of browser `localStorage` schema version 2.
+- Added additive migration from schema version 1 to version 2 with `reviewStates`, `reviewEvents`, and `settings`.
+- Added deterministic local review scheduling, due-first queue selection, four-rating review recording, and review event/state updates.
+- Added `/settings` support for custom `sessionLimit`, and made `/review` obey the saved limit.
+- Documented that fixed Stage 4 scheduler rules are only an MVP bootstrap and that later stages should evaluate embedding（向量嵌入）and FSRS（Free Spaced Repetition Scheduler，自由间隔重复调度算法）before replacing the scheduler.
+- Added tests for migration, settings normalization, scheduler behavior, review queue selection, and review event/state updates.
+- Reason: complete the agreed local review loop while keeping database, deployment, credentials, external APIs, embedding generation, FSRS implementation, analytics, and destructive data operations out of scope.
+
 ## 2026-07-04 01:14 AEST
 
 - Implemented Stage 3 local vocabulary CRUD and text import using browser `localStorage` under `mimi-pte-vocabulary-v1`.

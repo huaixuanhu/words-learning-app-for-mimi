@@ -8,6 +8,7 @@ import type {
   VocabularyData,
   VocabularyItem,
 } from "./types";
+import { createDefaultReviewSettings } from "@/lib/review/settings";
 import {
   cleanSurfaceText,
   normalizeOptionalText,
@@ -15,13 +16,16 @@ import {
   normalizeSurfaceText,
 } from "./normalize";
 
-export const VOCABULARY_SCHEMA_VERSION = 1;
+export const VOCABULARY_SCHEMA_VERSION = 2;
 
 export function createEmptyVocabularyData(now = new Date().toISOString()): VocabularyData {
   return {
     schemaVersion: VOCABULARY_SCHEMA_VERSION,
     items: [],
     importBatches: [],
+    reviewStates: [],
+    reviewEvents: [],
+    settings: createDefaultReviewSettings(now),
     updatedAt: now,
   };
 }
