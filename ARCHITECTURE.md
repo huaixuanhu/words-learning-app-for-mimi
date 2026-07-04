@@ -1,11 +1,11 @@
 # Words Learning App For Mimi Architecture
 
 Created: 2026-07-02 23:30 AEST
-Last updated: 2026-07-05 00:54 AEST
+Last updated: 2026-07-05 01:08 AEST
 
 ## Current State
 
-This repository is in Stage 5C local person adapter implementation. It contains collaboration rules, architecture notes, master and stage plans, changelog, AI agent log, a lightweight Tier 1 governance preflight, and a minimal Next.js App Router application with browser-local vocabulary, review mutations, export, restore preview, and selected-person switching.
+This repository is in Stage 5D durable storage readiness. It contains collaboration rules, architecture notes, master and stage plans, changelog, AI agent log, a lightweight Tier 1 governance preflight, and a minimal Next.js App Router application with browser-local vocabulary, review mutations, export, restore preview, selected-person switching, local SQL storage draft, and repository adapter contract.
 
 Current local stack:
 
@@ -21,7 +21,9 @@ Current local stack:
 
 Stage 5C stores local study data in browser `localStorage`（本地浏览器存储）under `mimi-pte-vocabulary-v1`, with schema version 3. This enables local add, edit, archive, restore, search, import preview, review sessions, review history, per-person review settings, JSON backup（JSON 备份）, vocabulary CSV（逗号分隔值）export, JSON restore preview, and selected-person switching without remote services.
 
-Stage 5B records the intended durable storage direction: one Neon Postgres（关系型数据库）database for the private group, a `people` table, and `person_id` on all durable learning data. The accepted product model is private person switching without password / credential isolation. This is data separation for trusted users, not security isolation. Actual Neon project creation, credentials, migration execution, authentication（认证）, deployment, and external integrations have not been implemented.
+Stage 5D adds durable storage readiness without connecting to any remote service. The local SQL draft lives at `db/migrations/0001_initial.sql`, the JSON backup to Postgres（关系型数据库）mapping lives at `db/LOCAL_BACKUP_TO_POSTGRES.md`, and the repository adapter contract（仓储适配层接口）lives at `src/lib/storage/durable-repository-contract.ts`.
+
+Stage 5B records the intended durable storage direction: one Neon Postgres database for the private group, a `people` table, and `person_id` on all durable learning data. The accepted product model is private person switching without password / credential isolation. This is data separation for trusted users, not security isolation. Actual Neon project creation, credentials, migration execution, authentication（认证）, deployment, and external integrations have not been implemented.
 
 The GitHub repository URL was provided by the user:
 
@@ -158,7 +160,7 @@ Current route: `/settings`. It can save session limit and timezone to local brow
 
 ### Storage Adapter
 
-Development storage currently uses browser `localStorage`（本地浏览器存储）through `src/lib/vocabulary/local-storage-repository.ts`. The local migration path upgrades schema version 1 vocabulary data to schema version 2 by adding `reviewStates`, `reviewEvents`, and `settings`. Production storage should use a Postgres（关系型数据库）provider suitable for Vercel deployment, such as a Vercel Marketplace integration. Provider choice requires a separate plan because storage affects user data and migrations.
+Development storage currently uses browser `localStorage`（本地浏览器存储）through `src/lib/vocabulary/local-storage-repository.ts`. The local migration path upgrades schema version 1 / 2 vocabulary data to schema version 3 by adding review data, `people`, `selectedPersonId`, person-scoped learning records, and per-person settings. Production storage should use a Postgres provider suitable for Vercel deployment, specifically the accepted Neon Postgres path through Vercel Marketplace.
 
 Stage 5B storage decision:
 
@@ -167,6 +169,14 @@ Stage 5B storage decision:
 - Rejected for new work: `@vercel/postgres`, because Vercel Postgres is no longer available for new projects.
 - Database client initialization must be lazy in any future implementation, so `next build` does not require database environment variables at module evaluation time.
 - Future database implementation must add `person_id` to every learning-data repository method and query.
+
+Stage 5D local readiness:
+
+- `db/migrations/0001_initial.sql` is an executable draft, not an executed migration.
+- The draft uses UUID database primary keys, while local backup string ids are mapped during import.
+- `db/LOCAL_BACKUP_TO_POSTGRES.md` documents v3 JSON backup import validation, id mapping, count checks, and failure behavior.
+- `src/lib/storage/durable-repository-contract.ts` defines future adapter boundaries and requires explicit person context for learning-data operations.
+- `src/lib/storage/durable-schema.test.ts` statically checks `person_id`, person-scoped foreign keys, review uniqueness, indexes, and absence of credential/package coupling.
 
 ### People And Person Switching
 
@@ -179,6 +189,7 @@ The app is intended for a small trusted private group, not only one learner. The
 - `review_events.person_id`
 - `review_settings.person_id`
 - `backup_imports.person_id`
+- `backup_import_mappings.person_id`
 
 There is no accepted password, OAuth, or credential-isolation requirement yet. A future UI can offer a simple person switch. Every durable read/write must filter by selected `person_id`. This prevents mixing study histories while keeping the private-project workflow lightweight.
 
@@ -222,6 +233,8 @@ Deployment is planned for Vercel after the app is locally validated. GitHub and 
 ## Draft Data Model
 
 This is a planning model, not a committed database schema.
+
+Stage 5D has a local SQL draft at `db/migrations/0001_initial.sql`; it remains unexecuted until a future Tier 3 remote database stage is explicitly approved.
 
 ### Vocabulary Item
 
@@ -298,6 +311,28 @@ This is a planning model, not a committed database schema.
 - `created_at`
 - `updated_at`
 
+### Backup Import
+
+- `id`
+- `person_id`
+- `source_file_name`
+- `source_exported_at`
+- `imported_at`
+- `schema_version`
+- `item_count`
+- `review_event_count`
+- `notes`
+
+### Backup Import Mapping
+
+- `id`
+- `person_id`
+- `backup_import_id`
+- `entity_type`
+- `source_id`
+- `target_id`
+- `created_at`
+
 ## Safety And Privacy
 
 - Study data is private by default.
@@ -316,6 +351,8 @@ This is a planning model, not a committed database schema.
 - case, punctuation, plural forms, and verb tenses
 - missed review days and large overdue backlog
 - local migration from version 1 to version 2
+- local migration from version 1 / 2 to version 3
+- local backup string ids needing UUID mapping during future Postgres import
 - self-rated rarity that conflicts with review performance
 - backfilled added time that differs from actual write time
 - timezone changes between Australia and other regions
@@ -338,11 +375,12 @@ Current local validation commands:
 - `npm audit --json`
 - `npm run dev` plus browser smoke check
 
-Current unit tests cover vocabulary normalization, import parsing, duplicate candidate handling, repository updates, timestamp preservation, archive/restore, import batch commits, local schema migration, person-scoped data separation, per-person review settings, due-first queue selection, scheduler intervals, review event/state updates, JSON backup validation, CSV escaping, invalid backup rejection, broken review-reference rejection, and backup round trip behavior. Later validation should cover:
+Current unit tests cover vocabulary normalization, import parsing, duplicate candidate handling, repository updates, timestamp preservation, archive/restore, import batch commits, local schema migration, person-scoped data separation, per-person review settings, due-first queue selection, scheduler intervals, review event/state updates, JSON backup validation, CSV escaping, invalid backup rejection, broken review-reference rejection, backup round trip behavior, and Stage 5D SQL static checks. Later validation should cover:
 
 - duplicate card behavior
 - empty deck behavior
 - timezone scheduling
 - browser-level download and restore interaction checks
 - cross-person data separation once Neon persistence is implemented
+- actual database migration dry run once credentials and Neon setup are explicitly approved
 - embedding or FSRS migration safety when those later stages are explicitly approved

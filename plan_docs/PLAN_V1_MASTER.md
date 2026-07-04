@@ -1,7 +1,7 @@
 # Words Learning App For Mimi PLAN V1 Master
 
 Created: 2026-07-02 23:30 AEST
-Last updated: 2026-07-05 00:54 AEST
+Last updated: 2026-07-05 01:08 AEST
 
 Source plan:
 
@@ -122,7 +122,7 @@ Exit criteria:
 
 ### Stage 5: Persistence, Export, And Backup
 
-Status: Stage 5A local export and backup implemented locally on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5A_LOCAL_EXPORT_BACKUP.md`. Stage 5B storage provider decision and multi-person data model documented on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5B_STORAGE_PROVIDER_DECISION.md`. Remote database creation and persistence implementation remain pending separate approval.
+Status: Stage 5A local export and backup implemented locally on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5A_LOCAL_EXPORT_BACKUP.md`. Stage 5B storage provider decision and multi-person data model documented on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5B_STORAGE_PROVIDER_DECISION.md`. Stage 5C local person adapter implemented on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5C_LOCAL_PERSON_ADAPTER.md`. Stage 5D durable storage readiness implemented on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5D_DURABLE_STORAGE_READINESS.md`. Remote database creation and persistence implementation remain pending separate approval.
 
 Exit criteria:
 
@@ -153,6 +153,14 @@ Stage 5C local adapter:
 - Local data includes `people`, `selectedPersonId`, `personId` on learning records, and per-person review settings.
 - Local add, import, library, review queue, review events, and settings are scoped to the selected person.
 - JSON backup exports schema version 3 while still restoring schema version 2 backups through migration.
+
+Stage 5D durable storage readiness:
+
+- Local SQL migration draft exists for the future Neon Postgres database.
+- SQL draft includes `people`, person-scoped learning tables, review settings, backup imports, and backup id mapping.
+- Repository adapter contract requires explicit person context for future learning-data operations.
+- Schema version 3 JSON backup to Postgres mapping is documented.
+- Static tests inspect the SQL draft for `person_id`, person-scoped relationships, indexes, and no credential/package coupling.
 
 ### Stage 6: GitHub And Vercel Deployment
 

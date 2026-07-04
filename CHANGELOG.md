@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## 2026-07-05 01:12 AEST
+
+- Implemented Stage 5D durable storage readiness without creating or connecting to a remote database.
+- Added a local SQL migration draft for future Neon Postgres with `people`, person-scoped learning tables, review settings, backup imports, and backup import id mappings.
+- Added database constraints and indexes for `person_id` separation, review-state uniqueness, vocabulary lookup, review queues, and backup import traceability.
+- Added a local backup-to-Postgres mapping document for schema version 3 JSON backups, including source string id to target UUID mapping.
+- Added a repository adapter contract requiring explicit person context for future learning-data operations.
+- Added SQL static tests that check table coverage, `person_id`, person-scoped foreign keys, review uniqueness, indexes, and absence of credential/package coupling.
+- Reason: prepare the database and adapter boundary for the accepted Neon Postgres path while keeping credentials, remote migrations, deployment, authentication, and remote data mutation out of scope.
+
 ## 2026-07-05 00:54 AEST
 
 - Implemented Stage 5C local person adapter on top of browser `localStorage` schema version 3.

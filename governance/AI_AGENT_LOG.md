@@ -1,5 +1,38 @@
 # AI Agent Log
 
+## 2026-07-05 01:12 AEST
+
+- Task: implement Stage 5D durable storage readiness after the user confirmed execution.
+- Plan agreed: yes. The accepted scope was local SQL schema draft, repository adapter contract, backup-to-Postgres mapping, static validation, and documentation only, with no Neon project creation, no database package installation, no `.env` work, no remote migration, no deployment, and no authentication implementation.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `db/LOCAL_BACKUP_TO_POSTGRES.md`
+  - `db/migrations/0001_initial.sql`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE5D_DURABLE_STORAGE_READINESS.md`
+  - `src/lib/storage/durable-repository-contract.ts`
+  - `src/lib/storage/durable-schema.test.ts`
+- Reason: prepare the database and code boundaries for the accepted one-Neon-Postgres / many-people durable model before any credential, migration, or remote persistence work.
+- Implementation notes:
+  - Added a local SQL draft with `people`, `import_batches`, `vocabulary_items`, `review_states`, `review_events`, `review_settings`, `backup_imports`, and `backup_import_mappings`.
+  - Added `person_id` to every durable learning-data and backup mapping table.
+  - Added person-scoped foreign keys, review-state uniqueness by `(person_id, vocabulary_item_id)`, and indexes for the expected query paths.
+  - Documented schema version 3 JSON backup import mapping, local string id to database UUID mapping, validation, count checks, and failure behavior.
+  - Added a TypeScript repository adapter contract requiring explicit person context.
+  - Added Vitest static checks for the SQL draft.
+- Validation:
+  - Passed: `npm run test` with 10 test files and 35 tests.
+  - Passed: `npm run typecheck`
+  - Passed: `npm run lint`
+  - Passed: `npm run build`
+  - Passed: `npm audit --json` with 0 vulnerabilities.
+  - Passed: `npm run governance:preflight`
+- Safety notes: local source, SQL draft, tests, and documentation only. No Neon project creation, Vercel Marketplace installation, database package installation, `.env` editing, credential access, remote migration, remote data mutation, authentication implementation, production deployment, GitHub push, embedding generation, FSRS implementation, analytics, AI generation, email, payment, notification, or production action was performed. The SQL migration draft was not executed.
+
 ## 2026-07-05 00:54 AEST
 
 - Task: implement Stage 5C local person adapter after the user confirmed execution.
