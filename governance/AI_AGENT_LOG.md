@@ -1,5 +1,28 @@
 # AI Agent Log
 
+## 2026-07-05 00:41 AEST
+
+- Task: document Stage 5B storage provider decision and multi-person data model after the user confirmed the stage and clarified the app will be used by a small private group.
+- Plan agreed: yes. The user confirmed Stage 5B and specified one Neon Postgres（关系型数据库）, a `people` table, and `person_id` separation for all learning data, without password / credential isolation.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE5B_STORAGE_PROVIDER_DECISION.md`
+- Reason: convert the durable storage plan from single-person assumptions to private multi-person data separation before any remote database work.
+- Implementation notes:
+  - Recorded Neon Postgres through Vercel Marketplace as the preferred durable storage provider.
+  - Recorded Supabase Postgres as fallback only if later needs justify its larger platform surface.
+  - Recorded that `@vercel/postgres` is not the new-project path.
+  - Added the future `people` table and `person_id` requirement for vocabulary items, import batches, review states, review events, review settings, and backup imports.
+  - Clarified that no-password person switching is convenience separation for trusted private users, not security isolation.
+- Validation:
+  - Passed: `npm run governance:preflight`.
+- Safety notes: documentation and architecture planning only. No Neon project creation, Vercel Marketplace installation, database migration, remote data mutation, package installation, `.env` editing, credential access, authentication implementation, deployment, GitHub push, embedding generation, FSRS implementation, analytics, AI generation, email, payment, notification, or production action was performed.
+
 ## 2026-07-05 00:23 AEST
 
 - Task: implement Stage 5A local export and backup after the user confirmed execution.

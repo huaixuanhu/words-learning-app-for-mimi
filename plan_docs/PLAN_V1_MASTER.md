@@ -1,7 +1,7 @@
 # Words Learning App For Mimi PLAN V1 Master
 
 Created: 2026-07-02 23:30 AEST
-Last updated: 2026-07-05 00:23 AEST
+Last updated: 2026-07-05 00:41 AEST
 
 Source plan:
 
@@ -37,7 +37,7 @@ This is the parent product and implementation plan. Child plans must cite this f
 - Let the user input self-rated rarity, while keeping it separate from proficiency.
 - Use Spaced Repetition（间隔重复）and a practical Forgetting Curve（遗忘曲线）model to schedule review.
 - Prepare for GitHub and Vercel deployment after local validation.
-- Keep personal study data private and exportable.
+- Keep personal study data private, exportable, and separated by learner when multiple private people use the app.
 
 ## Non-Scope
 
@@ -45,7 +45,7 @@ This is the parent product and implementation plan. Child plans must cite this f
 - No remote database migration without separate approval.
 - No paid service setup without separate approval.
 - No AI-generated definitions or examples until data sharing and quality boundaries are designed.
-- No multi-user social features in the MVP.
+- No public multi-user social features in the MVP.
 - No `.docx` or PDF import in the first version.
 
 ## Governance Baseline
@@ -122,7 +122,7 @@ Exit criteria:
 
 ### Stage 5: Persistence, Export, And Backup
 
-Status: Stage 5A local export and backup implemented locally on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5A_LOCAL_EXPORT_BACKUP.md`. Durable storage provider selection and remote persistence remain pending separate approval.
+Status: Stage 5A local export and backup implemented locally on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5A_LOCAL_EXPORT_BACKUP.md`. Stage 5B storage provider decision and multi-person data model documented on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5B_STORAGE_PROVIDER_DECISION.md`. Remote database creation and persistence implementation remain pending separate approval.
 
 Exit criteria:
 
@@ -138,6 +138,14 @@ Stage 5A local exit criteria:
 - JSON restore preview validates before writing.
 - Invalid backup files do not mutate local data.
 - Backup round trip is covered by unit tests.
+
+Stage 5B decision:
+
+- Use one Neon Postgres database as the intended durable storage provider.
+- Add a `people` table for the private group.
+- Require all learning data tables to include `person_id`.
+- Support private user switching without password / credential isolation in the current accepted scope.
+- Treat person switching as convenience separation, not security isolation.
 
 ### Stage 6: GitHub And Vercel Deployment
 
@@ -174,8 +182,9 @@ The fixed Stage 4 scheduler is only an MVP bootstrap. A later stage should evalu
 
 ## Data And Privacy Assumptions
 
-- Default user model is private single-user.
+- Default user model is a trusted private group with simple person switching.
 - Study data includes words, examples, import batches, self-rated rarity, review timestamps, and performance.
+- All durable learning data should be scoped by `person_id` once database persistence is implemented.
 - No third-party data sharing by default.
 - Export should exist before production-only persistence becomes the only storage path.
 

@@ -1,6 +1,6 @@
 # Words Learning App For Mimi
 
-Stage 5A local vocabulary, text import, review scheduler, flashcards, and local export / backup for a mobile-first PTE vocabulary app.
+Stage 5B local vocabulary, text import, review scheduler, flashcards, local export / backup, and storage-provider planning for a mobile-first PTE vocabulary app.
 
 ## Commands
 
@@ -20,6 +20,7 @@ npm run dev
 - Local manual vocabulary add, library search/edit/archive/restore, and `.txt` / pasted text import preview.
 - Local review sessions with four fixed ratings, review event/state updates, and customizable session limit（单次复习上限）.
 - Local JSON backup（JSON 备份）download, vocabulary CSV（逗号分隔值）download, and JSON restore preview.
+- Stage 5B storage decision: future durable storage should use one Neon Postgres（关系型数据库）database with a `people` table and `person_id` separation for each learner's data.
 - Browser `localStorage`（本地浏览器存储）only; this is local convenience storage, not durable production persistence.
 - No database, production deployment, authentication, external API, analytics, or remote study-data mutation yet.
 

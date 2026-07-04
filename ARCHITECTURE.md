@@ -1,11 +1,11 @@
 # Words Learning App For Mimi Architecture
 
 Created: 2026-07-02 23:30 AEST
-Last updated: 2026-07-05 00:23 AEST
+Last updated: 2026-07-05 00:41 AEST
 
 ## Current State
 
-This repository is in Stage 5A local export and backup. It contains collaboration rules, architecture notes, master and stage plans, changelog, AI agent log, a lightweight Tier 1 governance preflight, and a minimal Next.js App Router application with browser-local vocabulary, review mutations, export, and restore preview.
+This repository is in Stage 5B storage provider decision and multi-person data-model planning. It contains collaboration rules, architecture notes, master and stage plans, changelog, AI agent log, a lightweight Tier 1 governance preflight, and a minimal Next.js App Router application with browser-local vocabulary, review mutations, export, and restore preview.
 
 Current local stack:
 
@@ -19,7 +19,9 @@ Current local stack:
 - `lucide-react` 0.562.0 for simple interface icons
 - npm `overrides` pins PostCSS（CSS 处理器）to 8.5.16 so the Next.js nested PostCSS copy resolves to the patched version.
 
-Stage 5A stores local study data in browser `localStorage`（本地浏览器存储）under `mimi-pte-vocabulary-v1`, with schema version 2. This enables local add, edit, archive, restore, search, import preview, review sessions, review history, review settings, JSON backup（JSON 备份）, vocabulary CSV（逗号分隔值）export, and JSON restore preview without remote services. Durable database storage, authentication, deployment, and external integrations have not been implemented.
+Stage 5A stores local study data in browser `localStorage`（本地浏览器存储）under `mimi-pte-vocabulary-v1`, with schema version 2. This enables local add, edit, archive, restore, search, import preview, review sessions, review history, review settings, JSON backup（JSON 备份）, vocabulary CSV（逗号分隔值）export, and JSON restore preview without remote services.
+
+Stage 5B records the intended durable storage direction: one Neon Postgres（关系型数据库）database for the private group, a `people` table, and `person_id` on all durable learning data. The accepted product model is private person switching without password / credential isolation. This is data separation for trusted users, not security isolation. Actual Neon project creation, credentials, migration execution, authentication（认证）, deployment, and external integrations have not been implemented.
 
 The GitHub repository URL was provided by the user:
 
@@ -64,7 +66,7 @@ Responsibilities:
 
 - mobile-first layout
 - navigation between add, list, review, and settings views
-- private-by-default study experience
+- private-group study experience with future person switching
 
 Current routes:
 
@@ -158,6 +160,28 @@ Current route: `/settings`. It can save session limit and timezone to local brow
 
 Development storage currently uses browser `localStorage`（本地浏览器存储）through `src/lib/vocabulary/local-storage-repository.ts`. The local migration path upgrades schema version 1 vocabulary data to schema version 2 by adding `reviewStates`, `reviewEvents`, and `settings`. Production storage should use a Postgres（关系型数据库）provider suitable for Vercel deployment, such as a Vercel Marketplace integration. Provider choice requires a separate plan because storage affects user data and migrations.
 
+Stage 5B storage decision:
+
+- Preferred provider: Neon Postgres through Vercel Marketplace.
+- Fallback: Supabase Postgres only if Neon is unavailable or later requirements need Supabase-native auth（认证）, realtime（实时）, or storage（文件存储）.
+- Rejected for new work: `@vercel/postgres`, because Vercel Postgres is no longer available for new projects.
+- Database client initialization must be lazy in any future implementation, so `next build` does not require database environment variables at module evaluation time.
+- Future database implementation must add `person_id` to every learning-data repository method and query.
+
+### People And Person Switching
+
+The app is intended for a small trusted private group, not only one learner. The future durable model should include:
+
+- `people`
+- `vocabulary_items.person_id`
+- `import_batches.person_id`
+- `review_states.person_id`
+- `review_events.person_id`
+- `review_settings.person_id`
+- `backup_imports.person_id`
+
+There is no accepted password, OAuth, or credential-isolation requirement yet. A future UI can offer a simple person switch. Every durable read/write must filter by selected `person_id`. This prevents mixing study histories while keeping the private-project workflow lightweight.
+
 ### Import And Export
 
 Responsibilities:
@@ -191,6 +215,7 @@ This is a planning model, not a committed database schema.
 ### Vocabulary Item
 
 - `id`
+- `person_id`
 - `surface_text`
 - `normalized_text`
 - `language`
@@ -209,6 +234,7 @@ This is a planning model, not a committed database schema.
 ### Import Batch
 
 - `id`
+- `person_id`
 - `source_type`
 - `file_name`
 - `created_at`
@@ -220,6 +246,7 @@ This is a planning model, not a committed database schema.
 ### Review State
 
 - `id`
+- `person_id`
 - `vocabulary_item_id`
 - `status`
 - `due_at`
@@ -234,6 +261,7 @@ This is a planning model, not a committed database schema.
 ### Review Event
 
 - `id`
+- `person_id`
 - `vocabulary_item_id`
 - `reviewed_at`
 - `rating`
@@ -245,13 +273,25 @@ This is a planning model, not a committed database schema.
 
 ### Review Settings
 
+- `person_id`
 - `session_limit`
 - `timezone`
+- `updated_at`
+
+### People
+
+- `id`
+- `display_name`
+- `slug`
+- `is_active`
+- `created_at`
 - `updated_at`
 
 ## Safety And Privacy
 
 - Study data is private by default.
+- Durable study data should be separated by `person_id` for each private learner.
+- Person switching is convenience separation, not security isolation.
 - No analytics, tracking, AI generation, or third-party data sharing should be added without explicit approval.
 - Credentials and database URLs must stay out of source control.
 - Export should be available before the project depends on production-only persistence.
@@ -271,6 +311,8 @@ This is a planning model, not a committed database schema.
 - accidental deletion or destructive migration
 - invalid, stale, or manually edited JSON backup files
 - review history entries pointing to missing vocabulary items
+- accidental cross-person reads or writes if `person_id` is not filtered
+- person switching without password isolation being misunderstood as security
 - offline or slow mobile usage
 
 ## Validation Boundary
@@ -291,4 +333,5 @@ Current unit tests cover vocabulary normalization, import parsing, duplicate can
 - empty deck behavior
 - timezone scheduling
 - browser-level download and restore interaction checks
+- cross-person data separation once Neon persistence is implemented
 - embedding or FSRS migration safety when those later stages are explicitly approved

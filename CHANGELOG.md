@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## 2026-07-05 00:41 AEST
+
+- Documented Stage 5B storage provider decision and multi-person data model.
+- Accepted one Neon Postgres database as the intended durable storage direction for the private group.
+- Added `people` / `person_id` design requirement so each learner's vocabulary, imports, review states, review events, settings, and backup imports stay separated.
+- Clarified that future person switching does not require password or credential isolation in the current private-project scope.
+- Documented that person switching is convenience data separation, not security isolation.
+- Reason: align durable persistence planning with the user's clarification that the app will be used by multiple trusted people, not only one person.
+
 ## 2026-07-05 00:23 AEST
 
 - Implemented Stage 5A local export and backup on top of browser `localStorage` schema version 2.
