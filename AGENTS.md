@@ -16,7 +16,7 @@
 
 - Project root: `/Users/anoria/Documents/python_coding/small_project/learningWordsformimi`
 - User-provided GitHub repository: `https://github.com/huaixuanhu/words-learning-app-for-mimi.git`
-- Current stage: Stage 4 local review scheduler and flashcards. Browser-local storage includes vocabulary, import batches, review history, and review settings, but no durable database or production deployment exists yet.
+- Current stage: Stage 5A local export and backup. Browser-local storage includes vocabulary, import batches, review history, review settings, JSON backup, CSV export, and local restore preview, but no durable database or production deployment exists yet.
 - Intended product: a mobile-first vocabulary flashcard web app for PTE study.
 - Intended hosting: GitHub plus Vercel, with deployment only after explicit approval.
 - Current application stack: Next.js App Router, TypeScript, Tailwind CSS, ESLint, Vitest, npm, and browser `localStorage` for local study data.
@@ -101,4 +101,4 @@ npm run build
 npm run dev
 ```
 
-The current unit test suite covers vocabulary normalization, import parsing, local repository behavior, timestamp preservation, archive/restore behavior, schema migration, review scheduling, review settings, and review event/state updates.
+The current unit test suite covers vocabulary normalization, import parsing, local repository behavior, timestamp preservation, archive/restore behavior, schema migration, review scheduling, review settings, review event/state updates, JSON backup validation, CSV escaping, and backup round trip behavior.

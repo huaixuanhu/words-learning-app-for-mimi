@@ -1,11 +1,11 @@
 # Words Learning App For Mimi Architecture
 
 Created: 2026-07-02 23:30 AEST
-Last updated: 2026-07-04 23:42 AEST
+Last updated: 2026-07-05 00:23 AEST
 
 ## Current State
 
-This repository is in Stage 4 local review scheduler and flashcards. It contains collaboration rules, architecture notes, master and stage plans, changelog, AI agent log, a lightweight Tier 1 governance preflight, and a minimal Next.js App Router application with browser-local vocabulary and review mutations.
+This repository is in Stage 5A local export and backup. It contains collaboration rules, architecture notes, master and stage plans, changelog, AI agent log, a lightweight Tier 1 governance preflight, and a minimal Next.js App Router application with browser-local vocabulary, review mutations, export, and restore preview.
 
 Current local stack:
 
@@ -19,7 +19,7 @@ Current local stack:
 - `lucide-react` 0.562.0 for simple interface icons
 - npm `overrides` pins PostCSS（CSS 处理器）to 8.5.16 so the Next.js nested PostCSS copy resolves to the patched version.
 
-Stage 4 stores local study data in browser `localStorage`（本地浏览器存储）under `mimi-pte-vocabulary-v1`, with schema version 2. This enables local add, edit, archive, restore, search, import preview, review sessions, review history, and review settings without remote services. Durable database storage, authentication, deployment, and external integrations have not been implemented.
+Stage 5A stores local study data in browser `localStorage`（本地浏览器存储）under `mimi-pte-vocabulary-v1`, with schema version 2. This enables local add, edit, archive, restore, search, import preview, review sessions, review history, review settings, JSON backup（JSON 备份）, vocabulary CSV（逗号分隔值）export, and JSON restore preview without remote services. Durable database storage, authentication, deployment, and external integrations have not been implemented.
 
 The GitHub repository URL was provided by the user:
 
@@ -167,7 +167,18 @@ Responsibilities:
 - defer `.docx` and PDF import until a later document-parsing stage
 - protect against duplicate imports, malformed rows, and timezone drift
 
-Current scaffold route: `/export`. It shows CSV and JSON export targets with disabled actions until persistence exists.
+Current route: `/export`. It can download a complete JSON backup with metadata（元数据）, download a vocabulary CSV, parse JSON backup files locally, show restore counts, and restore schema version 2 data after explicit confirmation. JSON restore rejects malformed files, unsupported backup shapes, incomplete required fields, invalid review references, and missing metadata counts before mutating local browser storage.
+
+### Backup Format
+
+Stage 5A uses a local backup envelope:
+
+- `format`
+- `backupVersion`
+- `metadata`
+- `data`
+
+The `data` field contains the current `VocabularyData` schema version 2 shape. The metadata records app name, exported time, timezone, schema version, and counts for vocabulary items, archived items, import batches, review states, and review events.
 
 ### Deployment Boundary
 
@@ -258,6 +269,8 @@ This is a planning model, not a committed database schema.
 - backfilled added time that differs from actual write time
 - timezone changes between Australia and other regions
 - accidental deletion or destructive migration
+- invalid, stale, or manually edited JSON backup files
+- review history entries pointing to missing vocabulary items
 - offline or slow mobile usage
 
 ## Validation Boundary
@@ -272,10 +285,10 @@ Current local validation commands:
 - `npm audit --json`
 - `npm run dev` plus browser smoke check
 
-Current unit tests cover vocabulary normalization, import parsing, duplicate candidate handling, repository updates, timestamp preservation, archive/restore, import batch commits, local schema migration, review settings, due-first queue selection, scheduler intervals, and review event/state updates. Later validation should cover:
+Current unit tests cover vocabulary normalization, import parsing, duplicate candidate handling, repository updates, timestamp preservation, archive/restore, import batch commits, local schema migration, review settings, due-first queue selection, scheduler intervals, review event/state updates, JSON backup validation, CSV escaping, invalid backup rejection, broken review-reference rejection, and backup round trip behavior. Later validation should cover:
 
 - duplicate card behavior
 - empty deck behavior
 - timezone scheduling
-- import and export round trip
+- browser-level download and restore interaction checks
 - embedding or FSRS migration safety when those later stages are explicitly approved

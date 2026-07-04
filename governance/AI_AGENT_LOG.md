@@ -1,5 +1,41 @@
 # AI Agent Log
 
+## 2026-07-05 00:23 AEST
+
+- Task: implement Stage 5A local export and backup after the user confirmed execution.
+- Plan agreed: yes. The user confirmed the Stage 5A plan, which keeps durable database provider selection, deployment, credentials, cloud sync, embedding（向量嵌入）, and FSRS（Free Spaced Repetition Scheduler，自由间隔重复调度算法）out of scope.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE5A_LOCAL_EXPORT_BACKUP.md`
+  - `src/app/export/page.tsx`
+  - `src/components/export/export-workspace.tsx`
+  - `src/lib/backup/csv-export.test.ts`
+  - `src/lib/backup/csv-export.ts`
+  - `src/lib/backup/json-backup.test.ts`
+  - `src/lib/backup/json-backup.ts`
+  - `src/lib/backup/types.ts`
+- Reason: provide a local backup and restore path before remote persistence, deployment, or production-only storage.
+- Implementation notes:
+  - Added a JSON backup envelope with `format`, `backupVersion`, `metadata`, and schema version 2 `data`.
+  - Added metadata counts for vocabulary items, archived items, import batches, review states, and review events.
+  - Added vocabulary CSV export with stable headers and CSV escaping.
+  - Added `/export` actions for JSON backup download, CSV download, JSON backup file parsing, restore preview, and explicit local restore.
+  - Added validation that rejects malformed JSON, unsupported backup shapes, missing required fields, missing metadata counts, and review records that reference missing vocabulary items.
+- Validation:
+  - Passed: `npm run test` with 9 test files and 26 tests.
+  - Passed: `npm run typecheck`
+  - Passed: `npm run lint`
+  - Passed: `npm run governance:preflight`
+  - Passed: `npm run build`
+  - Passed: `npm audit --json` with 0 vulnerabilities.
+  - Passed: local dev server smoke check for `/export` on `http://localhost:3000`.
+- Safety notes: local source, documentation, browser-local export, and browser-local restore preview only. No database creation, remote migration, production data mutation, Vercel deployment, GitHub push, credential access, `.env` editing, external API integration, cloud sync, embedding generation, FSRS implementation, analytics, AI generation, email, payment, notification, or production action was performed. JSON backup files can contain personal study data and should be kept private.
+
 ## 2026-07-04 23:42 AEST
 
 - Task: implement Stage 4 local review scheduler, flashcards, and customizable session limit after the user confirmed the revised Stage 4 plan.

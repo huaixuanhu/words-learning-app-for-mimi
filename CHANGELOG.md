@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## 2026-07-05 00:23 AEST
+
+- Implemented Stage 5A local export and backup on top of browser `localStorage` schema version 2.
+- Added complete JSON backup generation with app metadata, schema version, exported time, timezone, and record counts.
+- Added vocabulary CSV export with explicit headers and escaping for commas, quotes, and newlines.
+- Added `/export` restore preview for JSON backup files, with validation before writing to local browser storage.
+- Added backup validation for malformed JSON, unsupported backup format, missing required fields, metadata counts, and review records referencing missing vocabulary items.
+- Added unit tests for JSON backup creation, round trip restore shape, invalid backup rejection, broken review-reference rejection, and CSV escaping.
+- Reason: reduce local data-loss risk before durable database provider selection, deployment, authentication, cloud sync, embedding, FSRS, or external integrations.
+
 ## 2026-07-04 23:42 AEST
 
 - Implemented Stage 4 local review scheduler and flashcards on top of browser `localStorage` schema version 2.

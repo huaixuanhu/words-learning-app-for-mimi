@@ -1,7 +1,7 @@
 # Words Learning App For Mimi PLAN V1 Master
 
 Created: 2026-07-02 23:30 AEST
-Last updated: 2026-07-04 23:42 AEST
+Last updated: 2026-07-05 00:23 AEST
 
 Source plan:
 
@@ -122,12 +122,22 @@ Exit criteria:
 
 ### Stage 5: Persistence, Export, And Backup
 
+Status: Stage 5A local export and backup implemented locally on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5A_LOCAL_EXPORT_BACKUP.md`. Durable storage provider selection and remote persistence remain pending separate approval.
+
 Exit criteria:
 
 - Storage provider is chosen through a documented plan.
 - Data model is implemented with migrations if needed.
 - CSV or JSON export works.
 - Import/export round trip is validated.
+
+Stage 5A local exit criteria:
+
+- Complete JSON backup works.
+- Vocabulary CSV export works.
+- JSON restore preview validates before writing.
+- Invalid backup files do not mutate local data.
+- Backup round trip is covered by unit tests.
 
 ### Stage 6: GitHub And Vercel Deployment
 
