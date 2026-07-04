@@ -16,7 +16,7 @@
 
 - Project root: `/Users/anoria/Documents/python_coding/small_project/learningWordsformimi`
 - User-provided GitHub repository: `https://github.com/huaixuanhu/words-learning-app-for-mimi.git`
-- Current stage: Stage 5D durable storage readiness. Browser-local storage schema version 3 includes people, selected person, vocabulary, import batches, review history, per-person review settings, JSON backup, CSV export, and local restore preview. Local SQL and adapter-contract drafts exist for future Neon Postgres work, but no durable database, credential work, remote migration, or production deployment exists yet.
+- Current stage: Stage 5E Neon execution gate planning. Browser-local storage schema version 3 includes people, selected person, vocabulary, import batches, review history, per-person review settings, JSON backup, CSV export, and local restore preview. Local SQL, adapter-contract drafts, and a Neon execution gate plan exist for future Neon Postgres work, but no durable database, credential work, remote migration, or production deployment exists yet.
 - Intended product: a mobile-first vocabulary flashcard web app for PTE study.
 - Intended hosting: GitHub plus Vercel, with deployment only after explicit approval.
 - Current application stack: Next.js App Router, TypeScript, Tailwind CSS, ESLint, Vitest, npm, and browser `localStorage` for local study data.

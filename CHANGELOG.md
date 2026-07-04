@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 2026-07-05 01:29 AEST
+
+- Documented Stage 5E Neon execution gate before any real remote storage work.
+- Added the approval checklist for Vercel project scope, Neon project path, env handling, package installation, migration execution, backup import, and deployment scope.
+- Documented future execution order for Tier 3 gate, fresh JSON backup, Vercel/Neon setup, env sync, migration dry run, backup import trial, adapter trial, and production promotion.
+- Documented stop conditions and rollback direction for remote migration and import work.
+- Reason: prepare the next real Neon Postgres step without touching credentials, env files, remote databases, migrations, deployment, or production data.
+
 ## 2026-07-05 01:12 AEST
 
 - Implemented Stage 5D durable storage readiness without creating or connecting to a remote database.

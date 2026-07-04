@@ -1,5 +1,28 @@
 # AI Agent Log
 
+## 2026-07-05 01:29 AEST
+
+- Task: start Stage 5E by documenting the Neon execution gate after the user asked to begin the next stage.
+- Plan agreed: yes. The bounded next step was documentation-only execution planning before any Tier 3 remote action.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE5E_NEON_EXECUTION_GATE.md`
+- Reason: define the approval gate, future execution sequence, stop conditions, rollback direction, and validation path before any Neon/Vercel credential or remote database work.
+- Implementation notes:
+  - Checked current official Vercel and Neon docs for Postgres, Neon integration, Next.js access, and environment variable behavior.
+  - Recorded that future remote work must upgrade to Tier 3.
+  - Recorded required explicit approvals before Vercel/Neon execution.
+  - Recorded fresh JSON backup, non-production migration dry run, backup import trial, and person-scoped verification expectations.
+  - Recorded stop conditions and rollback direction.
+- Validation:
+  - Passed: `npm run governance:preflight`
+- Safety notes: documentation and planning only. No Neon project creation, Vercel Marketplace installation, Vercel CLI command, database package installation, `.env` editing, credential access, remote migration, remote data mutation, authentication implementation, production deployment, GitHub push, embedding generation, FSRS implementation, analytics, AI generation, email, payment, notification, or production action was performed.
+
 ## 2026-07-05 01:12 AEST
 
 - Task: implement Stage 5D durable storage readiness after the user confirmed execution.

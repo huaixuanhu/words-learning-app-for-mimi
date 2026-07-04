@@ -1,11 +1,11 @@
 # Words Learning App For Mimi Architecture
 
 Created: 2026-07-02 23:30 AEST
-Last updated: 2026-07-05 01:08 AEST
+Last updated: 2026-07-05 01:29 AEST
 
 ## Current State
 
-This repository is in Stage 5D durable storage readiness. It contains collaboration rules, architecture notes, master and stage plans, changelog, AI agent log, a lightweight Tier 1 governance preflight, and a minimal Next.js App Router application with browser-local vocabulary, review mutations, export, restore preview, selected-person switching, local SQL storage draft, and repository adapter contract.
+This repository is in Stage 5E Neon execution gate planning. It contains collaboration rules, architecture notes, master and stage plans, changelog, AI agent log, a lightweight Tier 1 governance preflight, and a minimal Next.js App Router application with browser-local vocabulary, review mutations, export, restore preview, selected-person switching, local SQL storage draft, repository adapter contract, and a documented Neon/Vercel execution gate.
 
 Current local stack:
 
@@ -22,6 +22,8 @@ Current local stack:
 Stage 5C stores local study data in browser `localStorage`（本地浏览器存储）under `mimi-pte-vocabulary-v1`, with schema version 3. This enables local add, edit, archive, restore, search, import preview, review sessions, review history, per-person review settings, JSON backup（JSON 备份）, vocabulary CSV（逗号分隔值）export, JSON restore preview, and selected-person switching without remote services.
 
 Stage 5D adds durable storage readiness without connecting to any remote service. The local SQL draft lives at `db/migrations/0001_initial.sql`, the JSON backup to Postgres（关系型数据库）mapping lives at `db/LOCAL_BACKUP_TO_POSTGRES.md`, and the repository adapter contract（仓储适配层接口）lives at `src/lib/storage/durable-repository-contract.ts`.
+
+Stage 5E documents the execution gate for a later Neon/Vercel stage. It defines required human approvals, future command sequence, stop conditions, rollback direction, and validation expectations. It does not create a Neon project, link Vercel, touch `.env`, execute migrations, mutate remote data, or deploy.
 
 Stage 5B records the intended durable storage direction: one Neon Postgres database for the private group, a `people` table, and `person_id` on all durable learning data. The accepted product model is private person switching without password / credential isolation. This is data separation for trusted users, not security isolation. Actual Neon project creation, credentials, migration execution, authentication（认证）, deployment, and external integrations have not been implemented.
 
@@ -177,6 +179,14 @@ Stage 5D local readiness:
 - `db/LOCAL_BACKUP_TO_POSTGRES.md` documents v3 JSON backup import validation, id mapping, count checks, and failure behavior.
 - `src/lib/storage/durable-repository-contract.ts` defines future adapter boundaries and requires explicit person context for learning-data operations.
 - `src/lib/storage/durable-schema.test.ts` statically checks `person_id`, person-scoped foreign keys, review uniqueness, indexes, and absence of credential/package coupling.
+
+Stage 5E execution gate:
+
+- Future remote work must start by switching the active working gate to Tier 3.
+- The user must explicitly approve Vercel project, Vercel account scope, Neon account/project path, environment variable handling, package installation, migration execution, backup import, and deployment scope.
+- A fresh JSON backup from `/export` is required before any remote import.
+- Migration must be run against a non-production branch first.
+- Any `person_id` leak, count mismatch, missing env var, wrong project, failed validation, or user pause request stops execution.
 
 ### People And Person Switching
 
