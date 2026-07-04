@@ -1,7 +1,7 @@
 # Words Learning App For Mimi PLAN V1 Master
 
 Created: 2026-07-02 23:30 AEST
-Last updated: 2026-07-05 00:41 AEST
+Last updated: 2026-07-05 00:54 AEST
 
 Source plan:
 
@@ -146,6 +146,13 @@ Stage 5B decision:
 - Require all learning data tables to include `person_id`.
 - Support private user switching without password / credential isolation in the current accepted scope.
 - Treat person switching as convenience separation, not security isolation.
+
+Stage 5C local adapter:
+
+- Browser-local storage now uses schema version 3.
+- Local data includes `people`, `selectedPersonId`, `personId` on learning records, and per-person review settings.
+- Local add, import, library, review queue, review events, and settings are scoped to the selected person.
+- JSON backup exports schema version 3 while still restoring schema version 2 backups through migration.
 
 ### Stage 6: GitHub And Vercel Deployment
 

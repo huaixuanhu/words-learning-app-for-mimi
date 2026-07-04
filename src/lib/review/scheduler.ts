@@ -1,6 +1,7 @@
 import type { ReviewRating, ReviewState } from "./types";
 import type { VocabularyData, VocabularyItem } from "@/lib/vocabulary/types";
-import { normalizeSessionLimit } from "./settings";
+import { getSelectedReviewSettings, normalizeSessionLimit } from "./settings";
+import { getSelectedPersonId } from "@/lib/people/repository";
 import { getActiveVocabularyItems } from "@/lib/vocabulary/repository";
 
 export const REVIEW_INTERVAL_MINUTES: Record<ReviewRating, number> = {
@@ -41,7 +42,13 @@ export function scheduleNextReview(
 }
 
 function getReviewStateByVocabularyId(data: VocabularyData) {
-  return new Map(data.reviewStates.map((state) => [state.vocabularyItemId, state]));
+  const personId = getSelectedPersonId(data);
+
+  return new Map(
+    data.reviewStates
+      .filter((state) => state.personId === personId)
+      .map((state) => [state.vocabularyItemId, state]),
+  );
 }
 
 function compareByDateThenText(a: VocabularyItem, b: VocabularyItem) {
@@ -57,7 +64,7 @@ function compareByDateThenText(a: VocabularyItem, b: VocabularyItem) {
 export function selectReviewQueue(
   data: VocabularyData,
   now = new Date().toISOString(),
-  sessionLimit = data.settings.sessionLimit,
+  sessionLimit = getSelectedReviewSettings(data).sessionLimit,
 ) {
   const stateByVocabularyId = getReviewStateByVocabularyId(data);
   const activeItems = getActiveVocabularyItems(data);

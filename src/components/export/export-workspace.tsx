@@ -40,6 +40,7 @@ function SummaryGrid({ data }: { data: VocabularyData }) {
   return (
     <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
       {[
+        ["People", counts.people],
         ["Items", counts.items],
         ["Active", counts.activeItems],
         ["Archived", counts.archivedItems],

@@ -27,8 +27,9 @@ describe("vocabulary CSV export", () => {
     const csv = exportVocabularyCsv(result.data);
 
     expect(csv.split("\n")[0]).toBe(
-      "id,surfaceText,normalizedText,meaningZh,example,notes,rarityScore,source,importBatchId,status,createdAt,systemCreatedAt,updatedAt,timezone,archivedAt",
+      "personId,personDisplayName,id,surfaceText,normalizedText,meaningZh,example,notes,rarityScore,source,importBatchId,status,createdAt,systemCreatedAt,updatedAt,timezone,archivedAt",
     );
+    expect(csv).toContain("person_mimi,Mimi");
     expect(csv).toContain('"allocate, ""time"" card"');
     expect(csv).toContain("分配 时间");
   });

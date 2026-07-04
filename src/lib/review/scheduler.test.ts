@@ -1,10 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { scheduleNextReview, selectReviewQueue } from "./scheduler";
 import {
+  addPerson,
   addVocabularyItem,
   archiveVocabularyItem,
   createEmptyVocabularyData,
+  selectPerson,
 } from "@/lib/vocabulary/repository";
+import { getSelectedPersonId } from "@/lib/people/repository";
+import { updateReviewSettings } from "./settings";
 
 function withWord(id: string, surfaceText: string, createdAt: string) {
   return {
@@ -49,12 +53,18 @@ describe("review scheduler", () => {
       withWord("vocab-b", "beta", "2026-07-02T00:00:00.000Z"),
       "2026-07-02T00:00:00.000Z",
     ).data;
+    const personId = getSelectedPersonId(second);
+    const limited = updateReviewSettings(
+      second,
+      { sessionLimit: 1, timezone: "Australia/Melbourne" },
+      "2026-07-02T00:10:00.000Z",
+    );
     const data = {
-      ...second,
-      settings: { ...second.settings, sessionLimit: 1 },
+      ...limited,
       reviewStates: [
         {
           id: "state-b",
+          personId,
           vocabularyItemId: "vocab-b",
           status: "review" as const,
           dueAt: "2026-07-03T00:00:00.000Z",
@@ -83,5 +93,29 @@ describe("review scheduler", () => {
     const archived = archiveVocabularyItem(added, "vocab-a", "2026-07-04T00:00:00.000Z");
 
     expect(selectReviewQueue(archived, "2026-07-04T00:00:00.000Z")).toHaveLength(0);
+  });
+
+  it("does not mix review queues across selected people", () => {
+    const base = createEmptyVocabularyData("2026-07-01T00:00:00.000Z");
+    const mimiWord = addVocabularyItem(
+      base,
+      withWord("vocab-mimi", "mimi word", "2026-07-01T00:00:00.000Z"),
+      "2026-07-01T00:00:00.000Z",
+    ).data;
+    const friendData = addPerson(
+      mimiWord,
+      { id: "person-friend", displayName: "Friend" },
+      "2026-07-01T00:10:00.000Z",
+    ).data;
+    const friendWord = addVocabularyItem(
+      friendData,
+      withWord("vocab-friend", "friend word", "2026-07-01T00:20:00.000Z"),
+      "2026-07-01T00:20:00.000Z",
+    ).data;
+
+    expect(selectReviewQueue(friendWord).map((item) => item.id)).toEqual(["vocab-friend"]);
+    expect(selectReviewQueue(selectPerson(friendWord, "person_mimi")).map((item) => item.id)).toEqual([
+      "vocab-mimi",
+    ]);
   });
 });

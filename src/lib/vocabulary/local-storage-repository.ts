@@ -1,16 +1,24 @@
 import type { VocabularyData } from "./types";
 import { createEmptyVocabularyData } from "./repository";
 import { normalizeReviewSettings } from "@/lib/review/settings";
+import {
+  DEFAULT_PERSON_ID,
+  createDefaultPerson,
+  getSelectedPersonId,
+} from "@/lib/people/repository";
 
 export const VOCABULARY_STORAGE_KEY = "mimi-pte-vocabulary-v1";
 
 type LegacyVocabularyData = {
   schemaVersion?: unknown;
+  people?: unknown;
+  selectedPersonId?: unknown;
   items?: unknown;
   importBatches?: unknown;
   reviewStates?: unknown;
   reviewEvents?: unknown;
   settings?: unknown;
+  settingsByPerson?: unknown;
   updatedAt?: unknown;
 };
 
@@ -30,24 +38,97 @@ export function migrateVocabularyData(value: unknown, now = new Date().toISOStri
   const maybeData = value as LegacyVocabularyData;
   const items = Array.isArray(maybeData.items) ? maybeData.items : [];
   const importBatches = Array.isArray(maybeData.importBatches) ? maybeData.importBatches : [];
+  const reviewStates = Array.isArray(maybeData.reviewStates) ? maybeData.reviewStates : [];
+  const reviewEvents = Array.isArray(maybeData.reviewEvents) ? maybeData.reviewEvents : [];
   const updatedAt = typeof maybeData.updatedAt === "string" ? maybeData.updatedAt : now;
 
   if (maybeData.schemaVersion === 1 || maybeData.schemaVersion === 2) {
+    const person = createDefaultPerson(now);
+    const settings = normalizeReviewSettings(
+      isObject(maybeData.settings) ? (maybeData.settings as Partial<VocabularyData["settingsByPerson"][number]>) : undefined,
+      now,
+    );
+
     return {
-      schemaVersion: 2,
-      items: items as VocabularyData["items"],
-      importBatches: importBatches as VocabularyData["importBatches"],
-      reviewStates: Array.isArray(maybeData.reviewStates)
-        ? (maybeData.reviewStates as VocabularyData["reviewStates"])
-        : [],
-      reviewEvents: Array.isArray(maybeData.reviewEvents)
-        ? (maybeData.reviewEvents as VocabularyData["reviewEvents"])
-        : [],
-      settings: normalizeReviewSettings(
-        isObject(maybeData.settings) ? (maybeData.settings as Partial<VocabularyData["settings"]>) : undefined,
-        now,
-      ),
+      schemaVersion: 3,
+      people: [person],
+      selectedPersonId: person.id,
+      items: items.map((item) =>
+        isObject(item) ? { ...item, personId: typeof item.personId === "string" ? item.personId : person.id } : item,
+      ) as VocabularyData["items"],
+      importBatches: importBatches.map((batch) =>
+        isObject(batch)
+          ? { ...batch, personId: typeof batch.personId === "string" ? batch.personId : person.id }
+          : batch,
+      ) as VocabularyData["importBatches"],
+      reviewStates: reviewStates.map((state) =>
+        isObject(state) ? { ...state, personId: typeof state.personId === "string" ? state.personId : person.id } : state,
+      ) as VocabularyData["reviewStates"],
+      reviewEvents: reviewEvents.map((event) =>
+        isObject(event) ? { ...event, personId: typeof event.personId === "string" ? event.personId : person.id } : event,
+      ) as VocabularyData["reviewEvents"],
+      settingsByPerson: [
+        {
+          personId: person.id,
+          ...settings,
+        },
+      ],
       updatedAt,
+    };
+  }
+
+  if (maybeData.schemaVersion === 3) {
+    const people = Array.isArray(maybeData.people) && maybeData.people.length
+      ? (maybeData.people as VocabularyData["people"])
+      : [createDefaultPerson(now)];
+    const fallbackPersonId = people[0]?.id ?? DEFAULT_PERSON_ID;
+    const selectedPersonId =
+      typeof maybeData.selectedPersonId === "string" &&
+      people.some((person) => person.id === maybeData.selectedPersonId)
+        ? maybeData.selectedPersonId
+        : fallbackPersonId;
+    const migrated: VocabularyData = {
+      schemaVersion: 3,
+      people,
+      selectedPersonId,
+      items: items.map((item) =>
+        isObject(item)
+          ? { ...item, personId: typeof item.personId === "string" ? item.personId : fallbackPersonId }
+          : item,
+      ) as VocabularyData["items"],
+      importBatches: importBatches.map((batch) =>
+        isObject(batch)
+          ? { ...batch, personId: typeof batch.personId === "string" ? batch.personId : fallbackPersonId }
+          : batch,
+      ) as VocabularyData["importBatches"],
+      reviewStates: reviewStates.map((state) =>
+        isObject(state)
+          ? { ...state, personId: typeof state.personId === "string" ? state.personId : fallbackPersonId }
+          : state,
+      ) as VocabularyData["reviewStates"],
+      reviewEvents: reviewEvents.map((event) =>
+        isObject(event)
+          ? { ...event, personId: typeof event.personId === "string" ? event.personId : fallbackPersonId }
+          : event,
+      ) as VocabularyData["reviewEvents"],
+      settingsByPerson: Array.isArray(maybeData.settingsByPerson)
+        ? (maybeData.settingsByPerson as VocabularyData["settingsByPerson"])
+        : [],
+      updatedAt,
+    };
+    const selectedId = getSelectedPersonId(migrated);
+    const existingSettings = new Set(migrated.settingsByPerson.map((settings) => settings.personId));
+    const missingSettings = migrated.people
+      .filter((person) => !existingSettings.has(person.id))
+      .map((person) => ({
+        personId: person.id,
+        ...normalizeReviewSettings(undefined, now),
+      }));
+
+    return {
+      ...migrated,
+      selectedPersonId: selectedId,
+      settingsByPerson: [...migrated.settingsByPerson, ...missingSettings],
     };
   }
 

@@ -3,11 +3,12 @@ import {
   DEFAULT_SESSION_LIMIT,
   MAX_SESSION_LIMIT,
   MIN_SESSION_LIMIT,
+  getSelectedReviewSettings,
   normalizeReviewSettings,
   normalizeSessionLimit,
   updateReviewSettings,
 } from "./settings";
-import { createEmptyVocabularyData } from "@/lib/vocabulary/repository";
+import { addPerson, createEmptyVocabularyData, selectPerson } from "@/lib/vocabulary/repository";
 
 describe("review settings", () => {
   it("normalizes invalid session limits to safe values", () => {
@@ -25,7 +26,7 @@ describe("review settings", () => {
     });
   });
 
-  it("updates data settings and repository updatedAt together", () => {
+  it("updates selected person settings and repository updatedAt together", () => {
     const data = createEmptyVocabularyData("2026-07-04T00:00:00.000Z");
     const updated = updateReviewSettings(
       data,
@@ -33,11 +34,29 @@ describe("review settings", () => {
       "2026-07-04T01:00:00.000Z",
     );
 
-    expect(updated.settings).toMatchObject({
+    expect(getSelectedReviewSettings(updated)).toMatchObject({
       sessionLimit: 7,
       timezone: "Asia/Shanghai",
       updatedAt: "2026-07-04T01:00:00.000Z",
     });
     expect(updated.updatedAt).toBe("2026-07-04T01:00:00.000Z");
+  });
+
+  it("keeps review settings separate across people", () => {
+    const initial = createEmptyVocabularyData("2026-07-04T00:00:00.000Z");
+    const addedPerson = addPerson(
+      initial,
+      { id: "person-friend", displayName: "Friend" },
+      "2026-07-04T00:10:00.000Z",
+    ).data;
+    const friendUpdated = updateReviewSettings(
+      addedPerson,
+      { sessionLimit: "9", timezone: "Asia/Tokyo" },
+      "2026-07-04T00:11:00.000Z",
+    );
+    const mimiData = selectPerson(friendUpdated, "person_mimi", "2026-07-04T00:12:00.000Z");
+
+    expect(getSelectedReviewSettings(mimiData).sessionLimit).toBe(24);
+    expect(getSelectedReviewSettings(selectPerson(friendUpdated, "person-friend")).sessionLimit).toBe(9);
   });
 });

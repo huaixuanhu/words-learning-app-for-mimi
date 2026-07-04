@@ -1,11 +1,11 @@
 # Words Learning App For Mimi Architecture
 
 Created: 2026-07-02 23:30 AEST
-Last updated: 2026-07-05 00:41 AEST
+Last updated: 2026-07-05 00:54 AEST
 
 ## Current State
 
-This repository is in Stage 5B storage provider decision and multi-person data-model planning. It contains collaboration rules, architecture notes, master and stage plans, changelog, AI agent log, a lightweight Tier 1 governance preflight, and a minimal Next.js App Router application with browser-local vocabulary, review mutations, export, and restore preview.
+This repository is in Stage 5C local person adapter implementation. It contains collaboration rules, architecture notes, master and stage plans, changelog, AI agent log, a lightweight Tier 1 governance preflight, and a minimal Next.js App Router application with browser-local vocabulary, review mutations, export, restore preview, and selected-person switching.
 
 Current local stack:
 
@@ -19,7 +19,7 @@ Current local stack:
 - `lucide-react` 0.562.0 for simple interface icons
 - npm `overrides` pins PostCSS（CSS 处理器）to 8.5.16 so the Next.js nested PostCSS copy resolves to the patched version.
 
-Stage 5A stores local study data in browser `localStorage`（本地浏览器存储）under `mimi-pte-vocabulary-v1`, with schema version 2. This enables local add, edit, archive, restore, search, import preview, review sessions, review history, review settings, JSON backup（JSON 备份）, vocabulary CSV（逗号分隔值）export, and JSON restore preview without remote services.
+Stage 5C stores local study data in browser `localStorage`（本地浏览器存储）under `mimi-pte-vocabulary-v1`, with schema version 3. This enables local add, edit, archive, restore, search, import preview, review sessions, review history, per-person review settings, JSON backup（JSON 备份）, vocabulary CSV（逗号分隔值）export, JSON restore preview, and selected-person switching without remote services.
 
 Stage 5B records the intended durable storage direction: one Neon Postgres（关系型数据库）database for the private group, a `people` table, and `person_id` on all durable learning data. The accepted product model is private person switching without password / credential isolation. This is data separation for trusted users, not security isolation. Actual Neon project creation, credentials, migration execution, authentication（认证）, deployment, and external integrations have not been implemented.
 
@@ -182,6 +182,17 @@ The app is intended for a small trusted private group, not only one learner. The
 
 There is no accepted password, OAuth, or credential-isolation requirement yet. A future UI can offer a simple person switch. Every durable read/write must filter by selected `person_id`. This prevents mixing study histories while keeping the private-project workflow lightweight.
 
+Current local implementation:
+
+- `VocabularyData.schemaVersion` is 3.
+- Local data includes `people` and `selectedPersonId`.
+- Vocabulary items, import batches, review states, and review events include `personId`.
+- Review settings are stored in `settingsByPerson`.
+- `/settings` includes a minimal person switch and add-person control.
+- Local repository helpers filter active, archived, all-library, duplicate detection, review queues, and review writes by selected person.
+- Schema version 1 / 2 local data migrates into version 3 by assigning existing data to the default person.
+- JSON backup export uses version 3; JSON backup restore still accepts version 2 and migrates it to version 3.
+
 ### Import And Export
 
 Responsibilities:
@@ -202,7 +213,7 @@ Stage 5A uses a local backup envelope:
 - `metadata`
 - `data`
 
-The `data` field contains the current `VocabularyData` schema version 2 shape. The metadata records app name, exported time, timezone, schema version, and counts for vocabulary items, archived items, import batches, review states, and review events.
+The `data` field contains the current `VocabularyData` schema version 3 shape. The metadata records app name, exported time, timezone, schema version, and counts for people, vocabulary items, archived items, import batches, review states, and review events.
 
 ### Deployment Boundary
 
@@ -327,7 +338,7 @@ Current local validation commands:
 - `npm audit --json`
 - `npm run dev` plus browser smoke check
 
-Current unit tests cover vocabulary normalization, import parsing, duplicate candidate handling, repository updates, timestamp preservation, archive/restore, import batch commits, local schema migration, review settings, due-first queue selection, scheduler intervals, review event/state updates, JSON backup validation, CSV escaping, invalid backup rejection, broken review-reference rejection, and backup round trip behavior. Later validation should cover:
+Current unit tests cover vocabulary normalization, import parsing, duplicate candidate handling, repository updates, timestamp preservation, archive/restore, import batch commits, local schema migration, person-scoped data separation, per-person review settings, due-first queue selection, scheduler intervals, review event/state updates, JSON backup validation, CSV escaping, invalid backup rejection, broken review-reference rejection, and backup round trip behavior. Later validation should cover:
 
 - duplicate card behavior
 - empty deck behavior

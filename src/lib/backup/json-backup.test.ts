@@ -22,12 +22,14 @@ function createSampleData() {
     },
     "2026-07-05T00:01:00.000Z",
   );
+  const personId = added.item.personId;
 
   return {
     ...added.data,
     importBatches: [
       {
         id: "batch-1",
+        personId,
         sourceType: "pasted_text" as const,
         fileName: null,
         createdAt: "2026-07-05T00:02:00.000Z",
@@ -40,6 +42,7 @@ function createSampleData() {
     reviewStates: [
       {
         id: "review-state-1",
+        personId,
         vocabularyItemId: "vocab-1",
         status: "review" as const,
         dueAt: "2026-07-06T00:00:00.000Z",
@@ -55,6 +58,7 @@ function createSampleData() {
     reviewEvents: [
       {
         id: "review-event-1",
+        personId,
         vocabularyItemId: "vocab-1",
         reviewedAt: "2026-07-05T00:10:00.000Z",
         rating: "hard" as const,
@@ -65,11 +69,16 @@ function createSampleData() {
         elapsedMs: 3500,
       },
     ],
-    settings: {
-      sessionLimit: 12,
-      timezone: "Australia/Melbourne",
-      updatedAt: "2026-07-05T00:03:00.000Z",
-    },
+    settingsByPerson: added.data.settingsByPerson.map((settings) =>
+      settings.personId === personId
+        ? {
+            ...settings,
+            sessionLimit: 12,
+            timezone: "Australia/Melbourne",
+            updatedAt: "2026-07-05T00:03:00.000Z",
+          }
+        : settings,
+    ),
     updatedAt: "2026-07-05T00:10:00.000Z",
   };
 }
@@ -86,9 +95,10 @@ describe("JSON vocabulary backup", () => {
       appName: "words-learning-app-for-mimi",
       exportedAt: "2026-07-05T00:20:00.000Z",
       timezone: "Australia/Melbourne",
-      schemaVersion: 2,
+      schemaVersion: 3,
     });
     expect(backup.metadata.counts).toEqual({
+      people: 1,
       items: 1,
       activeItems: 1,
       archivedItems: 0,
@@ -112,13 +122,79 @@ describe("JSON vocabulary backup", () => {
       return;
     }
 
-    expect(parsed.data.schemaVersion).toBe(2);
+    expect(parsed.data.schemaVersion).toBe(3);
+    expect(parsed.data.people).toHaveLength(1);
     expect(parsed.data.items[0]?.id).toBe("vocab-1");
+    expect(parsed.data.items[0]?.personId).toBe("person_mimi");
     expect(parsed.data.importBatches).toHaveLength(1);
     expect(parsed.data.reviewStates).toHaveLength(1);
     expect(parsed.data.reviewEvents).toHaveLength(1);
-    expect(parsed.data.settings.sessionLimit).toBe(12);
+    expect(parsed.data.settingsByPerson[0]?.sessionLimit).toBe(12);
     expect(parsed.counts).toEqual(summarizeVocabularyData(data));
+  });
+
+  it("restores schema version 2 backups by migrating them to version 3", () => {
+    const parsed = parseVocabularyBackupText(
+      JSON.stringify({
+        format: "mimi-pte-vocabulary-backup",
+        backupVersion: 1,
+        metadata: {
+          appName: "words-learning-app-for-mimi",
+          exportedAt: "2026-07-05T00:20:00.000Z",
+          timezone: "Australia/Melbourne",
+          schemaVersion: 2,
+          counts: {
+            items: 1,
+            activeItems: 1,
+            archivedItems: 0,
+            importBatches: 0,
+            reviewStates: 0,
+            reviewEvents: 0,
+          },
+        },
+        data: {
+          schemaVersion: 2,
+          items: [
+            {
+              id: "vocab-legacy",
+              surfaceText: "legacy",
+              normalizedText: "legacy",
+              meaningZh: "",
+              example: "",
+              notes: "",
+              rarityScore: null,
+              source: "manual",
+              importBatchId: null,
+              status: "new",
+              createdAt: "2026-07-05T00:00:00.000Z",
+              systemCreatedAt: "2026-07-05T00:00:00.000Z",
+              updatedAt: "2026-07-05T00:00:00.000Z",
+              timezone: "Australia/Melbourne",
+              archivedAt: null,
+            },
+          ],
+          importBatches: [],
+          reviewStates: [],
+          reviewEvents: [],
+          settings: {
+            sessionLimit: 10,
+            timezone: "Australia/Melbourne",
+            updatedAt: "2026-07-05T00:00:00.000Z",
+          },
+          updatedAt: "2026-07-05T00:00:00.000Z",
+        },
+      }),
+    );
+
+    expect(parsed.ok).toBe(true);
+
+    if (!parsed.ok) {
+      return;
+    }
+
+    expect(parsed.data.schemaVersion).toBe(3);
+    expect(parsed.data.items[0]?.personId).toBe("person_mimi");
+    expect(parsed.data.settingsByPerson[0]?.sessionLimit).toBe(10);
   });
 
   it("rejects malformed JSON and unsupported backup shapes", () => {
@@ -130,12 +206,14 @@ describe("JSON vocabulary backup", () => {
         backupVersion: 1,
         metadata: {},
         data: {
-          schemaVersion: 2,
+          schemaVersion: 3,
+          people: [],
+          selectedPersonId: "missing",
           items: [{ id: "broken" }],
           importBatches: [],
           reviewStates: [],
           reviewEvents: [],
-          settings: {},
+          settingsByPerson: {},
           updatedAt: "2026-07-05T00:00:00.000Z",
         },
       }),
@@ -149,7 +227,7 @@ describe("JSON vocabulary backup", () => {
 
     expect(parsed.errors.join("\n")).toContain("format must be");
     expect(parsed.errors.join("\n")).toContain("items[0].surfaceText must be a string");
-    expect(parsed.errors.join("\n")).toContain("data.settings.sessionLimit must be a number");
+    expect(parsed.errors.join("\n")).toContain("data.settingsByPerson must be an array");
   });
 
   it("rejects review records that reference missing vocabulary items", () => {

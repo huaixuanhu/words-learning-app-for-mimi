@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { getReviewQueue, recordReview } from "./repository";
 import {
+  addPerson,
   addVocabularyItem,
   archiveVocabularyItem,
   createEmptyVocabularyData,
+  selectPerson,
 } from "@/lib/vocabulary/repository";
 
 function addReviewableWord() {
@@ -33,6 +35,7 @@ describe("review repository", () => {
     );
 
     expect(result.event).toMatchObject({
+      personId: "person_mimi",
       vocabularyItemId: "vocab-1",
       rating: "vague",
       previousDueAt: null,
@@ -42,6 +45,7 @@ describe("review repository", () => {
       elapsedMs: 12345,
     });
     expect(result.state).toMatchObject({
+      personId: "person_mimi",
       vocabularyItemId: "vocab-1",
       status: "review",
       dueAt: "2026-07-07T01:00:00.000Z",
@@ -90,5 +94,36 @@ describe("review repository", () => {
       ),
     ).toThrow("Reviewable vocabulary item not found");
     expect(getReviewQueue(archived, "2026-07-04T01:00:00.000Z")).toHaveLength(0);
+  });
+
+  it("records reviews only for the selected person's vocabulary", () => {
+    const mimiData = addReviewableWord();
+    const friendData = addPerson(
+      mimiData,
+      { id: "person-friend", displayName: "Friend" },
+      "2026-07-04T00:10:00.000Z",
+    ).data;
+    const friendWord = addVocabularyItem(
+      friendData,
+      {
+        id: "vocab-friend",
+        surfaceText: "friend",
+        source: "manual",
+        timezone: "Australia/Melbourne",
+      },
+      "2026-07-04T00:11:00.000Z",
+    ).data;
+
+    expect(() =>
+      recordReview(friendWord, { vocabularyItemId: "vocab-1", rating: "hard" }),
+    ).toThrow("Reviewable vocabulary item not found");
+
+    const reviewed = recordReview(
+      selectPerson(friendWord, "person_mimi"),
+      { vocabularyItemId: "vocab-1", rating: "hard" },
+      "2026-07-04T01:00:00.000Z",
+    );
+
+    expect(reviewed.event.personId).toBe("person_mimi");
   });
 });

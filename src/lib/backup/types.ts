@@ -5,6 +5,7 @@ export const BACKUP_VERSION = 1;
 export const BACKUP_APP_NAME = "words-learning-app-for-mimi";
 
 export type BackupCounts = {
+  people: number;
   items: number;
   activeItems: number;
   archivedItems: number;

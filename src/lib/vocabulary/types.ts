@@ -1,4 +1,4 @@
-import type { ReviewEvent, ReviewSettings, ReviewState } from "@/lib/review/types";
+import type { PersonReviewSettings, ReviewEvent, ReviewState } from "@/lib/review/types";
 
 export type VocabularySource = "manual" | "txt_file" | "pasted_text";
 
@@ -8,8 +8,18 @@ export type ImportSourceType = "txt_file" | "pasted_text";
 
 export type ImportCandidateStatus = "new" | "duplicate" | "invalid";
 
+export type Person = {
+  id: string;
+  displayName: string;
+  slug: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type VocabularyItem = {
   id: string;
+  personId: string;
   surfaceText: string;
   normalizedText: string;
   meaningZh: string;
@@ -28,6 +38,7 @@ export type VocabularyItem = {
 
 export type ImportBatch = {
   id: string;
+  personId: string;
   sourceType: ImportSourceType;
   fileName: string | null;
   createdAt: string;
@@ -51,17 +62,20 @@ export type ImportCandidate = {
 };
 
 export type VocabularyData = {
-  schemaVersion: 2;
+  schemaVersion: 3;
+  people: Person[];
+  selectedPersonId: string;
   items: VocabularyItem[];
   importBatches: ImportBatch[];
   reviewStates: ReviewState[];
   reviewEvents: ReviewEvent[];
-  settings: ReviewSettings;
+  settingsByPerson: PersonReviewSettings[];
   updatedAt: string;
 };
 
 export type NewVocabularyInput = {
   id?: string;
+  personId?: string;
   surfaceText: string;
   meaningZh?: string;
   example?: string;
@@ -90,6 +104,7 @@ export type UpdateVocabularyInput = Partial<
 
 export type ImportBatchInput = {
   id?: string;
+  personId?: string;
   sourceType: ImportSourceType;
   fileName?: string | null;
 };

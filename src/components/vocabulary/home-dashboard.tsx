@@ -5,12 +5,15 @@ import { primaryActions } from "@/lib/stage-two-data";
 import { getActiveVocabularyItems, getArchivedVocabularyItems } from "@/lib/vocabulary/repository";
 import { useVocabularyData } from "./use-vocabulary-data";
 import { SimplePanel } from "@/components/simple-panel";
-import { DEFAULT_SESSION_LIMIT } from "@/lib/review/settings";
+import { DEFAULT_SESSION_LIMIT, getSelectedReviewSettings } from "@/lib/review/settings";
+import { getSelectedPerson } from "@/lib/people/repository";
 
 export function HomeDashboard() {
   const { data, isLoaded } = useVocabularyData();
   const activeItems = getActiveVocabularyItems(data);
   const archivedItems = getArchivedVocabularyItems(data);
+  const selectedPerson = getSelectedPerson(data);
+  const settings = getSelectedReviewSettings(data);
   const latestItems = activeItems.slice(0, 4);
 
   return (
@@ -47,9 +50,9 @@ export function HomeDashboard() {
               <dd className="mt-1 text-2xl font-semibold">{isLoaded ? archivedItems.length : "-"}</dd>
             </div>
             <div className="rounded-md bg-[#f8f7f4] p-3">
-              <dt className="text-xs font-medium text-[#66645c]">Limit</dt>
+              <dt className="text-xs font-medium text-[#66645c]">{selectedPerson.displayName} limit</dt>
               <dd className="mt-1 text-2xl font-semibold">
-                {isLoaded ? data.settings.sessionLimit : DEFAULT_SESSION_LIMIT}
+                {isLoaded ? settings.sessionLimit : DEFAULT_SESSION_LIMIT}
               </dd>
             </div>
           </dl>

@@ -1,6 +1,8 @@
 import type { ReviewRating, ReviewState } from "./types";
 import type { VocabularyData } from "@/lib/vocabulary/types";
 import { makeId } from "@/lib/vocabulary/repository";
+import { getSelectedPersonId } from "@/lib/people/repository";
+import { getSelectedReviewSettings } from "./settings";
 import { scheduleNextReview, selectReviewQueue } from "./scheduler";
 
 export type RecordReviewInput = {
@@ -10,13 +12,17 @@ export type RecordReviewInput = {
 };
 
 export function getReviewState(data: VocabularyData, vocabularyItemId: string) {
-  return data.reviewStates.find((state) => state.vocabularyItemId === vocabularyItemId);
+  const personId = getSelectedPersonId(data);
+
+  return data.reviewStates.find(
+    (state) => state.personId === personId && state.vocabularyItemId === vocabularyItemId,
+  );
 }
 
 export function getReviewQueue(
   data: VocabularyData,
   now = new Date().toISOString(),
-  sessionLimit = data.settings.sessionLimit,
+  sessionLimit = getSelectedReviewSettings(data).sessionLimit,
 ) {
   return selectReviewQueue(data, now, sessionLimit);
 }
@@ -26,7 +32,10 @@ export function recordReview(
   input: RecordReviewInput,
   now = new Date().toISOString(),
 ) {
-  const item = data.items.find((candidate) => candidate.id === input.vocabularyItemId);
+  const personId = getSelectedPersonId(data);
+  const item = data.items.find(
+    (candidate) => candidate.id === input.vocabularyItemId && candidate.personId === personId,
+  );
 
   if (!item || item.status === "archived" || item.archivedAt) {
     throw new Error(`Reviewable vocabulary item not found: ${input.vocabularyItemId}`);
@@ -40,6 +49,7 @@ export function recordReview(
       : Math.max(0, Math.round(input.elapsedMs));
   const nextState: ReviewState = {
     id: previousState?.id ?? makeId("review_state"),
+    personId,
     vocabularyItemId: input.vocabularyItemId,
     status: scheduled.status,
     dueAt: scheduled.dueAt,
@@ -53,6 +63,7 @@ export function recordReview(
   };
   const event = {
     id: makeId("review_event"),
+    personId,
     vocabularyItemId: input.vocabularyItemId,
     reviewedAt: now,
     rating: input.rating,
@@ -64,7 +75,9 @@ export function recordReview(
   };
   const nextReviewStates = previousState
     ? data.reviewStates.map((state) =>
-        state.vocabularyItemId === input.vocabularyItemId ? nextState : state,
+        state.personId === personId && state.vocabularyItemId === input.vocabularyItemId
+          ? nextState
+          : state,
       )
     : [nextState, ...data.reviewStates];
 

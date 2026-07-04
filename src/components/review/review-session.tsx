@@ -4,8 +4,10 @@ import { RotateCcw, Save } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SimplePanel } from "@/components/simple-panel";
 import { useVocabularyData } from "@/components/vocabulary/use-vocabulary-data";
+import { getSelectedPersonId } from "@/lib/people/repository";
 import { recordReview } from "@/lib/review/repository";
 import { selectReviewQueue } from "@/lib/review/scheduler";
+import { getSelectedReviewSettings } from "@/lib/review/settings";
 import { reviewRatings } from "@/lib/stage-two-data";
 import { getActiveVocabularyItems } from "@/lib/vocabulary/repository";
 
@@ -16,30 +18,37 @@ function getItemById(dataItems: ReturnType<typeof getActiveVocabularyItems>, id:
 export function ReviewSession() {
   const { data, isLoaded, commit } = useVocabularyData();
   const [sessionIds, setSessionIds] = useState<string[] | null>(null);
+  const [sessionPersonId, setSessionPersonId] = useState<string | null>(null);
   const [completedCount, setCompletedCount] = useState(0);
   const [showBack, setShowBack] = useState(false);
   const [cardStartedAt, setCardStartedAt] = useState(0);
   const [submittedItemId, setSubmittedItemId] = useState<string | null>(null);
   const submittedItemIdRef = useRef<string | null>(null);
   const [message, setMessage] = useState("");
+  const selectedPersonId = getSelectedPersonId(data);
   const activeItems = useMemo(() => getActiveVocabularyItems(data), [data]);
+  const settings = getSelectedReviewSettings(data);
 
   const buildSessionIds = useCallback(() => {
     return selectReviewQueue(data).map((item) => item.id);
   }, [data]);
 
   useEffect(() => {
-    if (!isLoaded || sessionIds) {
+    if (!isLoaded || (sessionIds && sessionPersonId === selectedPersonId)) {
       return;
     }
 
     const timer = window.setTimeout(() => {
       setSessionIds(buildSessionIds());
+      setSessionPersonId(selectedPersonId);
+      setCompletedCount(0);
+      setShowBack(false);
+      setSubmittedItemId(null);
       setCardStartedAt(0);
     }, 0);
 
     return () => window.clearTimeout(timer);
-  }, [buildSessionIds, isLoaded, sessionIds]);
+  }, [buildSessionIds, isLoaded, selectedPersonId, sessionIds, sessionPersonId]);
 
   const currentItem = sessionIds?.length ? getItemById(activeItems, sessionIds[0]) : null;
   const sessionTotal = completedCount + (sessionIds?.length ?? 0);
@@ -47,6 +56,7 @@ export function ReviewSession() {
   const restartSession = () => {
     submittedItemIdRef.current = null;
     setSessionIds(buildSessionIds());
+    setSessionPersonId(selectedPersonId);
     setCompletedCount(0);
     setShowBack(false);
     setCardStartedAt(0);
@@ -158,7 +168,7 @@ export function ReviewSession() {
         <div className="grid grid-cols-3 gap-3">
           <div className="rounded-md bg-[#f8f7f4] p-3">
             <p className="text-xs font-medium text-[#66645c]">Limit</p>
-            <p className="mt-1 text-xl font-semibold">{data.settings.sessionLimit}</p>
+            <p className="mt-1 text-xl font-semibold">{settings.sessionLimit}</p>
           </div>
           <div className="rounded-md bg-[#f8f7f4] p-3">
             <p className="text-xs font-medium text-[#66645c]">Done</p>

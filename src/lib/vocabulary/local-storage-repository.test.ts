@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { migrateVocabularyData } from "./local-storage-repository";
 
 describe("local storage vocabulary migration", () => {
-  it("migrates schema version 1 data to version 2 without dropping vocabulary", () => {
+  it("migrates schema version 1 data to version 3 without dropping vocabulary", () => {
     const migrated = migrateVocabularyData(
       {
         schemaVersion: 1,
@@ -25,29 +25,49 @@ describe("local storage vocabulary migration", () => {
             archivedAt: null,
           },
         ],
-        importBatches: [{ id: "batch-1" }],
+        importBatches: [
+          {
+            id: "batch-1",
+            sourceType: "pasted_text",
+            fileName: null,
+            createdAt: "2026-07-04T00:00:00.000Z",
+            totalRows: 1,
+            acceptedRows: 1,
+            duplicateRows: 0,
+            invalidRows: 0,
+          },
+        ],
         updatedAt: "2026-07-04T00:00:00.000Z",
       },
       "2026-07-04T01:00:00.000Z",
     );
 
-    expect(migrated.schemaVersion).toBe(2);
+    expect(migrated.schemaVersion).toBe(3);
+    expect(migrated.people).toHaveLength(1);
+    expect(migrated.selectedPersonId).toBe("person_mimi");
     expect(migrated.items).toHaveLength(1);
+    expect(migrated.items[0]?.personId).toBe("person_mimi");
     expect(migrated.importBatches).toHaveLength(1);
+    expect(migrated.importBatches[0]?.personId).toBe("person_mimi");
     expect(migrated.reviewStates).toEqual([]);
     expect(migrated.reviewEvents).toEqual([]);
-    expect(migrated.settings.sessionLimit).toBe(24);
+    expect(migrated.settingsByPerson[0]).toMatchObject({
+      personId: "person_mimi",
+      sessionLimit: 24,
+    });
   });
 
-  it("returns an empty version 2 shape for invalid data", () => {
+  it("returns an empty version 3 shape for invalid data", () => {
     const migrated = migrateVocabularyData("not-json", "2026-07-04T01:00:00.000Z");
 
     expect(migrated).toMatchObject({
-      schemaVersion: 2,
+      schemaVersion: 3,
+      selectedPersonId: "person_mimi",
       items: [],
       importBatches: [],
       reviewStates: [],
       reviewEvents: [],
     });
+    expect(migrated.people).toHaveLength(1);
   });
 });

@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## 2026-07-05 00:54 AEST
+
+- Implemented Stage 5C local person adapter on top of browser `localStorage` schema version 3.
+- Added local `people`, `selectedPersonId`, `personId` on learning records, and per-person review settings.
+- Scoped local add, import duplicate detection, library filters, review queues, review events, and review settings to the selected person.
+- Added a minimal `/settings` person switch and add-person control for the trusted private group model.
+- Updated JSON backup to export schema version 3, include people counts, and still restore schema version 2 backups through migration.
+- Updated vocabulary CSV export to include person id and display name.
+- Added tests for schema migration, per-person settings, person-scoped review queues, person-scoped review recording, JSON backup compatibility, and CSV person fields.
+- Reason: prepare the codebase for the accepted one-Neon-Postgres / many-people durable model without creating remote infrastructure or adding authentication.
+
 ## 2026-07-05 00:41 AEST
 
 - Documented Stage 5B storage provider decision and multi-person data model.

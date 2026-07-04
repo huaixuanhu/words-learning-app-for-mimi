@@ -1,5 +1,59 @@
 # AI Agent Log
 
+## 2026-07-05 00:54 AEST
+
+- Task: implement Stage 5C local person adapter after the user confirmed execution.
+- Plan agreed: yes. The accepted scope was local code preparation for `people` / `personId` separation only, with no Neon project creation, no database package installation, no `.env` work, no deployment, and no authentication implementation.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE5C_LOCAL_PERSON_ADAPTER.md`
+  - `src/app/settings/page.tsx`
+  - `src/components/review/review-session.tsx`
+  - `src/components/settings/person-settings-form.tsx`
+  - `src/components/settings/review-settings-form.tsx`
+  - `src/components/vocabulary/home-dashboard.tsx`
+  - `src/components/vocabulary/vocabulary-library.tsx`
+  - `src/components/export/export-workspace.tsx`
+  - `src/lib/backup/csv-export.test.ts`
+  - `src/lib/backup/csv-export.ts`
+  - `src/lib/backup/json-backup.test.ts`
+  - `src/lib/backup/json-backup.ts`
+  - `src/lib/backup/types.ts`
+  - `src/lib/people/repository.ts`
+  - `src/lib/review/repository.test.ts`
+  - `src/lib/review/repository.ts`
+  - `src/lib/review/scheduler.test.ts`
+  - `src/lib/review/scheduler.ts`
+  - `src/lib/review/settings.test.ts`
+  - `src/lib/review/settings.ts`
+  - `src/lib/review/types.ts`
+  - `src/lib/vocabulary/local-storage-repository.test.ts`
+  - `src/lib/vocabulary/local-storage-repository.ts`
+  - `src/lib/vocabulary/repository.ts`
+  - `src/lib/vocabulary/types.ts`
+- Reason: align local behavior with the accepted future durable model where multiple trusted people share one project but study data is separated by person.
+- Implementation notes:
+  - Upgraded local data to schema version 3.
+  - Added `people`, `selectedPersonId`, and `settingsByPerson`.
+  - Added `personId` to vocabulary items, import batches, review states, and review events.
+  - Migrated schema version 1 / 2 local data to the default person.
+  - Added person-scoped repository, scheduler, review, settings, duplicate detection, CSV export, and JSON backup behavior.
+  - Added a minimal person switch and add-person control in `/settings`.
+- Validation:
+  - Passed: `npm run test` with 9 test files and 30 tests.
+  - Passed: `npm run typecheck`
+  - Passed: `npm run lint`
+  - Passed: `npm run governance:preflight`
+  - Passed: `npm run build`
+  - Passed: `npm audit --json` with 0 vulnerabilities.
+  - Passed: local dev server smoke checks for `/settings`, `/library`, `/review`, and `/export` on `http://localhost:3000`.
+- Safety notes: local source, documentation, browser-local schema migration, and local person switching only. No Neon project creation, Vercel Marketplace installation, database package installation, `.env` editing, credential access, remote migration, remote data mutation, authentication implementation, production deployment, GitHub push, embedding generation, FSRS implementation, analytics, AI generation, email, payment, notification, or production action was performed.
+
 ## 2026-07-05 00:41 AEST
 
 - Task: document Stage 5B storage provider decision and multi-person data model after the user confirmed the stage and clarified the app will be used by a small private group.

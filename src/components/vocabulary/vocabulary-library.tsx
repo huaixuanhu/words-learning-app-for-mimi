@@ -7,6 +7,7 @@ import {
   archiveVocabularyItem,
   getActiveVocabularyItems,
   getArchivedVocabularyItems,
+  getVocabularyItemsForSelectedPerson,
   restoreVocabularyItem,
   updateVocabularyItem,
 } from "@/lib/vocabulary/repository";
@@ -68,7 +69,7 @@ export function VocabularyLibrary() {
         ? getActiveVocabularyItems(data)
         : filter === "archived"
           ? getArchivedVocabularyItems(data)
-          : data.items;
+          : getVocabularyItemsForSelectedPerson(data);
     const normalizedQuery = normalizeSurfaceText(query);
 
     if (!normalizedQuery) {
@@ -159,7 +160,9 @@ export function VocabularyLibrary() {
       <div className="rounded-md border border-[#dfddd6] bg-white">
         <div className="border-b border-[#dfddd6] px-4 py-3">
           <p className="text-sm text-[#66645c]">
-            {isLoaded ? `${visibleItems.length} shown / ${data.items.length} total` : "Loading local vocabulary..."}
+            {isLoaded
+              ? `${visibleItems.length} shown / ${getVocabularyItemsForSelectedPerson(data).length} total`
+              : "Loading local vocabulary..."}
           </p>
         </div>
 

@@ -1,5 +1,6 @@
 import { migrateVocabularyData } from "@/lib/vocabulary/local-storage-repository";
 import type { VocabularyData } from "@/lib/vocabulary/types";
+import { getSelectedReviewSettings } from "@/lib/review/settings";
 import {
   BACKUP_APP_NAME,
   BACKUP_FORMAT,
@@ -46,6 +47,7 @@ export function summarizeVocabularyData(data: VocabularyData): BackupCounts {
   ).length;
 
   return {
+    people: data.people.length,
     items: data.items.length,
     activeItems: data.items.length - archivedItems,
     archivedItems,
@@ -60,7 +62,7 @@ export function createVocabularyBackup(
   options: BackupOptions = {},
 ): VocabularyBackupFile {
   const exportedAt = options.exportedAt ?? new Date().toISOString();
-  const timezone = options.timezone ?? data.settings.timezone;
+  const timezone = options.timezone ?? getSelectedReviewSettings(data).timezone;
 
   return {
     format: BACKUP_FORMAT,
@@ -80,13 +82,36 @@ export function serializeVocabularyBackup(data: VocabularyData, options: BackupO
   return JSON.stringify(createVocabularyBackup(data, options), null, 2);
 }
 
-function validateVocabularyItem(value: unknown, index: number, errors: string[]) {
+function validatePerson(value: unknown, index: number, errors: string[]) {
+  if (!isRecord(value)) {
+    errors.push(`people[${index}] must be an object`);
+    return;
+  }
+
+  for (const key of ["id", "displayName", "slug", "createdAt", "updatedAt"]) {
+    if (!isString(value[key])) {
+      errors.push(`people[${index}].${key} must be a string`);
+    }
+  }
+
+  if (typeof value.isActive !== "boolean") {
+    errors.push(`people[${index}].isActive must be a boolean`);
+  }
+}
+
+function validateVocabularyItem(
+  value: unknown,
+  index: number,
+  errors: string[],
+  requiresPersonId: boolean,
+) {
   if (!isRecord(value)) {
     errors.push(`items[${index}] must be an object`);
     return;
   }
 
   const requiredStrings = [
+    ...(requiresPersonId ? ["personId"] : []),
     "id",
     "surfaceText",
     "normalizedText",
@@ -126,13 +151,18 @@ function validateVocabularyItem(value: unknown, index: number, errors: string[])
   }
 }
 
-function validateImportBatch(value: unknown, index: number, errors: string[]) {
+function validateImportBatch(
+  value: unknown,
+  index: number,
+  errors: string[],
+  requiresPersonId: boolean,
+) {
   if (!isRecord(value)) {
     errors.push(`importBatches[${index}] must be an object`);
     return;
   }
 
-  for (const key of ["id", "createdAt"]) {
+  for (const key of [...(requiresPersonId ? ["personId"] : []), "id", "createdAt"]) {
     if (!isString(value[key])) {
       errors.push(`importBatches[${index}].${key} must be a string`);
     }
@@ -153,13 +183,18 @@ function validateImportBatch(value: unknown, index: number, errors: string[]) {
   }
 }
 
-function validateReviewState(value: unknown, index: number, errors: string[]) {
+function validateReviewState(
+  value: unknown,
+  index: number,
+  errors: string[],
+  requiresPersonId: boolean,
+) {
   if (!isRecord(value)) {
     errors.push(`reviewStates[${index}] must be an object`);
     return;
   }
 
-  for (const key of ["id", "vocabularyItemId", "dueAt", "updatedAt"]) {
+  for (const key of [...(requiresPersonId ? ["personId"] : []), "id", "vocabularyItemId", "dueAt", "updatedAt"]) {
     if (!isString(value[key])) {
       errors.push(`reviewStates[${index}].${key} must be a string`);
     }
@@ -186,13 +221,18 @@ function validateReviewState(value: unknown, index: number, errors: string[]) {
   }
 }
 
-function validateReviewEvent(value: unknown, index: number, errors: string[]) {
+function validateReviewEvent(
+  value: unknown,
+  index: number,
+  errors: string[],
+  requiresPersonId: boolean,
+) {
   if (!isRecord(value)) {
     errors.push(`reviewEvents[${index}] must be an object`);
     return;
   }
 
-  for (const key of ["id", "vocabularyItemId", "reviewedAt", "nextDueAt"]) {
+  for (const key of [...(requiresPersonId ? ["personId"] : []), "id", "vocabularyItemId", "reviewedAt", "nextDueAt"]) {
     if (!isString(value[key])) {
       errors.push(`reviewEvents[${index}].${key} must be a string`);
     }
@@ -228,6 +268,10 @@ function validateCounts(value: unknown, errors: string[]) {
       errors.push(`metadata.counts.${key} must be a number`);
     }
   }
+
+  if (value.people !== undefined && !isNumber(value.people)) {
+    errors.push("metadata.counts.people must be a number");
+  }
 }
 
 function validateSettings(value: unknown, errors: string[]) {
@@ -249,57 +293,134 @@ function validateSettings(value: unknown, errors: string[]) {
   }
 }
 
+function validateSettingsByPerson(value: unknown, errors: string[]) {
+  if (!Array.isArray(value)) {
+    errors.push("data.settingsByPerson must be an array");
+    return;
+  }
+
+  value.forEach((settings, index) => {
+    if (!isRecord(settings)) {
+      errors.push(`settingsByPerson[${index}] must be an object`);
+      return;
+    }
+
+    if (!isString(settings.personId)) {
+      errors.push(`settingsByPerson[${index}].personId must be a string`);
+    }
+
+    if (!isNumber(settings.sessionLimit)) {
+      errors.push(`settingsByPerson[${index}].sessionLimit must be a number`);
+    }
+
+    if (!isString(settings.timezone)) {
+      errors.push(`settingsByPerson[${index}].timezone must be a string`);
+    }
+
+    if (!isString(settings.updatedAt)) {
+      errors.push(`settingsByPerson[${index}].updatedAt must be a string`);
+    }
+  });
+}
+
 function validateBackupData(value: unknown, errors: string[]) {
   if (!isRecord(value)) {
     errors.push("data must be an object");
     return;
   }
 
-  if (value.schemaVersion !== 2) {
-    errors.push("data.schemaVersion must be 2");
+  if (value.schemaVersion !== 2 && value.schemaVersion !== 3) {
+    errors.push("data.schemaVersion must be 2 or 3");
+  }
+  const requiresPersonId = value.schemaVersion === 3;
+
+  if (requiresPersonId) {
+    if (!Array.isArray(value.people)) {
+      errors.push("data.people must be an array");
+    } else {
+      value.people.forEach((person, index) => validatePerson(person, index, errors));
+    }
+
+    if (!isString(value.selectedPersonId)) {
+      errors.push("data.selectedPersonId must be a string");
+    }
   }
 
   if (!Array.isArray(value.items)) {
     errors.push("data.items must be an array");
   } else {
-    value.items.forEach((item, index) => validateVocabularyItem(item, index, errors));
+    value.items.forEach((item, index) =>
+      validateVocabularyItem(item, index, errors, requiresPersonId),
+    );
   }
 
   if (!Array.isArray(value.importBatches)) {
     errors.push("data.importBatches must be an array");
   } else {
-    value.importBatches.forEach((batch, index) => validateImportBatch(batch, index, errors));
+    value.importBatches.forEach((batch, index) =>
+      validateImportBatch(batch, index, errors, requiresPersonId),
+    );
   }
 
   if (!Array.isArray(value.reviewStates)) {
     errors.push("data.reviewStates must be an array");
   } else {
-    value.reviewStates.forEach((state, index) => validateReviewState(state, index, errors));
+    value.reviewStates.forEach((state, index) =>
+      validateReviewState(state, index, errors, requiresPersonId),
+    );
   }
 
   if (!Array.isArray(value.reviewEvents)) {
     errors.push("data.reviewEvents must be an array");
   } else {
-    value.reviewEvents.forEach((event, index) => validateReviewEvent(event, index, errors));
+    value.reviewEvents.forEach((event, index) =>
+      validateReviewEvent(event, index, errors, requiresPersonId),
+    );
   }
 
-  validateSettings(value.settings, errors);
+  if (requiresPersonId) {
+    validateSettingsByPerson(value.settingsByPerson, errors);
+  } else {
+    validateSettings(value.settings, errors);
+  }
 
   if (!isString(value.updatedAt)) {
     errors.push("data.updatedAt must be a string");
   }
 
   if (Array.isArray(value.items)) {
-    const itemIds = new Set(
+    const personIds = new Set(
+      requiresPersonId && Array.isArray(value.people)
+        ? value.people.filter(isRecord).map((person) => person.id).filter(isString)
+        : [],
+    );
+    const itemKeys = new Set(
       value.items
         .filter(isRecord)
-        .map((item) => item.id)
+        .map((item) =>
+          requiresPersonId && isString(item.personId) && isString(item.id)
+            ? `${item.personId}:${item.id}`
+            : item.id,
+        )
         .filter(isString),
     );
 
+    if (requiresPersonId) {
+      value.items.filter(isRecord).forEach((item, index) => {
+        if (isString(item.personId) && !personIds.has(item.personId)) {
+          errors.push(`items[${index}].personId does not match a person`);
+        }
+      });
+    }
+
     if (Array.isArray(value.reviewStates)) {
       value.reviewStates.filter(isRecord).forEach((state, index) => {
-        if (isString(state.vocabularyItemId) && !itemIds.has(state.vocabularyItemId)) {
+        const itemKey =
+          requiresPersonId && isString(state.personId) && isString(state.vocabularyItemId)
+            ? `${state.personId}:${state.vocabularyItemId}`
+            : state.vocabularyItemId;
+
+        if (isString(itemKey) && !itemKeys.has(itemKey)) {
           errors.push(`reviewStates[${index}].vocabularyItemId does not match an item`);
         }
       });
@@ -307,7 +428,12 @@ function validateBackupData(value: unknown, errors: string[]) {
 
     if (Array.isArray(value.reviewEvents)) {
       value.reviewEvents.filter(isRecord).forEach((event, index) => {
-        if (isString(event.vocabularyItemId) && !itemIds.has(event.vocabularyItemId)) {
+        const itemKey =
+          requiresPersonId && isString(event.personId) && isString(event.vocabularyItemId)
+            ? `${event.personId}:${event.vocabularyItemId}`
+            : event.vocabularyItemId;
+
+        if (isString(itemKey) && !itemKeys.has(itemKey)) {
           errors.push(`reviewEvents[${index}].vocabularyItemId does not match an item`);
         }
       });
@@ -348,8 +474,8 @@ export function parseVocabularyBackupValue(value: unknown, now = new Date().toIS
       errors.push("metadata.timezone must be a string");
     }
 
-    if (value.metadata.schemaVersion !== 2) {
-      errors.push("metadata.schemaVersion must be 2");
+    if (value.metadata.schemaVersion !== 2 && value.metadata.schemaVersion !== 3) {
+      errors.push("metadata.schemaVersion must be 2 or 3");
     }
 
     validateCounts(value.metadata.counts, errors);
@@ -375,8 +501,8 @@ export function parseVocabularyBackupValue(value: unknown, now = new Date().toIS
         : now,
       timezone: isRecord(value.metadata) && isString(value.metadata.timezone)
         ? value.metadata.timezone
-        : data.settings.timezone,
-      schemaVersion: 2,
+        : getSelectedReviewSettings(data).timezone,
+      schemaVersion: data.schemaVersion,
       counts: summarizeVocabularyData(data),
     },
     data,

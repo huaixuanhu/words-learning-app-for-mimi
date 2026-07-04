@@ -1,6 +1,7 @@
 import type { ReviewSettings } from "./types";
 import type { VocabularyData } from "@/lib/vocabulary/types";
 import { normalizeOptionalText } from "@/lib/vocabulary/normalize";
+import { getSelectedPersonId } from "@/lib/people/repository";
 
 export const DEFAULT_SESSION_LIMIT = 24;
 export const MIN_SESSION_LIMIT = 1;
@@ -51,19 +52,37 @@ export function normalizeReviewSettings(
   };
 }
 
+export function getReviewSettingsForPerson(data: VocabularyData, personId: string) {
+  return normalizeReviewSettings(
+    data.settingsByPerson.find((settings) => settings.personId === personId),
+  );
+}
+
+export function getSelectedReviewSettings(data: VocabularyData) {
+  return getReviewSettingsForPerson(data, getSelectedPersonId(data));
+}
+
 export function updateReviewSettings(
   data: VocabularyData,
   input: ReviewSettingsInput,
   now = new Date().toISOString(),
 ) {
+  const personId = getSelectedPersonId(data);
+  const currentSettings = getReviewSettingsForPerson(data, personId);
+  const nextSettings = {
+    personId,
+    ...currentSettings,
+    sessionLimit: normalizeSessionLimit(input.sessionLimit),
+    timezone: normalizeOptionalText(input.timezone) || currentSettings.timezone || DEFAULT_TIMEZONE,
+    updatedAt: now,
+  };
+  const hasSettings = data.settingsByPerson.some((settings) => settings.personId === personId);
+
   return {
     ...data,
-    settings: {
-      ...normalizeReviewSettings(data.settings, now),
-      sessionLimit: normalizeSessionLimit(input.sessionLimit),
-      timezone: normalizeOptionalText(input.timezone) || data.settings.timezone || DEFAULT_TIMEZONE,
-      updatedAt: now,
-    },
+    settingsByPerson: hasSettings
+      ? data.settingsByPerson.map((settings) => (settings.personId === personId ? nextSettings : settings))
+      : [nextSettings, ...data.settingsByPerson],
     updatedAt: now,
   };
 }

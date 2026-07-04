@@ -1,6 +1,8 @@
 import type { VocabularyData, VocabularyItem } from "@/lib/vocabulary/types";
 
 export const VOCABULARY_CSV_COLUMNS = [
+  "personId",
+  "personDisplayName",
   "id",
   "surfaceText",
   "normalizedText",
@@ -30,7 +32,11 @@ export function escapeCsvValue(value: string | number | null) {
   return text;
 }
 
-function getVocabularyCsvValue(item: VocabularyItem, column: VocabularyCsvColumn) {
+function getVocabularyCsvValue(data: VocabularyData, item: VocabularyItem, column: VocabularyCsvColumn) {
+  if (column === "personDisplayName") {
+    return data.people.find((person) => person.id === item.personId)?.displayName ?? "";
+  }
+
   return item[column];
 }
 
@@ -38,7 +44,7 @@ export function exportVocabularyCsv(data: VocabularyData) {
   const rows = [
     VOCABULARY_CSV_COLUMNS.map(escapeCsvValue).join(","),
     ...data.items.map((item) =>
-      VOCABULARY_CSV_COLUMNS.map((column) => escapeCsvValue(getVocabularyCsvValue(item, column))).join(","),
+      VOCABULARY_CSV_COLUMNS.map((column) => escapeCsvValue(getVocabularyCsvValue(data, item, column))).join(","),
     ),
   ];
 

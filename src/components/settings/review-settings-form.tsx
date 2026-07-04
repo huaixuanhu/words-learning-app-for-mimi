@@ -4,7 +4,12 @@ import { Save } from "lucide-react";
 import type { FormEvent } from "react";
 import { useState } from "react";
 import { useVocabularyData } from "@/components/vocabulary/use-vocabulary-data";
-import { DEFAULT_SESSION_LIMIT, updateReviewSettings } from "@/lib/review/settings";
+import { getSelectedPersonId } from "@/lib/people/repository";
+import {
+  DEFAULT_SESSION_LIMIT,
+  getSelectedReviewSettings,
+  updateReviewSettings,
+} from "@/lib/review/settings";
 
 function detectTimezone(fallback: string) {
   try {
@@ -17,7 +22,8 @@ function detectTimezone(fallback: string) {
 export function ReviewSettingsForm() {
   const { data, isLoaded, commit } = useVocabularyData();
   const [message, setMessage] = useState("");
-  const settings = data.settings;
+  const selectedPersonId = getSelectedPersonId(data);
+  const settings = getSelectedReviewSettings(data);
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -29,12 +35,12 @@ export function ReviewSettingsForm() {
     });
 
     commit(nextData);
-    setMessage(`已保存，每次最多复习 ${nextData.settings.sessionLimit} 张卡片`);
+    setMessage(`已保存，每次最多复习 ${getSelectedReviewSettings(nextData).sessionLimit} 张卡片`);
   };
 
   return (
     <form
-      key={`${settings.updatedAt}-${isLoaded ? "loaded" : "loading"}`}
+      key={`${selectedPersonId}-${settings.updatedAt}-${isLoaded ? "loaded" : "loading"}`}
       className="grid gap-4 md:max-w-md"
       onSubmit={handleSubmit}
     >

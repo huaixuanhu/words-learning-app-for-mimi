@@ -4,6 +4,7 @@ export type ReviewStateStatus = "learning" | "review";
 
 export type ReviewState = {
   id: string;
+  personId: string;
   vocabularyItemId: string;
   status: ReviewStateStatus;
   dueAt: string;
@@ -18,6 +19,7 @@ export type ReviewState = {
 
 export type ReviewEvent = {
   id: string;
+  personId: string;
   vocabularyItemId: string;
   reviewedAt: string;
   rating: ReviewRating;
@@ -32,4 +34,8 @@ export type ReviewSettings = {
   sessionLimit: number;
   timezone: string;
   updatedAt: string;
+};
+
+export type PersonReviewSettings = ReviewSettings & {
+  personId: string;
 };
