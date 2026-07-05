@@ -11,6 +11,9 @@
     "test": "vitest run",
     "db:migrate:dev": "STAGE5F_DATABASE_TARGET=development dotenv -e .env.local -- node scripts/run-sql-migration.mjs db/migrations/0001_initial.sql",
     "db:inspect:dev": "STAGE5F_DATABASE_TARGET=development dotenv -e .env.local -- node scripts/inspect-database-schema.mjs",
+    "backup:dry-run:fixture": "node scripts/backup-import-postgres.mjs --fixture --dry-run",
+    "db:cleanup-smoke:dev": "STAGE5F_DATABASE_TARGET=development dotenv -e .env.local -- node scripts/backup-import-postgres.mjs --cleanup-smoke",
+    "db:import-fixture-trial:dev": "STAGE5F_DATABASE_TARGET=development dotenv -e .env.local -- node scripts/backup-import-postgres.mjs --fixture --trial-rollback",
     "governance:preflight": "python3 governance/preflight.py --tier 1 --require-skill-marker"
   },
   "dependencies": {

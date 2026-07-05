@@ -1,7 +1,7 @@
 # Local Backup To Postgres Migration Mapping
 
 Created: 2026-07-05 01:08 AEST
-Last updated: 2026-07-05 01:08 AEST
+Last updated: 2026-07-05 15:45 AEST
 
 Source plan:
 
@@ -19,12 +19,24 @@ Scope:
 - Map schema version 3 JSON backup（JSON 备份）data into the future Neon Postgres（关系型数据库）schema.
 - Preserve person separation through `person_id`.
 - Define validation and rollback expectations before a remote migration（迁移）is executed.
+- Document the Stage 5L dry-run and rollback-trial harness.
 
 Non-Scope:
 
-- No database execution in Stage 5D.
-- No `.env`, credential, or remote database access.
+- No formal user backup import.
+- No Production（生产）database execution.
+- No `.env`, credential, or remote database value exposure.
 - No deletion of browser `localStorage`（本地浏览器存储）after migration.
+
+## Stage 5L Harness Status
+
+Stage 5L added a guarded import harness without opening formal user-data import:
+
+- `scripts/backup-import-plan.mjs` validates schema version 3 backup shape, metadata counts, person-scoped references, and target UUID mapping.
+- `scripts/backup-import-postgres.mjs` can run fixture dry run, development smoke cleanup, and a fixture transaction rollback trial.
+- `npm run backup:dry-run:fixture` runs without database access.
+- `npm run db:import-fixture-trial:dev` writes a fixture-shaped dataset inside a development database transaction and rolls it back.
+- Formal import of a real user backup remains pending a separate plan and confirmation.
 
 ## Migration Principle
 

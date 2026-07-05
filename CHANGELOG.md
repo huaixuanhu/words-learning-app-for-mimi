@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## 2026-07-05 15:45 AEST
+
+- Executed Stage 5L backup import harness and smoke cleanup.
+- Added a schema version 3 backup import dry-run planner and fixture backup.
+- Added guarded commands for fixture dry run, development smoke cleanup, and development fixture transaction trial.
+- Added tests for fixture target UUID mapping, metadata count mismatch rejection, and cross-person review reference rejection.
+- Cleaned the Stage 5K smoke row set from the development database.
+- Verified development database counts returned to zero after cleanup.
+- Verified the fixture transaction trial inserted one person, one import batch, one vocabulary item, one review state, one review event, one review settings row, one backup import row, and six backup import mappings, then rolled back to zero.
+- Reason: prepare formal backup import safely while removing the temporary smoke data left by Stage 5K.
+
 ## 2026-07-05 15:21 AEST
 
 - Executed Stage 5K controlled write smoke for the development / preview Postgres adapter.

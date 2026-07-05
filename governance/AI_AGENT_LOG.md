@@ -1,5 +1,50 @@
 # AI Agent Log
 
+## 2026-07-05 15:45 AEST
+
+- Task: execute the complete Stage 5L backup import harness and smoke cleanup after the user explicitly requested Stage 5L-A and Stage 5L-B together, including cleanup of used smoke test rows.
+- Plan agreed: yes. The accepted scope was backup import dry run, fixture tests, development DB fixture rollback trial, and cleanup of the fixed Stage 5K smoke rows. Production work, formal user backup import, and UI runtime cutover remained out of scope.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `db/LOCAL_BACKUP_TO_POSTGRES.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `package.json`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE5L_BACKUP_IMPORT_HARNESS_AND_SMOKE_CLEANUP.md`
+  - `scripts/backup-import-plan.mjs`
+  - `scripts/backup-import-plan.test.mjs`
+  - `scripts/backup-import-postgres.mjs`
+- Reason: prepare formal backup import safely by proving validation, target UUID mapping, and transaction rollback behavior before importing real user data, while removing the temporary Stage 5K smoke data from the development database.
+- Implementation notes:
+  - Added Stage 5L plan with source plan, derived-from markers, scope, non-scope, safety notes, execution plan, and exit criteria.
+  - Added a schema version 3 fixture backup representing one person, one import batch, one vocabulary item, one review state, one review event, and one review settings row.
+  - Added backup import planning that validates metadata counts, person-scoped references, supported values, required settings, and target UUID mapping.
+  - Added a guarded development / preview script for fixture dry run, fixed smoke cleanup, and fixture transaction trial with rollback.
+  - Added npm scripts `backup:dry-run:fixture`, `db:cleanup-smoke:dev`, and `db:import-fixture-trial:dev`.
+  - Added tests for fixture target UUID mapping, metadata count mismatch rejection, and cross-person review reference rejection.
+  - Verified pre-cleanup development database counts were the Stage 5K smoke row set: one person, one vocabulary item, one review state, one review event, and one review settings row.
+  - Cleaned the fixed smoke row set under person id `00000000-0000-4000-8000-0000000005f1` and slug `storage-smoke`.
+  - Verified post-cleanup development database counts were zero across core study tables and backup import tables.
+  - Ran fixture transaction trial in the development database; it inserted one complete fixture dataset plus one backup import row and six backup import mappings inside a transaction.
+  - Verified the fixture transaction rolled back and left no fixture rows in the development database.
+- Validation:
+  - Passed: `npm run backup:dry-run:fixture`, reporting fixture plan counts `people=1`, `importBatches=1`, `vocabularyItems=1`, `reviewStates=1`, `reviewEvents=1`, `reviewSettings=1`, `backupImports=1`, and `backupImportMappings=6`.
+  - Passed: `npm run db:cleanup-smoke:dev`, removing the Stage 5K smoke row set and reporting all post-cleanup row counts as zero.
+  - Passed: `npm run db:import-fixture-trial:dev`, inserting fixture counts inside a transaction and rolling back to zero.
+  - Passed: `npm run test` with 13 test files and 46 tests.
+  - Passed: `npm run typecheck`.
+  - Passed: `npm run lint`.
+  - Passed: `npm run build`.
+  - Passed: `npm audit --json` with 0 vulnerabilities.
+  - Passed: `npm run db:inspect:dev`, reporting 8 tables, 11 indexes, 5 key constraints, and zero rows in core study tables.
+  - Passed: `git diff --check`.
+  - Passed: `npm run governance:preflight`.
+  - Passed: `python3 governance/preflight.py --tier 3 --require-skill-marker`.
+- Safety notes: development smoke test rows were cleaned with explicit user authorization. Fixture import trial used a transaction rollback and left no fixture rows. No Production env var, Production deployment, Production promotion, Production alias change, Production migration, formal user backup import, UI runtime cutover, authentication implementation, analytics, AI generation, embedding generation, FSRS implementation, email, notification, or 付费/扣款 feature was performed. Existing non-official Production deployment remains untouched.
+
 ## 2026-07-05 15:21 AEST
 
 - Task: execute Stage 5K controlled write smoke after the user confirmed the Stage 5K plan.

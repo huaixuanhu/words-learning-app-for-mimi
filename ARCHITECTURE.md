@@ -1,11 +1,11 @@
 # Words Learning App For Mimi Architecture
 
 Created: 2026-07-02 23:30 AEST
-Last updated: 2026-07-05 15:21 AEST
+Last updated: 2026-07-05 15:45 AEST
 
 ## Current State
 
-This repository is in Stage 5K controlled write smoke. It contains collaboration rules, architecture notes, master and stage plans, changelog, AI agent log, a lightweight Tier 1 governance preflight, and a minimal Next.js App Router application with browser-local vocabulary, review mutations, export, restore preview, selected-person switching, local SQL storage, repository adapter contract, approved development / preview Vercel and Neon setup, and a server-only development / preview Postgres runtime adapter.
+This repository is in Stage 5L backup import harness and smoke cleanup. It contains collaboration rules, architecture notes, master and stage plans, changelog, AI agent log, a lightweight Tier 1 governance preflight, and a minimal Next.js App Router application with browser-local vocabulary, review mutations, export, restore preview, selected-person switching, local SQL storage, repository adapter contract, approved development / preview Vercel and Neon setup, a server-only development / preview Postgres runtime adapter, and a guarded backup import dry-run / development trial harness.
 
 Current local stack:
 
@@ -36,6 +36,8 @@ Stage 5I implements the runtime Postgres adapter（运行时 Postgres 适配层�
 Stage 5J verifies the runtime Postgres adapter read-only path. Local default `/api/storage/health` returns disabled without Postgres, local `postgres-preview` health reads the development Neon database with zero core rows, and Preview deployment `dpl_CFeC2VwRKtMSAjBiGGtyStsFw2tr` at `https://words-learning-app-for-mimi-dbkkkow3d-anorias-projects.vercel.app` returns read-only health successfully. `MIMI_STORAGE_RUNTIME=postgres-preview` is scoped to Preview only. `MIMI_ENABLE_STORAGE_SMOKE_WRITES` was not added.
 
 Stage 5K verifies the runtime Postgres adapter write path with one controlled smoke write. `MIMI_ENABLE_STORAGE_SMOKE_WRITES=true` was added to Preview only, Preview deployment `dpl_BbgqrsKCtFzbLfKjAaazfugPvfCv` executed one `/api/storage/smoke` write, and the development database now contains one smoke person, one vocabulary item, one review state, one review event, and one review settings row. The write flag was removed from Preview after the test, follow-up Preview deployment `dpl_BJn1pFAbLiiY4LgCyThKx2vDTSar` at `https://words-learning-app-for-mimi-7bzktk5uc-anorias-projects.vercel.app` verifies `/api/storage/smoke` is disabled again, and the smoke-enabled deployment was removed. Smoke rows remain in the development database under person id `00000000-0000-4000-8000-0000000005f1`.
+
+Stage 5L adds a backup import dry-run harness and cleans the Stage 5K smoke rows from the development database. `scripts/backup-import-plan.mjs` validates schema version 3 JSON backup structure, metadata counts, person-scoped references, and target UUID mapping. `scripts/backup-import-postgres.mjs` can run a fixture dry run, remove the fixed smoke row set, and run a fixture transaction trial that rolls back. The development database fixture trial inserted one person, import batch, vocabulary item, review state, review event, review settings row, backup import row, and six backup import mappings inside a transaction, then rolled back and verified no fixture rows persisted. The development database now has zero rows in core study tables after smoke cleanup.
 
 The GitHub repository URL was provided by the user:
 
@@ -251,6 +253,20 @@ Stage 5K controlled write smoke:
 - `/api/storage/smoke` on the disabled Preview returns reason `smoke-writes-not-enabled`.
 - Smoke-enabled Preview deployment `dpl_BbgqrsKCtFzbLfKjAaazfugPvfCv` was removed.
 - Production env vars, Production deployment, backup import, UI runtime cutover, and smoke row cleanup were not performed.
+
+Stage 5L backup import harness and smoke cleanup:
+
+- `scripts/backup-import-plan.mjs` builds a schema version 3 JSON backup import plan without database access.
+- `scripts/backup-import-postgres.mjs` provides guarded fixture dry run, smoke cleanup, and transaction rollback trial commands.
+- `scripts/backup-import-plan.test.mjs` covers fixture mapping, metadata count rejection, and cross-person review reference rejection.
+- New commands:
+  - `npm run backup:dry-run:fixture`
+  - `npm run db:cleanup-smoke:dev`
+  - `npm run db:import-fixture-trial:dev`
+- Stage 5K smoke rows under person id `00000000-0000-4000-8000-0000000005f1` were cleaned from the development database.
+- Fixture transaction trial inserted and rolled back `people=1`, `import_batches=1`, `vocabulary_items=1`, `review_states=1`, `review_events=1`, `review_settings=1`, `backup_imports=1`, and `backup_import_mappings=6`.
+- Final development database inspection reports zero rows in core study tables.
+- Production env vars, Production deployment, formal user backup import, and UI runtime cutover were not performed.
 
 ### People And Person Switching
 

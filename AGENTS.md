@@ -16,7 +16,7 @@
 
 - Project root: `/Users/anoria/Documents/python_coding/small_project/learningWordsformimi`
 - User-provided GitHub repository: `https://github.com/huaixuanhu/words-learning-app-for-mimi.git`
-- Current stage: Stage 5K controlled write smoke. Browser-local storage schema version 3 still drives the user-facing app runtime. The Vercel project is linked, a Neon Postgres development / preview resource exists, and `db/migrations/0001_initial.sql` has been applied to the non-production development database. Vercel currently has an active Production deployment (`dpl_2nvALJ1CutPjeFteXKMCHWKa4UsD`) from branch `V1`; it is documented as a non-official artifact and should not be treated as the formal V1 production release. Stage 5J added `MIMI_STORAGE_RUNTIME=postgres-preview` to Preview only and verified Preview read-only `/api/storage/health` successfully. Stage 5K temporarily added `MIMI_ENABLE_STORAGE_SMOKE_WRITES=true` to Preview only, executed one controlled `/api/storage/smoke` write, removed the write flag, deployed a follow-up disabled Preview, and removed the smoke-enabled Preview deployment. The development database now contains one documented smoke row set under person id `00000000-0000-4000-8000-0000000005f1`. No production database migration, production import, production runtime cutover, backup import, smoke cleanup, or user-facing storage cutover has been implemented yet.
+- Current stage: Stage 5L backup import harness and smoke cleanup. Browser-local storage schema version 3 still drives the user-facing app runtime. The Vercel project is linked, a Neon Postgres development / preview resource exists, and `db/migrations/0001_initial.sql` has been applied to the non-production development database. Vercel currently has an active Production deployment (`dpl_2nvALJ1CutPjeFteXKMCHWKa4UsD`) from branch `V1`; it is documented as a non-official artifact and should not be treated as the formal V1 production release. Stage 5J added `MIMI_STORAGE_RUNTIME=postgres-preview` to Preview only and verified Preview read-only `/api/storage/health` successfully. Stage 5K temporarily added `MIMI_ENABLE_STORAGE_SMOKE_WRITES=true` to Preview only, executed one controlled `/api/storage/smoke` write, removed the write flag, deployed a follow-up disabled Preview, and removed the smoke-enabled Preview deployment. Stage 5L added a backup import dry-run harness, verified a fixture transaction trial with rollback in the development database, and cleaned the Stage 5K smoke rows. The development database currently has zero rows in core study tables. No production database migration, production import, production runtime cutover, formal user backup import, or user-facing storage cutover has been implemented yet.
 - Intended product: a mobile-first vocabulary flashcard web app for PTE study.
 - Intended hosting: GitHub plus Vercel, with deployment only after explicit approval.
 - Current application stack: Next.js App Router, TypeScript, Tailwind CSS, ESLint, Vitest, npm, `@neondatabase/serverless` for approved database scripts, `dotenv-cli` for explicit local env loading, and browser `localStorage` for current app study data.
@@ -98,6 +98,7 @@ npm run lint
 npm run typecheck
 npm run test
 npm run db:inspect:dev
+npm run backup:dry-run:fixture
 npm run build
 npm run dev
 ```
