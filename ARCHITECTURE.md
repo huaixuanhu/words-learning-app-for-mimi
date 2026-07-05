@@ -1,11 +1,11 @@
 # Words Learning App For Mimi Architecture
 
 Created: 2026-07-02 23:30 AEST
-Last updated: 2026-07-05 22:52 AEST
+Last updated: 2026-07-05 23:25 AEST
 
 ## Current State
 
-This repository is in Stage 5M user backup import and UI runtime cutover. It contains collaboration rules, architecture notes, master and stage plans, changelog, AI agent log, a lightweight Tier 1 governance preflight, and a minimal Next.js App Router application with browser-local vocabulary, review mutations, export, restore preview, selected-person switching, local SQL storage, repository adapter contract, approved development / preview Vercel and Neon setup, a server-only development / preview Postgres runtime adapter, guarded backup import dry-run / rollback / commit tooling, and a development / preview-only Postgres UI runtime cutover path.
+This repository is in Stage 5N Preview UI runtime verification. It contains collaboration rules, architecture notes, master and stage plans, changelog, AI agent log, a lightweight Tier 1 governance preflight, and a minimal Next.js App Router application with browser-local vocabulary, review mutations, export, restore preview, selected-person switching, local SQL storage, repository adapter contract, approved development / preview Vercel and Neon setup, a server-only development / preview Postgres runtime adapter, guarded backup import dry-run / rollback / commit tooling, a development / preview-only Postgres UI runtime cutover path, and a verified read-only Preview deployment of that UI runtime.
 
 Current local stack:
 
@@ -40,6 +40,8 @@ Stage 5K verifies the runtime Postgres adapter write path with one controlled sm
 Stage 5L adds a backup import dry-run harness and cleans the Stage 5K smoke rows from the development database. `scripts/backup-import-plan.mjs` validates schema version 3 JSON backup structure, metadata counts, person-scoped references, and target UUID mapping. `scripts/backup-import-postgres.mjs` can run a fixture dry run, remove the fixed smoke row set, and run a fixture transaction trial that rolls back. The development database fixture trial inserted one person, import batch, vocabulary item, review state, review event, review settings row, backup import row, and six backup import mappings inside a transaction, then rolled back and verified no fixture rows persisted. The development database now has zero rows in core study tables after smoke cleanup.
 
 Stage 5M extends backup import and cuts over the UI runtime for development / preview only. `scripts/backup-import-postgres.mjs` now supports file-backed `--file <backup.json>` dry runs, rollback trials, and guarded development commits with `--i-confirm-development-import`. `test_fixtures/stage5m-backup.json` covers the file-backed path without real user data. `/api/storage/data` reads Postgres snapshots when `MIMI_STORAGE_RUNTIME=postgres-preview` and accepts controlled UI mutations only when `MIMI_ENABLE_STORAGE_UI_WRITES=true` plus `x-mimi-ui-storage-write: allow-dev-preview-ui-write` are present. Browser `localStorage` remains the default runtime and restore target. Production remains disabled. Stage 5M committed a fixture backup to the development database, verified the UI read/write path locally, and cleaned all fixture rows; the development database is empty again.
+
+Stage 5N-A verifies the Stage 5M UI runtime in Vercel Preview without enabling writes. Preview deployment `dpl_HpcPDb5B2su2BLPWJVsYZjPDnWSg` at `https://words-learning-app-for-mimi-kb5b08c5v-anorias-projects.vercel.app` was inspected as `target=preview` and `READY`. `/api/storage/health` returned runtime `postgres-preview` with zero counts, `/api/storage/data` returned an empty schema version 3 snapshot, and a POST to `/api/storage/data` was blocked with reason `ui-writes-not-enabled`. App routes returned HTTP 200 and error-log query returned no error records. No Vercel env var was changed and no database row was written.
 
 The GitHub repository URL was provided by the user:
 
@@ -289,6 +291,17 @@ Stage 5M UI runtime cutover:
 - Vercel Production rejects the Postgres UI runtime.
 - If the Postgres database is empty, the first write can create the default `Mimi` person; if people already exist, mutations require a valid selected database UUID.
 - `/export` can still download the current runtime snapshot. JSON restore remains browser-local only; in `postgres-preview`, formal backup import should use the Stage 5M script path.
+
+Stage 5N-A Preview read-only verification:
+
+- Deployment: `dpl_HpcPDb5B2su2BLPWJVsYZjPDnWSg`.
+- Preview URL: `https://words-learning-app-for-mimi-kb5b08c5v-anorias-projects.vercel.app`.
+- Vercel inspect reported `target=preview`.
+- Preview env still contains `MIMI_STORAGE_RUNTIME` and Neon variables, and still lacks `MIMI_ENABLE_STORAGE_UI_WRITES`.
+- Production env remains empty.
+- Preview storage health returned zero counts.
+- Preview UI write attempt was blocked before request-body parsing because UI writes are disabled.
+- Final development database inspection still reports zero rows in core study tables.
 
 ### People And Person Switching
 

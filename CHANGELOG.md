@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## 2026-07-05 23:25 AEST
+
+- Executed Stage 5N-A Preview UI runtime read-only verification.
+- Created Preview deployment `dpl_HpcPDb5B2su2BLPWJVsYZjPDnWSg` at `https://words-learning-app-for-mimi-kb5b08c5v-anorias-projects.vercel.app`.
+- Verified Vercel inspect reports `target=preview` and `readyState=READY`.
+- Verified Preview `/api/storage/health` reads Postgres runtime with zero counts.
+- Verified Preview `/api/storage/data` returns an empty schema version 3 snapshot.
+- Verified Preview UI writes remain disabled with reason `ui-writes-not-enabled`.
+- Verified app routes return HTTP 200 and error-log query returns no error records.
+- Verified no Vercel env var changed and the development database remains empty.
+- Reason: prove the Stage 5M UI runtime read path in real Preview before considering controlled Preview UI writes.
+
 ## 2026-07-05 22:52 AEST
 
 - Executed Stage 5M user backup import and UI runtime cutover.

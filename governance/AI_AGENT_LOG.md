@@ -1,5 +1,47 @@
 # AI Agent Log
 
+## 2026-07-05 23:25 AEST
+
+- Task: execute the confirmed next step after Stage 5M: Stage 5N-A Preview UI runtime read-only verification.
+- Plan agreed: yes. The user confirmed the proposed Stage 5N direction. This execution was limited to Preview deployment and read-only verification. Controlled Preview UI writes remain pending a separate confirmation.
+- Changed files:
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE5N_PREVIEW_UI_RUNTIME_VERIFICATION.md`
+- Reason: prove the Stage 5M Postgres UI runtime read path in real Vercel Preview before enabling any Preview UI write smoke.
+- Implementation notes:
+  - Confirmed working tree was clean and latest commit was `eb616f7` on `V1`, synchronized with `origin/V1`.
+  - Read Vercel CLI, deployment, and env-var skill guidance before remote checks.
+  - Verified Vercel CLI version `54.20.1`.
+  - Verified Preview env includes `MIMI_STORAGE_RUNTIME` and Neon variables, and does not include `MIMI_ENABLE_STORAGE_UI_WRITES`.
+  - Verified Production env remains empty.
+  - Verified development database counts were zero before deployment.
+  - Created Preview deployment `dpl_HpcPDb5B2su2BLPWJVsYZjPDnWSg`.
+  - Preview URL: `https://words-learning-app-for-mimi-kb5b08c5v-anorias-projects.vercel.app`.
+  - Verified with `vercel inspect` that deployment target is `preview` and ready state is `READY`.
+  - Verified `/api/storage/health` returns runtime `postgres-preview` and zero counts.
+  - Verified `/api/storage/data` returns runtime `postgres-preview`, schema version 3, and an empty default `Mimi` snapshot with no study records.
+  - Verified `/api/storage/data` POST with UI confirmation header is blocked with reason `ui-writes-not-enabled`.
+  - Verified app routes `/`, `/add`, `/import`, `/library`, `/review`, `/export`, and `/settings` return HTTP 200.
+  - Queried Preview error logs for the deployment; no error records were returned.
+  - Verified development database counts remained zero after verification.
+- Validation:
+  - Passed: `npx vercel@latest env ls preview`, showing no `MIMI_ENABLE_STORAGE_UI_WRITES`.
+  - Passed: `npx vercel@latest env ls production`, reporting no Production env vars.
+  - Passed: `npm run db:inspect:dev` before deployment, reporting zero core study rows.
+  - Passed: `npx vercel@latest deploy --yes`, creating Preview deployment `dpl_HpcPDb5B2su2BLPWJVsYZjPDnWSg`.
+  - Passed: `npx vercel@latest inspect https://words-learning-app-for-mimi-kb5b08c5v-anorias-projects.vercel.app --format=json`, reporting `target=preview` and `readyState=READY`.
+  - Passed: Preview `/api/storage/health`, reporting `runtime=postgres-preview`, `people=0`, `vocabularyItems=0`, and `reviewEvents=0`.
+  - Passed: Preview `/api/storage/data`, reporting an empty schema version 3 snapshot.
+  - Passed: Preview `/api/storage/data` POST with `x-mimi-ui-storage-write: allow-dev-preview-ui-write`, returning `ui-writes-not-enabled`.
+  - Passed: route checks for `/`, `/add`, `/import`, `/library`, `/review`, `/export`, and `/settings`, all returning HTTP 200.
+  - Passed: `npx vercel@latest logs dpl_HpcPDb5B2su2BLPWJVsYZjPDnWSg --level error --since 15m --json`, returning no error records.
+  - Passed: final `npm run db:inspect:dev`, reporting zero core study rows.
+- Safety notes: no database write, no real user backup import, no Vercel env var mutation, no Production deployment, no Production promotion, no Production alias change, no Production database migration or import, no authentication, analytics, AI generation, embedding generation, FSRS implementation, email, notification, or 付费/扣款 feature was performed. Existing non-official Production deployment remains untouched.
+
 ## 2026-07-05 22:52 AEST
 
 - Task: execute Stage 5M after the user confirmed the next step should design user backup import first, then UI runtime cutover, then implement the complete stage; the user also stated local host 3000 was safe to use.

@@ -1,7 +1,7 @@
 # Words Learning App For Mimi PLAN V1 Master
 
 Created: 2026-07-02 23:30 AEST
-Last updated: 2026-07-05 22:52 AEST
+Last updated: 2026-07-05 23:25 AEST
 
 Source plan:
 
@@ -122,7 +122,7 @@ Exit criteria:
 
 ### Stage 5: Persistence, Export, And Backup
 
-Status: Stage 5A local export and backup implemented locally on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5A_LOCAL_EXPORT_BACKUP.md`. Stage 5B storage provider decision and multi-person data model documented on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5B_STORAGE_PROVIDER_DECISION.md`. Stage 5C local person adapter implemented on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5C_LOCAL_PERSON_ADAPTER.md`. Stage 5D durable storage readiness implemented on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5D_DURABLE_STORAGE_READINESS.md`. Stage 5E Neon execution gate documented on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5E_NEON_EXECUTION_GATE.md`. Stage 5F development / preview Vercel and Neon bootstrap executed on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5F_DEV_PREVIEW_NEON_BOOTSTRAP.md`. Stage 5G preview deployment boundary is documented in `plan_docs/PLAN_V1_STAGE5G_PREVIEW_DEPLOYMENT_BOUNDARY.md`. Stage 5H runtime Postgres adapter design is documented in `plan_docs/PLAN_V1_STAGE5H_RUNTIME_POSTGRES_ADAPTER_DESIGN.md`. Stage 5I runtime Postgres adapter implementation is documented in `plan_docs/PLAN_V1_STAGE5I_RUNTIME_POSTGRES_ADAPTER_IMPLEMENTATION.md`. Stage 5J Postgres adapter read-only verification is documented in `plan_docs/PLAN_V1_STAGE5J_POSTGRES_ADAPTER_READ_ONLY_VERIFICATION.md`. Stage 5K controlled write smoke is documented in `plan_docs/PLAN_V1_STAGE5K_CONTROLLED_WRITE_SMOKE.md`. Stage 5L backup import harness and smoke cleanup is documented in `plan_docs/PLAN_V1_STAGE5L_BACKUP_IMPORT_HARNESS_AND_SMOKE_CLEANUP.md`. Stage 5M user backup import and UI runtime cutover is documented in `plan_docs/PLAN_V1_STAGE5M_USER_BACKUP_IMPORT_AND_UI_RUNTIME_CUTOVER.md`.
+Status: Stage 5A local export and backup implemented locally on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5A_LOCAL_EXPORT_BACKUP.md`. Stage 5B storage provider decision and multi-person data model documented on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5B_STORAGE_PROVIDER_DECISION.md`. Stage 5C local person adapter implemented on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5C_LOCAL_PERSON_ADAPTER.md`. Stage 5D durable storage readiness implemented on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5D_DURABLE_STORAGE_READINESS.md`. Stage 5E Neon execution gate documented on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5E_NEON_EXECUTION_GATE.md`. Stage 5F development / preview Vercel and Neon bootstrap executed on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5F_DEV_PREVIEW_NEON_BOOTSTRAP.md`. Stage 5G preview deployment boundary is documented in `plan_docs/PLAN_V1_STAGE5G_PREVIEW_DEPLOYMENT_BOUNDARY.md`. Stage 5H runtime Postgres adapter design is documented in `plan_docs/PLAN_V1_STAGE5H_RUNTIME_POSTGRES_ADAPTER_DESIGN.md`. Stage 5I runtime Postgres adapter implementation is documented in `plan_docs/PLAN_V1_STAGE5I_RUNTIME_POSTGRES_ADAPTER_IMPLEMENTATION.md`. Stage 5J Postgres adapter read-only verification is documented in `plan_docs/PLAN_V1_STAGE5J_POSTGRES_ADAPTER_READ_ONLY_VERIFICATION.md`. Stage 5K controlled write smoke is documented in `plan_docs/PLAN_V1_STAGE5K_CONTROLLED_WRITE_SMOKE.md`. Stage 5L backup import harness and smoke cleanup is documented in `plan_docs/PLAN_V1_STAGE5L_BACKUP_IMPORT_HARNESS_AND_SMOKE_CLEANUP.md`. Stage 5M user backup import and UI runtime cutover is documented in `plan_docs/PLAN_V1_STAGE5M_USER_BACKUP_IMPORT_AND_UI_RUNTIME_CUTOVER.md`. Stage 5N Preview UI runtime verification is documented in `plan_docs/PLAN_V1_STAGE5N_PREVIEW_UI_RUNTIME_VERIFICATION.md`.
 
 Exit criteria:
 
@@ -244,6 +244,18 @@ Stage 5M user backup import and UI runtime cutover:
 - Verified local API read/write and browser library rendering against committed fixture data, then cleaned all fixture rows.
 - Final development database core study table counts are zero.
 - Production migration, Production deployment, Vercel env mutation, Production import, authentication, embedding, and FSRS remain pending.
+
+Stage 5N Preview UI runtime verification:
+
+- Stage 5N-A created Preview deployment `dpl_HpcPDb5B2su2BLPWJVsYZjPDnWSg`.
+- Preview URL is `https://words-learning-app-for-mimi-kb5b08c5v-anorias-projects.vercel.app`.
+- Vercel inspect confirmed `target=preview` and `READY`.
+- Preview `/api/storage/health` returned `postgres-preview` with zero counts.
+- Preview `/api/storage/data` returned an empty schema version 3 snapshot.
+- Preview `/api/storage/data` POST was blocked with `ui-writes-not-enabled`.
+- All app routes returned HTTP 200 and error-log query returned no error records.
+- No Vercel env var was changed and no database row was written.
+- Stage 5N-B controlled Preview UI write smoke remains pending explicit confirmation.
 
 ### Stage 6: GitHub And Vercel Deployment
 

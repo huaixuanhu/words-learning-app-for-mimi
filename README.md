@@ -1,6 +1,6 @@
 # Words Learning App For Mimi
 
-Stage 5M local vocabulary, text import, review scheduler, flashcards, local export / backup, local multi-person adapter, durable storage readiness, development / preview Neon bootstrap, server-only runtime Postgres adapter, read-only Preview verification, controlled Preview write smoke, backup import harness, and development / preview UI runtime cutover for a mobile-first PTE vocabulary app.
+Stage 5N local vocabulary, text import, review scheduler, flashcards, local export / backup, local multi-person adapter, durable storage readiness, development / preview Neon bootstrap, server-only runtime Postgres adapter, controlled Preview smoke checks, backup import harness, development / preview UI runtime cutover, and read-only Preview UI runtime verification for a mobile-first PTE vocabulary app.
 
 ## Commands
 
@@ -54,8 +54,9 @@ STAGE5F_DATABASE_TARGET=development dotenv -e .env.local -- node scripts/backup-
 - Stage 5K controlled write smoke: temporarily enabled `MIMI_ENABLE_STORAGE_SMOKE_WRITES=true` in Preview only, ran one `/api/storage/smoke` write, verified exactly one smoke row set in the development database, removed the write flag, deployed disabled Preview `https://words-learning-app-for-mimi-7bzktk5uc-anorias-projects.vercel.app` (`dpl_BJn1pFAbLiiY4LgCyThKx2vDTSar`), and removed the smoke-enabled Preview deployment.
 - Stage 5L backup import harness and cleanup: added fixture backup import dry run, development DB fixture transaction trial with rollback, and cleaned the Stage 5K smoke rows. The development database now reports zero rows in core study tables.
 - Stage 5M backup import and UI runtime cutover: added file-backed backup dry run, rollback trial, and guarded development commit; added `/api/storage/data`; updated the UI data hook and write flows so development / preview can read/write through Postgres when explicitly enabled.
+- Stage 5N-A Preview UI runtime verification: created Preview deployment `https://words-learning-app-for-mimi-kb5b08c5v-anorias-projects.vercel.app` (`dpl_HpcPDb5B2su2BLPWJVsYZjPDnWSg`), verified `target=preview`, verified `/api/storage/health` and `/api/storage/data` read-only Postgres runtime, confirmed UI writes are blocked with `ui-writes-not-enabled`, and confirmed development DB remains empty.
 - Runtime mode stays `local` by default. Postgres UI runtime requires `MIMI_STORAGE_RUNTIME=postgres-preview`; UI writes also require `MIMI_ENABLE_STORAGE_UI_WRITES=true` and `x-mimi-ui-storage-write: allow-dev-preview-ui-write`.
-- Vercel Preview currently has `MIMI_STORAGE_RUNTIME=postgres-preview` from Stage 5J, but Stage 5M did not add `MIMI_ENABLE_STORAGE_UI_WRITES` to Vercel and did not deploy.
+- Vercel Preview currently has `MIMI_STORAGE_RUNTIME=postgres-preview` from Stage 5J, but `MIMI_ENABLE_STORAGE_UI_WRITES` has not been added to Vercel.
 - Browser `localStorage`（本地浏览器存储）remains the default fallback and local restore target. In `postgres-preview`, formal backup import uses the guarded Stage 5M script path.
 - No production database migration, production deployment, authentication, external API, analytics, production backup import, or production study-data mutation yet.
 
