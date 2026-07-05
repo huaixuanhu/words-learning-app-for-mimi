@@ -64,7 +64,7 @@ export function ReviewSession() {
     setMessage("");
   };
 
-  const submitRating = (rating: (typeof reviewRatings)[number]["value"], eventTimeStamp: number) => {
+  const submitRating = async (rating: (typeof reviewRatings)[number]["value"], eventTimeStamp: number) => {
     if (!currentItem || submittedItemIdRef.current === currentItem.id) {
       return;
     }
@@ -73,13 +73,23 @@ export function ReviewSession() {
     setSubmittedItemId(currentItem.id);
 
     try {
+      const now = new Date().toISOString();
+      const elapsedMs = cardStartedAt ? eventTimeStamp - cardStartedAt : 0;
       const result = recordReview(data, {
         vocabularyItemId: currentItem.id,
         rating,
-        elapsedMs: cardStartedAt ? eventTimeStamp - cardStartedAt : 0,
-      });
+        elapsedMs,
+      }, now);
 
-      commit(result.data);
+      await commit(result.data, {
+        type: "review.record",
+        input: {
+          vocabularyItemId: currentItem.id,
+          rating,
+          elapsedMs,
+        },
+        now,
+      });
       setSessionIds((current) => (current ? current.slice(1) : current));
       setCompletedCount((current) => current + 1);
       setShowBack(false);
@@ -142,7 +152,7 @@ export function ReviewSession() {
                   key={rating.value}
                   type="button"
                   disabled={!showBack || submittedItemId === currentItem.id}
-                  onClick={(event) => submitRating(rating.value, event.timeStamp)}
+                  onClick={(event) => void submitRating(rating.value, event.timeStamp)}
                   className="min-h-12 rounded-md border border-[#d7d4ca] bg-white px-3 text-sm font-medium hover:border-[#517056] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#517056] disabled:opacity-50"
                 >
                   {rating.label}

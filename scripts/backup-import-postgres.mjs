@@ -1,9 +1,11 @@
+import { readFile } from "node:fs/promises";
 import {
   assertNonProductionDatabaseTarget,
   createPool,
 } from "./db-connection.mjs";
 import {
   buildBackupImportPlan,
+  buildBackupImportPlanFromText,
   createStage5LFixtureBackup,
   STAGE5L_FIXTURE_FILE_NAME,
 } from "./backup-import-plan.mjs";
@@ -17,6 +19,11 @@ function usage() {
     "  node scripts/backup-import-postgres.mjs --fixture --dry-run",
     "  node scripts/backup-import-postgres.mjs --cleanup-smoke",
     "  node scripts/backup-import-postgres.mjs --fixture --trial-rollback",
+    "  node scripts/backup-import-postgres.mjs --fixture --commit --i-confirm-development-import",
+    "  node scripts/backup-import-postgres.mjs --cleanup-fixture",
+    "  node scripts/backup-import-postgres.mjs --file <backup.json> --dry-run",
+    "  node scripts/backup-import-postgres.mjs --file <backup.json> --trial-rollback",
+    "  node scripts/backup-import-postgres.mjs --file <backup.json> --commit --i-confirm-development-import",
   ].join("\n");
 }
 
@@ -24,16 +31,46 @@ function hasArg(name) {
   return process.argv.includes(name);
 }
 
+function readArgValue(name) {
+  const index = process.argv.indexOf(name);
+
+  if (index === -1) {
+    return null;
+  }
+
+  const value = process.argv[index + 1];
+
+  if (!value || value.startsWith("--")) {
+    throw new Error(`${name} requires a value`);
+  }
+
+  return value;
+}
+
 function printJson(value) {
   console.log(JSON.stringify(value, null, 2));
 }
 
-function requireFixtureBackup() {
-  if (!hasArg("--fixture")) {
-    throw new Error("Stage 5L currently supports --fixture only");
+async function readBackupInput() {
+  if (hasArg("--fixture")) {
+    return {
+      sourceFileName: STAGE5L_FIXTURE_FILE_NAME,
+      backup: createStage5LFixtureBackup(),
+    };
   }
 
-  return createStage5LFixtureBackup();
+  const filePath = readArgValue("--file");
+
+  if (!filePath) {
+    return null;
+  }
+
+  const text = await readFile(filePath, "utf8");
+
+  return {
+    sourceFileName: filePath.split(/[\\/]/).at(-1) ?? filePath,
+    text,
+  };
 }
 
 async function countCoreRows(client) {
@@ -52,6 +89,10 @@ async function countCoreRows(client) {
   );
 
   return result.rows[0];
+}
+
+async function countAllRows(client) {
+  return countCoreRows(client);
 }
 
 async function countSmokeRows(client) {
@@ -114,6 +155,63 @@ async function cleanupSmokeRows(client) {
     await client.query("commit");
 
     return { before, removed, after };
+  } catch (error) {
+    await client.query("rollback");
+    throw error;
+  }
+}
+
+async function cleanupRowsForPersonSlug(client, slug) {
+  const peopleResult = await client.query(
+    "select id from people where slug = $1 order by created_at asc",
+    [slug],
+  );
+  const personIds = peopleResult.rows.map((row) => row.id);
+
+  if (personIds.length === 0) {
+    return {
+      personIds: [],
+      removed: {
+        backup_import_mappings: 0,
+        backup_imports: 0,
+        review_events: 0,
+        review_states: 0,
+        vocabulary_items: 0,
+        import_batches: 0,
+        review_settings: 0,
+        people: 0,
+      },
+      after: await countCoreRows(client),
+    };
+  }
+
+  await client.query("begin");
+  try {
+    const action = "delete";
+    const removed = {};
+    const statements = [
+      ["backup_import_mappings", `${action} from backup_import_mappings where person_id = any($1::uuid[])`, [personIds]],
+      ["backup_imports", `${action} from backup_imports where person_id = any($1::uuid[])`, [personIds]],
+      ["review_events", `${action} from review_events where person_id = any($1::uuid[])`, [personIds]],
+      ["review_states", `${action} from review_states where person_id = any($1::uuid[])`, [personIds]],
+      ["vocabulary_items", `${action} from vocabulary_items where person_id = any($1::uuid[])`, [personIds]],
+      ["import_batches", `${action} from import_batches where person_id = any($1::uuid[])`, [personIds]],
+      ["review_settings", `${action} from review_settings where person_id = any($1::uuid[])`, [personIds]],
+      ["people", `${action} from people where id = any($1::uuid[]) and slug = $2`, [personIds, slug]],
+    ];
+
+    for (const [name, statement, values] of statements) {
+      const result = await client.query(statement, values);
+      removed[name] = result.rowCount;
+    }
+
+    await client.query("commit");
+
+    return {
+      personIds,
+      removed,
+      after: await countCoreRows(client),
+    };
   } catch (error) {
     await client.query("rollback");
     throw error;
@@ -429,6 +527,51 @@ async function runFixtureTrialRollback(client, plan) {
   }
 }
 
+function assertDatabaseEmpty(counts) {
+  const nonEmpty = Object.entries(counts).filter(([, value]) => value !== 0);
+
+  if (nonEmpty.length) {
+    throw new Error(
+      `Refusing backup import commit because the target database is not empty: ${nonEmpty
+        .map(([key, value]) => `${key}=${value}`)
+        .join(", ")}`,
+    );
+  }
+}
+
+async function commitPlanRows(client, plan) {
+  await client.query("begin");
+  try {
+    const before = await countAllRows(client);
+
+    assertDatabaseEmpty(before);
+    await insertPlanRows(client, plan.rows);
+
+    const inserted = await countPlanRows(client, plan.rows);
+    assertCountsMatch(inserted, {
+      people: plan.counts.people,
+      import_batches: plan.counts.importBatches,
+      vocabulary_items: plan.counts.vocabularyItems,
+      review_states: plan.counts.reviewStates,
+      review_events: plan.counts.reviewEvents,
+      review_settings: plan.counts.reviewSettings,
+      backup_imports: plan.counts.backupImports,
+      backup_import_mappings: plan.counts.backupImportMappings,
+    });
+
+    await client.query("commit");
+
+    return {
+      before,
+      inserted,
+      after: await countCoreRows(client),
+    };
+  } catch (error) {
+    await client.query("rollback");
+    throw error;
+  }
+}
+
 function planSummary(plan) {
   return {
     mode: plan.mode,
@@ -447,32 +590,45 @@ if (hasArg("--help")) {
 const wantsDryRun = hasArg("--dry-run");
 const wantsCleanupSmoke = hasArg("--cleanup-smoke");
 const wantsTrialRollback = hasArg("--trial-rollback");
+const wantsCommit = hasArg("--commit");
+const wantsCleanupFixture = hasArg("--cleanup-fixture");
 
-if (!wantsDryRun && !wantsCleanupSmoke && !wantsTrialRollback) {
+if (!wantsDryRun && !wantsCleanupSmoke && !wantsTrialRollback && !wantsCommit && !wantsCleanupFixture) {
   throw new Error(usage());
 }
 
-const backup = hasArg("--fixture") ? requireFixtureBackup() : null;
-const plan = backup
-  ? buildBackupImportPlan(backup, {
-      sourceFileName: STAGE5L_FIXTURE_FILE_NAME,
-      notes: "Stage 5L fixture import trial; transaction is rolled back.",
+if (wantsCommit && !hasArg("--i-confirm-development-import")) {
+  throw new Error("--commit requires --i-confirm-development-import");
+}
+
+const backupInput = await readBackupInput();
+const plan = backupInput?.backup
+  ? buildBackupImportPlan(backupInput.backup, {
+      sourceFileName: backupInput.sourceFileName,
+      notes: hasArg("--fixture")
+        ? "Stage fixture import for development verification."
+        : "User backup import for development verification.",
     })
-  : null;
+  : backupInput?.text
+    ? buildBackupImportPlanFromText(backupInput.text, {
+        sourceFileName: backupInput.sourceFileName,
+        notes: "User backup import for development verification.",
+      })
+    : null;
 const actions = [];
 
 if (wantsDryRun) {
   if (!plan) {
-    throw new Error("--dry-run requires --fixture");
+    throw new Error("--dry-run requires --fixture or --file");
   }
   actions.push({
-    action: "fixture-dry-run",
+    action: "backup-dry-run",
     result: "ok",
     plan: planSummary(plan),
   });
 }
 
-if (wantsCleanupSmoke || wantsTrialRollback) {
+if (wantsCleanupSmoke || wantsTrialRollback || wantsCommit || wantsCleanupFixture) {
   assertNonProductionDatabaseTarget();
   const pool = createPool();
   const client = await pool.connect();
@@ -489,17 +645,38 @@ if (wantsCleanupSmoke || wantsTrialRollback) {
       });
     }
 
+    if (wantsCleanupFixture) {
+      actions.push({
+        action: "cleanup-stage5l-fixture",
+        result: await cleanupRowsForPersonSlug(client, "stage5l-fixture"),
+      });
+      actions.push({
+        action: "cleanup-stage5m-fixture",
+        result: await cleanupRowsForPersonSlug(client, "stage5m-fixture"),
+      });
+    }
+
     if (wantsTrialRollback) {
       if (!plan) {
-        throw new Error("--trial-rollback requires --fixture");
+        throw new Error("--trial-rollback requires --fixture or --file");
       }
       actions.push({
-        action: "fixture-trial-rollback",
+        action: "backup-trial-rollback",
         result: await runFixtureTrialRollback(client, plan),
       });
       actions.push({
         action: "post-trial-counts",
         result: await countCoreRows(client),
+      });
+    }
+
+    if (wantsCommit) {
+      if (!plan) {
+        throw new Error("--commit requires --fixture or --file");
+      }
+      actions.push({
+        action: "commit-import",
+        result: await commitPlanRows(client, plan),
       });
     }
   } finally {

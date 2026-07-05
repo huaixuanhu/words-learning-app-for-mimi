@@ -1,11 +1,11 @@
 # Words Learning App For Mimi Architecture
 
 Created: 2026-07-02 23:30 AEST
-Last updated: 2026-07-05 15:45 AEST
+Last updated: 2026-07-05 22:52 AEST
 
 ## Current State
 
-This repository is in Stage 5L backup import harness and smoke cleanup. It contains collaboration rules, architecture notes, master and stage plans, changelog, AI agent log, a lightweight Tier 1 governance preflight, and a minimal Next.js App Router application with browser-local vocabulary, review mutations, export, restore preview, selected-person switching, local SQL storage, repository adapter contract, approved development / preview Vercel and Neon setup, a server-only development / preview Postgres runtime adapter, and a guarded backup import dry-run / development trial harness.
+This repository is in Stage 5M user backup import and UI runtime cutover. It contains collaboration rules, architecture notes, master and stage plans, changelog, AI agent log, a lightweight Tier 1 governance preflight, and a minimal Next.js App Router application with browser-local vocabulary, review mutations, export, restore preview, selected-person switching, local SQL storage, repository adapter contract, approved development / preview Vercel and Neon setup, a server-only development / preview Postgres runtime adapter, guarded backup import dry-run / rollback / commit tooling, and a development / preview-only Postgres UI runtime cutover path.
 
 Current local stack:
 
@@ -38,6 +38,8 @@ Stage 5J verifies the runtime Postgres adapter read-only path. Local default `/a
 Stage 5K verifies the runtime Postgres adapter write path with one controlled smoke write. `MIMI_ENABLE_STORAGE_SMOKE_WRITES=true` was added to Preview only, Preview deployment `dpl_BbgqrsKCtFzbLfKjAaazfugPvfCv` executed one `/api/storage/smoke` write, and the development database now contains one smoke person, one vocabulary item, one review state, one review event, and one review settings row. The write flag was removed from Preview after the test, follow-up Preview deployment `dpl_BJn1pFAbLiiY4LgCyThKx2vDTSar` at `https://words-learning-app-for-mimi-7bzktk5uc-anorias-projects.vercel.app` verifies `/api/storage/smoke` is disabled again, and the smoke-enabled deployment was removed. Smoke rows remain in the development database under person id `00000000-0000-4000-8000-0000000005f1`.
 
 Stage 5L adds a backup import dry-run harness and cleans the Stage 5K smoke rows from the development database. `scripts/backup-import-plan.mjs` validates schema version 3 JSON backup structure, metadata counts, person-scoped references, and target UUID mapping. `scripts/backup-import-postgres.mjs` can run a fixture dry run, remove the fixed smoke row set, and run a fixture transaction trial that rolls back. The development database fixture trial inserted one person, import batch, vocabulary item, review state, review event, review settings row, backup import row, and six backup import mappings inside a transaction, then rolled back and verified no fixture rows persisted. The development database now has zero rows in core study tables after smoke cleanup.
+
+Stage 5M extends backup import and cuts over the UI runtime for development / preview only. `scripts/backup-import-postgres.mjs` now supports file-backed `--file <backup.json>` dry runs, rollback trials, and guarded development commits with `--i-confirm-development-import`. `test_fixtures/stage5m-backup.json` covers the file-backed path without real user data. `/api/storage/data` reads Postgres snapshots when `MIMI_STORAGE_RUNTIME=postgres-preview` and accepts controlled UI mutations only when `MIMI_ENABLE_STORAGE_UI_WRITES=true` plus `x-mimi-ui-storage-write: allow-dev-preview-ui-write` are present. Browser `localStorage` remains the default runtime and restore target. Production remains disabled. Stage 5M committed a fixture backup to the development database, verified the UI read/write path locally, and cleaned all fixture rows; the development database is empty again.
 
 The GitHub repository URL was provided by the user:
 
@@ -257,16 +259,36 @@ Stage 5K controlled write smoke:
 Stage 5L backup import harness and smoke cleanup:
 
 - `scripts/backup-import-plan.mjs` builds a schema version 3 JSON backup import plan without database access.
-- `scripts/backup-import-postgres.mjs` provides guarded fixture dry run, smoke cleanup, and transaction rollback trial commands.
+- `scripts/backup-import-postgres.mjs` provides guarded fixture dry run, smoke cleanup, file-backed import dry run, rollback trial, guarded development commit, and fixture cleanup commands.
 - `scripts/backup-import-plan.test.mjs` covers fixture mapping, metadata count rejection, and cross-person review reference rejection.
 - New commands:
   - `npm run backup:dry-run:fixture`
   - `npm run db:cleanup-smoke:dev`
   - `npm run db:import-fixture-trial:dev`
+  - `npm run db:import-fixture-commit:dev`
+  - `npm run db:cleanup-fixture:dev`
+- File-backed user backup command shape:
+  - `STAGE5F_DATABASE_TARGET=development dotenv -e .env.local -- node scripts/backup-import-postgres.mjs --file <backup.json> --dry-run`
+  - `STAGE5F_DATABASE_TARGET=development dotenv -e .env.local -- node scripts/backup-import-postgres.mjs --file <backup.json> --trial-rollback`
+  - `STAGE5F_DATABASE_TARGET=development dotenv -e .env.local -- node scripts/backup-import-postgres.mjs --file <backup.json> --commit --i-confirm-development-import`
 - Stage 5K smoke rows under person id `00000000-0000-4000-8000-0000000005f1` were cleaned from the development database.
 - Fixture transaction trial inserted and rolled back `people=1`, `import_batches=1`, `vocabulary_items=1`, `review_states=1`, `review_events=1`, `review_settings=1`, `backup_imports=1`, and `backup_import_mappings=6`.
+- Stage 5M file-backed fixture dry run and rollback trial inserted and rolled back the same shape, using `test_fixtures/stage5m-backup.json`.
+- Stage 5M guarded file-backed commit required an empty development database and explicit `--i-confirm-development-import`.
+- Stage 5M local UI runtime verification read the committed fixture through `/api/storage/data`, wrote one manual item through the same route, and then cleaned the fixture rows.
 - Final development database inspection reports zero rows in core study tables.
-- Production env vars, Production deployment, formal user backup import, and UI runtime cutover were not performed.
+- Production env vars, Production deployment, Production import, and Vercel Preview env mutation were not performed.
+
+Stage 5M UI runtime cutover:
+
+- Browser `localStorage` remains the default runtime.
+- `useVocabularyData()` attempts `/api/storage/data` and switches to `postgres-preview` only when the server route reports ready.
+- In `postgres-preview`, UI writes require mutation metadata and are sent to `/api/storage/data`.
+- The Postgres UI write path is disabled unless `MIMI_ENABLE_STORAGE_UI_WRITES=true`.
+- The API requires `x-mimi-ui-storage-write: allow-dev-preview-ui-write` for mutations.
+- Vercel Production rejects the Postgres UI runtime.
+- If the Postgres database is empty, the first write can create the default `Mimi` person; if people already exist, mutations require a valid selected database UUID.
+- `/export` can still download the current runtime snapshot. JSON restore remains browser-local only; in `postgres-preview`, formal backup import should use the Stage 5M script path.
 
 ### People And Person Switching
 
@@ -303,7 +325,7 @@ Responsibilities:
 - defer `.docx` and PDF import until a later document-parsing stage
 - protect against duplicate imports, malformed rows, and timezone drift
 
-Current route: `/export`. It can download a complete JSON backup with metadata（元数据）, download a vocabulary CSV, parse JSON backup files locally, show restore counts, and restore schema version 2 data after explicit confirmation. JSON restore rejects malformed files, unsupported backup shapes, incomplete required fields, invalid review references, and missing metadata counts before mutating local browser storage.
+Current route: `/export`. It can download a complete JSON backup with metadata（元数据）, download a vocabulary CSV, parse JSON backup files locally, show restore counts, and restore schema version 2 data after explicit confirmation when runtime is browser-local. JSON restore rejects malformed files, unsupported backup shapes, incomplete required fields, invalid review references, and missing metadata counts before mutating local browser storage. In `postgres-preview`, UI restore is disabled and formal backup import uses the guarded Stage 5M script path.
 
 ### Backup Format
 

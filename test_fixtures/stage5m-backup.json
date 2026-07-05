@@ -1,0 +1,105 @@
+{
+  "format": "mimi-pte-vocabulary-backup",
+  "backupVersion": 1,
+  "metadata": {
+    "appName": "words-learning-app-for-mimi",
+    "exportedAt": "2026-07-05T05:35:00.000Z",
+    "timezone": "Australia/Melbourne",
+    "schemaVersion": 3,
+    "counts": {
+      "people": 1,
+      "items": 1,
+      "activeItems": 1,
+      "archivedItems": 0,
+      "importBatches": 1,
+      "reviewStates": 1,
+      "reviewEvents": 1
+    }
+  },
+  "data": {
+    "schemaVersion": 3,
+    "people": [
+      {
+        "id": "person_stage5m_fixture",
+        "displayName": "Stage 5M Fixture",
+        "slug": "stage5m-fixture",
+        "isActive": true,
+        "createdAt": "2026-07-05T05:30:00.000Z",
+        "updatedAt": "2026-07-05T05:30:00.000Z"
+      }
+    ],
+    "selectedPersonId": "person_stage5m_fixture",
+    "items": [
+      {
+        "id": "vocab_stage5m_fixture",
+        "personId": "person_stage5m_fixture",
+        "surfaceText": "stage five m import",
+        "normalizedText": "stage five m import",
+        "meaningZh": "Stage 5M import fixture",
+        "example": "This fixture proves file-backed backup import without using real user data.",
+        "notes": "Stage 5M fixture",
+        "rarityScore": 3,
+        "source": "txt_file",
+        "importBatchId": "batch_stage5m_fixture",
+        "status": "new",
+        "createdAt": "2026-07-05T05:30:00.000Z",
+        "systemCreatedAt": "2026-07-05T05:30:00.000Z",
+        "updatedAt": "2026-07-05T05:30:00.000Z",
+        "timezone": "Australia/Melbourne",
+        "archivedAt": null
+      }
+    ],
+    "importBatches": [
+      {
+        "id": "batch_stage5m_fixture",
+        "personId": "person_stage5m_fixture",
+        "sourceType": "txt_file",
+        "fileName": "stage5m-fixture.txt",
+        "createdAt": "2026-07-05T05:30:00.000Z",
+        "totalRows": 1,
+        "acceptedRows": 1,
+        "duplicateRows": 0,
+        "invalidRows": 0
+      }
+    ],
+    "reviewStates": [
+      {
+        "id": "review_state_stage5m_fixture",
+        "personId": "person_stage5m_fixture",
+        "vocabularyItemId": "vocab_stage5m_fixture",
+        "status": "learning",
+        "dueAt": "2026-07-06T05:35:00.000Z",
+        "lastReviewedAt": "2026-07-05T05:35:00.000Z",
+        "reviewCount": 1,
+        "lapseCount": 0,
+        "intervalMinutes": 1440,
+        "difficulty": null,
+        "stability": null,
+        "updatedAt": "2026-07-05T05:35:00.000Z"
+      }
+    ],
+    "reviewEvents": [
+      {
+        "id": "review_event_stage5m_fixture",
+        "personId": "person_stage5m_fixture",
+        "vocabularyItemId": "vocab_stage5m_fixture",
+        "reviewedAt": "2026-07-05T05:35:00.000Z",
+        "rating": "remembered",
+        "previousDueAt": null,
+        "nextDueAt": "2026-07-06T05:35:00.000Z",
+        "previousIntervalMinutes": null,
+        "nextIntervalMinutes": 1440,
+        "elapsedMs": 0
+      }
+    ],
+    "settingsByPerson": [
+      {
+        "personId": "person_stage5m_fixture",
+        "sessionLimit": 12,
+        "timezone": "Australia/Melbourne",
+        "updatedAt": "2026-07-05T05:30:00.000Z"
+      }
+    ],
+    "updatedAt": "2026-07-05T05:35:00.000Z"
+  }
+}

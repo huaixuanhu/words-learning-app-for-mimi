@@ -4,8 +4,9 @@ import { CalendarClock, ChevronDown, Save } from "lucide-react";
 import type { FormEvent } from "react";
 import { useEffect, useState } from "react";
 import { useVocabularyData } from "@/components/vocabulary/use-vocabulary-data";
-import { addVocabularyItem } from "@/lib/vocabulary/repository";
 import { normalizeRarityScore } from "@/lib/vocabulary/normalize";
+import { addVocabularyItem } from "@/lib/vocabulary/repository";
+import type { NewVocabularyInput } from "@/lib/vocabulary/types";
 
 function toDateTimeLocalValue(date: Date) {
   const offsetMs = date.getTimezoneOffset() * 60_000;
@@ -29,7 +30,7 @@ export function AddWordForm() {
     return () => window.clearTimeout(timer);
   }, []);
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     const form = event.currentTarget;
@@ -37,22 +38,24 @@ export function AddWordForm() {
     const now = new Date().toISOString();
 
     try {
-      const result = addVocabularyItem(
-        data,
-        {
-          surfaceText: String(formData.get("word_or_phrase") ?? ""),
-          meaningZh: String(formData.get("meaning_zh") ?? ""),
-          example: String(formData.get("example") ?? ""),
-          notes: String(formData.get("notes") ?? ""),
-          rarityScore: normalizeRarityScore(rarityScore),
-          source: "manual",
-          createdAt: addedAt ? new Date(addedAt).toISOString() : now,
-          timezone,
-        },
-        now,
-      );
+      const input: NewVocabularyInput = {
+        surfaceText: String(formData.get("word_or_phrase") ?? ""),
+        meaningZh: String(formData.get("meaning_zh") ?? ""),
+        example: String(formData.get("example") ?? ""),
+        notes: String(formData.get("notes") ?? ""),
+        rarityScore: normalizeRarityScore(rarityScore),
+        source: "manual",
+        createdAt: addedAt ? new Date(addedAt).toISOString() : now,
+        timezone,
+      };
+      const result = addVocabularyItem(data, input, now);
 
-      commit(result.data);
+      await commit(result.data, {
+        type: "vocabulary.add",
+        input,
+        now,
+        timezone,
+      });
       form.reset();
       setRarityScore("");
       setAddedAt(toDateTimeLocalValue(new Date()));

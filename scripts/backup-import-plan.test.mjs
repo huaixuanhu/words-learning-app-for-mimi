@@ -1,7 +1,9 @@
+import { readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
 import {
   BackupImportPlanError,
   buildBackupImportPlan,
+  buildBackupImportPlanFromText,
   createStage5LFixtureBackup,
   STAGE5L_FIXTURE_FILE_NAME,
 } from "./backup-import-plan.mjs";
@@ -18,6 +20,33 @@ function createUuidFactory() {
 }
 
 describe("Stage 5L backup import plan", () => {
+  it("builds a file-backed Stage 5M import plan from backup text", async () => {
+    const text = await readFile(
+      new URL("../test_fixtures/stage5m-backup.json", import.meta.url),
+      "utf8",
+    );
+    const plan = buildBackupImportPlanFromText(text, {
+      sourceFileName: "stage5m-backup.json",
+      importedAt: "2026-07-05T06:30:00.000Z",
+      uuidFactory: createUuidFactory(),
+    });
+
+    expect(plan.rows.people[0]).toMatchObject({
+      id: "00000000-0000-4000-8000-000000000001",
+      slug: "stage5m-fixture",
+    });
+    expect(plan.counts).toEqual({
+      people: 1,
+      importBatches: 1,
+      vocabularyItems: 1,
+      reviewStates: 1,
+      reviewEvents: 1,
+      reviewSettings: 1,
+      backupImports: 1,
+      backupImportMappings: 6,
+    });
+  });
+
   it("builds a person-scoped fixture import plan without database access", () => {
     const plan = buildBackupImportPlan(createStage5LFixtureBackup(), {
       sourceFileName: STAGE5L_FIXTURE_FILE_NAME,

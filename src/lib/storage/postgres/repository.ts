@@ -30,7 +30,8 @@ import {
   normalizeRarityScore,
   normalizeSurfaceText,
 } from "@/lib/vocabulary/normalize";
-import { buildVocabularyItem } from "@/lib/vocabulary/repository";
+import { buildPerson, type NewPersonInput } from "@/lib/people/repository";
+import { buildVocabularyItem, createEmptyVocabularyData } from "@/lib/vocabulary/repository";
 import type {
   ImportBatchInput,
   ImportCandidate,
@@ -341,6 +342,93 @@ async function buildVocabularyDataSnapshot(
     settingsByPerson: [settings],
     updatedAt: now,
   };
+}
+
+export async function getPostgresVocabularyDataSnapshot(
+  selectedPersonId?: string | null,
+  now = new Date().toISOString(),
+): Promise<VocabularyData> {
+  const queryable = getPostgresPool();
+  const people = await listPeople(queryable);
+
+  if (!people.length) {
+    return createEmptyVocabularyData(now);
+  }
+
+  const selected =
+    selectedPersonId && people.some((person) => person.id === selectedPersonId)
+      ? selectedPersonId
+      : people[0].id;
+  const perPersonData = await Promise.all(
+    people.map(async (person) => {
+      const context = { personId: person.id };
+      const [items, importBatches, reviewStates, reviewEvents, settings] = await Promise.all([
+        listVocabularyItems(queryable, context, "all"),
+        listImportBatches(queryable, context),
+        listReviewStates(queryable, context),
+        listReviewEvents(queryable, context),
+        getReviewSettings(queryable, context),
+      ]);
+
+      return {
+        items,
+        importBatches,
+        reviewStates,
+        reviewEvents,
+        settings,
+      };
+    }),
+  );
+
+  return {
+    schemaVersion: 3,
+    people,
+    selectedPersonId: selected,
+    items: perPersonData.flatMap((entry) => entry.items),
+    importBatches: perPersonData.flatMap((entry) => entry.importBatches),
+    reviewStates: perPersonData.flatMap((entry) => entry.reviewStates),
+    reviewEvents: perPersonData.flatMap((entry) => entry.reviewEvents),
+    settingsByPerson: perPersonData.map((entry) => entry.settings),
+    updatedAt: now,
+  };
+}
+
+export async function createPostgresPerson(
+  input: NewPersonInput,
+  now = new Date().toISOString(),
+) {
+  const queryable = getPostgresPool();
+  const people = await listPeople(queryable);
+  const person = buildPerson({ ...input, id: randomUUID() }, people, now);
+
+  return withPostgresTransaction(async (client) => {
+    const result = await client.query<PersonRow>(
+      `
+        insert into people (id, display_name, slug, is_active, created_at, updated_at)
+        values ($1, $2, $3, $4, $5, $6)
+        returning id, display_name, slug, is_active, created_at, updated_at
+      `,
+      [
+        person.id,
+        person.displayName,
+        person.slug,
+        person.isActive,
+        person.createdAt,
+        person.updatedAt,
+      ],
+    );
+    const settings = createDefaultReviewSettings(now);
+
+    await client.query(
+      `
+        insert into review_settings (person_id, session_limit, timezone, updated_at)
+        values ($1, $2, $3, $4)
+      `,
+      [person.id, settings.sessionLimit, settings.timezone, settings.updatedAt],
+    );
+
+    return mapPersonRow(result.rows[0]);
+  });
 }
 
 async function insertVocabularyItem(

@@ -1,6 +1,6 @@
 # Words Learning App For Mimi
 
-Stage 5L local vocabulary, text import, review scheduler, flashcards, local export / backup, local multi-person adapter, durable storage readiness, development / preview Neon bootstrap, server-only runtime Postgres adapter, read-only Preview verification, controlled Preview write smoke, and backup import dry-run harness for a mobile-first PTE vocabulary app.
+Stage 5M local vocabulary, text import, review scheduler, flashcards, local export / backup, local multi-person adapter, durable storage readiness, development / preview Neon bootstrap, server-only runtime Postgres adapter, read-only Preview verification, controlled Preview write smoke, backup import harness, and development / preview UI runtime cutover for a mobile-first PTE vocabulary app.
 
 ## Commands
 
@@ -22,6 +22,16 @@ npm run db:migrate:dev
 npm run db:inspect:dev
 npm run db:cleanup-smoke:dev
 npm run db:import-fixture-trial:dev
+npm run db:import-fixture-commit:dev
+npm run db:cleanup-fixture:dev
+```
+
+File-backed backup import command shape for development only:
+
+```bash
+STAGE5F_DATABASE_TARGET=development dotenv -e .env.local -- node scripts/backup-import-postgres.mjs --file <backup.json> --dry-run
+STAGE5F_DATABASE_TARGET=development dotenv -e .env.local -- node scripts/backup-import-postgres.mjs --file <backup.json> --trial-rollback
+STAGE5F_DATABASE_TARGET=development dotenv -e .env.local -- node scripts/backup-import-postgres.mjs --file <backup.json> --commit --i-confirm-development-import
 ```
 
 ## Current Scope
@@ -43,8 +53,10 @@ npm run db:import-fixture-trial:dev
 - Stage 5J read-only verification: Preview deployment `https://words-learning-app-for-mimi-dbkkkow3d-anorias-projects.vercel.app` (`dpl_CFeC2VwRKtMSAjBiGGtyStsFw2tr`) verified `/api/storage/health` with `postgres-preview` and zero database rows.
 - Stage 5K controlled write smoke: temporarily enabled `MIMI_ENABLE_STORAGE_SMOKE_WRITES=true` in Preview only, ran one `/api/storage/smoke` write, verified exactly one smoke row set in the development database, removed the write flag, deployed disabled Preview `https://words-learning-app-for-mimi-7bzktk5uc-anorias-projects.vercel.app` (`dpl_BJn1pFAbLiiY4LgCyThKx2vDTSar`), and removed the smoke-enabled Preview deployment.
 - Stage 5L backup import harness and cleanup: added fixture backup import dry run, development DB fixture transaction trial with rollback, and cleaned the Stage 5K smoke rows. The development database now reports zero rows in core study tables.
-- Runtime mode stays `local` by default. Postgres runtime is currently enabled for Vercel Preview only through `MIMI_STORAGE_RUNTIME=postgres-preview`; smoke writes require `MIMI_ENABLE_STORAGE_SMOKE_WRITES=true` and `x-mimi-storage-smoke: allow-dev-preview-write`, and the write flag is currently not configured after Stage 5K.
-- User-facing runtime still uses browser `localStorage`（本地浏览器存储）; this is local convenience storage, not durable production persistence.
-- No production database migration, production deployment, authentication, external API, analytics, formal user backup import, user-facing storage cutover, or production study-data mutation yet.
+- Stage 5M backup import and UI runtime cutover: added file-backed backup dry run, rollback trial, and guarded development commit; added `/api/storage/data`; updated the UI data hook and write flows so development / preview can read/write through Postgres when explicitly enabled.
+- Runtime mode stays `local` by default. Postgres UI runtime requires `MIMI_STORAGE_RUNTIME=postgres-preview`; UI writes also require `MIMI_ENABLE_STORAGE_UI_WRITES=true` and `x-mimi-ui-storage-write: allow-dev-preview-ui-write`.
+- Vercel Preview currently has `MIMI_STORAGE_RUNTIME=postgres-preview` from Stage 5J, but Stage 5M did not add `MIMI_ENABLE_STORAGE_UI_WRITES` to Vercel and did not deploy.
+- Browser `localStorage`（本地浏览器存储）remains the default fallback and local restore target. In `postgres-preview`, formal backup import uses the guarded Stage 5M script path.
+- No production database migration, production deployment, authentication, external API, analytics, production backup import, or production study-data mutation yet.
 
 Project rules live in `AGENTS.md`. Stage plans live in `plan_docs/`.

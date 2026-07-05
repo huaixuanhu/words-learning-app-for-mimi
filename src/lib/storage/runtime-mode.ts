@@ -2,6 +2,7 @@ export type StorageRuntimeMode = "local" | "postgres-preview";
 
 export const STORAGE_RUNTIME_ENV_VAR = "MIMI_STORAGE_RUNTIME";
 export const STORAGE_SMOKE_WRITES_ENV_VAR = "MIMI_ENABLE_STORAGE_SMOKE_WRITES";
+export const STORAGE_UI_WRITES_ENV_VAR = "MIMI_ENABLE_STORAGE_UI_WRITES";
 
 export type StorageRuntimeResolution = Readonly<{
   mode: StorageRuntimeMode;
@@ -97,4 +98,8 @@ export function assertPostgresPreviewRuntime(env: NodeJS.ProcessEnv = process.en
 
 export function isStorageSmokeWriteEnabled(env: NodeJS.ProcessEnv = process.env) {
   return cleanEnvValue(env[STORAGE_SMOKE_WRITES_ENV_VAR]) === "true";
+}
+
+export function isStorageUiWriteEnabled(env: NodeJS.ProcessEnv = process.env) {
+  return cleanEnvValue(env[STORAGE_UI_WRITES_ENV_VAR]) === "true";
 }

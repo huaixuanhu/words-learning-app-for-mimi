@@ -2,7 +2,7 @@
 
 import { Archive, RotateCcw, Save, Search } from "lucide-react";
 import { useMemo, useState } from "react";
-import type { VocabularyItem } from "@/lib/vocabulary/types";
+import type { UpdateVocabularyInput, VocabularyItem } from "@/lib/vocabulary/types";
 import {
   archiveVocabularyItem,
   getActiveVocabularyItems,
@@ -55,6 +55,14 @@ function toIsoFromLocalDateTime(value: string) {
   return new Date(value).toISOString();
 }
 
+function detectTimezone(fallback = "Australia/Melbourne") {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 export function VocabularyLibrary() {
   const { data, isLoaded, commit } = useVocabularyData();
   const [query, setQuery] = useState("");
@@ -90,13 +98,14 @@ export function VocabularyLibrary() {
     setMessage("");
   };
 
-  const saveDraft = () => {
+  const saveDraft = async () => {
     if (!editingId || !draft) {
       return;
     }
 
     try {
-      const result = updateVocabularyItem(data, editingId, {
+      const now = new Date().toISOString();
+      const input: UpdateVocabularyInput = {
         surfaceText: draft.surfaceText,
         meaningZh: draft.meaningZh,
         example: draft.example,
@@ -104,9 +113,16 @@ export function VocabularyLibrary() {
         rarityScore: normalizeRarityScore(draft.rarityScore),
         createdAt: toIsoFromLocalDateTime(draft.createdAt),
         timezone: draft.timezone,
-      });
+      };
+      const result = updateVocabularyItem(data, editingId, input, now);
 
-      commit(result.data);
+      await commit(result.data, {
+        type: "vocabulary.update",
+        vocabularyItemId: editingId,
+        input,
+        now,
+        timezone: draft.timezone,
+      });
       setEditingId(null);
       setDraft(null);
       setMessage(`已更新 ${result.item.surfaceText}`);
@@ -115,14 +131,36 @@ export function VocabularyLibrary() {
     }
   };
 
-  const archiveItem = (id: string) => {
-    commit(archiveVocabularyItem(data, id));
-    setMessage("已归档词条");
+  const archiveItem = async (id: string) => {
+    const now = new Date().toISOString();
+
+    try {
+      await commit(archiveVocabularyItem(data, id, now), {
+        type: "vocabulary.archive",
+        vocabularyItemId: id,
+        now,
+        timezone: detectTimezone(),
+      });
+      setMessage("已归档词条");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "归档失败");
+    }
   };
 
-  const restoreItem = (id: string) => {
-    commit(restoreVocabularyItem(data, id));
-    setMessage("已恢复词条");
+  const restoreItem = async (id: string) => {
+    const now = new Date().toISOString();
+
+    try {
+      await commit(restoreVocabularyItem(data, id, now), {
+        type: "vocabulary.restore",
+        vocabularyItemId: id,
+        now,
+        timezone: detectTimezone(),
+      });
+      setMessage("已恢复词条");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "恢复失败");
+    }
   };
 
   return (
@@ -235,7 +273,7 @@ export function VocabularyLibrary() {
                       <div className="flex flex-wrap gap-2">
                         <button
                           type="button"
-                          onClick={saveDraft}
+                          onClick={() => void saveDraft()}
                           className="inline-flex min-h-10 items-center gap-2 rounded-md bg-[#517056] px-3 text-sm font-semibold text-white"
                         >
                           <Save aria-hidden="true" className="size-4" />
@@ -284,7 +322,7 @@ export function VocabularyLibrary() {
                         {item.archivedAt ? (
                           <button
                             type="button"
-                            onClick={() => restoreItem(item.id)}
+                            onClick={() => void restoreItem(item.id)}
                             className="inline-flex min-h-10 items-center gap-2 rounded-md border border-[#d7d4ca] px-3 text-sm font-medium"
                           >
                             <RotateCcw aria-hidden="true" className="size-4" />
@@ -293,7 +331,7 @@ export function VocabularyLibrary() {
                         ) : (
                           <button
                             type="button"
-                            onClick={() => archiveItem(item.id)}
+                            onClick={() => void archiveItem(item.id)}
                             className="inline-flex min-h-10 items-center gap-2 rounded-md border border-[#d7d4ca] px-3 text-sm font-medium"
                           >
                             <Archive aria-hidden="true" className="size-4" />

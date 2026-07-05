@@ -3,6 +3,7 @@ import {
   assertPostgresPreviewRuntime,
   canUsePostgresPreviewRuntime,
   isStorageSmokeWriteEnabled,
+  isStorageUiWriteEnabled,
   resolveStorageRuntimeMode,
 } from "./runtime-mode";
 
@@ -70,5 +71,11 @@ describe("storage runtime mode", () => {
     expect(isStorageSmokeWriteEnabled(testEnv())).toBe(false);
     expect(isStorageSmokeWriteEnabled(testEnv({ MIMI_ENABLE_STORAGE_SMOKE_WRITES: "true" }))).toBe(true);
     expect(isStorageSmokeWriteEnabled(testEnv({ MIMI_ENABLE_STORAGE_SMOKE_WRITES: " TRUE " }))).toBe(false);
+  });
+
+  it("keeps UI writes disabled unless explicitly enabled", () => {
+    expect(isStorageUiWriteEnabled(testEnv())).toBe(false);
+    expect(isStorageUiWriteEnabled(testEnv({ MIMI_ENABLE_STORAGE_UI_WRITES: "true" }))).toBe(true);
+    expect(isStorageUiWriteEnabled(testEnv({ MIMI_ENABLE_STORAGE_UI_WRITES: " TRUE " }))).toBe(false);
   });
 });

@@ -14,26 +14,33 @@ export function PersonSettingsForm() {
   const activePeople = getActivePeople(data);
   const selectedPerson = getSelectedPerson(data);
 
-  const handleSelect = (personId: string) => {
+  const handleSelect = async (personId: string) => {
     try {
       const nextData = selectPerson(data, personId);
 
-      commit(nextData);
+      await commit(nextData, {
+        type: "people.select",
+        personId,
+      });
       setMessage(`已切换到 ${getSelectedPerson(nextData).displayName}`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "切换失败");
     }
   };
 
-  const handleAddPerson = (event: FormEvent<HTMLFormElement>) => {
+  const handleAddPerson = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     try {
-      const result = addPerson(data, {
+      const input = {
         displayName,
-      });
+      };
+      const result = addPerson(data, input);
 
-      commit(result.data);
+      await commit(result.data, {
+        type: "people.add",
+        input,
+      });
       setDisplayName("");
       setMessage(`已添加并切换到 ${result.person.displayName}`);
     } catch (error) {
@@ -48,7 +55,7 @@ export function PersonSettingsForm() {
         <select
           value={selectedPerson.id}
           disabled={!isLoaded}
-          onChange={(event) => handleSelect(event.target.value)}
+          onChange={(event) => void handleSelect(event.target.value)}
           className="min-h-11 rounded-md border border-[#d7d4ca] bg-white px-3 text-base outline-none focus:border-[#517056]"
         >
           {activePeople.map((person) => (

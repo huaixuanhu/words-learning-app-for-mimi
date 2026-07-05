@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## 2026-07-05 22:52 AEST
+
+- Executed Stage 5M user backup import and UI runtime cutover.
+- Added file-backed backup import dry run, rollback trial, and guarded development commit support.
+- Added a Stage 5M JSON backup fixture to verify file-backed import without real user data.
+- Added `/api/storage/data` for development / preview Postgres snapshot reads and controlled UI mutations.
+- Updated the UI data hook and write flows so `postgres-preview` can read/write through Postgres when explicitly enabled.
+- Kept browser `localStorage` as the default runtime and local restore target.
+- Verified local API read/write and browser library rendering against committed fixture data.
+- Cleaned the Stage 5M fixture rows and verified the development database returned to zero core study rows.
+- Reason: complete the development / preview backup import and UI runtime cutover path while keeping Production and Vercel env state untouched.
+
 ## 2026-07-05 15:45 AEST
 
 - Executed Stage 5L backup import harness and smoke cleanup.

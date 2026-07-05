@@ -1,5 +1,71 @@
 # AI Agent Log
 
+## 2026-07-05 22:52 AEST
+
+- Task: execute Stage 5M after the user confirmed the next step should design user backup import first, then UI runtime cutover, then implement the complete stage; the user also stated local host 3000 was safe to use.
+- Plan agreed: yes. The accepted scope was development / preview backup import and UI runtime cutover, with no Production work and no Vercel env mutation. Because no real user backup file was provided, real user import was implemented as a guarded capability and validated with a non-private fixture file.
+- Changed files:
+  - `.env.example`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `package.json`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE5M_USER_BACKUP_IMPORT_AND_UI_RUNTIME_CUTOVER.md`
+  - `scripts/backup-import-plan.test.mjs`
+  - `scripts/backup-import-postgres.mjs`
+  - `src/app/api/storage/data/route.ts`
+  - `src/components/add-word-form.tsx`
+  - `src/components/export/export-workspace.tsx`
+  - `src/components/review/review-session.tsx`
+  - `src/components/settings/person-settings-form.tsx`
+  - `src/components/settings/review-settings-form.tsx`
+  - `src/components/vocabulary/import-workspace.tsx`
+  - `src/components/vocabulary/use-vocabulary-data.ts`
+  - `src/components/vocabulary/vocabulary-library.tsx`
+  - `src/lib/storage/postgres/repository.ts`
+  - `src/lib/storage/runtime-mode.test.ts`
+  - `src/lib/storage/runtime-mode.ts`
+  - `test_fixtures/stage5m-backup.json`
+- Reason: complete the formal non-production backup import path and prove the UI can read/write through Postgres in development / preview while preserving `localStorage` as the default runtime and leaving Production untouched.
+- Implementation notes:
+  - Added Stage 5M child plan with source plan, derived-from markers, scope, non-scope, safety notes, exit criteria, results, validation, and residual boundaries.
+  - Extended `scripts/backup-import-postgres.mjs` to support `--file <backup.json>` with `--dry-run`, `--trial-rollback`, and guarded `--commit --i-confirm-development-import`.
+  - Added a file-backed Stage 5M backup fixture and test coverage for `buildBackupImportPlanFromText`.
+  - Added fixture commit and cleanup commands for development verification.
+  - Added Postgres snapshot and person creation helpers.
+  - Wrapped Postgres person creation and default review settings creation in one transaction.
+  - Added `/api/storage/data` as a development / preview route for Postgres snapshot reads and controlled UI mutations.
+  - Required `MIMI_STORAGE_RUNTIME=postgres-preview`, `MIMI_ENABLE_STORAGE_UI_WRITES=true`, and `x-mimi-ui-storage-write: allow-dev-preview-ui-write` for UI writes.
+  - Kept Production rejection in the runtime path.
+  - Updated `useVocabularyData()` to prefer Postgres only when the API reports ready and otherwise fall back to browser `localStorage`.
+  - Updated add, import, library edit/archive/restore, review, review settings, person switching, person creation, and export restore boundary for the async runtime adapter.
+  - Kept JSON restore browser-local; in `postgres-preview`, formal backup import uses the Stage 5M script path.
+  - Stopped a leftover same-project `next dev` process on port 3000 before local verification, then restarted the dev server with the Stage 5M runtime flags.
+  - Committed the Stage 5M fixture into the empty development database, verified local API read/write and browser library rendering, then cleaned the fixture person and both fixture vocabulary rows.
+  - Final development database inspection reported zero rows in core study tables.
+- Validation:
+  - Passed: `npm run test` with 13 test files and 48 tests.
+  - Passed: `node scripts/backup-import-postgres.mjs --file test_fixtures/stage5m-backup.json --dry-run`.
+  - Passed: `npm run db:inspect:dev` before import, reporting 8 tables, 11 indexes, 5 key constraints, and zero rows in core study tables.
+  - Passed: `STAGE5F_DATABASE_TARGET=development ./node_modules/.bin/dotenv -e .env.local -- node scripts/backup-import-postgres.mjs --file test_fixtures/stage5m-backup.json --trial-rollback`, inserting and rolling back one fixture dataset, one backup import row, and six backup import mappings.
+  - Passed: `STAGE5F_DATABASE_TARGET=development ./node_modules/.bin/dotenv -e .env.local -- node scripts/backup-import-postgres.mjs --file test_fixtures/stage5m-backup.json --commit --i-confirm-development-import`, inserting the fixture dataset into an empty development database.
+  - Passed: local `/api/storage/data` GET with `MIMI_STORAGE_RUNTIME=postgres-preview` and `MIMI_ENABLE_STORAGE_UI_WRITES=true`, returning `runtime=postgres-preview`, one person, and one item.
+  - Passed: local `/api/storage/data` POST with `x-mimi-ui-storage-write: allow-dev-preview-ui-write`, returning two items after adding `stage five m ui write`.
+  - Passed: browser `/library` check, showing `stage five m import`, `stage five m ui write`, and `2 shown / 2 total`.
+  - Passed: `npm run db:cleanup-fixture:dev`, removing the Stage 5M fixture person, two vocabulary rows, one import batch, one review state, one review event, one review settings row, one backup import row, and six mapping rows.
+  - Passed: final `npm run db:inspect:dev`, reporting zero rows in core study tables.
+  - Passed: `npm run typecheck`.
+  - Passed: `npm run lint`.
+  - Passed: `npm run build`.
+  - Passed: `npm audit --json` with 0 vulnerabilities.
+  - Passed: `npm run backup:dry-run:fixture`.
+  - Passed: `git diff --check`.
+  - Passed: `npm run governance:preflight`.
+  - Passed: `python3 governance/preflight.py --tier 3 --require-skill-marker`.
+- Safety notes: no real user backup file was imported, no Vercel environment variable was changed, no Preview deployment was created, no Production deployment was created or promoted, no Production database migration or import was run, no authentication, analytics, AI generation, embedding generation, FSRS implementation, email, notification, or 付费/扣款 feature was added. The development database is empty at handoff.
+
 ## 2026-07-05 15:45 AEST
 
 - Task: execute the complete Stage 5L backup import harness and smoke cleanup after the user explicitly requested Stage 5L-A and Stage 5L-B together, including cleanup of used smoke test rows.

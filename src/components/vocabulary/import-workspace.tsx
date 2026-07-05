@@ -77,25 +77,41 @@ export function ImportWorkspace() {
     });
   };
 
-  const saveImport = () => {
+  const saveImport = async () => {
+    const now = new Date().toISOString();
+    const timezone = detectTimezone();
+    const batchInput = {
+      sourceType,
+      fileName,
+    };
+    const acceptedTempIds = Array.from(acceptedIds);
     const result = commitImportCandidates(
       data,
-      {
-        sourceType,
-        fileName,
-      },
+      batchInput,
       candidates,
       acceptedIds,
-      detectTimezone(),
+      timezone,
+      now,
     );
 
-    commit(result.data);
-    setMessage(`已保存 ${result.items.length} 个词条`);
-    setCandidates([]);
-    setAcceptedIds(new Set());
-    setInputText("");
-    setFileName(null);
-    setSourceType("pasted_text");
+    try {
+      await commit(result.data, {
+        type: "import.commitCandidates",
+        batchInput,
+        candidates,
+        acceptedTempIds,
+        now,
+        timezone,
+      });
+      setMessage(`已保存 ${result.items.length} 个词条`);
+      setCandidates([]);
+      setAcceptedIds(new Set());
+      setInputText("");
+      setFileName(null);
+      setSourceType("pasted_text");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "导入保存失败");
+    }
   };
 
   return (
@@ -143,7 +159,7 @@ export function ImportWorkspace() {
           <button
             type="button"
             disabled={!acceptedIds.size}
-            onClick={saveImport}
+            onClick={() => void saveImport()}
             className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-[#517056] px-3 text-sm font-semibold text-white disabled:opacity-50"
           >
             <Save aria-hidden="true" className="size-4" />

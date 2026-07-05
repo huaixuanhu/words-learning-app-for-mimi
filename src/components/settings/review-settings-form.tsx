@@ -8,6 +8,7 @@ import { getSelectedPersonId } from "@/lib/people/repository";
 import {
   DEFAULT_SESSION_LIMIT,
   getSelectedReviewSettings,
+  normalizeSessionLimit,
   updateReviewSettings,
 } from "@/lib/review/settings";
 
@@ -25,17 +26,28 @@ export function ReviewSettingsForm() {
   const selectedPersonId = getSelectedPersonId(data);
   const settings = getSelectedReviewSettings(data);
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     const formData = new FormData(event.currentTarget);
-    const nextData = updateReviewSettings(data, {
-      sessionLimit: String(formData.get("session_limit") ?? ""),
+    const now = new Date().toISOString();
+    const input = {
+      sessionLimit: normalizeSessionLimit(String(formData.get("session_limit") ?? "")),
       timezone: String(formData.get("timezone") ?? ""),
-    });
+    };
+    const nextData = updateReviewSettings(data, input, now);
 
-    commit(nextData);
-    setMessage(`已保存，每次最多复习 ${getSelectedReviewSettings(nextData).sessionLimit} 张卡片`);
+    try {
+      await commit(nextData, {
+        type: "reviewSettings.update",
+        input,
+        now,
+        timezone: input.timezone,
+      });
+      setMessage(`已保存，每次最多复习 ${getSelectedReviewSettings(nextData).sessionLimit} 张卡片`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "设置保存失败");
+    }
   };
 
   return (

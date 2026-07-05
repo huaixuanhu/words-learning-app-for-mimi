@@ -79,7 +79,7 @@ function ErrorList({ result }: { result: Extract<BackupParseResult, { ok: false 
 }
 
 export function ExportWorkspace() {
-  const { data, isLoaded, commit } = useVocabularyData();
+  const { data, isLoaded, storageRuntime, commit } = useVocabularyData();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [restoreResult, setRestoreResult] = useState<BackupParseResult | null>(null);
   const [message, setMessage] = useState("");
@@ -122,12 +122,17 @@ export function ExportWorkspace() {
     setMessage(result.ok ? "已读取备份预览" : "备份文件未通过校验");
   };
 
-  const restoreBackup = () => {
+  const restoreBackup = async () => {
     if (!restoreResult?.ok) {
       return;
     }
 
-    commit(restoreResult.data);
+    if (storageRuntime === "postgres-preview") {
+      setMessage("Postgres preview 请使用 Stage 5M backup import 脚本导入");
+      return;
+    }
+
+    await commit(restoreResult.data);
     setMessage(`已恢复 ${restoreResult.counts.items} 个词条到本地浏览器存储`);
     setRestoreResult(null);
 
@@ -138,8 +143,8 @@ export function ExportWorkspace() {
 
   return (
     <div className="grid gap-4">
-      <SimplePanel title="Current Local Data">
-        {isLoaded ? <SummaryGrid data={data} /> : <p className="text-sm text-[#66645c]">Loading local data...</p>}
+      <SimplePanel title="Current Data">
+        {isLoaded ? <SummaryGrid data={data} /> : <p className="text-sm text-[#66645c]">Loading data...</p>}
       </SimplePanel>
 
       <SimplePanel title="Download">
@@ -198,11 +203,12 @@ export function ExportWorkspace() {
             <SummaryGrid data={restoreResult.data} />
             <button
               type="button"
-              onClick={restoreBackup}
+              disabled={storageRuntime === "postgres-preview"}
+              onClick={() => void restoreBackup()}
               className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-[#517056] px-4 text-sm font-semibold text-white"
             >
               <Download aria-hidden="true" className="size-4" />
-              确认恢复到本地
+              {storageRuntime === "postgres-preview" ? "Postgres 导入暂用脚本" : "确认恢复到本地"}
             </button>
           </div>
         ) : null}
