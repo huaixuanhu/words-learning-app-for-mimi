@@ -12,6 +12,8 @@ import {
 
 const SMOKE_PERSON_ID = "00000000-0000-4000-8000-0000000005f1";
 const SMOKE_PERSON_SLUG = "storage-smoke";
+const STAGE5N_UI_SMOKE_PERSON_SLUG = "mimi";
+const STAGE5N_UI_SMOKE_NORMALIZED_TEXT = "stage five n preview ui write";
 
 function usage() {
   return [
@@ -21,6 +23,7 @@ function usage() {
     "  node scripts/backup-import-postgres.mjs --fixture --trial-rollback",
     "  node scripts/backup-import-postgres.mjs --fixture --commit --i-confirm-development-import",
     "  node scripts/backup-import-postgres.mjs --cleanup-fixture",
+    "  node scripts/backup-import-postgres.mjs --cleanup-stage5n-ui-smoke",
     "  node scripts/backup-import-postgres.mjs --file <backup.json> --dry-run",
     "  node scripts/backup-import-postgres.mjs --file <backup.json> --trial-rollback",
     "  node scripts/backup-import-postgres.mjs --file <backup.json> --commit --i-confirm-development-import",
@@ -211,6 +214,111 @@ async function cleanupRowsForPersonSlug(client, slug) {
       personIds,
       removed,
       after: await countCoreRows(client),
+    };
+  } catch (error) {
+    await client.query("rollback");
+    throw error;
+  }
+}
+
+async function countStage5NUiSmokeRows(client) {
+  const result = await client.query(
+    `
+      select
+        (select count(*)::int from people where slug = $1) as people,
+        (select count(*)::int from vocabulary_items where person_id in (select id from people where slug = $1)) as vocabulary_items,
+        (select count(*)::int from vocabulary_items where person_id in (select id from people where slug = $1) and normalized_text = $2) as matching_vocabulary_items,
+        (select count(*)::int from import_batches where person_id in (select id from people where slug = $1)) as import_batches,
+        (select count(*)::int from review_states where person_id in (select id from people where slug = $1)) as review_states,
+        (select count(*)::int from review_events where person_id in (select id from people where slug = $1)) as review_events,
+        (select count(*)::int from review_settings where person_id in (select id from people where slug = $1)) as review_settings,
+        (select count(*)::int from backup_imports where person_id in (select id from people where slug = $1)) as backup_imports,
+        (select count(*)::int from backup_import_mappings where person_id in (select id from people where slug = $1)) as backup_import_mappings
+    `,
+    [STAGE5N_UI_SMOKE_PERSON_SLUG, STAGE5N_UI_SMOKE_NORMALIZED_TEXT],
+  );
+
+  return result.rows[0];
+}
+
+function assertStage5NUiSmokeShape(counts) {
+  const total = Object.entries(counts)
+    .filter(([key]) => key !== "matching_vocabulary_items")
+    .reduce((sum, [, value]) => sum + value, 0);
+
+  if (total === 0) {
+    return;
+  }
+
+  const expected = {
+    people: 1,
+    vocabulary_items: 1,
+    matching_vocabulary_items: 1,
+    import_batches: 0,
+    review_states: 0,
+    review_events: 0,
+    review_settings: 1,
+    backup_imports: 0,
+    backup_import_mappings: 0,
+  };
+
+  for (const [key, expectedValue] of Object.entries(expected)) {
+    if (counts[key] !== expectedValue) {
+      throw new Error(
+        `Refusing Stage 5N UI smoke cleanup because ${key} expected ${expectedValue} but got ${counts[key]}`,
+      );
+    }
+  }
+}
+
+async function cleanupStage5NUiSmokeRows(client) {
+  await client.query("begin");
+  try {
+    const before = await countStage5NUiSmokeRows(client);
+
+    assertStage5NUiSmokeShape(before);
+
+    const action = "delete";
+    const removed = {};
+    const statements = [
+      [
+        "vocabulary_items",
+        `${action} from vocabulary_items where person_id in (select id from people where slug = $1) and normalized_text = $2`,
+        [STAGE5N_UI_SMOKE_PERSON_SLUG, STAGE5N_UI_SMOKE_NORMALIZED_TEXT],
+      ],
+      [
+        "review_settings",
+        `${action} from review_settings where person_id in (select id from people where slug = $1)`,
+        [STAGE5N_UI_SMOKE_PERSON_SLUG],
+      ],
+      [
+        "people",
+        `${action} from people where slug = $1`,
+        [STAGE5N_UI_SMOKE_PERSON_SLUG],
+      ],
+    ];
+
+    for (const [name, statement, values] of statements) {
+      const result = await client.query(statement, values);
+      removed[name] = result.rowCount;
+    }
+
+    const after = await countStage5NUiSmokeRows(client);
+    const remaining = Object.entries(after)
+      .filter(([key]) => key !== "matching_vocabulary_items")
+      .reduce((sum, [, value]) => sum + value, 0);
+
+    if (remaining !== 0) {
+      throw new Error(`Stage 5N UI smoke cleanup left ${remaining} rows behind`);
+    }
+
+    await client.query("commit");
+
+    return {
+      before,
+      removed,
+      after,
+      coreCounts: await countCoreRows(client),
     };
   } catch (error) {
     await client.query("rollback");
@@ -592,8 +700,16 @@ const wantsCleanupSmoke = hasArg("--cleanup-smoke");
 const wantsTrialRollback = hasArg("--trial-rollback");
 const wantsCommit = hasArg("--commit");
 const wantsCleanupFixture = hasArg("--cleanup-fixture");
+const wantsCleanupStage5NUiSmoke = hasArg("--cleanup-stage5n-ui-smoke");
 
-if (!wantsDryRun && !wantsCleanupSmoke && !wantsTrialRollback && !wantsCommit && !wantsCleanupFixture) {
+if (
+  !wantsDryRun &&
+  !wantsCleanupSmoke &&
+  !wantsTrialRollback &&
+  !wantsCommit &&
+  !wantsCleanupFixture &&
+  !wantsCleanupStage5NUiSmoke
+) {
   throw new Error(usage());
 }
 
@@ -628,7 +744,7 @@ if (wantsDryRun) {
   });
 }
 
-if (wantsCleanupSmoke || wantsTrialRollback || wantsCommit || wantsCleanupFixture) {
+if (wantsCleanupSmoke || wantsTrialRollback || wantsCommit || wantsCleanupFixture || wantsCleanupStage5NUiSmoke) {
   assertNonProductionDatabaseTarget();
   const pool = createPool();
   const client = await pool.connect();
@@ -653,6 +769,13 @@ if (wantsCleanupSmoke || wantsTrialRollback || wantsCommit || wantsCleanupFixtur
       actions.push({
         action: "cleanup-stage5m-fixture",
         result: await cleanupRowsForPersonSlug(client, "stage5m-fixture"),
+      });
+    }
+
+    if (wantsCleanupStage5NUiSmoke) {
+      actions.push({
+        action: "cleanup-stage5n-ui-smoke",
+        result: await cleanupStage5NUiSmokeRows(client),
       });
     }
 

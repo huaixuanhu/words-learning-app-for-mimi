@@ -1,7 +1,7 @@
 # Words Learning App For Mimi PLAN V1 Master
 
 Created: 2026-07-02 23:30 AEST
-Last updated: 2026-07-05 23:25 AEST
+Last updated: 2026-07-05 23:45 AEST
 
 Source plan:
 
@@ -254,8 +254,14 @@ Stage 5N Preview UI runtime verification:
 - Preview `/api/storage/data` returned an empty schema version 3 snapshot.
 - Preview `/api/storage/data` POST was blocked with `ui-writes-not-enabled`.
 - All app routes returned HTTP 200 and error-log query returned no error records.
-- No Vercel env var was changed and no database row was written.
-- Stage 5N-B controlled Preview UI write smoke remains pending explicit confirmation.
+- Stage 5N-B temporarily enabled `MIMI_ENABLE_STORAGE_UI_WRITES=true` in Preview only.
+- Stage 5N-B created write-enabled Preview deployment `dpl_JgKNc9zuAqgMsy5w13gbZoqkEhnY`.
+- The write-enabled Preview wrote one controlled smoke vocabulary row: `stage five n preview ui write`.
+- Stage 5N-B cleaned the smoke person, vocabulary item, and review settings row.
+- Stage 5N-B removed `MIMI_ENABLE_STORAGE_UI_WRITES` from Preview and removed the write-enabled deployment.
+- Disabled Preview deployment after cleanup is `dpl_Athg2hWZK1gV6ereWdbYk1WXG58C`.
+- Disabled Preview URL is `https://words-learning-app-for-mimi-6v8azqoaa-anorias-projects.vercel.app`.
+- Final Preview env has no UI write flag, Production env remains empty, and development database counts are zero.
 
 ### Stage 6: GitHub And Vercel Deployment
 

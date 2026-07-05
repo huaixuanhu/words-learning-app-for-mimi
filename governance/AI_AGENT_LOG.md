@@ -1,5 +1,76 @@
 # AI Agent Log
 
+## 2026-07-05 23:45 AEST
+
+- Task: execute Stage 5N-B controlled Preview UI write smoke after explicit user confirmation.
+- Plan agreed: yes. The accepted scope was temporarily enabling Preview UI writes, creating a Preview deployment, writing one controlled smoke row through `/api/storage/data`, cleaning that row set, removing the write flag, redeploying a disabled Preview, and removing the temporary write-enabled deployment. Production remained out of scope.
+- Changed files:
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `package.json`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE5N_PREVIEW_UI_RUNTIME_VERIFICATION.md`
+  - `scripts/backup-import-postgres.mjs`
+- Reason: prove the Stage 5M UI write path in real Vercel Preview while closing the temporary write surface and returning the development database to empty.
+- Implementation notes:
+  - Confirmed latest committed baseline was `ca1d95f` on branch `V1`, synchronized with `origin/V1`.
+  - Added a narrow cleanup command `npm run db:cleanup-stage5n-ui-smoke:dev`.
+  - The cleanup command refuses to clean unless the DB shape is exactly the Stage 5N UI smoke shape: slug `mimi`, one vocabulary item with normalized text `stage five n preview ui write`, one review settings row, and no import/review/backup rows.
+  - Verified the cleanup command is a no-op on an empty database before remote writes.
+  - Temporarily added `MIMI_ENABLE_STORAGE_UI_WRITES=true` to Vercel Preview only.
+  - Confirmed Production env remained empty after adding the Preview write flag.
+  - Created write-enabled Preview deployment `dpl_JgKNc9zuAqgMsy5w13gbZoqkEhnY`.
+  - Write-enabled Preview URL: `https://words-learning-app-for-mimi-8r2cn2jko-anorias-projects.vercel.app`.
+  - Verified with Vercel inspect that the write-enabled deployment target was `preview` and ready state was `READY`.
+  - Verified `/api/storage/health` and `/api/storage/data` were ready with zero counts before the write.
+  - Called `/api/storage/data` once with `x-mimi-ui-storage-write: allow-dev-preview-ui-write`.
+  - The controlled write created person id `020d84d6-6f3c-4cdd-b8fb-682a1de46554` and vocabulary item id `b144680c-590a-4855-aff5-d60058f6e415`.
+  - The controlled vocabulary surface text was `stage five n preview ui write`.
+  - Verified after write that the database contained exactly one person, one vocabulary item, and one review settings row, with zero import/review event rows.
+  - Queried error logs for the write-enabled deployment; no error records were returned.
+  - Ran `npm run db:cleanup-stage5n-ui-smoke:dev`, removing one vocabulary item, one review settings row, and one person.
+  - Removed `MIMI_ENABLE_STORAGE_UI_WRITES` from Vercel Preview.
+  - Created disabled Preview deployment `dpl_Athg2hWZK1gV6ereWdbYk1WXG58C`.
+  - Disabled Preview URL: `https://words-learning-app-for-mimi-6v8azqoaa-anorias-projects.vercel.app`.
+  - Verified the disabled Preview deployment target was `preview` and ready state was `READY`.
+  - Verified disabled Preview `/api/storage/health` returned zero counts.
+  - Verified disabled Preview `/api/storage/data` POST returned reason `ui-writes-not-enabled`.
+  - Removed write-enabled deployment `dpl_JgKNc9zuAqgMsy5w13gbZoqkEhnY`.
+  - Confirmed final Preview env no longer contains `MIMI_ENABLE_STORAGE_UI_WRITES`.
+  - Confirmed final Production env remains empty.
+  - Confirmed final development database counts are zero.
+  - Verified app routes return HTTP 200 on the disabled Preview deployment.
+- Validation:
+  - Passed: `npm run lint`.
+  - Passed: `npm run typecheck`.
+  - Passed: `npm run db:cleanup-stage5n-ui-smoke:dev` on an empty DB as a no-op.
+  - Passed: `npm run db:inspect:dev` before remote writes, reporting zero core study rows.
+  - Passed: `printf 'true\n' | npx vercel@latest env add MIMI_ENABLE_STORAGE_UI_WRITES preview`.
+  - Passed: `npx vercel@latest env ls preview`, showing `MIMI_ENABLE_STORAGE_UI_WRITES` in Preview only during the test window.
+  - Passed: `npx vercel@latest env ls production`, reporting no Production env vars.
+  - Passed: `npx vercel@latest deploy --yes`, creating write-enabled Preview deployment `dpl_JgKNc9zuAqgMsy5w13gbZoqkEhnY`.
+  - Passed: `npx vercel@latest inspect https://words-learning-app-for-mimi-8r2cn2jko-anorias-projects.vercel.app --format=json`, reporting `target=preview`.
+  - Passed: write-enabled Preview `/api/storage/health`, reporting zero counts.
+  - Passed: write-enabled Preview `/api/storage/data` POST with the required confirmation header, returning `ok=true`.
+  - Passed: `npm run db:inspect:dev` after write, reporting `people=1`, `vocabulary_items=1`, and `review_settings=1`.
+  - Passed: write-enabled Preview `/api/storage/data` GET, returning the controlled smoke row.
+  - Passed: `npx vercel@latest logs dpl_JgKNc9zuAqgMsy5w13gbZoqkEhnY --level error --since 15m --json`, returning no error records.
+  - Passed: `npm run db:cleanup-stage5n-ui-smoke:dev`, removing the controlled row set and returning core counts to zero.
+  - Passed: `npx vercel@latest env rm MIMI_ENABLE_STORAGE_UI_WRITES preview --yes`.
+  - Passed: `npx vercel@latest deploy --yes`, creating disabled Preview deployment `dpl_Athg2hWZK1gV6ereWdbYk1WXG58C`.
+  - Passed: disabled Preview inspect, reporting `target=preview`.
+  - Passed: disabled Preview `/api/storage/health`, reporting zero counts.
+  - Passed: disabled Preview `/api/storage/data` POST with the confirmation header, returning `ui-writes-not-enabled`.
+  - Passed: `npx vercel@latest logs dpl_Athg2hWZK1gV6ereWdbYk1WXG58C --level error --since 15m --json`, returning no error records.
+  - Passed: `npx vercel@latest remove dpl_JgKNc9zuAqgMsy5w13gbZoqkEhnY --yes`.
+  - Passed: final `npx vercel@latest env ls preview`, showing no `MIMI_ENABLE_STORAGE_UI_WRITES`.
+  - Passed: final `npx vercel@latest env ls production`, reporting no Production env vars.
+  - Passed: final `npm run db:inspect:dev`, reporting zero core study rows.
+  - Passed: disabled Preview route checks for `/`, `/add`, `/import`, `/library`, `/review`, `/export`, and `/settings`, all returning HTTP 200.
+- Safety notes: one controlled non-production row set was written and then cleaned. The temporary Preview write flag was removed. The temporary write-enabled Preview deployment was removed. No real user backup file was imported, no Production env var was added, no Production deployment was created or promoted, no Production database migration or import was run, no authentication, analytics, AI generation, embedding generation, FSRS implementation, email, notification, or 付费/扣款 feature was added. Existing non-official Production deployment remains untouched.
+
 ## 2026-07-05 23:25 AEST
 
 - Task: execute the confirmed next step after Stage 5M: Stage 5N-A Preview UI runtime read-only verification.

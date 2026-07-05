@@ -1,5 +1,20 @@
 # CHANGELOG
 
+## 2026-07-05 23:45 AEST
+
+- Executed Stage 5N-B controlled Preview UI write smoke and cleanup.
+- Added a narrow development cleanup command for the Stage 5N UI smoke row set.
+- Temporarily added `MIMI_ENABLE_STORAGE_UI_WRITES=true` to Vercel Preview only.
+- Created write-enabled Preview deployment `dpl_JgKNc9zuAqgMsy5w13gbZoqkEhnY` at `https://words-learning-app-for-mimi-8r2cn2jko-anorias-projects.vercel.app`.
+- Verified Preview `/api/storage/data` can write one controlled vocabulary row through the UI mutation path.
+- Cleaned the smoke person, vocabulary item, and review settings row.
+- Removed `MIMI_ENABLE_STORAGE_UI_WRITES` from Preview.
+- Created disabled Preview deployment `dpl_Athg2hWZK1gV6ereWdbYk1WXG58C` at `https://words-learning-app-for-mimi-6v8azqoaa-anorias-projects.vercel.app`.
+- Verified disabled Preview writes are blocked with `ui-writes-not-enabled`.
+- Removed the temporary write-enabled Preview deployment.
+- Verified Production env remains empty and the development database returned to zero rows.
+- Reason: prove the Stage 5M UI write path in real Preview while closing the temporary write surface afterward.
+
 ## 2026-07-05 23:25 AEST
 
 - Executed Stage 5N-A Preview UI runtime read-only verification.

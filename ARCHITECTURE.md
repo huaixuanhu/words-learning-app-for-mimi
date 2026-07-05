@@ -1,7 +1,7 @@
 # Words Learning App For Mimi Architecture
 
 Created: 2026-07-02 23:30 AEST
-Last updated: 2026-07-05 23:25 AEST
+Last updated: 2026-07-05 23:45 AEST
 
 ## Current State
 
@@ -41,7 +41,7 @@ Stage 5L adds a backup import dry-run harness and cleans the Stage 5K smoke rows
 
 Stage 5M extends backup import and cuts over the UI runtime for development / preview only. `scripts/backup-import-postgres.mjs` now supports file-backed `--file <backup.json>` dry runs, rollback trials, and guarded development commits with `--i-confirm-development-import`. `test_fixtures/stage5m-backup.json` covers the file-backed path without real user data. `/api/storage/data` reads Postgres snapshots when `MIMI_STORAGE_RUNTIME=postgres-preview` and accepts controlled UI mutations only when `MIMI_ENABLE_STORAGE_UI_WRITES=true` plus `x-mimi-ui-storage-write: allow-dev-preview-ui-write` are present. Browser `localStorage` remains the default runtime and restore target. Production remains disabled. Stage 5M committed a fixture backup to the development database, verified the UI read/write path locally, and cleaned all fixture rows; the development database is empty again.
 
-Stage 5N-A verifies the Stage 5M UI runtime in Vercel Preview without enabling writes. Preview deployment `dpl_HpcPDb5B2su2BLPWJVsYZjPDnWSg` at `https://words-learning-app-for-mimi-kb5b08c5v-anorias-projects.vercel.app` was inspected as `target=preview` and `READY`. `/api/storage/health` returned runtime `postgres-preview` with zero counts, `/api/storage/data` returned an empty schema version 3 snapshot, and a POST to `/api/storage/data` was blocked with reason `ui-writes-not-enabled`. App routes returned HTTP 200 and error-log query returned no error records. No Vercel env var was changed and no database row was written.
+Stage 5N verifies the Stage 5M UI runtime in Vercel Preview. Stage 5N-A deployed read-only Preview `dpl_HpcPDb5B2su2BLPWJVsYZjPDnWSg` at `https://words-learning-app-for-mimi-kb5b08c5v-anorias-projects.vercel.app`, confirmed `target=preview`, read `postgres-preview` health/data successfully, and confirmed writes were blocked. Stage 5N-B temporarily enabled `MIMI_ENABLE_STORAGE_UI_WRITES=true` in Preview, deployed write-enabled Preview `dpl_JgKNc9zuAqgMsy5w13gbZoqkEhnY`, wrote one controlled UI smoke vocabulary row, cleaned the row set, removed the write flag, deployed disabled Preview `dpl_Athg2hWZK1gV6ereWdbYk1WXG58C` at `https://words-learning-app-for-mimi-6v8azqoaa-anorias-projects.vercel.app`, verified writes are disabled again, and removed the temporary write-enabled deployment. The development database is empty after cleanup.
 
 The GitHub repository URL was provided by the user:
 
@@ -302,6 +302,20 @@ Stage 5N-A Preview read-only verification:
 - Preview storage health returned zero counts.
 - Preview UI write attempt was blocked before request-body parsing because UI writes are disabled.
 - Final development database inspection still reports zero rows in core study tables.
+
+Stage 5N-B Preview controlled UI write smoke:
+
+- Temporary write-enabled Preview deployment: `dpl_JgKNc9zuAqgMsy5w13gbZoqkEhnY`.
+- Temporary write-enabled URL: `https://words-learning-app-for-mimi-8r2cn2jko-anorias-projects.vercel.app`.
+- Controlled write created one person, one vocabulary item, and one review settings row.
+- Smoke vocabulary item text: `stage five n preview ui write`.
+- Cleanup command: `npm run db:cleanup-stage5n-ui-smoke:dev`.
+- Cleanup removed one vocabulary item, one review settings row, and one person.
+- Disabled Preview deployment after cleanup: `dpl_Athg2hWZK1gV6ereWdbYk1WXG58C`.
+- Disabled Preview URL after cleanup: `https://words-learning-app-for-mimi-6v8azqoaa-anorias-projects.vercel.app`.
+- `MIMI_ENABLE_STORAGE_UI_WRITES` was removed from Preview after the write.
+- The temporary write-enabled deployment was removed.
+- Production env remains empty and existing non-official Production deployment remains untouched.
 
 ### People And Person Switching
 
