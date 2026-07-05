@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## 2026-07-05 14:48 AEST
+
+- Implemented Stage 5I runtime Postgres adapter for development / preview verification.
+- Added server-only Postgres runtime mode, lazy Neon Pool creation, row mappers, and a `DurableRepositoryPort` implementation for people, vocabulary, imports, review settings, review queue, review events, and review states.
+- Added `/api/storage/health` as a read-only storage health route and `/api/storage/smoke` as an opt-in write smoke route that is disabled by default.
+- Added runtime mode and mapper tests.
+- Kept browser `localStorage` as the user-facing runtime and kept Production Postgres runtime, backup import, and storage cutover out of scope.
+- Reason: prove the database adapter boundary before any user-facing storage switch or Production work.
+
 ## 2026-07-05 14:26 AEST
 
 - Updated Stage 5G deployment facts after Vercel Git integration created a clean Preview deployment from committed `origin/V1`.

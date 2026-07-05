@@ -1,5 +1,50 @@
 # AI Agent Log
 
+## 2026-07-05 14:48 AEST
+
+- Task: implement Stage 5I runtime Postgres adapter after the user confirmed the Stage 5H design.
+- Plan agreed: yes. The user confirmed execution. The accepted scope was adapter-first implementation only: server-only Postgres runtime modules, development / preview health and smoke routes, tests, and documentation, while keeping UI runtime on browser `localStorage`.
+- Changed files:
+  - `.env.example`
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE5I_RUNTIME_POSTGRES_ADAPTER_IMPLEMENTATION.md`
+  - `src/app/api/storage/health/route.ts`
+  - `src/app/api/storage/smoke/route.ts`
+  - `src/lib/storage/runtime-mode.test.ts`
+  - `src/lib/storage/runtime-mode.ts`
+  - `src/lib/storage/postgres/client.ts`
+  - `src/lib/storage/postgres/mappers.test.ts`
+  - `src/lib/storage/postgres/mappers.ts`
+  - `src/lib/storage/postgres/repository.ts`
+- Reason: prove the database adapter boundary before any user-facing storage runtime switch or Production database work.
+- Implementation notes:
+  - Added runtime mode parsing with default `local` behavior and explicit `MIMI_STORAGE_RUNTIME=postgres-preview` opt-in.
+  - Added lazy Neon `Pool` creation behind server-only and development / preview runtime checks.
+  - Added Postgres row mappers for people, vocabulary items, import batches, review states, review events, and review settings.
+  - Implemented `DurableRepositoryPort` for Postgres people, review settings, vocabulary list/add/update/archive/restore, import commit, review queue selection, review recording, and review event listing.
+  - Kept Postgres database UUIDs as canonical adapter IDs.
+  - Kept all learning-data reads and writes scoped by `personId`.
+  - Wrapped import commit and review recording in transactions.
+  - Added `/api/storage/health` as a read-only dynamic route.
+  - Added `/api/storage/smoke` as an opt-in write smoke route requiring `MIMI_STORAGE_RUNTIME=postgres-preview`, `MIMI_ENABLE_STORAGE_SMOKE_WRITES=true`, and `x-mimi-storage-smoke: allow-dev-preview-write`.
+  - Added unit tests for runtime mode behavior and Postgres mappers.
+- Validation:
+  - Passed: `npm run test` with 12 test files and 43 tests.
+  - Passed: `npm run typecheck`.
+  - Passed: `npm run lint`.
+  - Passed: `git diff --check`.
+  - Passed: `npm audit --json` with 0 vulnerabilities.
+  - Passed: `npm run db:inspect:dev`, reporting 8 tables, 11 indexes, 5 key constraints, and zero rows in core business tables.
+  - Passed: `npm run build`, including dynamic routes `/api/storage/health` and `/api/storage/smoke`.
+  - Passed: `npm run governance:preflight`.
+  - Passed: `python3 governance/preflight.py --tier 3 --require-skill-marker`.
+- Safety notes: no GitHub push, Production deployment, Production env var change, Production database migration, Production import, storage runtime cutover, backup import, authentication implementation, analytics, AI generation, embedding generation, FSRS implementation, email, notification, 付费/扣款 feature, or local/remote data import was performed. The smoke write route was not called, and the development database inspection still showed zero core business rows.
+
 ## 2026-07-05 14:26 AEST
 
 - Task: proceed to the next step after Stage 5G by documenting current deployment state and designing Stage 5H runtime Postgres adapter work.
