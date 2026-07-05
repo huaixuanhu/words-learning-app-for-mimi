@@ -9,9 +9,12 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "db:migrate:dev": "STAGE5F_DATABASE_TARGET=development dotenv -e .env.local -- node scripts/run-sql-migration.mjs db/migrations/0001_initial.sql",
+    "db:inspect:dev": "STAGE5F_DATABASE_TARGET=development dotenv -e .env.local -- node scripts/inspect-database-schema.mjs",
     "governance:preflight": "python3 governance/preflight.py --tier 1 --require-skill-marker"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
     "lucide-react": "^0.562.0",
     "next": "16.2.10",
     "react": "19.2.4",
@@ -24,6 +27,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.10",
+    "dotenv-cli": "^11.0.0",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^4.1.9"

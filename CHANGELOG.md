@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## 2026-07-05 12:56 AEST
+
+- Executed Stage 5F development / preview Vercel and Neon bootstrap after explicit user approval.
+- Created and linked the Vercel project for this repository and connected it to the user's GitHub repository through the existing Vercel/GitHub account setup.
+- Created the Neon resource through Vercel Marketplace for Development and Preview only, after the user accepted Marketplace terms in the browser.
+- Pulled Vercel/Neon generated env vars into ignored `.env.local` without printing or committing secret values.
+- Installed minimal database tooling with `@neondatabase/serverless` and `dotenv-cli`, with no ORM.
+- Added guarded development database scripts and `.env.example` placeholders.
+- Applied `db/migrations/0001_initial.sql` to the non-production development database and verified an empty schema with 8 tables, 11 indexes, and 5 key constraints.
+- Ran local browser smoke checks for person/settings, add, import, library edit/archive, review, export buttons, and console errors.
+- Attempted a preview deployment with `--target preview`; Vercel CLI returned `target: production`, so the unexpected deployment was removed immediately and follow-up inspection reported no deployments.
+- Reason: complete the approved remote dry run for the accepted Neon Postgres direction while keeping active production deployment, production migration, backup import, authentication, runtime Postgres persistence, and production study-data mutation out of scope.
+
 ## 2026-07-05 01:29 AEST
 
 - Documented Stage 5E Neon execution gate before any real remote storage work.

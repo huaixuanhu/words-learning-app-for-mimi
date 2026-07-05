@@ -1,6 +1,6 @@
--- Stage 5D durable storage readiness draft.
--- This file is intentionally not executed during Stage 5D.
--- Future remote execution requires explicit human approval and a Tier 3 gate.
+-- Stage 5D durable storage readiness draft, promoted for Stage 5F dev/preview bootstrap.
+-- Execution is allowed only for the non-production Neon development/preview database after human approval.
+-- Production execution still requires separate human confirmation and a Tier 3 gate.
 
 begin;
 

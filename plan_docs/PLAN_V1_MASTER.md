@@ -1,7 +1,7 @@
 # Words Learning App For Mimi PLAN V1 Master
 
 Created: 2026-07-02 23:30 AEST
-Last updated: 2026-07-05 01:29 AEST
+Last updated: 2026-07-05 13:09 AEST
 
 Source plan:
 
@@ -122,7 +122,7 @@ Exit criteria:
 
 ### Stage 5: Persistence, Export, And Backup
 
-Status: Stage 5A local export and backup implemented locally on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5A_LOCAL_EXPORT_BACKUP.md`. Stage 5B storage provider decision and multi-person data model documented on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5B_STORAGE_PROVIDER_DECISION.md`. Stage 5C local person adapter implemented on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5C_LOCAL_PERSON_ADAPTER.md`. Stage 5D durable storage readiness implemented on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5D_DURABLE_STORAGE_READINESS.md`. Stage 5E Neon execution gate documented on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5E_NEON_EXECUTION_GATE.md`. Remote database creation and persistence implementation remain pending separate approval.
+Status: Stage 5A local export and backup implemented locally on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5A_LOCAL_EXPORT_BACKUP.md`. Stage 5B storage provider decision and multi-person data model documented on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5B_STORAGE_PROVIDER_DECISION.md`. Stage 5C local person adapter implemented on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5C_LOCAL_PERSON_ADAPTER.md`. Stage 5D durable storage readiness implemented on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5D_DURABLE_STORAGE_READINESS.md`. Stage 5E Neon execution gate documented on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5E_NEON_EXECUTION_GATE.md`. Stage 5F development / preview Vercel and Neon bootstrap executed on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5F_DEV_PREVIEW_NEON_BOOTSTRAP.md`. Runtime Postgres persistence implementation remains pending a later plan.
 
 Exit criteria:
 
@@ -168,6 +168,17 @@ Stage 5E Neon execution gate:
 - Remote execution sequence is documented without running it.
 - Stop conditions and rollback direction are documented.
 - No credentials, env files, remote database, migration, or deployment are touched.
+
+Stage 5F development / preview Neon bootstrap:
+
+- New Vercel project is linked for this repository.
+- Neon Postgres development / preview resource is created through the Vercel integration path.
+- Local `.env.local` is ignored and holds Vercel / Neon generated values.
+- Minimal direct SQL tooling is added with no ORM.
+- `db/migrations/0001_initial.sql` has been applied to the non-production development database.
+- Schema inspection verified 8 tables, 11 indexes, 5 key constraints, and zero business rows.
+- Preview deployment is paused because a CLI attempt with `--target preview` returned `target: production`; that deployment was removed and Vercel now reports no deployments for the project.
+- App runtime remains browser `localStorage`; production migration, production import, production deployment, and runtime Postgres adapter are not implemented.
 
 ### Stage 6: GitHub And Vercel Deployment
 

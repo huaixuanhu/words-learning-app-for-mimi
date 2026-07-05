@@ -1,6 +1,6 @@
 # Words Learning App For Mimi
 
-Stage 5E local vocabulary, text import, review scheduler, flashcards, local export / backup, local multi-person adapter, durable storage readiness, and Neon execution gate planning for a mobile-first PTE vocabulary app.
+Stage 5F local vocabulary, text import, review scheduler, flashcards, local export / backup, local multi-person adapter, durable storage readiness, and development / preview Neon bootstrap for a mobile-first PTE vocabulary app.
 
 ## Commands
 
@@ -9,8 +9,16 @@ npm run governance:preflight
 npm run lint
 npm run typecheck
 npm run test
+npm run db:inspect:dev
 npm run build
 npm run dev
+```
+
+Database commands require ignored `.env.local` values from the approved Vercel / Neon setup:
+
+```bash
+npm run db:migrate:dev
+npm run db:inspect:dev
 ```
 
 ## Current Scope
@@ -23,8 +31,10 @@ npm run dev
 - Local `people` and selected person switching, with vocabulary, imports, review history, and review settings scoped by `personId`.
 - Stage 5B storage decision: future durable storage should use one Neon Postgres（关系型数据库）database with a `people` table and `person_id` separation for each learner's data.
 - Stage 5D durable storage readiness: local SQL migration（迁移）draft, backup-to-Postgres mapping, repository adapter contract（仓储适配层接口）, and SQL static tests.
-- Stage 5E execution gate: documented approval checklist, remote execution order, stop conditions, and rollback direction before any Neon/Vercel action.
+- Stage 5E execution gate: documented approval checklist, remote execution order, stop conditions, and rollback direction before Neon/Vercel action.
+- Stage 5F development / preview bootstrap: linked the Vercel project, created the Neon resource for development / preview, pulled ignored local env vars, added minimal database scripts, applied `0001_initial.sql` to the non-production development database, and verified the empty schema.
+- Preview deployment remains paused. A CLI deployment attempt with `--target preview` returned `target: production`; the deployment was removed immediately and `vercel ls words-learning-app-for-mimi` reported no deployments.
 - Browser `localStorage`（本地浏览器存储）only; this is local convenience storage, not durable production persistence.
-- No database, production deployment, authentication, external API, analytics, or remote study-data mutation yet.
+- No production database migration, production deployment, authentication, external API, analytics, runtime Postgres adapter, or production study-data mutation yet.
 
 Project rules live in `AGENTS.md`. Stage plans live in `plan_docs/`.

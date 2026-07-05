@@ -1,11 +1,11 @@
 # Words Learning App For Mimi Architecture
 
 Created: 2026-07-02 23:30 AEST
-Last updated: 2026-07-05 01:29 AEST
+Last updated: 2026-07-05 13:09 AEST
 
 ## Current State
 
-This repository is in Stage 5E Neon execution gate planning. It contains collaboration rules, architecture notes, master and stage plans, changelog, AI agent log, a lightweight Tier 1 governance preflight, and a minimal Next.js App Router application with browser-local vocabulary, review mutations, export, restore preview, selected-person switching, local SQL storage draft, repository adapter contract, and a documented Neon/Vercel execution gate.
+This repository is in Stage 5F development / preview Neon bootstrap. It contains collaboration rules, architecture notes, master and stage plans, changelog, AI agent log, a lightweight Tier 1 governance preflight, and a minimal Next.js App Router application with browser-local vocabulary, review mutations, export, restore preview, selected-person switching, local SQL storage, repository adapter contract, and an approved development / preview Vercel and Neon setup.
 
 Current local stack:
 
@@ -15,17 +15,19 @@ Current local stack:
 - Tailwind CSS 4.3.2
 - ESLint 9.39.4
 - Vitest 4.1.9 for vocabulary domain unit tests
+- `@neondatabase/serverless` 1.1.0 for minimal database scripts
+- `dotenv-cli` 11.0.0 for explicit `.env.local` loading in database scripts
 - npm with `package-lock.json`
 - `lucide-react` 0.562.0 for simple interface icons
 - npm `overrides` pins PostCSS（CSS 处理器）to 8.5.16 so the Next.js nested PostCSS copy resolves to the patched version.
 
 Stage 5C stores local study data in browser `localStorage`（本地浏览器存储）under `mimi-pte-vocabulary-v1`, with schema version 3. This enables local add, edit, archive, restore, search, import preview, review sessions, review history, per-person review settings, JSON backup（JSON 备份）, vocabulary CSV（逗号分隔值）export, JSON restore preview, and selected-person switching without remote services.
 
-Stage 5D adds durable storage readiness without connecting to any remote service. The local SQL draft lives at `db/migrations/0001_initial.sql`, the JSON backup to Postgres（关系型数据库）mapping lives at `db/LOCAL_BACKUP_TO_POSTGRES.md`, and the repository adapter contract（仓储适配层接口）lives at `src/lib/storage/durable-repository-contract.ts`.
+Stage 5D added durable storage readiness without connecting to any remote service. The local SQL migration lives at `db/migrations/0001_initial.sql`, the JSON backup to Postgres（关系型数据库）mapping lives at `db/LOCAL_BACKUP_TO_POSTGRES.md`, and the repository adapter contract（仓储适配层接口）lives at `src/lib/storage/durable-repository-contract.ts`.
 
-Stage 5E documents the execution gate for a later Neon/Vercel stage. It defines required human approvals, future command sequence, stop conditions, rollback direction, and validation expectations. It does not create a Neon project, link Vercel, touch `.env`, execute migrations, mutate remote data, or deploy.
+Stage 5E documented the execution gate for Neon/Vercel work. It defined required human approvals, command sequence, stop conditions, rollback direction, and validation expectations before any remote mutation.
 
-Stage 5B records the intended durable storage direction: one Neon Postgres database for the private group, a `people` table, and `person_id` on all durable learning data. The accepted product model is private person switching without password / credential isolation. This is data separation for trusted users, not security isolation. Actual Neon project creation, credentials, migration execution, authentication（认证）, deployment, and external integrations have not been implemented.
+Stage 5F executed the approved development / preview bootstrap. The Vercel project is linked, the Neon resource `words-learning-app-for-mimi-neon` exists for development / preview, ignored `.env.local` values were pulled locally, and `db/migrations/0001_initial.sql` was applied to the non-production development database. Schema inspection verified 8 tables, 11 indexes, 5 key constraints, and zero business rows. A deployment attempt with `--target preview` unexpectedly returned `target: production`; that deployment was removed immediately and Vercel now reports no deployments for the project. The app runtime still uses browser `localStorage`; the runtime Postgres adapter, backup import, production migration, production deployment, authentication（认证）, and external integrations have not been implemented.
 
 The GitHub repository URL was provided by the user:
 
@@ -174,7 +176,7 @@ Stage 5B storage decision:
 
 Stage 5D local readiness:
 
-- `db/migrations/0001_initial.sql` is an executable draft, not an executed migration.
+- `db/migrations/0001_initial.sql` is the current SQL migration. It has been applied to the non-production development Neon database only.
 - The draft uses UUID database primary keys, while local backup string ids are mapped during import.
 - `db/LOCAL_BACKUP_TO_POSTGRES.md` documents v3 JSON backup import validation, id mapping, count checks, and failure behavior.
 - `src/lib/storage/durable-repository-contract.ts` defines future adapter boundaries and requires explicit person context for learning-data operations.
@@ -187,6 +189,19 @@ Stage 5E execution gate:
 - A fresh JSON backup from `/export` is required before any remote import.
 - Migration must be run against a non-production branch first.
 - Any `person_id` leak, count mismatch, missing env var, wrong project, failed validation, or user pause request stops execution.
+
+Stage 5F development / preview bootstrap:
+
+- Vercel project: `anorias-projects/words-learning-app-for-mimi`.
+- Neon resource: `words-learning-app-for-mimi-neon`, development / preview only.
+- Local env file: `.env.local`, ignored by Git and never committed.
+- Env example file: `.env.example`, placeholder names only.
+- Database packages: `@neondatabase/serverless` and `dotenv-cli`.
+- Database commands:
+  - `npm run db:migrate:dev`
+  - `npm run db:inspect:dev`
+- Deployment status: no active Vercel deployments. Preview deployment is paused until the CLI target mismatch is understood.
+- Production migration, production import, production deployment, runtime Postgres adapter, and authentication remain out of scope until a later accepted plan.
 
 ### People And Person Switching
 
@@ -238,13 +253,13 @@ The `data` field contains the current `VocabularyData` schema version 3 shape. T
 
 ### Deployment Boundary
 
-Deployment is planned for Vercel after the app is locally validated. GitHub and Vercel actions require explicit human approval under `AGENTS.md`.
+The Vercel project is linked for development / preview work after explicit approval. No active Vercel deployments remain. A deployment attempt using `--target preview` returned a production target and was removed immediately; the next deployment step should first inspect Vercel production branch / CLI target behavior.
 
 ## Draft Data Model
 
-This is a planning model, not a committed database schema.
+This is the current development database schema model. It is applied only to the non-production development Neon database so far.
 
-Stage 5D has a local SQL draft at `db/migrations/0001_initial.sql`; it remains unexecuted until a future Tier 3 remote database stage is explicitly approved.
+Stage 5F applied `db/migrations/0001_initial.sql` after explicit approval. Production execution still requires a separate confirmation.
 
 ### Vocabulary Item
 
@@ -381,6 +396,7 @@ Current local validation commands:
 - `npm run lint`
 - `npm run typecheck`
 - `npm run test`
+- `npm run db:inspect:dev`
 - `npm run build`
 - `npm audit --json`
 - `npm run dev` plus browser smoke check

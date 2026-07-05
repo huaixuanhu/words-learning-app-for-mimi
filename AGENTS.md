@@ -16,11 +16,11 @@
 
 - Project root: `/Users/anoria/Documents/python_coding/small_project/learningWordsformimi`
 - User-provided GitHub repository: `https://github.com/huaixuanhu/words-learning-app-for-mimi.git`
-- Current stage: Stage 5E Neon execution gate planning. Browser-local storage schema version 3 includes people, selected person, vocabulary, import batches, review history, per-person review settings, JSON backup, CSV export, and local restore preview. Local SQL, adapter-contract drafts, and a Neon execution gate plan exist for future Neon Postgres work, but no durable database, credential work, remote migration, or production deployment exists yet.
+- Current stage: Stage 5F development / preview Neon bootstrap. Browser-local storage schema version 3 still drives the app runtime. The Vercel project is linked, a Neon Postgres development / preview resource exists, and `db/migrations/0001_initial.sql` has been applied to the non-production development database with an empty schema verification. No active Vercel deployment remains after a CLI target mismatch was removed. No production database migration, production import, or runtime Postgres adapter has been implemented yet.
 - Intended product: a mobile-first vocabulary flashcard web app for PTE study.
 - Intended hosting: GitHub plus Vercel, with deployment only after explicit approval.
-- Current application stack: Next.js App Router, TypeScript, Tailwind CSS, ESLint, Vitest, npm, and browser `localStorage` for local study data.
-- Intended production storage is one Neon Postgres database for the private group, with a `people` table and `person_id` separation for all learning data. Actual database creation, credentials, migration execution, data import, and deployment still require separate explicit approval.
+- Current application stack: Next.js App Router, TypeScript, Tailwind CSS, ESLint, Vitest, npm, `@neondatabase/serverless` for approved database scripts, `dotenv-cli` for explicit local env loading, and browser `localStorage` for current app study data.
+- Intended production storage is one Neon Postgres database for the private group, with a `people` table and `person_id` separation for all learning data. Production migration, production import, and production deployment still require separate explicit approval.
 
 ## Runtime And Environment
 
@@ -97,8 +97,9 @@ npm run governance:preflight
 npm run lint
 npm run typecheck
 npm run test
+npm run db:inspect:dev
 npm run build
 npm run dev
 ```
 
-The current unit test suite covers vocabulary normalization, import parsing, local repository behavior, timestamp preservation, archive/restore behavior, schema migration, person-scoped data, review scheduling, per-person review settings, review event/state updates, JSON backup validation, CSV escaping, backup round trip behavior, and static checks for the Stage 5D SQL schema draft.
+The current unit test suite covers vocabulary normalization, import parsing, local repository behavior, timestamp preservation, archive/restore behavior, schema migration, person-scoped data, review scheduling, per-person review settings, review event/state updates, JSON backup validation, CSV escaping, backup round trip behavior, and static checks for the SQL schema. The development database inspection requires ignored `.env.local` values created by the approved Vercel / Neon setup.

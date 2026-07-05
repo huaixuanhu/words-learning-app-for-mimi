@@ -1,5 +1,52 @@
 # AI Agent Log
 
+## 2026-07-05 13:09 AEST
+
+- Task: execute Stage 5F development / preview Vercel and Neon bootstrap after the user supplied approvals and asked to continue after token refresh.
+- Plan agreed: yes. The user approved Vercel link/project creation, Neon creation through the Vercel path, development / preview env handling, minimal database packages, non-production migration dry run, schema inspection, and smoke testing. Production migration, production import, and production deployment still require separate confirmation.
+- Changed files:
+  - `.env.example`
+  - `.gitignore`
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `db/migrations/0001_initial.sql`
+  - `governance/AI_AGENT_LOG.md`
+  - `package-lock.json`
+  - `package.json`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE5F_DEV_PREVIEW_NEON_BOOTSTRAP.md`
+  - `scripts/db-connection.mjs`
+  - `scripts/inspect-database-schema.mjs`
+  - `scripts/run-sql-migration.mjs`
+  - `src/lib/storage/durable-schema.test.ts`
+- Reason: complete the accepted non-production remote dry run for the Neon Postgres direction while preserving the browser-local runtime and keeping production data/deployment boundaries explicit.
+- Implementation notes:
+  - Verified the Vercel user/project boundary and created/linked `anorias-projects/words-learning-app-for-mimi`.
+  - Created Neon resource `words-learning-app-for-mimi-neon` for Development and Preview through the Vercel Marketplace path after the user accepted Marketplace terms.
+  - Pulled generated env vars into ignored `.env.local` without printing values.
+  - Added `.env.example` with placeholder connection URL names only and kept `.env.local` / `.vercel` ignored.
+  - Installed `@neondatabase/serverless` and `dotenv-cli`; no ORM was added.
+  - Added guarded `db:migrate:dev` and `db:inspect:dev` scripts requiring `STAGE5F_DATABASE_TARGET=development`.
+  - Updated the SQL migration header from Stage 5D draft language to Stage 5F non-production execution language.
+  - Applied `db/migrations/0001_initial.sql` to the development Neon database.
+  - Added read-only schema inspection for expected tables, indexes, constraints, and empty business-table counts.
+  - Updated docs to state that the app runtime still uses browser `localStorage` and that the runtime Postgres adapter remains future work.
+  - Attempted a preview deployment with `npx vercel@latest --yes --target preview`; Vercel CLI returned `target: production` and assigned production aliases. The unexpected deployment `dpl_Hgn5b9j7TD3GEEiZjzvNh8Mvoe5b` was removed immediately, and follow-up inspection reported no deployments.
+- Validation:
+  - Passed: `npm run db:migrate:dev`
+  - Passed: `npm run db:inspect:dev`, reporting 8 tables, 11 indexes, 5 key constraints, and zero rows in core business tables.
+  - Passed: `npm run test` with 10 test files and 35 tests.
+  - Passed: `npm run typecheck`
+  - Passed: `npm run lint`
+  - Passed: `npm run build`
+  - Passed: `npm audit --json` with 0 vulnerabilities.
+  - Passed: local browser smoke test for settings/person switching, manual add, pasted-text import, library edit/archive, review recording, JSON backup button, CSV button, and browser console errors.
+  - Passed: Vercel read-only deployment cleanup checks; removed deployment id and production alias were not found, and `npx vercel@latest ls words-learning-app-for-mimi` reported no deployments.
+  - Passed: `npx vercel@latest env ls` confirmed the database env vars are scoped to Development and Preview only.
+- Safety notes: remote work was intended for development / preview only. Secret values were not printed or committed. No backup import was performed because the user confirmed local storage is empty. No production database migration, production import, runtime Postgres adapter, authentication implementation, analytics, AI generation, email, payment, notification, GitHub push, or active Vercel deployment remains. Preview deployment is paused until the Vercel CLI target mismatch and project production-branch behavior are checked in a separate step.
+
 ## 2026-07-05 01:29 AEST
 
 - Task: start Stage 5E by documenting the Neon execution gate after the user asked to begin the next stage.

@@ -19,8 +19,8 @@ function tableBlock(tableName: string) {
   return match[0];
 }
 
-describe("durable storage schema draft", () => {
-  it("declares all Stage 5D tables", () => {
+describe("durable storage schema", () => {
+  it("declares all durable storage tables", () => {
     const expectedTables = [
       "people",
       "import_batches",
@@ -88,8 +88,9 @@ describe("durable storage schema draft", () => {
     }
   });
 
-  it("does not require remote credentials or Vercel-specific packages", () => {
+  it("keeps migration SQL free of credentials and production execution assumptions", () => {
     expect(migrationSql).not.toMatch(/database_url|postgres_url|@vercel\/postgres/i);
-    expect(migrationSql).toContain("This file is intentionally not executed during Stage 5D.");
+    expect(migrationSql).toContain("non-production Neon development/preview database");
+    expect(migrationSql).toContain("Production execution still requires separate human confirmation");
   });
 });
