@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 2026-07-06 00:22 AEST
+
+- Executed Stage 6A Production release gate design as documentation only.
+- Added `plan_docs/PLAN_V1_STAGE6A_PRODUCTION_RELEASE_GATE.md`.
+- Documented the Stage 6B pre-execution checklist, env matrix, Production runtime gate, database migration gate, backup/import/rollback gate, stop conditions, and Stage 7 handoff requirements.
+- Clarified that `person_id` separates learner data but is not security isolation.
+- Reason: create a rigorous formal Production gate before visual design and before any future merge to `main` or Vercel Production action.
+
 ## 2026-07-06 00:15 AEST
 
 - Confirmed the formal release sequence as Stage 6A release gate design, Stage 7 UI / visual design, then Stage 6B formal Production execution.

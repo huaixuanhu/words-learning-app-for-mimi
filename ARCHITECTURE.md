@@ -1,7 +1,7 @@
 # Words Learning App For Mimi Architecture
 
 Created: 2026-07-02 23:30 AEST
-Last updated: 2026-07-06 00:15 AEST
+Last updated: 2026-07-06 00:22 AEST
 
 ## Current State
 
@@ -44,6 +44,8 @@ Stage 5M extends backup import and cuts over the UI runtime for development / pr
 Stage 5N verifies the Stage 5M UI runtime in Vercel Preview. Stage 5N-A deployed read-only Preview `dpl_HpcPDb5B2su2BLPWJVsYZjPDnWSg` at `https://words-learning-app-for-mimi-kb5b08c5v-anorias-projects.vercel.app`, confirmed `target=preview`, read `postgres-preview` health/data successfully, and confirmed writes were blocked. Stage 5N-B temporarily enabled `MIMI_ENABLE_STORAGE_UI_WRITES=true` in Preview, deployed write-enabled Preview `dpl_JgKNc9zuAqgMsy5w13gbZoqkEhnY`, wrote one controlled UI smoke vocabulary row, cleaned the row set, removed the write flag, deployed disabled Preview `dpl_Athg2hWZK1gV6ereWdbYk1WXG58C` at `https://words-learning-app-for-mimi-6v8azqoaa-anorias-projects.vercel.app`, verified writes are disabled again, and removed the temporary write-enabled deployment. The development database is empty after cleanup.
 
 The confirmed release sequence is Stage 6A Production（生产环境）release gate design, Stage 7 UI（用户界面）/ visual design and optional PWA（Progressive Web App，渐进式 Web 应用）work, then Stage 6B formal merge（合并）to `main` and Production execution after explicit approval. Formal Production should not proceed before Stage 7 visual design is accepted.
+
+Stage 6A documents the Production release gate. It confirms that current `person_id` behavior separates learner data but does not provide security isolation, that `postgres-preview` must not be used as a Production runtime mode, and that Stage 6B must either keep first Production browser-local or introduce a separate accepted Production runtime before durable shared writes.
 
 The GitHub repository URL was provided by the user:
 
@@ -369,7 +371,7 @@ The `data` field contains the current `VocabularyData` schema version 3 shape. T
 
 ### Deployment Boundary
 
-The Vercel project is linked for development / preview work after explicit approval. Vercel currently has an active Production deployment from branch `V1`; it remains in place for now but is not the official V1 production release. Formal Production should wait for Stage 6A release gate design, accepted Stage 7 UI / visual design, and a later Stage 6B execution approval. In Stage 6B, `V1` should merge to `main`, and Vercel's production branch should remain `main`. Preview deployment work should use `vercel deploy` without `--prod` and must verify `target=preview`; Stage 5G verified this with Preview deployment `dpl_d5LUb6r1wEXiJBUENb2PACEZMVsu`.
+The Vercel project is linked for development / preview work after explicit approval. Vercel currently has an active Production deployment from branch `V1`; it remains in place for now but is not the official V1 production release. Formal Production should wait for Stage 6A release gate design, accepted Stage 7 UI / visual design, and a later Stage 6B execution approval. In Stage 6B, `V1` should merge to `main`, and Vercel's production branch should remain `main`. Preview deployment work should use `vercel deploy` without `--prod` and must verify `target=preview`; Stage 5G verified this with Preview deployment `dpl_d5LUb6r1wEXiJBUENb2PACEZMVsu`. Stage 6A's release gate also requires re-checking the Vercel production branch, Production env vars, deployment target, Production database target, and no-credential private-URL risk before any formal Production action.
 
 ## Draft Data Model
 

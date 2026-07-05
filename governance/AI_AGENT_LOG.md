@@ -1,5 +1,36 @@
 # AI Agent Log
 
+## 2026-07-06 00:22 AEST
+
+- Task: design and execute Stage 6A Production release gate after the user committed the release-sequence confirmation.
+- Plan agreed: yes. The user explicitly requested Stage 6A design and execution. This stage was limited to documentation and release-gate design.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE6A_PRODUCTION_RELEASE_GATE.md`
+- Reason: define the formal Production（生产环境）gate before Stage 7 visual design and before any future Stage 6B merge（合并）to `main`, env var change, database migration（数据库迁移）, import, or deployment.
+- Implementation notes:
+  - Added a Stage 6A child plan with required `Source plan`, `Derived from`, `Scope`, `Non-Scope`, and `Exit criteria` markers.
+  - Documented the confirmed sequence: Stage 6A release gate design, Stage 7 UI（用户界面）/ visual design, then Stage 6B formal Production execution.
+  - Documented that `person_id` is data separation, not security isolation.
+  - Documented that no-credential private-group Production writes require explicit risk acceptance or a separate access gate.
+  - Documented that `postgres-preview` must not be used as a Production runtime mode.
+  - Documented Stage 6B gates for environment variables（环境变量）, database target identification, migration, backup/import/rollback, smoke testing, and stop conditions.
+  - Checked current Vercel and Neon official documentation for deployment environments, Git deployments, env vars, storage integration, and branching concepts before writing the release gate.
+- Validation:
+  - Passed: `git diff --check`.
+  - Passed: `npm run lint`.
+  - Passed: `npm run typecheck`.
+  - Passed: `npm run test` with 13 files and 48 tests.
+  - Passed: `npm run build`.
+  - Passed: `npm run backup:dry-run:fixture`.
+  - Passed: `npm run governance:preflight`.
+- Safety notes: documentation only. No Vercel command, Neon command, database command, env var read/change, GitHub push, merge to `main`, Production deployment, Production migration, Production import, authentication（认证）, analytics（分析追踪）, AI generation, embedding（向量嵌入）, FSRS（Free Spaced Repetition Scheduler，自由间隔重复调度算法）, email, notification, or 付费/扣款 feature was performed.
+
 ## 2026-07-06 00:15 AEST
 
 - Task: confirm the release sequence before formal Production work.
