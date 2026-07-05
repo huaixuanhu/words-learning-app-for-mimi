@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## 2026-07-06 00:15 AEST
+
+- Confirmed the formal release sequence as Stage 6A release gate design, Stage 7 UI / visual design, then Stage 6B formal Production execution.
+- Documented that `V1` should not merge to `main` for formal Production before Stage 7 visual design is accepted.
+- Updated the deployment boundary so the existing Production deployment from branch `V1` remains a non-official artifact.
+- Reason: prevent the Stage 6 heading from being interpreted as immediate Production execution before the dedicated visual design stage.
+
 ## 2026-07-05 23:45 AEST
 
 - Executed Stage 5N-B controlled Preview UI write smoke and cleanup.

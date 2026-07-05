@@ -265,6 +265,13 @@ Stage 5N Preview UI runtime verification:
 
 ### Stage 6: GitHub And Vercel Deployment
 
+Confirmed release sequence as of 2026-07-06:
+
+- Stage 6A is Production（生产环境）release gate design only. It may define the final deployment checklist, access boundary, environment variable（环境变量）matrix, database migration（数据库迁移）plan, backup/import/rollback path, and smoke test（冒烟测试）criteria, but it must not merge to `main`, mutate Production data, add Production env vars, or create/promote a formal Production deployment.
+- Stage 7 must complete UI（用户界面）/ visual design, mobile interaction polish, review-flow comfort, accessibility（可访问性）review, and optional PWA（Progressive Web App，渐进式 Web 应用）evaluation before formal Production.
+- Stage 6B is the later formal execution step. Only after Stage 7 is accepted should `V1` be merged to `main`, Vercel's production branch remain `main`, Production env vars be configured, Production database work run, and the final Production smoke test be performed.
+- The current active Production deployment from branch `V1` remains a documented non-official artifact, not the formal V1 production release.
+
 Exit criteria:
 
 - Local git repository is initialized or connected with human approval.
@@ -277,6 +284,7 @@ Exit criteria:
 
 Exit criteria:
 
+- Visual design is accepted before formal Production execution.
 - Mobile interaction is comfortable.
 - PWA installability is evaluated.
 - Review session performance is checked.
