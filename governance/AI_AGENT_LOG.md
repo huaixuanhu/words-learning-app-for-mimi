@@ -1,5 +1,36 @@
 # AI Agent Log
 
+## 2026-07-05 14:00 AEST
+
+- Task: continue from Stage 5F by documenting the active Production deployment state and creating a true Preview deployment without touching Production.
+- Plan agreed: yes. The user explicitly said not to delete the current active Production deployment for now, to document it clearly, and to use `vercel deploy` for Preview only.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE5F_DEV_PREVIEW_NEON_BOOTSTRAP.md`
+  - `plan_docs/PLAN_V1_STAGE5G_PREVIEW_DEPLOYMENT_BOUNDARY.md`
+- Reason: align project documentation with actual Vercel state and establish a verified Preview deployment path while deferring formal Production until V1 completion and merge.
+- Implementation notes:
+  - Re-read Vercel CLI and deployment skill guidance.
+  - Checked current official Vercel docs for CLI preview deployment, Production deployment, environments, Git production branch behavior, and Git preview branches.
+  - Verified through Vercel API that the Git link production branch is `main`.
+  - Verified active Production deployment `dpl_2nvALJ1CutPjeFteXKMCHWKa4UsD` from branch `V1`; per user instruction, it was not removed.
+  - Added Stage 5G plan doc and updated architecture/readme/master plan to classify the active Production deployment as non-official.
+  - Ran `npx vercel@latest deploy --yes`, which created Preview deployment `dpl_d5LUb6r1wEXiJBUENb2PACEZMVsu`.
+  - Verified the Preview deployment with `vercel inspect`, Vercel API OIDC claims, `vercel ls`, route smoke checks, and error-log query.
+  - `vercel curl` generated a deployment protection bypass token for protected Preview access. The token value was not printed and was not committed.
+- Validation:
+  - Passed: `vercel inspect words-learning-app-for-mimi-bwfhi5rap-anorias-projects.vercel.app`, reporting `target preview`.
+  - Passed: Vercel API OIDC claims for `dpl_d5LUb6r1wEXiJBUENb2PACEZMVsu`, reporting `environment: preview`.
+  - Passed: `vercel ls words-learning-app-for-mimi`, showing both the verified Preview deployment and the non-official Production deployment.
+  - Passed: `vercel curl` route checks for `/`, `/add`, `/import`, `/library`, `/review`, `/export`, and `/settings`, all returning HTTP 200.
+  - Passed: `vercel logs dpl_d5LUb6r1wEXiJBUENb2PACEZMVsu --level error --since 10m --json`, returning no error log records.
+- Safety notes: no Production deployment was deleted, promoted, or newly created in this step. No Production database migration, Production import, runtime Postgres adapter, authentication implementation, analytics, AI generation, email, 付费/扣款, notification, GitHub push, or production-domain change was performed. The Preview deployment was created from a dirty local working tree and should be treated as a preview artifact only.
+
 ## 2026-07-05 13:09 AEST
 
 - Task: execute Stage 5F development / preview Vercel and Neon bootstrap after the user supplied approvals and asked to continue after token refresh.
@@ -45,7 +76,7 @@
   - Passed: local browser smoke test for settings/person switching, manual add, pasted-text import, library edit/archive, review recording, JSON backup button, CSV button, and browser console errors.
   - Passed: Vercel read-only deployment cleanup checks; removed deployment id and production alias were not found, and `npx vercel@latest ls words-learning-app-for-mimi` reported no deployments.
   - Passed: `npx vercel@latest env ls` confirmed the database env vars are scoped to Development and Preview only.
-- Safety notes: remote work was intended for development / preview only. Secret values were not printed or committed. No backup import was performed because the user confirmed local storage is empty. No production database migration, production import, runtime Postgres adapter, authentication implementation, analytics, AI generation, email, payment, notification, GitHub push, or active Vercel deployment remains. Preview deployment is paused until the Vercel CLI target mismatch and project production-branch behavior are checked in a separate step.
+- Safety notes: remote work was intended for development / preview only. Secret values were not printed or committed. No backup import was performed because the user confirmed local storage is empty. No production database migration, production import, runtime Postgres adapter, authentication implementation, analytics, AI generation, email, 付费/扣款, notification, GitHub push, or active Vercel deployment remains. Preview deployment is paused until the Vercel CLI target mismatch and project production-branch behavior are checked in a separate step.
 
 ## 2026-07-05 01:29 AEST
 
@@ -68,7 +99,7 @@
   - Recorded stop conditions and rollback direction.
 - Validation:
   - Passed: `npm run governance:preflight`
-- Safety notes: documentation and planning only. No Neon project creation, Vercel Marketplace installation, Vercel CLI command, database package installation, `.env` editing, credential access, remote migration, remote data mutation, authentication implementation, production deployment, GitHub push, embedding generation, FSRS implementation, analytics, AI generation, email, payment, notification, or production action was performed.
+- Safety notes: documentation and planning only. No Neon project creation, Vercel Marketplace installation, Vercel CLI command, database package installation, `.env` editing, credential access, remote migration, remote data mutation, authentication implementation, production deployment, GitHub push, embedding generation, FSRS implementation, analytics, AI generation, email, 付费/扣款, notification, or production action was performed.
 
 ## 2026-07-05 01:12 AEST
 
@@ -101,7 +132,7 @@
   - Passed: `npm run build`
   - Passed: `npm audit --json` with 0 vulnerabilities.
   - Passed: `npm run governance:preflight`
-- Safety notes: local source, SQL draft, tests, and documentation only. No Neon project creation, Vercel Marketplace installation, database package installation, `.env` editing, credential access, remote migration, remote data mutation, authentication implementation, production deployment, GitHub push, embedding generation, FSRS implementation, analytics, AI generation, email, payment, notification, or production action was performed. The SQL migration draft was not executed.
+- Safety notes: local source, SQL draft, tests, and documentation only. No Neon project creation, Vercel Marketplace installation, database package installation, `.env` editing, credential access, remote migration, remote data mutation, authentication implementation, production deployment, GitHub push, embedding generation, FSRS implementation, analytics, AI generation, email, 付费/扣款, notification, or production action was performed. The SQL migration draft was not executed.
 
 ## 2026-07-05 00:54 AEST
 
@@ -155,7 +186,7 @@
   - Passed: `npm run build`
   - Passed: `npm audit --json` with 0 vulnerabilities.
   - Passed: local dev server smoke checks for `/settings`, `/library`, `/review`, and `/export` on `http://localhost:3000`.
-- Safety notes: local source, documentation, browser-local schema migration, and local person switching only. No Neon project creation, Vercel Marketplace installation, database package installation, `.env` editing, credential access, remote migration, remote data mutation, authentication implementation, production deployment, GitHub push, embedding generation, FSRS implementation, analytics, AI generation, email, payment, notification, or production action was performed.
+- Safety notes: local source, documentation, browser-local schema migration, and local person switching only. No Neon project creation, Vercel Marketplace installation, database package installation, `.env` editing, credential access, remote migration, remote data mutation, authentication implementation, production deployment, GitHub push, embedding generation, FSRS implementation, analytics, AI generation, email, 付费/扣款, notification, or production action was performed.
 
 ## 2026-07-05 00:41 AEST
 
@@ -178,7 +209,7 @@
   - Clarified that no-password person switching is convenience separation for trusted private users, not security isolation.
 - Validation:
   - Passed: `npm run governance:preflight`.
-- Safety notes: documentation and architecture planning only. No Neon project creation, Vercel Marketplace installation, database migration, remote data mutation, package installation, `.env` editing, credential access, authentication implementation, deployment, GitHub push, embedding generation, FSRS implementation, analytics, AI generation, email, payment, notification, or production action was performed.
+- Safety notes: documentation and architecture planning only. No Neon project creation, Vercel Marketplace installation, database migration, remote data mutation, package installation, `.env` editing, credential access, authentication implementation, deployment, GitHub push, embedding generation, FSRS implementation, analytics, AI generation, email, 付费/扣款, notification, or production action was performed.
 
 ## 2026-07-05 00:23 AEST
 
@@ -214,7 +245,7 @@
   - Passed: `npm run build`
   - Passed: `npm audit --json` with 0 vulnerabilities.
   - Passed: local dev server smoke check for `/export` on `http://localhost:3000`.
-- Safety notes: local source, documentation, browser-local export, and browser-local restore preview only. No database creation, remote migration, production data mutation, Vercel deployment, GitHub push, credential access, `.env` editing, external API integration, cloud sync, embedding generation, FSRS implementation, analytics, AI generation, email, payment, notification, or production action was performed. JSON backup files can contain personal study data and should be kept private.
+- Safety notes: local source, documentation, browser-local export, and browser-local restore preview only. No database creation, remote migration, production data mutation, Vercel deployment, GitHub push, credential access, `.env` editing, external API integration, cloud sync, embedding generation, FSRS implementation, analytics, AI generation, email, 付费/扣款, notification, or production action was performed. JSON backup files can contain personal study data and should be kept private.
 
 ## 2026-07-04 23:42 AEST
 
@@ -262,7 +293,7 @@
   - Passed: `npm audit --json` with 0 vulnerabilities.
   - Passed: `npm run governance:preflight`
   - Passed: local dev server smoke checks for `/`, `/review`, and `/settings` on `http://localhost:3000`.
-- Safety notes: local source, documentation, and browser-local study-data code only. No database creation, remote migration, remote persistent data mutation, Vercel deployment, GitHub push, credential access, `.env` editing, external API integration, embedding generation, FSRS implementation, analytics, AI generation, email, payment, notification, or production action was performed. Stage 4 review history remains browser `localStorage`, so it is not a durable backup or cross-device storage.
+- Safety notes: local source, documentation, and browser-local study-data code only. No database creation, remote migration, remote persistent data mutation, Vercel deployment, GitHub push, credential access, `.env` editing, external API integration, embedding generation, FSRS implementation, analytics, AI generation, email, 付费/扣款, notification, or production action was performed. Stage 4 review history remains browser `localStorage`, so it is not a durable backup or cross-device storage.
 
 ## 2026-07-04 01:14 AEST
 
@@ -311,7 +342,7 @@
   - Passed: `npm audit --json` with 0 total vulnerabilities.
   - Passed: `npm run governance:preflight`
   - Passed: local dev server smoke check for `/`, `/add`, `/import`, `/library`, and `/review` at `http://localhost:3000`.
-- Safety notes: local source, documentation, package metadata, and browser-local study-data code only. No database creation, migration, remote persistent data mutation, Vercel deployment, GitHub push, credential access, `.env` editing, external API integration, analytics, AI generation, email, payment, or production action was performed. Stage 3 data is local browser `localStorage`, so it is not a durable backup or cross-device storage.
+- Safety notes: local source, documentation, package metadata, and browser-local study-data code only. No database creation, migration, remote persistent data mutation, Vercel deployment, GitHub push, credential access, `.env` editing, external API integration, analytics, AI generation, email, 付费/扣款, or production action was performed. Stage 3 data is local browser `localStorage`, so it is not a durable backup or cross-device storage.
 
 ## 2026-07-04 00:27 AEST
 
@@ -332,7 +363,7 @@
   - Passed: `npm run lint`
   - Passed: `npm run typecheck`
   - Passed: `npm run build`
-- Safety notes: local governance files, package scripts, and documentation only. No durable study-data mutation, database migration, Vercel deployment, GitHub push, credential access, `.env` editing, external API integration, analytics, AI generation, email, payment, or production action was performed.
+- Safety notes: local governance files, package scripts, and documentation only. No durable study-data mutation, database migration, Vercel deployment, GitHub push, credential access, `.env` editing, external API integration, analytics, AI generation, email, 付费/扣款, or production action was performed.
 
 ## 2026-07-03 19:23 AEST
 
@@ -359,7 +390,7 @@
   - Passed: `npm run lint`
   - Passed: `npm run typecheck`
   - Passed: `npm run build`
-- Safety notes: local dependency metadata and documentation only. No app feature behavior, database, persistent study-data mutation, Vercel deployment, GitHub push, credential access, `.env` editing, external API integration, analytics, AI generation, email, payment, or production action was performed.
+- Safety notes: local dependency metadata and documentation only. No app feature behavior, database, persistent study-data mutation, Vercel deployment, GitHub push, credential access, `.env` editing, external API integration, analytics, AI generation, email, 付费/扣款, or production action was performed.
 
 ## 2026-07-03 02:21 AEST
 
@@ -390,7 +421,7 @@
   - Passed: Chrome smoke check for homepage and `/add`
   - Passed: “修改添加时间” expands `Created at` and `Timezone`, with timezone detected as `Australia/Melbourne`
   - Residual: `npm audit --json` reports 2 moderate severity findings through `next -> postcss`; npm audit only offered a semver-major downgrade to old Next.js, so no force fix was applied.
-- Safety notes: local application scaffold and documentation only. No database, persistent study-data mutation, Vercel deployment, GitHub push, credential access, `.env` editing, external API integration, analytics, AI generation, email, payment, or production action was performed.
+- Safety notes: local application scaffold and documentation only. No database, persistent study-data mutation, Vercel deployment, GitHub push, credential access, `.env` editing, external API integration, analytics, AI generation, email, 付费/扣款, or production action was performed.
 
 ## 2026-07-03 01:48 AEST
 

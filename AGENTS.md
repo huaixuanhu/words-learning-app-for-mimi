@@ -16,7 +16,7 @@
 
 - Project root: `/Users/anoria/Documents/python_coding/small_project/learningWordsformimi`
 - User-provided GitHub repository: `https://github.com/huaixuanhu/words-learning-app-for-mimi.git`
-- Current stage: Stage 5F development / preview Neon bootstrap. Browser-local storage schema version 3 still drives the app runtime. The Vercel project is linked, a Neon Postgres development / preview resource exists, and `db/migrations/0001_initial.sql` has been applied to the non-production development database with an empty schema verification. No active Vercel deployment remains after a CLI target mismatch was removed. No production database migration, production import, or runtime Postgres adapter has been implemented yet.
+- Current stage: Stage 5G preview deployment boundary. Browser-local storage schema version 3 still drives the app runtime. The Vercel project is linked, a Neon Postgres development / preview resource exists, and `db/migrations/0001_initial.sql` has been applied to the non-production development database with an empty schema verification. Vercel currently has an active Production deployment (`dpl_2nvALJ1CutPjeFteXKMCHWKa4UsD`) from branch `V1`; it is documented as a non-official artifact and should not be treated as the formal V1 production release. A verified Preview deployment (`dpl_d5LUb6r1wEXiJBUENb2PACEZMVsu`) exists at `https://words-learning-app-for-mimi-bwfhi5rap-anorias-projects.vercel.app`. No production database migration, production import, or runtime Postgres adapter has been implemented yet.
 - Intended product: a mobile-first vocabulary flashcard web app for PTE study.
 - Intended hosting: GitHub plus Vercel, with deployment only after explicit approval.
 - Current application stack: Next.js App Router, TypeScript, Tailwind CSS, ESLint, Vitest, npm, `@neondatabase/serverless` for approved database scripts, `dotenv-cli` for explicit local env loading, and browser `localStorage` for current app study data.
@@ -38,7 +38,7 @@ Upgrade the working gate to Tier 3 before tasks involving:
 - production deployment
 - production database migrations
 - external APIs, account connectors, or paid services
-- long-running automation, scheduled jobs, email, messages, or payments
+- long-running automation, scheduled jobs, email, messages, or 付费/扣款
 - destructive changes to persistent study data
 
 ## Safety Boundaries
@@ -62,7 +62,7 @@ Require explicit human approval:
 Forbidden without explicit approval:
 
 - Mutate production data.
-- Send emails, messages, payments, or notifications.
+- Send emails, messages, 付费/扣款, or notifications.
 - Store secrets in source control.
 - Publicly expose study history, review history, or personal data.
 

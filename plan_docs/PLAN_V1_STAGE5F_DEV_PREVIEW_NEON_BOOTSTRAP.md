@@ -41,7 +41,7 @@ Non-Scope:
 - No deletion or mutation of browser `localStorage`（本地浏览器存储）as part of remote bootstrap.
 - No password login, OAuth（开放授权）, authentication（认证）, or account-security implementation.
 - No preview branch database isolation beyond the simplified development / preview setup accepted by the user.
-- No embedding（向量嵌入）, vector database（向量数据库）, FSRS（Free Spaced Repetition Scheduler，自由间隔重复调度算法）, AI generation, dictionary API（词典接口）, analytics（分析追踪）, email, payment, or notification.
+- No embedding（向量嵌入）, vector database（向量数据库）, FSRS（Free Spaced Repetition Scheduler，自由间隔重复调度算法）, AI generation, dictionary API（词典接口）, analytics（分析追踪）, email, 付费/扣款, or notification.
 
 Safety / Side Effects:
 
@@ -103,6 +103,7 @@ Execution Results:
 - A preview deployment attempt was made with `npx vercel@latest --yes --target preview`, but Vercel CLI returned `target: production` and assigned production aliases.
 - The unexpected production-target deployment `dpl_Hgn5b9j7TD3GEEiZjzvNh8Mvoe5b` was removed immediately with `npx vercel@latest remove ... --yes`.
 - Read-only follow-up checks confirmed the removed deployment id and production alias were not found, and `npx vercel@latest ls words-learning-app-for-mimi` reported no deployments.
+- Later Stage 5G inspection found a separate active Production deployment `dpl_2nvALJ1CutPjeFteXKMCHWKa4UsD` from branch `V1`. This is kept as a non-official artifact per user instruction and should not be confused with formal V1 production.
 
 Still Pending After Bootstrap:
 

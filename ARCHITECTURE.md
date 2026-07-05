@@ -1,11 +1,11 @@
 # Words Learning App For Mimi Architecture
 
 Created: 2026-07-02 23:30 AEST
-Last updated: 2026-07-05 13:09 AEST
+Last updated: 2026-07-05 14:00 AEST
 
 ## Current State
 
-This repository is in Stage 5F development / preview Neon bootstrap. It contains collaboration rules, architecture notes, master and stage plans, changelog, AI agent log, a lightweight Tier 1 governance preflight, and a minimal Next.js App Router application with browser-local vocabulary, review mutations, export, restore preview, selected-person switching, local SQL storage, repository adapter contract, and an approved development / preview Vercel and Neon setup.
+This repository is in Stage 5G preview deployment boundary. It contains collaboration rules, architecture notes, master and stage plans, changelog, AI agent log, a lightweight Tier 1 governance preflight, and a minimal Next.js App Router application with browser-local vocabulary, review mutations, export, restore preview, selected-person switching, local SQL storage, repository adapter contract, and an approved development / preview Vercel and Neon setup.
 
 Current local stack:
 
@@ -27,7 +27,9 @@ Stage 5D added durable storage readiness without connecting to any remote servic
 
 Stage 5E documented the execution gate for Neon/Vercel work. It defined required human approvals, command sequence, stop conditions, rollback direction, and validation expectations before any remote mutation.
 
-Stage 5F executed the approved development / preview bootstrap. The Vercel project is linked, the Neon resource `words-learning-app-for-mimi-neon` exists for development / preview, ignored `.env.local` values were pulled locally, and `db/migrations/0001_initial.sql` was applied to the non-production development database. Schema inspection verified 8 tables, 11 indexes, 5 key constraints, and zero business rows. A deployment attempt with `--target preview` unexpectedly returned `target: production`; that deployment was removed immediately and Vercel now reports no deployments for the project. The app runtime still uses browser `localStorage`; the runtime Postgres adapter, backup import, production migration, production deployment, authentication（认证）, and external integrations have not been implemented.
+Stage 5F executed the approved development / preview bootstrap. The Vercel project is linked, the Neon resource `words-learning-app-for-mimi-neon` exists for development / preview, ignored `.env.local` values were pulled locally, and `db/migrations/0001_initial.sql` was applied to the non-production development database. Schema inspection verified 8 tables, 11 indexes, 5 key constraints, and zero business rows. A deployment attempt with `--target preview` unexpectedly returned `target: production`; that deployment was removed immediately.
+
+Stage 5G documents a later active Production deployment reported by Vercel: `dpl_2nvALJ1CutPjeFteXKMCHWKa4UsD`, with commit ref `V1` and commit `d01719a6bb372c75873d042c657feb7f93d80b3a`. The Vercel API reports the Git link production branch as `main`. The current active Production deployment is not treated as the official V1 production release; formal Production remains deferred until V1 is complete and merged through the agreed branch path. Stage 5G also created and verified Preview deployment `dpl_d5LUb6r1wEXiJBUENb2PACEZMVsu` at `https://words-learning-app-for-mimi-bwfhi5rap-anorias-projects.vercel.app`. The app runtime still uses browser `localStorage`; the runtime Postgres adapter, backup import, production database migration, authentication（认证）, and external integrations have not been implemented.
 
 The GitHub repository URL was provided by the user:
 
@@ -200,7 +202,7 @@ Stage 5F development / preview bootstrap:
 - Database commands:
   - `npm run db:migrate:dev`
   - `npm run db:inspect:dev`
-- Deployment status: no active Vercel deployments. Preview deployment is paused until the CLI target mismatch is understood.
+- Deployment status: Vercel currently has an active non-official Production deployment from branch `V1` and a verified Preview deployment. Standard `vercel deploy` without `--prod` produced `target=preview`.
 - Production migration, production import, production deployment, runtime Postgres adapter, and authentication remain out of scope until a later accepted plan.
 
 ### People And Person Switching
@@ -253,7 +255,7 @@ The `data` field contains the current `VocabularyData` schema version 3 shape. T
 
 ### Deployment Boundary
 
-The Vercel project is linked for development / preview work after explicit approval. No active Vercel deployments remain. A deployment attempt using `--target preview` returned a production target and was removed immediately; the next deployment step should first inspect Vercel production branch / CLI target behavior.
+The Vercel project is linked for development / preview work after explicit approval. Vercel currently has an active Production deployment from branch `V1`; it remains in place for now but is not the official V1 production release. Formal Production should wait until V1 is complete and merged through the agreed branch path. Preview deployment work should use `vercel deploy` without `--prod` and must verify `target=preview`; Stage 5G verified this with Preview deployment `dpl_d5LUb6r1wEXiJBUENb2PACEZMVsu`.
 
 ## Draft Data Model
 

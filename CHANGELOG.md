@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## 2026-07-05 14:00 AEST
+
+- Documented Stage 5G preview deployment boundary after confirming the current active Production deployment should remain but not be treated as formal V1 production.
+- Verified Vercel project Git link production branch as `main` through read-only Vercel API output.
+- Documented active Production deployment `dpl_2nvALJ1CutPjeFteXKMCHWKa4UsD` from branch `V1` as a non-official artifact.
+- Created Preview deployment `dpl_d5LUb6r1wEXiJBUENb2PACEZMVsu` using standard `vercel deploy` without `--prod`.
+- Verified the Preview deployment with `vercel inspect`, Vercel API OIDC claims, route-level `vercel curl` checks, and preview error-log query.
+- Reason: remove deployment-state ambiguity while preserving the user's boundary that formal Production should wait until V1 is complete and merged.
+
 ## 2026-07-05 12:56 AEST
 
 - Executed Stage 5F development / preview Vercel and Neon bootstrap after explicit user approval.

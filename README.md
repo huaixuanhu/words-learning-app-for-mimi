@@ -33,7 +33,8 @@ npm run db:inspect:dev
 - Stage 5D durable storage readiness: local SQL migration（迁移）draft, backup-to-Postgres mapping, repository adapter contract（仓储适配层接口）, and SQL static tests.
 - Stage 5E execution gate: documented approval checklist, remote execution order, stop conditions, and rollback direction before Neon/Vercel action.
 - Stage 5F development / preview bootstrap: linked the Vercel project, created the Neon resource for development / preview, pulled ignored local env vars, added minimal database scripts, applied `0001_initial.sql` to the non-production development database, and verified the empty schema.
-- Preview deployment remains paused. A CLI deployment attempt with `--target preview` returned `target: production`; the deployment was removed immediately and `vercel ls words-learning-app-for-mimi` reported no deployments.
+- Current Vercel Production deployment status is non-official: Vercel reports active deployment `dpl_2nvALJ1CutPjeFteXKMCHWKa4UsD` from branch `V1`; keep it documented but do not treat it as the formal V1 production release.
+- Verified Preview deployment: `https://words-learning-app-for-mimi-bwfhi5rap-anorias-projects.vercel.app` (`dpl_d5LUb6r1wEXiJBUENb2PACEZMVsu`, inspected as `target=preview`).
 - Browser `localStorage`（本地浏览器存储）only; this is local convenience storage, not durable production persistence.
 - No production database migration, production deployment, authentication, external API, analytics, runtime Postgres adapter, or production study-data mutation yet.
 
