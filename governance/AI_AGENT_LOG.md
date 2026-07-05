@@ -1,5 +1,50 @@
 # AI Agent Log
 
+## 2026-07-05 15:04 AEST
+
+- Task: execute Stage 5J Postgres adapter read-only verification after the user confirmed the Stage 5J plan.
+- Plan agreed: yes. The accepted scope was read-only local and Preview verification, plus Preview-only `MIMI_STORAGE_RUNTIME=postgres-preview`. Smoke writes, backup import, UI runtime cutover, and Production work remained out of scope.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE5J_POSTGRES_ADAPTER_READ_ONLY_VERIFICATION.md`
+- Reason: verify the Stage 5I runtime Postgres adapter in local and Vercel Preview read-only mode before any write-path smoke, backup import, UI cutover, or Production action.
+- Implementation notes:
+  - Confirmed the working tree was clean and `V1` matched `origin/V1` before remote actions.
+  - Read Vercel CLI, environment variable, and deployment guidance from the installed Vercel skills.
+  - Confirmed local Vercel CLI version `54.20.1`.
+  - Verified local default `/api/storage/health` returned `status=disabled`, runtime `local`, reason `missing`.
+  - Verified local `postgres-preview` `/api/storage/health` returned `status=ready`, runtime `postgres-preview`, and zero counts.
+  - Read Vercel project/deployment/env state without printing secret values.
+  - Confirmed Vercel production branch is `main`.
+  - Confirmed existing database env vars are Development / Preview scoped.
+  - Added `MIMI_STORAGE_RUNTIME=postgres-preview` to Preview only.
+  - Confirmed `MIMI_ENABLE_STORAGE_SMOKE_WRITES` was not present.
+  - Created Preview deployment `dpl_CFeC2VwRKtMSAjBiGGtyStsFw2tr` at `https://words-learning-app-for-mimi-dbkkkow3d-anorias-projects.vercel.app`.
+  - Verified the new deployment with `vercel inspect`; target is `preview` and ready state is `READY`.
+  - Verified Preview `/api/storage/health` through `vercel curl`; it returned `status=ready`, runtime `postgres-preview`, and zero counts.
+  - Queried Preview error logs for the deployment; no error records were returned.
+- Validation:
+  - Passed: local default health route returned disabled.
+  - Passed: local `postgres-preview` health route returned ready with zero counts.
+  - Passed: `npm run db:inspect:dev` before and after Preview verification, reporting 8 tables, 11 indexes, 5 key constraints, and zero rows in core business tables.
+  - Passed: `npx vercel@latest env ls preview`, showing `MIMI_STORAGE_RUNTIME` in Preview only and no smoke write flag.
+  - Passed: `npx vercel@latest inspect https://words-learning-app-for-mimi-dbkkkow3d-anorias-projects.vercel.app --format=json`, reporting `target=preview`.
+  - Passed: `npx vercel@latest curl /api/storage/health --deployment https://words-learning-app-for-mimi-dbkkkow3d-anorias-projects.vercel.app`.
+  - Passed: `npm run test` with 12 test files and 43 tests.
+  - Passed: `npm run typecheck`.
+  - Passed: `npm run lint`.
+  - Passed: `git diff --check`.
+  - Passed: `npm audit --json` with 0 vulnerabilities.
+  - Passed: `npm run build`.
+  - Passed: `npm run governance:preflight`.
+  - Passed: `python3 governance/preflight.py --tier 3 --require-skill-marker`.
+- Safety notes: no `/api/storage/smoke` call, no database write, no backup import, no UI runtime cutover, no Production env var, no Production deployment, no Production promotion, no Production alias change, no Production migration, no authentication implementation, analytics, AI generation, embedding generation, FSRS implementation, email, notification, or 付费/扣款 feature was performed. Existing non-official Production deployment remains untouched.
+
 ## 2026-07-05 14:48 AEST
 
 - Task: implement Stage 5I runtime Postgres adapter after the user confirmed the Stage 5H design.

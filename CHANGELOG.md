@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## 2026-07-05 15:04 AEST
+
+- Executed Stage 5J Postgres adapter read-only verification.
+- Verified local `/api/storage/health` stays disabled when runtime mode is `local`.
+- Verified local and Preview `postgres-preview` health checks can read Neon counts without writing data.
+- Added `MIMI_STORAGE_RUNTIME=postgres-preview` to Vercel Preview only.
+- Created verified Preview deployment `dpl_CFeC2VwRKtMSAjBiGGtyStsFw2tr` at `https://words-learning-app-for-mimi-dbkkkow3d-anorias-projects.vercel.app`.
+- Confirmed Vercel production branch remains `main`, existing Production deployment remains non-official, and Neon core business tables remain empty.
+- Reason: prove read-only adapter wiring in real Preview before considering smoke writes, backup import, UI cutover, or Production work.
+
 ## 2026-07-05 14:48 AEST
 
 - Implemented Stage 5I runtime Postgres adapter for development / preview verification.

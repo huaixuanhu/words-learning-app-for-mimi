@@ -1,11 +1,11 @@
 # Words Learning App For Mimi Architecture
 
 Created: 2026-07-02 23:30 AEST
-Last updated: 2026-07-05 14:48 AEST
+Last updated: 2026-07-05 15:04 AEST
 
 ## Current State
 
-This repository is in Stage 5I runtime Postgres adapter implementation. It contains collaboration rules, architecture notes, master and stage plans, changelog, AI agent log, a lightweight Tier 1 governance preflight, and a minimal Next.js App Router application with browser-local vocabulary, review mutations, export, restore preview, selected-person switching, local SQL storage, repository adapter contract, approved development / preview Vercel and Neon setup, and a server-only development / preview Postgres runtime adapter.
+This repository is in Stage 5J Postgres adapter read-only verification. It contains collaboration rules, architecture notes, master and stage plans, changelog, AI agent log, a lightweight Tier 1 governance preflight, and a minimal Next.js App Router application with browser-local vocabulary, review mutations, export, restore preview, selected-person switching, local SQL storage, repository adapter contract, approved development / preview Vercel and Neon setup, and a server-only development / preview Postgres runtime adapter.
 
 Current local stack:
 
@@ -32,6 +32,8 @@ Stage 5F executed the approved development / preview bootstrap. The Vercel proje
 Stage 5G documents a later active Production deployment reported by Vercel: `dpl_2nvALJ1CutPjeFteXKMCHWKa4UsD`, with commit ref `V1` and commit `d01719a6bb372c75873d042c657feb7f93d80b3a`. The Vercel API reports the Git link production branch as `main`. The current active Production deployment is not treated as the official V1 production release; formal Production remains deferred until V1 is complete and merged through the agreed branch path. Stage 5G also created and verified Preview deployment `dpl_d5LUb6r1wEXiJBUENb2PACEZMVsu` at `https://words-learning-app-for-mimi-bwfhi5rap-anorias-projects.vercel.app`, and Vercel Git integration later created clean Preview deployment `dpl_EmhfvP8yE9NrxCWPcdK3Qdd8sdk8` at `https://words-learning-app-for-mimi-aczic0spy-anorias-projects.vercel.app`.
 
 Stage 5I implements the runtime Postgres adapter（运行时 Postgres 适配层）for development / preview verification. The app runtime still uses browser `localStorage`; the Postgres adapter is gated by `MIMI_STORAGE_RUNTIME=postgres-preview`, Production（生产）Postgres runtime is rejected, smoke writes are disabled by default, and backup import, production database migration, authentication（认证）, and external integrations have not been implemented.
+
+Stage 5J verifies the runtime Postgres adapter read-only path. Local default `/api/storage/health` returns disabled without Postgres, local `postgres-preview` health reads the development Neon database with zero core rows, and Preview deployment `dpl_CFeC2VwRKtMSAjBiGGtyStsFw2tr` at `https://words-learning-app-for-mimi-dbkkkow3d-anorias-projects.vercel.app` returns read-only health successfully. `MIMI_STORAGE_RUNTIME=postgres-preview` is scoped to Preview only. `MIMI_ENABLE_STORAGE_SMOKE_WRITES` was not added.
 
 The GitHub repository URL was provided by the user:
 
@@ -224,6 +226,15 @@ Stage 5I runtime Postgres adapter implementation:
 - `/api/storage/health` is a read-only development / preview health route.
 - `/api/storage/smoke` is an opt-in write-path smoke route requiring `MIMI_STORAGE_RUNTIME=postgres-preview`, `MIMI_ENABLE_STORAGE_SMOKE_WRITES=true`, and `x-mimi-storage-smoke: allow-dev-preview-write`.
 - The Stage 5I implementation does not switch the UI runtime from browser `localStorage`.
+
+Stage 5J read-only verification:
+
+- `MIMI_STORAGE_RUNTIME=postgres-preview` is configured in Vercel Preview only.
+- New verified Preview deployment: `dpl_CFeC2VwRKtMSAjBiGGtyStsFw2tr`.
+- Preview health URL: `https://words-learning-app-for-mimi-dbkkkow3d-anorias-projects.vercel.app/api/storage/health`.
+- Preview health returned `status=ready`, runtime `postgres-preview`, and zero counts for `people`, `vocabularyItems`, and `reviewEvents`.
+- Development database inspection after verification still showed zero core business rows.
+- `/api/storage/smoke` was not called and no write flag was enabled.
 
 ### People And Person Switching
 

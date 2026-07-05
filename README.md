@@ -1,6 +1,6 @@
 # Words Learning App For Mimi
 
-Stage 5I local vocabulary, text import, review scheduler, flashcards, local export / backup, local multi-person adapter, durable storage readiness, development / preview Neon bootstrap, and server-only runtime Postgres adapter for a mobile-first PTE vocabulary app.
+Stage 5J local vocabulary, text import, review scheduler, flashcards, local export / backup, local multi-person adapter, durable storage readiness, development / preview Neon bootstrap, server-only runtime Postgres adapter, and read-only Preview verification for a mobile-first PTE vocabulary app.
 
 ## Commands
 
@@ -37,7 +37,8 @@ npm run db:inspect:dev
 - Verified Preview deployment: `https://words-learning-app-for-mimi-bwfhi5rap-anorias-projects.vercel.app` (`dpl_d5LUb6r1wEXiJBUENb2PACEZMVsu`, inspected as `target=preview`).
 - Clean Git integration Preview deployment: `https://words-learning-app-for-mimi-aczic0spy-anorias-projects.vercel.app` (`dpl_EmhfvP8yE9NrxCWPcdK3Qdd8sdk8`, from committed `origin/V1`).
 - Stage 5I runtime Postgres adapter: server-only development / preview adapter modules exist for health checks, people, vocabulary, imports, review settings, review queue, review events, and review states.
-- Runtime mode stays `local` by default. Postgres runtime requires `MIMI_STORAGE_RUNTIME=postgres-preview`; smoke writes also require `MIMI_ENABLE_STORAGE_SMOKE_WRITES=true` and `x-mimi-storage-smoke: allow-dev-preview-write`.
+- Stage 5J read-only verification: Preview deployment `https://words-learning-app-for-mimi-dbkkkow3d-anorias-projects.vercel.app` (`dpl_CFeC2VwRKtMSAjBiGGtyStsFw2tr`) verified `/api/storage/health` with `postgres-preview` and zero database rows.
+- Runtime mode stays `local` by default. Postgres runtime is currently enabled for Vercel Preview only through `MIMI_STORAGE_RUNTIME=postgres-preview`; smoke writes still require `MIMI_ENABLE_STORAGE_SMOKE_WRITES=true` and `x-mimi-storage-smoke: allow-dev-preview-write`.
 - User-facing runtime still uses browser `localStorage`（本地浏览器存储）; this is local convenience storage, not durable production persistence.
 - No production database migration, production deployment, authentication, external API, analytics, backup import, user-facing storage cutover, or production study-data mutation yet.
 

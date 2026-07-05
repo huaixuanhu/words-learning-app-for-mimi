@@ -1,7 +1,7 @@
 # Words Learning App For Mimi PLAN V1 Master
 
 Created: 2026-07-02 23:30 AEST
-Last updated: 2026-07-05 14:48 AEST
+Last updated: 2026-07-05 15:04 AEST
 
 Source plan:
 
@@ -122,7 +122,7 @@ Exit criteria:
 
 ### Stage 5: Persistence, Export, And Backup
 
-Status: Stage 5A local export and backup implemented locally on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5A_LOCAL_EXPORT_BACKUP.md`. Stage 5B storage provider decision and multi-person data model documented on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5B_STORAGE_PROVIDER_DECISION.md`. Stage 5C local person adapter implemented on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5C_LOCAL_PERSON_ADAPTER.md`. Stage 5D durable storage readiness implemented on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5D_DURABLE_STORAGE_READINESS.md`. Stage 5E Neon execution gate documented on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5E_NEON_EXECUTION_GATE.md`. Stage 5F development / preview Vercel and Neon bootstrap executed on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5F_DEV_PREVIEW_NEON_BOOTSTRAP.md`. Stage 5G preview deployment boundary is documented in `plan_docs/PLAN_V1_STAGE5G_PREVIEW_DEPLOYMENT_BOUNDARY.md`. Stage 5H runtime Postgres adapter design is documented in `plan_docs/PLAN_V1_STAGE5H_RUNTIME_POSTGRES_ADAPTER_DESIGN.md`. Stage 5I runtime Postgres adapter implementation is documented in `plan_docs/PLAN_V1_STAGE5I_RUNTIME_POSTGRES_ADAPTER_IMPLEMENTATION.md`. User-facing runtime storage cutover remains pending separate confirmation.
+Status: Stage 5A local export and backup implemented locally on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5A_LOCAL_EXPORT_BACKUP.md`. Stage 5B storage provider decision and multi-person data model documented on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5B_STORAGE_PROVIDER_DECISION.md`. Stage 5C local person adapter implemented on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5C_LOCAL_PERSON_ADAPTER.md`. Stage 5D durable storage readiness implemented on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5D_DURABLE_STORAGE_READINESS.md`. Stage 5E Neon execution gate documented on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5E_NEON_EXECUTION_GATE.md`. Stage 5F development / preview Vercel and Neon bootstrap executed on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5F_DEV_PREVIEW_NEON_BOOTSTRAP.md`. Stage 5G preview deployment boundary is documented in `plan_docs/PLAN_V1_STAGE5G_PREVIEW_DEPLOYMENT_BOUNDARY.md`. Stage 5H runtime Postgres adapter design is documented in `plan_docs/PLAN_V1_STAGE5H_RUNTIME_POSTGRES_ADAPTER_DESIGN.md`. Stage 5I runtime Postgres adapter implementation is documented in `plan_docs/PLAN_V1_STAGE5I_RUNTIME_POSTGRES_ADAPTER_IMPLEMENTATION.md`. Stage 5J Postgres adapter read-only verification is documented in `plan_docs/PLAN_V1_STAGE5J_POSTGRES_ADAPTER_READ_ONLY_VERIFICATION.md`. User-facing runtime storage cutover remains pending separate confirmation.
 
 Exit criteria:
 
@@ -202,6 +202,15 @@ Stage 5I runtime Postgres adapter implementation:
 - Runtime mode defaults to `local`; Postgres runtime requires `MIMI_STORAGE_RUNTIME=postgres-preview`.
 - `/api/storage/health` is read-only; `/api/storage/smoke` write checks are disabled by default and require a separate env flag plus confirmation header.
 - UI routes still use browser `localStorage`; backup import and production runtime cutover are not implemented.
+
+Stage 5J Postgres adapter read-only verification:
+
+- Local default health route returns disabled without connecting to Postgres.
+- Local and Preview `postgres-preview` health route reads database counts successfully.
+- Vercel Preview has `MIMI_STORAGE_RUNTIME=postgres-preview`; Production does not.
+- Preview deployment `dpl_CFeC2VwRKtMSAjBiGGtyStsFw2tr` verified `target=preview`.
+- Neon development database core business tables remained empty after verification.
+- Smoke writes, backup import, UI cutover, and Production work remain pending.
 
 ### Stage 6: GitHub And Vercel Deployment
 
