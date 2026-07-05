@@ -1,11 +1,11 @@
 # Words Learning App For Mimi Architecture
 
 Created: 2026-07-02 23:30 AEST
-Last updated: 2026-07-05 15:04 AEST
+Last updated: 2026-07-05 15:21 AEST
 
 ## Current State
 
-This repository is in Stage 5J Postgres adapter read-only verification. It contains collaboration rules, architecture notes, master and stage plans, changelog, AI agent log, a lightweight Tier 1 governance preflight, and a minimal Next.js App Router application with browser-local vocabulary, review mutations, export, restore preview, selected-person switching, local SQL storage, repository adapter contract, approved development / preview Vercel and Neon setup, and a server-only development / preview Postgres runtime adapter.
+This repository is in Stage 5K controlled write smoke. It contains collaboration rules, architecture notes, master and stage plans, changelog, AI agent log, a lightweight Tier 1 governance preflight, and a minimal Next.js App Router application with browser-local vocabulary, review mutations, export, restore preview, selected-person switching, local SQL storage, repository adapter contract, approved development / preview Vercel and Neon setup, and a server-only development / preview Postgres runtime adapter.
 
 Current local stack:
 
@@ -34,6 +34,8 @@ Stage 5G documents a later active Production deployment reported by Vercel: `dpl
 Stage 5I implements the runtime Postgres adapter（运行时 Postgres 适配层）for development / preview verification. The app runtime still uses browser `localStorage`; the Postgres adapter is gated by `MIMI_STORAGE_RUNTIME=postgres-preview`, Production（生产）Postgres runtime is rejected, smoke writes are disabled by default, and backup import, production database migration, authentication（认证）, and external integrations have not been implemented.
 
 Stage 5J verifies the runtime Postgres adapter read-only path. Local default `/api/storage/health` returns disabled without Postgres, local `postgres-preview` health reads the development Neon database with zero core rows, and Preview deployment `dpl_CFeC2VwRKtMSAjBiGGtyStsFw2tr` at `https://words-learning-app-for-mimi-dbkkkow3d-anorias-projects.vercel.app` returns read-only health successfully. `MIMI_STORAGE_RUNTIME=postgres-preview` is scoped to Preview only. `MIMI_ENABLE_STORAGE_SMOKE_WRITES` was not added.
+
+Stage 5K verifies the runtime Postgres adapter write path with one controlled smoke write. `MIMI_ENABLE_STORAGE_SMOKE_WRITES=true` was added to Preview only, Preview deployment `dpl_BbgqrsKCtFzbLfKjAaazfugPvfCv` executed one `/api/storage/smoke` write, and the development database now contains one smoke person, one vocabulary item, one review state, one review event, and one review settings row. The write flag was removed from Preview after the test, follow-up Preview deployment `dpl_BJn1pFAbLiiY4LgCyThKx2vDTSar` at `https://words-learning-app-for-mimi-7bzktk5uc-anorias-projects.vercel.app` verifies `/api/storage/smoke` is disabled again, and the smoke-enabled deployment was removed. Smoke rows remain in the development database under person id `00000000-0000-4000-8000-0000000005f1`.
 
 The GitHub repository URL was provided by the user:
 
@@ -235,6 +237,20 @@ Stage 5J read-only verification:
 - Preview health returned `status=ready`, runtime `postgres-preview`, and zero counts for `people`, `vocabularyItems`, and `reviewEvents`.
 - Development database inspection after verification still showed zero core business rows.
 - `/api/storage/smoke` was not called and no write flag was enabled.
+
+Stage 5K controlled write smoke:
+
+- `MIMI_ENABLE_STORAGE_SMOKE_WRITES=true` was temporarily configured in Vercel Preview only.
+- Smoke-enabled Preview deployment: `dpl_BbgqrsKCtFzbLfKjAaazfugPvfCv`.
+- The smoke route wrote one fixed smoke person, one vocabulary item, one review state, one review event, and one review settings row.
+- The smoke person id is `00000000-0000-4000-8000-0000000005f1`, slug `storage-smoke`.
+- Person-scoping checks confirmed the smoke vocabulary, review state, and review event share the smoke `person_id`.
+- `MIMI_ENABLE_STORAGE_SMOKE_WRITES` was removed from Preview after the write.
+- Current verified disabled Preview deployment: `dpl_BJn1pFAbLiiY4LgCyThKx2vDTSar`.
+- Current disabled Preview URL: `https://words-learning-app-for-mimi-7bzktk5uc-anorias-projects.vercel.app`.
+- `/api/storage/smoke` on the disabled Preview returns reason `smoke-writes-not-enabled`.
+- Smoke-enabled Preview deployment `dpl_BbgqrsKCtFzbLfKjAaazfugPvfCv` was removed.
+- Production env vars, Production deployment, backup import, UI runtime cutover, and smoke row cleanup were not performed.
 
 ### People And Person Switching
 

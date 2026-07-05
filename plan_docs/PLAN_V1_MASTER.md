@@ -1,7 +1,7 @@
 # Words Learning App For Mimi PLAN V1 Master
 
 Created: 2026-07-02 23:30 AEST
-Last updated: 2026-07-05 15:04 AEST
+Last updated: 2026-07-05 15:21 AEST
 
 Source plan:
 
@@ -122,7 +122,7 @@ Exit criteria:
 
 ### Stage 5: Persistence, Export, And Backup
 
-Status: Stage 5A local export and backup implemented locally on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5A_LOCAL_EXPORT_BACKUP.md`. Stage 5B storage provider decision and multi-person data model documented on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5B_STORAGE_PROVIDER_DECISION.md`. Stage 5C local person adapter implemented on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5C_LOCAL_PERSON_ADAPTER.md`. Stage 5D durable storage readiness implemented on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5D_DURABLE_STORAGE_READINESS.md`. Stage 5E Neon execution gate documented on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5E_NEON_EXECUTION_GATE.md`. Stage 5F development / preview Vercel and Neon bootstrap executed on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5F_DEV_PREVIEW_NEON_BOOTSTRAP.md`. Stage 5G preview deployment boundary is documented in `plan_docs/PLAN_V1_STAGE5G_PREVIEW_DEPLOYMENT_BOUNDARY.md`. Stage 5H runtime Postgres adapter design is documented in `plan_docs/PLAN_V1_STAGE5H_RUNTIME_POSTGRES_ADAPTER_DESIGN.md`. Stage 5I runtime Postgres adapter implementation is documented in `plan_docs/PLAN_V1_STAGE5I_RUNTIME_POSTGRES_ADAPTER_IMPLEMENTATION.md`. Stage 5J Postgres adapter read-only verification is documented in `plan_docs/PLAN_V1_STAGE5J_POSTGRES_ADAPTER_READ_ONLY_VERIFICATION.md`. User-facing runtime storage cutover remains pending separate confirmation.
+Status: Stage 5A local export and backup implemented locally on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5A_LOCAL_EXPORT_BACKUP.md`. Stage 5B storage provider decision and multi-person data model documented on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5B_STORAGE_PROVIDER_DECISION.md`. Stage 5C local person adapter implemented on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5C_LOCAL_PERSON_ADAPTER.md`. Stage 5D durable storage readiness implemented on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5D_DURABLE_STORAGE_READINESS.md`. Stage 5E Neon execution gate documented on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5E_NEON_EXECUTION_GATE.md`. Stage 5F development / preview Vercel and Neon bootstrap executed on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5F_DEV_PREVIEW_NEON_BOOTSTRAP.md`. Stage 5G preview deployment boundary is documented in `plan_docs/PLAN_V1_STAGE5G_PREVIEW_DEPLOYMENT_BOUNDARY.md`. Stage 5H runtime Postgres adapter design is documented in `plan_docs/PLAN_V1_STAGE5H_RUNTIME_POSTGRES_ADAPTER_DESIGN.md`. Stage 5I runtime Postgres adapter implementation is documented in `plan_docs/PLAN_V1_STAGE5I_RUNTIME_POSTGRES_ADAPTER_IMPLEMENTATION.md`. Stage 5J Postgres adapter read-only verification is documented in `plan_docs/PLAN_V1_STAGE5J_POSTGRES_ADAPTER_READ_ONLY_VERIFICATION.md`. Stage 5K controlled write smoke is documented in `plan_docs/PLAN_V1_STAGE5K_CONTROLLED_WRITE_SMOKE.md`. User-facing runtime storage cutover remains pending separate confirmation.
 
 Exit criteria:
 
@@ -211,6 +211,18 @@ Stage 5J Postgres adapter read-only verification:
 - Preview deployment `dpl_CFeC2VwRKtMSAjBiGGtyStsFw2tr` verified `target=preview`.
 - Neon development database core business tables remained empty after verification.
 - Smoke writes, backup import, UI cutover, and Production work remain pending.
+
+Stage 5K controlled write smoke:
+
+- `MIMI_ENABLE_STORAGE_SMOKE_WRITES=true` was temporarily enabled in Vercel Preview only.
+- Preview deployment `dpl_BbgqrsKCtFzbLfKjAaazfugPvfCv` executed one `/api/storage/smoke` write.
+- The development database now has exactly one smoke person, vocabulary item, review state, review event, and review settings row.
+- Smoke data is scoped to person id `00000000-0000-4000-8000-0000000005f1`.
+- `MIMI_ENABLE_STORAGE_SMOKE_WRITES` was removed from Preview after the write.
+- Follow-up Preview deployment `dpl_BJn1pFAbLiiY4LgCyThKx2vDTSar` verified `/api/storage/smoke` is disabled again.
+- The smoke-enabled Preview deployment was removed.
+- Smoke rows remain in the development database until a separate cleanup decision.
+- Backup import, UI cutover, smoke row cleanup, and Production work remain pending.
 
 ### Stage 6: GitHub And Vercel Deployment
 

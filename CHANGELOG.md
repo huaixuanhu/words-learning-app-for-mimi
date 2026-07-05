@@ -1,5 +1,20 @@
 # CHANGELOG
 
+## 2026-07-05 15:21 AEST
+
+- Executed Stage 5K controlled write smoke for the development / preview Postgres adapter.
+- Temporarily added `MIMI_ENABLE_STORAGE_SMOKE_WRITES=true` to Vercel Preview only.
+- Created smoke-enabled Preview deployment `dpl_BbgqrsKCtFzbLfKjAaazfugPvfCv` at `https://words-learning-app-for-mimi-kj0qj7l5k-anorias-projects.vercel.app`.
+- Verified Preview `/api/storage/health` returned `postgres-preview` with zero counts before the write.
+- Called `/api/storage/smoke` once with the required confirmation header and received `ok=true`.
+- Verified the development database now has exactly one smoke person, one vocabulary item, one review state, one review event, and one review settings row.
+- Verified smoke vocabulary and review rows are scoped to person id `00000000-0000-4000-8000-0000000005f1`.
+- Removed `MIMI_ENABLE_STORAGE_SMOKE_WRITES` from Preview after the write.
+- Created follow-up disabled Preview deployment `dpl_BJn1pFAbLiiY4LgCyThKx2vDTSar` at `https://words-learning-app-for-mimi-7bzktk5uc-anorias-projects.vercel.app`.
+- Verified the disabled Preview `/api/storage/smoke` returns `smoke-writes-not-enabled`.
+- Removed the smoke-enabled Preview deployment.
+- Reason: prove the runtime Postgres write path exactly once while closing the temporary write surface afterward.
+
 ## 2026-07-05 15:04 AEST
 
 - Executed Stage 5J Postgres adapter read-only verification.

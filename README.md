@@ -1,6 +1,6 @@
 # Words Learning App For Mimi
 
-Stage 5J local vocabulary, text import, review scheduler, flashcards, local export / backup, local multi-person adapter, durable storage readiness, development / preview Neon bootstrap, server-only runtime Postgres adapter, and read-only Preview verification for a mobile-first PTE vocabulary app.
+Stage 5K local vocabulary, text import, review scheduler, flashcards, local export / backup, local multi-person adapter, durable storage readiness, development / preview Neon bootstrap, server-only runtime Postgres adapter, read-only Preview verification, and one controlled Preview write smoke for a mobile-first PTE vocabulary app.
 
 ## Commands
 
@@ -38,8 +38,9 @@ npm run db:inspect:dev
 - Clean Git integration Preview deployment: `https://words-learning-app-for-mimi-aczic0spy-anorias-projects.vercel.app` (`dpl_EmhfvP8yE9NrxCWPcdK3Qdd8sdk8`, from committed `origin/V1`).
 - Stage 5I runtime Postgres adapter: server-only development / preview adapter modules exist for health checks, people, vocabulary, imports, review settings, review queue, review events, and review states.
 - Stage 5J read-only verification: Preview deployment `https://words-learning-app-for-mimi-dbkkkow3d-anorias-projects.vercel.app` (`dpl_CFeC2VwRKtMSAjBiGGtyStsFw2tr`) verified `/api/storage/health` with `postgres-preview` and zero database rows.
-- Runtime mode stays `local` by default. Postgres runtime is currently enabled for Vercel Preview only through `MIMI_STORAGE_RUNTIME=postgres-preview`; smoke writes still require `MIMI_ENABLE_STORAGE_SMOKE_WRITES=true` and `x-mimi-storage-smoke: allow-dev-preview-write`.
+- Stage 5K controlled write smoke: temporarily enabled `MIMI_ENABLE_STORAGE_SMOKE_WRITES=true` in Preview only, ran one `/api/storage/smoke` write, verified exactly one smoke row set in the development database, removed the write flag, deployed disabled Preview `https://words-learning-app-for-mimi-7bzktk5uc-anorias-projects.vercel.app` (`dpl_BJn1pFAbLiiY4LgCyThKx2vDTSar`), and removed the smoke-enabled Preview deployment.
+- Runtime mode stays `local` by default. Postgres runtime is currently enabled for Vercel Preview only through `MIMI_STORAGE_RUNTIME=postgres-preview`; smoke writes require `MIMI_ENABLE_STORAGE_SMOKE_WRITES=true` and `x-mimi-storage-smoke: allow-dev-preview-write`, and the write flag is currently not configured after Stage 5K.
 - User-facing runtime still uses browser `localStorage`（本地浏览器存储）; this is local convenience storage, not durable production persistence.
-- No production database migration, production deployment, authentication, external API, analytics, backup import, user-facing storage cutover, or production study-data mutation yet.
+- No production database migration, production deployment, authentication, external API, analytics, backup import, user-facing storage cutover, smoke row cleanup, or production study-data mutation yet.
 
 Project rules live in `AGENTS.md`. Stage plans live in `plan_docs/`.

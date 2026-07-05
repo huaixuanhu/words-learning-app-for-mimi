@@ -1,5 +1,63 @@
 # AI Agent Log
 
+## 2026-07-05 15:21 AEST
+
+- Task: execute Stage 5K controlled write smoke after the user confirmed the Stage 5K plan.
+- Plan agreed: yes. The accepted scope was one controlled development / Preview Postgres write through `/api/storage/smoke`, with no Production work, no backup import, no UI runtime cutover, and no smoke row cleanup unless separately confirmed.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE5K_CONTROLLED_WRITE_SMOKE.md`
+- Reason: prove the Stage 5I runtime Postgres adapter write path in Vercel Preview exactly once, then close the temporary write surface before moving toward backup import or UI storage cutover planning.
+- Implementation notes:
+  - Confirmed the branch was `V1` tracking `origin/V1` and the working tree was clean except for the new Stage 5K plan before remote writes.
+  - Confirmed baseline development database counts were zero across `people`, `vocabulary_items`, `import_batches`, `review_states`, `review_events`, and `review_settings`.
+  - Confirmed Production env list was empty before adding the smoke write flag.
+  - Added `MIMI_ENABLE_STORAGE_SMOKE_WRITES=true` to Vercel Preview only.
+  - Created smoke-enabled Preview deployment `dpl_BbgqrsKCtFzbLfKjAaazfugPvfCv` at `https://words-learning-app-for-mimi-kj0qj7l5k-anorias-projects.vercel.app`.
+  - Verified the deployment with `vercel inspect`; target was `preview` and ready state was `READY`.
+  - Verified pre-write Preview `/api/storage/health` returned `status=ready`, runtime `postgres-preview`, and zero counts.
+  - Called `/api/storage/smoke` once with `x-mimi-storage-smoke: allow-dev-preview-write`; it returned `ok=true`.
+  - The smoke route returned person id `00000000-0000-4000-8000-0000000005f1`, item id `22ddb9a7-affb-4b1a-9915-6f13cb357b66`, review event id `5717263b-990a-4f74-94cc-48a02ad62e9d`, and review state id `b324bd50-f815-4cbe-b695-1f8928fa114c`.
+  - Verified database counts became `people=1`, `vocabulary_items=1`, `import_batches=0`, `review_states=1`, `review_events=1`, and `review_settings=1`.
+  - Ran a read-only person-scoping SQL check and confirmed the smoke vocabulary, review state, and review event are scoped to the smoke `person_id`, with no non-smoke vocabulary rows.
+  - Checked current official Vercel documentation and confirmed environment variable changes apply only to new deployments.
+  - Removed `MIMI_ENABLE_STORAGE_SMOKE_WRITES` from Preview after the successful write.
+  - Created follow-up disabled Preview deployment `dpl_BJn1pFAbLiiY4LgCyThKx2vDTSar` at `https://words-learning-app-for-mimi-7bzktk5uc-anorias-projects.vercel.app`.
+  - Verified the disabled deployment with `vercel inspect`; target was `preview`, ready state was `READY`, and the branch alias pointed at the disabled deployment.
+  - Verified disabled Preview `/api/storage/health` returned `status=ready`, runtime `postgres-preview`, and counts `people=1`, `vocabularyItems=1`, and `reviewEvents=1`.
+  - Verified disabled Preview `/api/storage/smoke` returned `status=disabled` with reason `smoke-writes-not-enabled`.
+  - Removed smoke-enabled Preview deployment `dpl_BbgqrsKCtFzbLfKjAaazfugPvfCv`.
+  - Confirmed the removed smoke-enabled deployment no longer appears in `vercel ls`.
+- Validation:
+  - Passed: `npm run db:inspect:dev` before smoke, reporting 8 tables, 11 indexes, 5 key constraints, and zero rows in core business tables.
+  - Passed: `npx vercel@latest env ls preview`, showing the smoke write flag in Preview only after add and absent again after removal.
+  - Passed: `npx vercel@latest env ls production`, reporting no Production env vars before and after the smoke.
+  - Passed: `npx vercel@latest inspect https://words-learning-app-for-mimi-kj0qj7l5k-anorias-projects.vercel.app --format=json`, reporting `target=preview`.
+  - Passed: `npx vercel@latest curl /api/storage/health --deployment https://words-learning-app-for-mimi-kj0qj7l5k-anorias-projects.vercel.app`, reporting pre-write zero counts.
+  - Passed: `npx vercel@latest curl /api/storage/smoke --deployment https://words-learning-app-for-mimi-kj0qj7l5k-anorias-projects.vercel.app -- --request POST --header 'x-mimi-storage-smoke: allow-dev-preview-write'`, returning `ok=true`.
+  - Passed: `npm run db:inspect:dev` after smoke, reporting exactly one smoke row set.
+  - Passed: read-only SQL person-scoping inspection, reporting `smoke_people=1`, `smoke_vocabulary_items=1`, `smoke_review_states=1`, `smoke_review_events=1`, `smoke_review_settings=1`, `review_state_item_person_matches=1`, `review_event_item_person_matches=1`, and `non_smoke_vocabulary_items=0`.
+  - Passed: `npx vercel@latest inspect https://words-learning-app-for-mimi-7bzktk5uc-anorias-projects.vercel.app --format=json`, reporting `target=preview`.
+  - Passed: disabled Preview `/api/storage/health`, reporting counts `people=1`, `vocabularyItems=1`, and `reviewEvents=1`.
+  - Passed: disabled Preview `/api/storage/smoke` without confirmation header, returning reason `smoke-writes-not-enabled`.
+  - Passed: `npx vercel@latest remove dpl_BbgqrsKCtFzbLfKjAaazfugPvfCv --yes`.
+  - Passed: final `npm run db:inspect:dev`, still reporting exactly one smoke row set.
+  - Passed: `npx vercel@latest logs dpl_BJn1pFAbLiiY4LgCyThKx2vDTSar --level error --since 10m --json`, returning no error records.
+  - Passed: `npm run test` with 12 test files and 43 tests.
+  - Passed: `npm run typecheck`.
+  - Passed: `npm run lint`.
+  - Passed: `npm audit --json` with 0 vulnerabilities.
+  - Passed: `git diff --check`.
+  - Passed: `npm run build`.
+  - Passed: `npm run governance:preflight`.
+  - Passed: `python3 governance/preflight.py --tier 3 --require-skill-marker`.
+- Safety notes: one non-production smoke row set was intentionally written and remains in the development database. No smoke row cleanup, backup import, UI runtime cutover, Production env var, Production deployment, Production promotion, Production alias change, Production migration, authentication implementation, analytics, AI generation, embedding generation, FSRS implementation, email, notification, or 付费/扣款 feature was performed. Existing non-official Production deployment remains untouched.
+
 ## 2026-07-05 15:04 AEST
 
 - Task: execute Stage 5J Postgres adapter read-only verification after the user confirmed the Stage 5J plan.
