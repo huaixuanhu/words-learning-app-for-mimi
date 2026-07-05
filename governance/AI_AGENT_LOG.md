@@ -1,5 +1,33 @@
 # AI Agent Log
 
+## 2026-07-05 14:26 AEST
+
+- Task: proceed to the next step after Stage 5G by documenting current deployment state and designing Stage 5H runtime Postgres adapter work.
+- Plan agreed: yes. The user asked to proceed to the next step; because runtime Postgres affects persistent data flow, this turn stayed design-only and did not implement or enable database-backed runtime writes.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE5G_PREVIEW_DEPLOYMENT_BOUNDARY.md`
+  - `plan_docs/PLAN_V1_STAGE5H_RUNTIME_POSTGRES_ADAPTER_DESIGN.md`
+- Reason: prepare runtime Postgres implementation safely while keeping the current user-facing runtime on browser `localStorage`.
+- Implementation notes:
+  - Confirmed the working tree was clean at the start of the turn and latest local / remote commit was `06120f7`.
+  - Confirmed Vercel Git integration created a clean Preview deployment from committed `origin/V1`: `dpl_EmhfvP8yE9NrxCWPcdK3Qdd8sdk8`.
+  - Verified the clean Preview deployment with `vercel inspect` and Vercel API OIDC claims; it is Preview and uses environment `preview`.
+  - Read the existing durable repository contract, local vocabulary repository, local storage migration, and backup-to-Postgres mapping before designing Stage 5H.
+  - Added Stage 5H design plan for a server-only runtime Postgres adapter, development / preview first, with `localStorage` fallback retained by default.
+  - Documented that Production Postgres runtime remains disabled until formal Production, accepted access boundary, backup/import/rollback planning, and explicit confirmation.
+- Validation:
+  - Passed: `npm run governance:preflight`
+  - Passed: `git diff --check`
+  - Initial Tier 3 preflight caught this entry's pending validation placeholder.
+  - Passed: `python3 governance/preflight.py --tier 3 --require-skill-marker` after replacing the placeholder with actual results.
+- Safety notes: documentation and planning only. No database writes, data import, runtime storage cutover, Production deployment deletion, Production promotion, Production env var changes, authentication implementation, analytics, AI generation, email, notification, 付费/扣款 feature, or public Production write endpoint was added.
+
 ## 2026-07-05 14:00 AEST
 
 - Task: continue from Stage 5F by documenting the active Production deployment state and creating a true Preview deployment without touching Production.

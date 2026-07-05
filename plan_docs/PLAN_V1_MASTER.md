@@ -1,7 +1,7 @@
 # Words Learning App For Mimi PLAN V1 Master
 
 Created: 2026-07-02 23:30 AEST
-Last updated: 2026-07-05 14:00 AEST
+Last updated: 2026-07-05 14:26 AEST
 
 Source plan:
 
@@ -122,7 +122,7 @@ Exit criteria:
 
 ### Stage 5: Persistence, Export, And Backup
 
-Status: Stage 5A local export and backup implemented locally on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5A_LOCAL_EXPORT_BACKUP.md`. Stage 5B storage provider decision and multi-person data model documented on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5B_STORAGE_PROVIDER_DECISION.md`. Stage 5C local person adapter implemented on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5C_LOCAL_PERSON_ADAPTER.md`. Stage 5D durable storage readiness implemented on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5D_DURABLE_STORAGE_READINESS.md`. Stage 5E Neon execution gate documented on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5E_NEON_EXECUTION_GATE.md`. Stage 5F development / preview Vercel and Neon bootstrap executed on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5F_DEV_PREVIEW_NEON_BOOTSTRAP.md`. Stage 5G preview deployment boundary is documented in `plan_docs/PLAN_V1_STAGE5G_PREVIEW_DEPLOYMENT_BOUNDARY.md`. Runtime Postgres persistence implementation remains pending a later plan.
+Status: Stage 5A local export and backup implemented locally on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5A_LOCAL_EXPORT_BACKUP.md`. Stage 5B storage provider decision and multi-person data model documented on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5B_STORAGE_PROVIDER_DECISION.md`. Stage 5C local person adapter implemented on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5C_LOCAL_PERSON_ADAPTER.md`. Stage 5D durable storage readiness implemented on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5D_DURABLE_STORAGE_READINESS.md`. Stage 5E Neon execution gate documented on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5E_NEON_EXECUTION_GATE.md`. Stage 5F development / preview Vercel and Neon bootstrap executed on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5F_DEV_PREVIEW_NEON_BOOTSTRAP.md`. Stage 5G preview deployment boundary is documented in `plan_docs/PLAN_V1_STAGE5G_PREVIEW_DEPLOYMENT_BOUNDARY.md`. Stage 5H runtime Postgres adapter design is documented in `plan_docs/PLAN_V1_STAGE5H_RUNTIME_POSTGRES_ADAPTER_DESIGN.md`. Runtime Postgres persistence implementation remains pending confirmation.
 
 Exit criteria:
 
@@ -188,6 +188,13 @@ Stage 5G preview deployment boundary:
 - Formal Production should wait until V1 is complete and merged through the agreed branch path.
 - Standard `vercel deploy` without `--prod` created Preview deployment `dpl_d5LUb6r1wEXiJBUENb2PACEZMVsu`.
 - Preview inspection verified `target=preview` and OIDC（OpenID Connect，开放身份连接）environment `preview`.
+- Git integration later created clean Preview deployment `dpl_EmhfvP8yE9NrxCWPcdK3Qdd8sdk8` from committed `origin/V1`.
+
+Stage 5H runtime Postgres adapter design:
+
+- Runtime Postgres adapter should be server-only and development / preview first.
+- Default user-facing runtime remains browser `localStorage` until adapter tests pass.
+- Production database runtime remains disabled until formal Production gate, accepted access boundary, and backup/import/rollback behavior are agreed.
 
 ### Stage 6: GitHub And Vercel Deployment
 

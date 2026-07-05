@@ -1,7 +1,7 @@
 # Words Learning App For Mimi Architecture
 
 Created: 2026-07-02 23:30 AEST
-Last updated: 2026-07-05 14:00 AEST
+Last updated: 2026-07-05 14:26 AEST
 
 ## Current State
 
@@ -29,7 +29,9 @@ Stage 5E documented the execution gate for Neon/Vercel work. It defined required
 
 Stage 5F executed the approved development / preview bootstrap. The Vercel project is linked, the Neon resource `words-learning-app-for-mimi-neon` exists for development / preview, ignored `.env.local` values were pulled locally, and `db/migrations/0001_initial.sql` was applied to the non-production development database. Schema inspection verified 8 tables, 11 indexes, 5 key constraints, and zero business rows. A deployment attempt with `--target preview` unexpectedly returned `target: production`; that deployment was removed immediately.
 
-Stage 5G documents a later active Production deployment reported by Vercel: `dpl_2nvALJ1CutPjeFteXKMCHWKa4UsD`, with commit ref `V1` and commit `d01719a6bb372c75873d042c657feb7f93d80b3a`. The Vercel API reports the Git link production branch as `main`. The current active Production deployment is not treated as the official V1 production release; formal Production remains deferred until V1 is complete and merged through the agreed branch path. Stage 5G also created and verified Preview deployment `dpl_d5LUb6r1wEXiJBUENb2PACEZMVsu` at `https://words-learning-app-for-mimi-bwfhi5rap-anorias-projects.vercel.app`. The app runtime still uses browser `localStorage`; the runtime Postgres adapter, backup import, production database migration, authentication（认证）, and external integrations have not been implemented.
+Stage 5G documents a later active Production deployment reported by Vercel: `dpl_2nvALJ1CutPjeFteXKMCHWKa4UsD`, with commit ref `V1` and commit `d01719a6bb372c75873d042c657feb7f93d80b3a`. The Vercel API reports the Git link production branch as `main`. The current active Production deployment is not treated as the official V1 production release; formal Production remains deferred until V1 is complete and merged through the agreed branch path. Stage 5G also created and verified Preview deployment `dpl_d5LUb6r1wEXiJBUENb2PACEZMVsu` at `https://words-learning-app-for-mimi-bwfhi5rap-anorias-projects.vercel.app`, and Vercel Git integration later created clean Preview deployment `dpl_EmhfvP8yE9NrxCWPcdK3Qdd8sdk8` at `https://words-learning-app-for-mimi-aczic0spy-anorias-projects.vercel.app`.
+
+Stage 5H designs the runtime Postgres adapter（运行时 Postgres 适配层）but does not implement it yet. The app runtime still uses browser `localStorage`; the runtime Postgres adapter, backup import, production database migration, authentication（认证）, and external integrations have not been implemented.
 
 The GitHub repository URL was provided by the user:
 
@@ -202,8 +204,16 @@ Stage 5F development / preview bootstrap:
 - Database commands:
   - `npm run db:migrate:dev`
   - `npm run db:inspect:dev`
-- Deployment status: Vercel currently has an active non-official Production deployment from branch `V1` and a verified Preview deployment. Standard `vercel deploy` without `--prod` produced `target=preview`.
+- Deployment status: Vercel currently has an active non-official Production deployment from branch `V1`, a manual verified Preview deployment, and a clean Git integration Preview deployment. Standard `vercel deploy` without `--prod` produced `target=preview`.
 - Production migration, production import, production deployment, runtime Postgres adapter, and authentication remain out of scope until a later accepted plan.
+
+Stage 5H runtime Postgres adapter design:
+
+- Adapter must be server-only.
+- App runtime remains `localStorage` by default.
+- Development / preview can opt into Postgres after adapter tests.
+- Production Postgres runtime remains disabled until formal V1 Production and access-boundary planning.
+- Public write endpoints must not be exposed on the current non-official Production deployment.
 
 ### People And Person Switching
 

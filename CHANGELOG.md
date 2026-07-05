@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 2026-07-05 14:26 AEST
+
+- Updated Stage 5G deployment facts after Vercel Git integration created a clean Preview deployment from committed `origin/V1`.
+- Documented Preview deployment `dpl_EmhfvP8yE9NrxCWPcdK3Qdd8sdk8` at `https://words-learning-app-for-mimi-aczic0spy-anorias-projects.vercel.app`.
+- Added Stage 5H runtime Postgres adapter design.
+- Recorded that the future runtime Postgres adapter should stay server-only, development / preview first, and disabled for Production until a separate formal gate.
+- Reason: prepare the next persistence implementation safely without changing the current `localStorage` runtime or exposing public Production write paths.
+
 ## 2026-07-05 14:00 AEST
 
 - Documented Stage 5G preview deployment boundary after confirming the current active Production deployment should remain but not be treated as formal V1 production.
