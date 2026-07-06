@@ -1,5 +1,42 @@
 # CHANGELOG
 
+## 2026-07-06 22:18 AEST
+
+- Fixed Stage 7.6 global button sound not firing on normal buttons even when button sound was ON.
+- Changed the soft-click playback path to schedule Web Audio API（网页音频接口）sound synchronously during pointer / keyboard activation instead of awaiting `AudioContext.resume()` first.
+- Expanded global button-sound targeting from buttons and selected styled links to buttons, role buttons, and real links.
+- Reason: keep the accepted soft button sound inside the browser user-gesture window and make link-style buttons receive the same feedback.
+
+## 2026-07-06 22:13 AEST
+
+- Fixed a Stage 7.6 `SoundProvider` refresh bug where `useSyncExternalStore` received a new settings object on every `getSnapshot` call.
+- Cached the raw `mimi-ui-sound-v1` localStorage value and parsed sound settings so unchanged sound preferences return a stable snapshot object.
+- Reason: prevent the Next.js development overlay errors `The result of getSnapshot should be cached to avoid an infinite loop` and `Maximum update depth exceeded` after localhost refresh.
+
+## 2026-07-06 21:55 AEST
+
+- Executed Stage 7.6 sound design locally.
+- Added `plan_docs/PLAN_V1_STAGE7_6_SOUND_DESIGN.md` with `Source plan`, `Derived from`, `Scope`, `Non-Scope`, and `Exit criteria` markers.
+- Replaced the Settings sound preview-only card with a `Sound` settings form containing separate ON / OFF controls for button sound and review-completion sound.
+- Added UI-only sound settings under `mimi-ui-sound-v1`, outside vocabulary data, review history, review settings, JSON backup, CSV export, Postgres tables, API payloads, and Production（生产环境）state.
+- Promoted the accepted generated soft click into normal app button feedback through a client sound provider.
+- Added the user-provided Mimi completion sound as `public/sounds/mimi-review-complete.m4a`; local inspection showed the uploaded `.WAV` file is actually AAC / m4af audio.
+- Added a review-completion modal with `已完成今日复习任务` and a `确定` button that plays the completion sound when review-completion sound is ON.
+- Added unit coverage for sound-setting normalization.
+- Reason: make the accepted Stage 7.5 click feel part of the whole app while keeping audio preferences local, reversible, and out of study data.
+
+## 2026-07-06 20:46 AEST
+
+- Executed Stage 7.5 soft click sound trial locally.
+- Added `plan_docs/PLAN_V1_STAGE7_5_SOFT_CLICK_SOUND_TRIAL.md` with `Source plan`, `Derived from`, `Scope`, `Non-Scope`, and `Exit criteria` markers.
+- Added Kenney Interface Sounds `click_001.ogg` as `public/sounds/mimi-soft-click.ogg` and a mobile-friendly derived `public/sounds/mimi-soft-click.m4a`.
+- Added the local Kenney CC0 license / provenance note at `public/sounds/KENNEY_INTERFACE_SOUNDS_CC0.txt`.
+- Added a Settings sound preview card that plays the click quietly through a low-pass filter（低通滤波器）for a more muted, less sharp feel.
+- Moved audition playback to pointer-down timing and made the generated muted click the primary preview path, with Kenney audio-file playback retained as an auxiliary layer / fallback.
+- Tuned the generated click away from a wooden knock and toward a softer compressed feel: low-pass `320 Hz`, sine tone glide `118 Hz` to `68 Hz`, longer `0.18` second body, and no normal Kenney audio-file layering.
+- Kept the sound as an audition control only; it is not wired to global button clicks yet.
+- Reason: let the user hear one soft click candidate before deciding whether to enable audio feedback more broadly.
+
 ## 2026-07-06 17:26 AEST
 
 - Executed Stage 7.4 light / dark theme toggle locally.

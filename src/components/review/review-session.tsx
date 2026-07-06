@@ -4,12 +4,14 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { CheckCircle2, Eye, EyeOff, RotateCcw } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SimplePanel } from "@/components/simple-panel";
+import { useMimiSound } from "@/components/sound-provider";
 import { useVocabularyData } from "@/components/vocabulary/use-vocabulary-data";
 import { getSelectedPersonId } from "@/lib/people/repository";
 import { recordReview } from "@/lib/review/repository";
 import { selectReviewQueue } from "@/lib/review/scheduler";
 import { getSelectedReviewSettings } from "@/lib/review/settings";
 import { reviewRatings } from "@/lib/stage-two-data";
+import { playReviewCompleteSound } from "@/lib/ui/sound-player";
 import { getActiveVocabularyItems } from "@/lib/vocabulary/repository";
 import { PressableButton } from "@/components/ui/motion-primitives";
 
@@ -19,11 +21,13 @@ function getItemById(dataItems: ReturnType<typeof getActiveVocabularyItems>, id:
 
 export function ReviewSession() {
   const { data, isLoaded, commit } = useVocabularyData();
+  const { settings: soundSettings } = useMimiSound();
   const reduceMotion = useReducedMotion();
   const [sessionIds, setSessionIds] = useState<string[] | null>(null);
   const [sessionPersonId, setSessionPersonId] = useState<string | null>(null);
   const [completedCount, setCompletedCount] = useState(0);
   const [showBack, setShowBack] = useState(false);
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [cardStartedAt, setCardStartedAt] = useState(0);
   const [submittedItemId, setSubmittedItemId] = useState<string | null>(null);
   const submittedItemIdRef = useRef<string | null>(null);
@@ -46,6 +50,7 @@ export function ReviewSession() {
       setSessionPersonId(selectedPersonId);
       setCompletedCount(0);
       setShowBack(false);
+      setShowCompletionModal(false);
       setSubmittedItemId(null);
       setCardStartedAt(0);
     }, 0);
@@ -64,9 +69,20 @@ export function ReviewSession() {
     setSessionPersonId(selectedPersonId);
     setCompletedCount(0);
     setShowBack(false);
+    setShowCompletionModal(false);
     setCardStartedAt(0);
     setSubmittedItemId(null);
     setMessage("");
+  };
+
+  const confirmCompletion = () => {
+    setShowCompletionModal(false);
+
+    if (soundSettings.reviewComplete) {
+      void playReviewCompleteSound().catch(() => {
+        // Completion sound is decorative and should not block review flow.
+      });
+    }
   };
 
   const submitRating = async (rating: (typeof reviewRatings)[number]["value"], eventTimeStamp: number) => {
@@ -95,11 +111,18 @@ export function ReviewSession() {
         },
         now,
       });
-      setSessionIds((current) => (current ? current.slice(1) : current));
+      const nextSessionIds = sessionIds ? sessionIds.slice(1) : [];
+      const completedSession = nextSessionIds.length === 0 && sessionTotal > 0;
+
+      setSessionIds(nextSessionIds);
       setCompletedCount((current) => current + 1);
       setShowBack(false);
       setCardStartedAt(0);
       setMessage(`已记录，下次复习 ${new Date(result.state.dueAt).toLocaleString()}`);
+
+      if (completedSession) {
+        setShowCompletionModal(true);
+      }
     } catch (error) {
       submittedItemIdRef.current = null;
       setSubmittedItemId(null);
@@ -108,7 +131,8 @@ export function ReviewSession() {
   };
 
   return (
-    <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
+    <>
+      <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
       <section className="mimi-panel p-4 sm:p-6">
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -261,6 +285,43 @@ export function ReviewSession() {
           新建本次复习
         </PressableButton>
       </SimplePanel>
-    </div>
+      </div>
+
+      <AnimatePresence>
+        {showCompletionModal ? (
+          <motion.div
+            className="fixed inset-0 z-50 grid place-items-center bg-[#14251d]/55 px-4 py-6 backdrop-blur-sm"
+            initial={reduceMotion ? false : { opacity: 0 }}
+            animate={reduceMotion ? undefined : { opacity: 1 }}
+            exit={reduceMotion ? undefined : { opacity: 0 }}
+            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <motion.div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="review-complete-title"
+              className="mimi-card w-full max-w-sm p-6 text-center shadow-[0_24px_70px_rgb(20_37_29/0.26)]"
+              initial={reduceMotion ? false : { opacity: 0, y: 12, scale: 0.98 }}
+              animate={reduceMotion ? undefined : { opacity: 1, y: 0, scale: 1 }}
+              exit={reduceMotion ? undefined : { opacity: 0, y: 8, scale: 0.98 }}
+              transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <CheckCircle2 aria-hidden="true" className="mx-auto size-10 text-[var(--mimi-primary)]" />
+              <h2 id="review-complete-title" className="mt-4 text-xl font-semibold text-[var(--mimi-text)]">
+                已完成今日复习任务
+              </h2>
+              <PressableButton
+                type="button"
+                data-mimi-sound-skip="true"
+                onClick={confirmCompletion}
+                className="mimi-button mimi-focus-ring mt-5 inline-flex min-w-28 items-center justify-center px-5 text-sm font-semibold"
+              >
+                确定
+              </PressableButton>
+            </motion.div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+    </>
   );
 }

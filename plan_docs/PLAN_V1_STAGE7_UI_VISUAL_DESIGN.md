@@ -45,6 +45,18 @@ Stage 7.4 is documented in `plan_docs/PLAN_V1_STAGE7_4_THEME_TOGGLE.md`.
 
 This child plan keeps the darker sage design as the default `dark` theme and adds a warm sage `light` theme. The theme preference is stored under the UI-only browser `localStorage`（本地浏览器存储）key `mimi-ui-theme-v1`; it is not part of vocabulary data, people, review settings, JSON backup, CSV export, Postgres tables, API payloads, or Production（生产环境）state.
 
+## Stage 7.5 Sound Trial Note
+
+Stage 7.5 is documented in `plan_docs/PLAN_V1_STAGE7_5_SOFT_CLICK_SOUND_TRIAL.md`.
+
+This child plan adds one local Kenney CC0 click asset and a Settings audition control. The preview plays at low volume through a low-pass filter（低通滤波器）to keep the click muted rather than sharp. It does not enable global button sounds, notifications, background audio, storage schema changes, backup schema changes, API（应用程序接口）changes, PTE / IELTS toggle behavior, or Production（生产环境）execution.
+
+## Stage 7.6 Sound Design Note
+
+Stage 7.6 is documented in `plan_docs/PLAN_V1_STAGE7_6_SOUND_DESIGN.md`.
+
+This child plan promotes the accepted Stage 7.5 generated soft click into normal app button feedback, adds a Settings `Sound` panel with separate ON / OFF controls for button sound and review-completion sound, and adds a calm `已完成今日复习任务` modal whose `确定` button can play the user-provided Mimi custom completion sound. The sound preference is stored only as UI（用户界面）preference under `mimi-ui-sound-v1`; it is not part of vocabulary data, review history, review settings, backup schemas, Postgres tables, API payloads, notification behavior, background audio, or Production（生产环境）state.
+
 ## Prompt Drift Boundary
 
 The user-provided prompt mentions a PTE / IELTS toggle because the reference concept mixed broader exam-prep ideas into the UI direction. For this V1 stage:

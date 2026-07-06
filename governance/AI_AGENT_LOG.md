@@ -1,5 +1,136 @@
 # AI Agent Log
 
+## 2026-07-06 22:18 AEST
+
+- Task: fix global button sound so the accepted Stage 7.6 button sound plays on normal app buttons when enabled.
+- Plan agreed: the user reported that button sound was ON but other buttons were silent; this was treated as a narrow local hotfix to the Stage 7.6 sound layer.
+- Changed files:
+  - `CHANGELOG.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_STAGE7_6_SOUND_DESIGN.md`
+  - `src/components/sound-provider.tsx`
+  - `src/lib/ui/sound-player.ts`
+- Root cause: the global listener did call `playSoftButtonClick()`, but the generated click was scheduled after awaiting `AudioContext.resume()`. That can miss the browser's short user-gesture activation window for audio playback. The selector also did not cover every real link-button case.
+- Fix:
+  - `playSoftButtonClick()` now schedules the Web Audio API（网页音频接口）generated click synchronously during pointer / keyboard activation and starts `resume()` without awaiting it.
+  - Global button targeting now covers `button`, `[role='button']`, and `a[href]`.
+  - Existing `data-mimi-sound-skip="true"` opt-out still prevents preview and completion sounds from layering with normal button sound.
+- Validation:
+  - Passed: `npm run lint`.
+  - Passed: `npm run typecheck`.
+  - Passed: `npm run test` with 14 files and 52 tests.
+  - Passed: `npm run build`.
+  - Passed: local HTTP check for `/settings`, confirming the Settings Sound UI still renders in normal HTML.
+- Safety notes: local UI sound hotfix only. No vocabulary data mutation, review scheduler change, import parser change, JSON backup schema change, CSV export change, Postgres table change, API payload change, Vercel command, Neon command, env var read/change, Production（生产环境）deployment, Production migration, Production import, authentication（认证）, analytics（分析追踪）, notification, background audio, external vocabulary source, PTE / IELTS toggle implementation, PWA implementation, email, or 付费/扣款 feature was performed.
+
+## 2026-07-06 22:13 AEST
+
+- Task: fix the localhost refresh error reported after Stage 7.6 sound design.
+- Plan agreed: user reported the exact runtime screenshots; this was treated as a narrow local bug fix in the already approved Stage 7.6 sound layer.
+- Changed files:
+  - `CHANGELOG.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_STAGE7_6_SOUND_DESIGN.md`
+  - `src/components/sound-provider.tsx`
+- Root cause: `SoundProvider` used `useSyncExternalStore`, but `readStoredSoundSettings()` parsed the same `mimi-ui-sound-v1` localStorage（本地浏览器存储）value into a new object on every `getSnapshot` call. React requires unchanged external snapshots to keep stable identity, so the changing object reference caused the `getSnapshot should be cached` warning and then the maximum update depth loop.
+- Fix: cache the raw localStorage value and parsed `MimiSoundSettings` object. `readStoredSoundSettings()` now returns the cached object when the raw value is unchanged, and `writeStoredSoundSettings()` updates the cache before emitting.
+- Validation:
+  - Passed: `npm run lint`.
+  - Passed: `npm run typecheck`.
+  - Passed: `npm run test` with 14 files and 52 tests.
+  - Passed: `npm run build`.
+  - Passed: local HTTP check for `/settings`, returning normal HTML.
+- Safety notes: local UI sound provider hotfix only. No vocabulary data mutation, review scheduler change, import parser change, JSON backup schema change, CSV export change, Postgres table change, API payload change, Vercel command, Neon command, env var read/change, Production（生产环境）deployment, Production migration, Production import, authentication（认证）, analytics（分析追踪）, notification, background audio, external vocabulary source, PTE / IELTS toggle implementation, PWA implementation, email, or 付费/扣款 feature was performed.
+
+## 2026-07-06 21:55 AEST
+
+- Task: execute Stage 7.6 sound design after the user accepted the current soft click, requested app-wide button sound, requested two Settings sound switches, and provided a custom Mimi review-completion sound file.
+- Plan agreed: yes. The user explicitly asked to make Stage 7.6 the sound design stage, write the plan document first, then implement. Scope was limited to local UI（用户界面）sound behavior and UI-only preferences.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE7_5_SOFT_CLICK_SOUND_TRIAL.md`
+  - `plan_docs/PLAN_V1_STAGE7_6_SOUND_DESIGN.md`
+  - `plan_docs/PLAN_V1_STAGE7_UI_VISUAL_DESIGN.md`
+  - `public/sounds/mimi-review-complete.m4a`
+  - `src/app/layout.tsx`
+  - `src/app/settings/page.tsx`
+  - `src/components/review/review-session.tsx`
+  - `src/components/settings/sound-settings-form.tsx`
+  - `src/components/sound-provider.tsx`
+  - `src/lib/ui/sound-player.ts`
+  - `src/lib/ui/sound-settings.test.ts`
+  - `src/lib/ui/sound-settings.ts`
+- Related uncommitted Stage 7.5 files still present in this working tree:
+  - `public/sounds/KENNEY_INTERFACE_SOUNDS_CC0.txt`
+  - `public/sounds/mimi-soft-click.m4a`
+  - `public/sounds/mimi-soft-click.ogg`
+- Reason: promote the accepted Stage 7.5 generated soft click into normal app button feedback and add a separate, user-provided Mimi completion sound without changing study-data storage.
+- Implementation notes:
+  - Added `plan_docs/PLAN_V1_STAGE7_6_SOUND_DESIGN.md` with required `Source plan`, `Derived from`, `Scope`, `Non-Scope`, and `Exit criteria` markers.
+  - Added a pure `mimi-ui-sound-v1` settings helper and unit tests. Defaults are `button: true` and `reviewComplete: true`.
+  - Added a client `SoundProvider` mounted under `ThemeProvider`; it listens for pointer and keyboard activation on enabled app buttons and button-like links, then plays the accepted generated soft click when button sound is ON.
+  - Added skip handling through `data-mimi-sound-skip="true"` so audition buttons and the review-completion confirmation button do not layer normal click sound over their own sound.
+  - Replaced the Stage 7.5 preview-only Settings card with a `SoundSettingsForm` containing two ON / OFF segmented button controls and small audition buttons.
+  - Copied the user-provided `/Users/anoria/Desktop/LockChime.WAV` to `public/sounds/mimi-review-complete.m4a`. Local inspection showed the source has a `.WAV` extension but is actually AAC / m4af audio, about 3.67 seconds long.
+  - Added a review-completion modal that appears after the last card in the current session is successfully recorded. Its `确定` button closes the modal and plays the Mimi completion sound when review-completion sound is ON.
+- Validation:
+  - Passed: `npm run lint`.
+  - Passed: `npm run typecheck`.
+  - Passed: `npm run test` with 14 files and 52 tests.
+  - Passed: `npm run build`.
+  - Passed: `git diff --check`.
+  - Passed: local HTTP check for `/settings`; response is normal HTML and includes the new `Button sound` / `Review complete` Settings text.
+  - Passed: local HTTP `HEAD` check for `/sounds/mimi-soft-click.m4a`, returning HTTP 200 and `Content-Type: audio/mp4`.
+  - Passed: local HTTP `HEAD` check for `/sounds/mimi-review-complete.m4a`, returning HTTP 200 and `Content-Type: audio/mp4`.
+  - Passed: `npm run governance:preflight`.
+  - Partially passed: in-app browser DOM verification initially confirmed the Settings `Sound` panel, default ON states, small audition buttons, and no horizontal overflow. During deeper click automation the in-app browser automation tab began rendering a Next RSC（React Server Components，React 服务器组件）stream instead of normal HTML, while shell `curl` continued to return normal HTML. Automated browser click-through for the new controls was not completed in that browser surface.
+- Safety notes: local UI, static audio asset, and documentation changes only. No Vercel command, Neon command, database command, env var read/change, GitHub push, merge（合并）to `main`, Production（生产环境）deployment, Production migration, Production import, formal user backup import, vocabulary schema change, review scheduler change, import parser change, JSON backup schema change, CSV export change, Postgres table change, API payload change, notification, background audio, authentication（认证）, analytics（分析追踪）, AI generation, embedding（向量嵌入）, FSRS（Free Spaced Repetition Scheduler，自由间隔重复调度算法）, email, external vocabulary source, PTE / IELTS toggle implementation, PWA implementation, or 付费/扣款 feature was performed.
+
+## 2026-07-06 20:46 AEST
+
+- Task: execute Stage 7.5 soft click sound trial after the user requested one very short muted click sound and a way to hear it.
+- Plan agreed: yes. The user explicitly asked to choose and build a muted click audition after the earlier open-source audio recommendation. Scope was limited to local UI（用户界面）sound preview.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE7_5_SOFT_CLICK_SOUND_TRIAL.md`
+  - `plan_docs/PLAN_V1_STAGE7_UI_VISUAL_DESIGN.md`
+  - `public/sounds/KENNEY_INTERFACE_SOUNDS_CC0.txt`
+  - `public/sounds/mimi-soft-click.m4a`
+  - `public/sounds/mimi-soft-click.ogg`
+  - `src/app/settings/page.tsx`
+  - `src/components/settings/sound-preview-card.tsx`
+- Reason: let the user audition a quiet, dull click feedback candidate before enabling broader audio feedback.
+- Implementation notes:
+  - Verified Kenney Interface Sounds through the Kenney page and OpenGameArt mirror; both list the pack as Creative Commons CC0.
+  - Downloaded the Kenney Interface Sounds package locally and selected `click_001.ogg`.
+  - Chose `click_001.ogg` because it is about 0.10 seconds, while the other `click_002` to `click_005` candidates are about 0.01 seconds and more likely to feel sharp.
+  - Added the original OGG（Ogg Vorbis 音频格式）asset and a derived M4A（MPEG-4 音频格式）asset for better mobile browser compatibility.
+  - Added the package license note next to the local sound assets.
+  - Added `SoundPreviewCard` under Settings; it now triggers on pointer down and generates a short muted click with Web Audio API（网页音频接口）so playback does not depend on audio-file decoding.
+  - Tuned the generated click toward a softer compressed feel: duration `0.18` seconds, low-pass `320 Hz`, sine tone glide `118 Hz` to `68 Hz`, and lower noise amplitude.
+  - Kept Kenney audio-file playback only as a no-Web-Audio / error fallback, not as a normal layered sound.
+  - Added a short playback timeout so the preview button does not remain stuck if browser audio-file playback does not confirm quickly.
+  - Kept sound as audition-only. No global click sound behavior was enabled.
+- Validation:
+  - Passed: `npm run lint`.
+  - Passed: `npm run typecheck`.
+  - Passed: browser check for `/settings`: Sound panel and `试听` button render, clicking the button updates status to `Played softly.`, the button does not enter a stuck loading state, no horizontal overflow, and no new warning / error console logs.
+  - Passed: `npm run test` with 13 files and 48 tests.
+  - Passed: `npm run build`.
+  - Passed: `git diff --check`.
+  - Passed: `npm run governance:preflight`.
+- Safety notes: local UI, static audio asset, and documentation changes only. No Vercel command, Neon command, database command, env var read/change, GitHub push, merge（合并）to `main`, Production（生产环境）deployment, Production migration, Production import, formal user backup import, vocabulary schema change, review scheduler change, JSON backup schema change, API payload change, global button sound behavior, notification, background audio, authentication（认证）, analytics（分析追踪）, AI generation, embedding（向量嵌入）, FSRS（Free Spaced Repetition Scheduler，自由间隔重复调度算法）, email, external vocabulary source, PTE / IELTS toggle implementation, PWA implementation, or 付费/扣款 feature was performed.
+
 ## 2026-07-06 17:26 AEST
 
 - Task: execute Stage 7.4 light / dark theme toggle after the user requested a new light version while keeping light and dark switching in Settings.
