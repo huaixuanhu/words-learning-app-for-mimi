@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## 2026-07-06 23:12 AEST
+
+- Executed Stage 7.7 final acceptance and regression QA locally.
+- Added `plan_docs/PLAN_V1_STAGE7_7_FINAL_ACCEPTANCE.md` with `Source plan`, `Derived from`, `Scope`, `Non-Scope`, and `Exit criteria` markers.
+- Verified local validation: `npm run lint`, `npm run typecheck`, `npm run test`, `npm run build`, and `npm run backup:dry-run:fixture`.
+- Verified core routes `/`, `/add`, `/import`, `/library`, `/review`, `/export`, and `/settings` return HTTP 200 with expected route-specific text.
+- Verified Stage 7 brand, font, and sound assets are reachable over localhost.
+- Verified local `/api/storage/health` remains local disabled and POST `/api/storage/smoke` remains blocked by default.
+- Verified `/settings` in the in-app browser has no Next.js development overlay, no console errors, visible `咪咪 Vocabulary`, visible sound controls, and no horizontal overflow.
+- Reason: close Stage 7 as a locally accepted UI / interaction / sound pass before any separate Stage 6B planning.
+
 ## 2026-07-06 22:18 AEST
 
 - Fixed Stage 7.6 global button sound not firing on normal buttons even when button sound was ON.

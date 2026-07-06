@@ -57,6 +57,12 @@ Stage 7.6 is documented in `plan_docs/PLAN_V1_STAGE7_6_SOUND_DESIGN.md`.
 
 This child plan promotes the accepted Stage 7.5 generated soft click into normal app button feedback, adds a Settings `Sound` panel with separate ON / OFF controls for button sound and review-completion sound, and adds a calm `已完成今日复习任务` modal whose `确定` button can play the user-provided Mimi custom completion sound. The sound preference is stored only as UI（用户界面）preference under `mimi-ui-sound-v1`; it is not part of vocabulary data, review history, review settings, backup schemas, Postgres tables, API payloads, notification behavior, background audio, or Production（生产环境）state.
 
+## Stage 7.7 Final Acceptance Note
+
+Stage 7.7 is documented in `plan_docs/PLAN_V1_STAGE7_7_FINAL_ACCEPTANCE.md`.
+
+This child plan closes the local Stage 7 UI（用户界面）work with final acceptance and regression QA（质量保证）. It records passing local validation, route / asset checks, API（应用程序接口）safety smoke checks, and a focused in-app browser Settings check. It does not introduce new UI features, review scheduler changes, storage schema changes, PTE / IELTS toggle behavior, PWA（Progressive Web App，渐进式 Web 应用）work, or Production（生产环境）execution.
+
 ## Prompt Drift Boundary
 
 The user-provided prompt mentions a PTE / IELTS toggle because the reference concept mixed broader exam-prep ideas into the UI direction. For this V1 stage:

@@ -1,5 +1,40 @@
 # AI Agent Log
 
+## 2026-07-06 23:12 AEST
+
+- Task: execute Stage 7.7 final acceptance and regression QA after the user accepted Stage 7.6 sound behavior and confirmed the recommended Stage 7 final acceptance step.
+- Plan agreed: yes. The user confirmed the proposed Stage 7.7 acceptance pass. Scope was limited to local UI（用户界面）acceptance, validation, route / asset checks, API（应用程序接口）safety smoke checks, and documentation sync.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE7_7_FINAL_ACCEPTANCE.md`
+  - `plan_docs/PLAN_V1_STAGE7_UI_VISUAL_DESIGN.md`
+- Reason: close Stage 7 as a locally accepted UI / visual / interaction / sound pass before any separate Stage 6B merge（合并）or Production（生产环境）plan.
+- Implementation notes:
+  - Added `plan_docs/PLAN_V1_STAGE7_7_FINAL_ACCEPTANCE.md` with required `Source plan`, `Derived from`, `Scope`, `Non-Scope`, and `Exit criteria` markers.
+  - Recorded the acceptance matrix for core routes, Stage 7 feature surfaces, and functional regression surfaces.
+  - Synced current-stage status across AGENTS, architecture, README, master plan, Stage 7 plan, changelog, and this AI log.
+- Validation:
+  - Passed: `npm run lint`.
+  - Passed: `npm run typecheck`.
+  - Passed: `npm run test` with 14 files and 52 tests.
+  - Passed: `npm run build`.
+  - Passed: `npm run backup:dry-run:fixture`.
+  - Passed: route smoke checks for `/`, `/add`, `/import`, `/library`, `/review`, `/export`, and `/settings`; all returned HTTP 200 with expected route-specific text.
+  - Passed: asset checks for `/brand/mimi-cats.png`, `/fonts/chillround/ChillRoundFRegular.ttf`, `/sounds/mimi-soft-click.m4a`, `/sounds/mimi-soft-click.ogg`, and `/sounds/mimi-review-complete.m4a`.
+  - Passed: local `/api/storage/health` returned HTTP 200 with local runtime disabled.
+  - Passed: POST `/api/storage/smoke` returned HTTP 403 with `postgres-runtime-not-enabled`, confirming default local smoke writes are blocked.
+  - Passed: focused in-app browser check for `/settings`; `咪咪 Vocabulary` and sound controls were visible, no Next.js development overlay text was present, no browser error logs were returned, and no horizontal overflow was detected at the current viewport.
+- Residual risks:
+  - No formal mobile device lab was run.
+  - No new browser automation dependency was installed.
+  - The in-app browser check was focused on `/settings` after the recent sound fixes; full click-through of every route remains best verified by the user in the open local browser.
+- Safety notes: local docs and acceptance checks only. No Vercel command, Neon command, database mutation, env var read/change, GitHub push, merge to `main`, Production deployment, Production migration, Production import, formal user backup import, vocabulary schema change, review scheduler change, import parser change, JSON backup schema change, CSV export change, Postgres table change, API payload change, authentication（认证）, analytics（分析追踪）, notification, background audio, external vocabulary source, PTE / IELTS toggle implementation, PWA implementation, email, or 付费/扣款 feature was performed.
+
 ## 2026-07-06 22:18 AEST
 
 - Task: fix global button sound so the accepted Stage 7.6 button sound plays on normal app buttons when enabled.
