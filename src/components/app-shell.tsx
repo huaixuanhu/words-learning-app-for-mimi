@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { DesktopSidebar, MobileBottomNav } from "@/components/app-nav";
+import { BrandIdentity } from "@/components/brand-identity";
 
 type AppShellProps = {
   title: string;
@@ -16,14 +17,8 @@ export function AppShell({ title, subtitle, children }: AppShellProps) {
 
         <div className="min-w-0 flex-1">
           <header className="border-b border-white/10 bg-[#1d2c26]/92 px-4 py-4 text-[#fbf7ee] lg:hidden">
-            <Link href="/" className="mimi-focus-ring inline-flex items-center gap-3 rounded-md" aria-label="Mimi words home">
-              <span className="grid size-9 place-items-center rounded-md border border-[#afbea9]/35 bg-[#d9e5d5]/14 text-base font-semibold">
-                L
-              </span>
-              <span>
-                <span className="block text-base font-semibold">LexiCalm</span>
-                <span className="block text-xs text-[#c8d2c4]">Mimi vocabulary</span>
-              </span>
+            <Link href="/" className="mimi-focus-ring inline-flex rounded-md" aria-label="Mimi words home">
+              <BrandIdentity variant="mobile" />
             </Link>
           </header>
 

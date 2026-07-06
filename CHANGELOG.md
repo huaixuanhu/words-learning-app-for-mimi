@@ -1,5 +1,24 @@
 # CHANGELOG
 
+## 2026-07-06 15:22 AEST
+
+- Executed Stage 7.3 ChillRound font trial locally.
+- Added `plan_docs/PLAN_V1_STAGE7_3_CHILLROUND_FONT_TRIAL.md` with `Source plan`, `Derived from`, `Scope`, `Non-Scope`, and `Exit criteria` markers.
+- Added self-hosted ChillRoundF 寒蝉全圆体 `v3.200` regular font asset from Warren2060/ChillRound under `public/fonts/chillround/`.
+- Added the upstream OFL-1.1 license next to the font asset.
+- Updated the CJK（中日韩文字）font stack so Chinese UI（用户界面）text uses ChillRoundF before system fallbacks.
+- Reason: make the Chinese typography feel more rounded and closer to the user's desired Japanese-kanji print atmosphere without changing V1 product scope or Production boundaries.
+
+## 2026-07-06 15:09 AEST
+
+- Executed Stage 7.2 UI refinement locally.
+- Added `plan_docs/PLAN_V1_STAGE7_2_UI_REFINEMENT.md` with `Source plan`, `Derived from`, `Scope`, `Non-Scope`, and `Exit criteria` markers.
+- Added local cat avatar asset `public/brand/mimi-cats.png`.
+- Replaced the visible `LexiCalm` brand area with the cat avatar and `咪咪 Vocabulary`.
+- Added a Mincho（明朝体）oriented CJK（中日韩文字）font fallback.
+- Slightly reduced desktop dashboard action-card density and strengthened hover / tap interaction feedback（交互反馈）.
+- Reason: refine the accepted Stage 7.1 visual direction without changing V1 vocabulary import, flashcard review, storage, PTE / IELTS toggle, PWA, or Production boundaries.
+
 ## 2026-07-06 14:20 AEST
 
 - Executed Stage 7 UI visual design locally.

@@ -20,6 +20,25 @@ The V1 product target remains:
 
 The reference image can guide atmosphere, spacing, card rhythm, and calm progress treatment. It must not be copied exactly.
 
+## Stage 7.2 Refinement Note
+
+Stage 7.2 is documented in `plan_docs/PLAN_V1_STAGE7_2_UI_REFINEMENT.md`.
+
+This child plan keeps the Stage 7.1 darker sage baseline and refines only the brand and interaction layer:
+
+- replace the visible `LexiCalm` brand area with the local cat avatar and `咪咪 Vocabulary`
+- add a Mincho（明朝体）oriented CJK（中日韩文字）system fallback without loading remote fonts
+- slightly reduce desktop dashboard action-card density
+- strengthen hover / tap feedback while preserving reduced-motion behavior
+
+It does not change the V1 product scope, storage model, review scheduler, import parser, PTE / IELTS toggle boundary, external vocabulary-source boundary, PWA boundary, or Production（生产环境）execution boundary.
+
+## Stage 7.3 Font Trial Note
+
+Stage 7.3 is documented in `plan_docs/PLAN_V1_STAGE7_3_CHILLROUND_FONT_TRIAL.md`.
+
+This child plan supersedes the Stage 7.2 Mincho-oriented typography trial for Chinese UI（用户界面）text. The accepted trial self-hosts ChillRoundF 寒蝉全圆体 from Warren2060/ChillRound `v3.200`, includes the upstream OFL-1.1 license, and uses ChillRoundF before local system fallbacks for CJK（中日韩文字）text. It keeps Geist for Latin interface text and does not change route behavior, import behavior, review scheduling, storage, PTE / IELTS toggle boundaries, PWA boundaries, or Production（生产环境）execution boundaries.
+
 ## Prompt Drift Boundary
 
 The user-provided prompt mentions a PTE / IELTS toggle because the reference concept mixed broader exam-prep ideas into the UI direction. For this V1 stage:

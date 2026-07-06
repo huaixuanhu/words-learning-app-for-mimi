@@ -99,7 +99,7 @@ export function HomeDashboard() {
         </section>
       </CalmEntrance>
 
-      <section className="grid gap-4 md:grid-cols-3">
+      <section className="grid gap-3 md:grid-cols-3 lg:max-w-4xl">
         {primaryActions.map((action) => {
           const Icon = action.icon;
 
@@ -107,14 +107,14 @@ export function HomeDashboard() {
             <CalmCard key={action.href} className="mimi-card mimi-card-interactive">
               <Link
                 href={action.href}
-                className="mimi-focus-ring block h-full rounded-md p-4"
+                className="mimi-focus-ring block h-full rounded-md p-4 lg:p-3"
               >
-                <div className="mb-4 inline-flex size-10 items-center justify-center rounded-md bg-[#d9e5d5] text-[#274331]">
-                  <Icon aria-hidden="true" className="size-5" />
+                <div className="mb-3 inline-flex size-9 items-center justify-center rounded-md bg-[#d9e5d5] text-[#274331]">
+                  <Icon aria-hidden="true" className="size-4" />
                 </div>
-                <p className="text-lg font-semibold text-[#203229]">{action.label}</p>
-                <p className="mt-1 text-sm text-[#5f6d62]">{action.detail}</p>
-                <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-[#5f7d66]">
+                <p className="text-base font-semibold text-[#203229]">{action.label}</p>
+                <p className="mt-1 text-sm leading-5 text-[#5f6d62]">{action.detail}</p>
+                <span className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-[#5f7d66]">
                   进入
                   <ArrowRight aria-hidden="true" className="size-4" />
                 </span>

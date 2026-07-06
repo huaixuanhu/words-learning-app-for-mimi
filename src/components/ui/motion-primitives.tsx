@@ -35,7 +35,7 @@ export function CalmCard({ children, className, delay = 0, ...props }: CalmCardP
     <motion.div
       initial={reduceMotion ? false : { opacity: 0, y: 12 }}
       animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
-      whileHover={reduceMotion ? undefined : { y: -2 }}
+      whileHover={reduceMotion ? undefined : { y: -5, scale: 1.012 }}
       transition={{ duration: 0.34, delay, ease: [0.22, 1, 0.36, 1] }}
       className={className}
       {...props}
@@ -52,6 +52,7 @@ export function PressableButton({ children, className, ...props }: PressableProp
 
   return (
     <motion.button
+      whileHover={reduceMotion ? undefined : { y: -2, scale: 1.01 }}
       whileTap={reduceMotion ? undefined : { scale: 0.985, y: 1 }}
       transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
       className={className}

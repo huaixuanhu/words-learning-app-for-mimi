@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, useReducedMotion } from "motion/react";
+import { BrandIdentity } from "@/components/brand-identity";
 import { appNavItems } from "@/lib/stage-two-data";
 
 function isActiveRoute(pathname: string, href: string) {
@@ -15,16 +16,8 @@ export function DesktopSidebar() {
 
   return (
     <aside className="hidden w-[248px] shrink-0 border-r border-white/10 bg-[#1d2c26]/92 px-4 py-5 text-[#f7f2e8] shadow-[18px_0_50px_rgb(9_16_12/0.16)] lg:flex lg:flex-col">
-      <Link href="/" className="mimi-focus-ring rounded-md px-2 py-2" aria-label="Mimi words home">
-        <div className="flex items-center gap-3">
-          <span className="grid size-10 place-items-center rounded-md border border-[#afbea9]/35 bg-[#d9e5d5]/14 text-xl">
-            L
-          </span>
-          <div className="min-w-0">
-            <p className="truncate text-lg font-semibold text-[#fbf7ee]">LexiCalm</p>
-            <p className="truncate text-xs text-[#c8d2c4]">Mimi vocabulary</p>
-          </div>
-        </div>
+      <Link href="/" className="mimi-focus-ring block rounded-md" aria-label="Mimi words home">
+        <BrandIdentity variant="sidebar" />
       </Link>
 
       <nav className="mt-8 grid gap-1" aria-label="Main">
@@ -37,10 +30,10 @@ export function DesktopSidebar() {
               key={item.href}
               href={item.href}
               title={item.label}
-              className={`mimi-focus-ring group relative flex min-h-11 items-center gap-3 rounded-md px-3 text-sm font-medium transition duration-200 ${
+              className={`mimi-focus-ring group relative flex min-h-11 items-center gap-3 rounded-md px-3 text-sm font-medium transition duration-200 ease-[var(--mimi-ease)] ${
                 active
                   ? "bg-[#d9e5d5] text-[#203229] shadow-[0_12px_28px_rgb(15_27_21/0.16)]"
-                  : "text-[#dfe6d9] hover:bg-white/10 hover:text-white"
+                  : "text-[#dfe6d9] hover:-translate-y-0.5 hover:bg-white/10 hover:text-white hover:shadow-[0_12px_24px_rgb(9_16_12/0.14)]"
               }`}
             >
               {active ? (
@@ -84,8 +77,8 @@ export function MobileBottomNav() {
               key={item.href}
               href={item.href}
               title={item.label}
-              className={`mimi-focus-ring relative flex min-h-14 flex-col items-center justify-center gap-1 rounded-md text-[11px] font-semibold transition duration-200 ${
-                active ? "text-[#274331]" : "text-[#6c766c] hover:bg-[#e9efdf]"
+              className={`mimi-focus-ring relative flex min-h-14 flex-col items-center justify-center gap-1 rounded-md text-[11px] font-semibold transition duration-200 ease-[var(--mimi-ease)] ${
+                active ? "text-[#274331]" : "text-[#6c766c] hover:-translate-y-0.5 hover:bg-[#e9efdf] hover:text-[#274331]"
               }`}
             >
               {active ? (

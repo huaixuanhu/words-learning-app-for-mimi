@@ -1,5 +1,82 @@
 # AI Agent Log
 
+## 2026-07-06 15:22 AEST
+
+- Task: execute Stage 7.3 ChillRound font trial after the user requested Warren2060/ChillRound 寒蝉全圆体.
+- Plan agreed: yes. The user requested trying ChillRoundF to better match a rounded Japanese-kanji print atmosphere. This was treated as a local UI（用户界面）typography refinement only.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE7_2_UI_REFINEMENT.md`
+  - `plan_docs/PLAN_V1_STAGE7_3_CHILLROUND_FONT_TRIAL.md`
+  - `plan_docs/PLAN_V1_STAGE7_UI_VISUAL_DESIGN.md`
+  - `public/fonts/chillround/ChillRoundFRegular.ttf`
+  - `public/fonts/chillround/OFL-1.1.txt`
+  - `src/app/globals.css`
+- Reason: replace the Stage 7.2 Mincho（明朝体）oriented fallback trial with a self-hosted ChillRoundF 寒蝉全圆体 trial for rounder CJK（中日韩文字）UI text, while preserving V1 product and Production（生产环境）boundaries.
+- Implementation notes:
+  - Checked the upstream repository `https://github.com/Warren2060/ChillRound`.
+  - Verified the upstream license is SIL Open Font License 1.1 and includes reserved font names `ChillRoundF` and `ChillRoundM`.
+  - Used release `v3.200` asset `ChillRoundF_v3.200.zip`, because it is the full-round ChillRoundF family rather than the semi-round ChillRoundM family.
+  - Added only `ChillRoundFRegular.ttf` to keep this trial smaller and avoid committing unused bold / otf variants before visual acceptance.
+  - Added the upstream `LICENSE.txt` as `public/fonts/chillround/OFL-1.1.txt`.
+  - Added `@font-face` for `ChillRoundF` and replaced the previous CJK variable with `--font-cjk-rounded`.
+  - Preserved Geist as the first Latin interface font, with ChillRoundF used for CJK text before system fallbacks.
+- Validation:
+  - Passed: `npm run lint`.
+  - Passed: `npm run typecheck`.
+  - Passed: `npm run test` with 13 files and 48 tests.
+  - Passed: `npm run build`.
+  - Passed: `git diff --check`.
+  - Passed: local HTTP check for `/fonts/chillround/ChillRoundFRegular.ttf`, returning HTTP 200 with `Content-Type: font/ttf` and `Content-Length: 6205268`.
+  - Passed: local HTTP check for `/fonts/chillround/OFL-1.1.txt`, returning HTTP 200 with text content type.
+  - Passed: local browser checks for desktop and mobile `/`: `咪咪 Vocabulary` computed `font-family` begins with `ChillRoundF`, `LexiCalm` is absent from body text, cat avatar renders, no horizontal overflow, mobile navigation remains visible, and browser console has no warning / error logs.
+- Safety notes: local font asset, CSS（层叠样式表）, and documentation changes only. No Vercel command, Neon command, database command, env var read/change, GitHub push, merge（合并）to `main`, Production deployment, Production migration, Production import, formal user backup import, authentication（认证）, analytics（分析追踪）, AI generation, embedding（向量嵌入）, FSRS（Free Spaced Repetition Scheduler，自由间隔重复调度算法）, email, notification, external vocabulary source, PTE / IELTS toggle implementation, PWA implementation, or 付费/扣款 feature was performed.
+
+## 2026-07-06 15:09 AEST
+
+- Task: execute Stage 7.2 UI refinement after the user approved the plan.
+- Plan agreed: yes. The user confirmed the documented Stage 7.2 refinement scope: cat avatar brand area, `咪咪 Vocabulary`, Mincho（明朝体）oriented Chinese rendering, slightly smaller desktop homepage action cards, and more fluid hover / tap interaction feedback（交互反馈）.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE7_2_UI_REFINEMENT.md`
+  - `plan_docs/PLAN_V1_STAGE7_UI_VISUAL_DESIGN.md`
+  - `public/brand/mimi-cats.png`
+  - `src/app/globals.css`
+  - `src/components/app-nav.tsx`
+  - `src/components/app-shell.tsx`
+  - `src/components/brand-identity.tsx`
+  - `src/components/ui/motion-primitives.tsx`
+  - `src/components/vocabulary/home-dashboard.tsx`
+- Reason: refine the accepted Stage 7.1 visual design without changing the V1 vocabulary import, flashcard review, local storage, PTE / IELTS toggle boundary, PWA（Progressive Web App，渐进式 Web 应用）boundary, or Production（生产环境）boundary.
+- Implementation notes:
+  - Added `plan_docs/PLAN_V1_STAGE7_2_UI_REFINEMENT.md` with required `Source plan`, `Derived from`, `Scope`, `Non-Scope`, and `Exit criteria` markers.
+  - Added the user-provided cat image as a local static asset under `public/brand/`.
+  - Added `BrandIdentity` so the desktop sidebar and mobile header share the same brand treatment.
+  - Removed visible `LexiCalm` brand text and replaced it with the cat avatar plus `咪咪 Vocabulary`.
+  - Added a Mincho-oriented CJK（中日韩文字）fallback stack without adding a remote font provider.
+  - Reduced desktop dashboard action-card width / padding / icon size while preserving mobile tap targets.
+  - Strengthened card, brand, nav, and button hover / tap feedback while retaining reduced-motion behavior.
+- Validation:
+  - Passed: `npm run lint`.
+  - Passed: `npm run typecheck`.
+  - Passed: `npm run test` with 13 files and 48 tests.
+  - Passed: `npm run build`.
+  - Passed: `git diff --check`.
+  - Passed: `npm run governance:preflight`.
+  - Passed: local browser visual checks for desktop and mobile `/`: cat image loaded, `咪咪 Vocabulary` visible, `LexiCalm` absent from body text, no horizontal overflow, mobile bottom navigation visible, and browser console had no error / warning logs.
+  - Observed: automated hover-position probing in the in-app browser did not report a bounding-box shift, likely because that probe did not trigger the React hover state in the browser automation surface. The CSS and Motion for React hover / tap code paths are present.
+- Safety notes: local UI and documentation changes only. No Vercel command, Neon command, database command, env var read/change, GitHub push, merge（合并）to `main`, Production deployment, Production migration, Production import, formal user backup import, authentication（认证）, analytics（分析追踪）, AI generation, embedding（向量嵌入）, FSRS（Free Spaced Repetition Scheduler，自由间隔重复调度算法）, email, notification, external vocabulary source, PTE / IELTS toggle implementation, PWA implementation, or 付费/扣款 feature was performed.
+
 ## 2026-07-06 14:20 AEST
 
 - Task: execute Stage 7 UI visual design after the user approved a darker sage direction and approved adding Motion for React.
