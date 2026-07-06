@@ -5,7 +5,7 @@ Last updated: 2026-07-06 00:22 AEST
 
 ## Current State
 
-This repository is in Stage 5N Preview UI runtime verification. It contains collaboration rules, architecture notes, master and stage plans, changelog, AI agent log, a lightweight Tier 1 governance preflight, and a minimal Next.js App Router application with browser-local vocabulary, review mutations, export, restore preview, selected-person switching, local SQL storage, repository adapter contract, approved development / preview Vercel and Neon setup, a server-only development / preview Postgres runtime adapter, guarded backup import dry-run / rollback / commit tooling, a development / preview-only Postgres UI runtime cutover path, and a verified read-only Preview deployment of that UI runtime.
+This repository is in Stage 7 UI visual design after Stage 6A Production release gate design. It contains collaboration rules, architecture notes, master and stage plans, changelog, AI agent log, a lightweight Tier 1 governance preflight, and a Next.js App Router application with browser-local vocabulary, review mutations, export, restore preview, selected-person switching, local SQL storage, repository adapter contract, approved development / preview Vercel and Neon setup, a server-only development / preview Postgres runtime adapter, guarded backup import dry-run / rollback / commit tooling, a development / preview-only Postgres UI runtime cutover path, verified Preview UI runtime checks, and a local Stage 7 darker sage visual system with Motion for React interaction animation.
 
 Current local stack:
 
@@ -46,6 +46,8 @@ Stage 5N verifies the Stage 5M UI runtime in Vercel Preview. Stage 5N-A deployed
 The confirmed release sequence is Stage 6A Production（生产环境）release gate design, Stage 7 UI（用户界面）/ visual design and optional PWA（Progressive Web App，渐进式 Web 应用）work, then Stage 6B formal merge（合并）to `main` and Production execution after explicit approval. Formal Production should not proceed before Stage 7 visual design is accepted.
 
 Stage 6A documents the Production release gate. It confirms that current `person_id` behavior separates learner data but does not provide security isolation, that `postgres-preview` must not be used as a Production runtime mode, and that Stage 6B must either keep first Production browser-local or introduce a separate accepted Production runtime before durable shared writes.
+
+Stage 7 implements the local UI（用户界面）visual design pass. `plan_docs/PLAN_V1_STAGE7_UI_VISUAL_DESIGN.md` records the design guardrails, including the darker soft sage palette, Motion for React dependency, reduced-motion boundary, mobile / desktop layout expectations, and the explicit decision not to implement a PTE / IELTS toggle in V1. The implementation restyles the shared app shell, desktop sidebar, mobile bottom navigation, dashboard, flashcard review, add, import, library, export, and settings flows while preserving existing local data flow, import parsing, review scheduler behavior, backup behavior, routes, and API contracts.
 
 The GitHub repository URL was provided by the user:
 

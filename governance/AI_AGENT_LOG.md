@@ -1,5 +1,61 @@
 # AI Agent Log
 
+## 2026-07-06 14:20 AEST
+
+- Task: execute Stage 7 UI visual design after the user approved a darker sage direction and approved adding Motion for React.
+- Plan agreed: yes. The user confirmed document-first execution, no PTE / IELTS toggle implementation, darker sage styling, more tactile interaction feedback, and option A to add `motion`.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `package-lock.json`
+  - `package.json`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE7_UI_VISUAL_DESIGN.md`
+  - `src/app/add/page.tsx`
+  - `src/app/export/page.tsx`
+  - `src/app/globals.css`
+  - `src/app/import/page.tsx`
+  - `src/app/layout.tsx`
+  - `src/app/library/page.tsx`
+  - `src/app/page.tsx`
+  - `src/app/review/page.tsx`
+  - `src/app/settings/page.tsx`
+  - `src/components/add-word-form.tsx`
+  - `src/components/app-nav.tsx`
+  - `src/components/app-shell.tsx`
+  - `src/components/export/export-workspace.tsx`
+  - `src/components/review/review-session.tsx`
+  - `src/components/settings/person-settings-form.tsx`
+  - `src/components/settings/review-settings-form.tsx`
+  - `src/components/simple-panel.tsx`
+  - `src/components/ui/motion-primitives.tsx`
+  - `src/components/vocabulary/home-dashboard.tsx`
+  - `src/components/vocabulary/import-workspace.tsx`
+  - `src/components/vocabulary/vocabulary-library.tsx`
+- Reason: complete the dedicated Stage 7 visual design pass before any later Stage 6B Production（生产环境）execution, while keeping V1 focused on user vocabulary import and flashcard review.
+- Implementation notes:
+  - Added a Stage 7 child plan with required `Source plan`, `Derived from`, `Scope`, `Non-Scope`, and `Exit criteria` markers.
+  - Documented that the PTE / IELTS toggle from the design prompt is out of V1 scope and should not add exam-type data fields or filtering.
+  - Added `motion` for Motion for React interaction animation（交互动效）after checking official Motion documentation and React Spring as an alternative.
+  - Added a darker soft sage visual system in `src/app/globals.css`, with reusable button, card, input, focus, progress, and reduced-motion classes.
+  - Added desktop sidebar navigation, mobile bottom navigation, and active route feedback.
+  - Redesigned the dashboard, flashcard review, add, import, library, export, and settings surfaces while preserving existing local data flow, review scheduler, import parser, backup behavior, routes, and API contracts.
+- Validation:
+  - Passed: `npm run lint`.
+  - Passed: `npm run typecheck`.
+  - Passed: `npm run test` with 13 files and 48 tests.
+  - Passed: `npm run build`.
+  - Passed: `npm run backup:dry-run:fixture`.
+  - Passed: `git diff --check`.
+  - Passed: `npm run governance:preflight`.
+  - Passed: local Playwright / Chrome visual smoke check for `/`, `/review`, `/import`, `/library`, `/export`, and `/settings` at mobile and desktop widths.
+  - Passed: mobile horizontal overflow check after fixing shared panel and input sizing.
+  - Observed: local development requests to `/api/storage/data` can return 403 under the current Preview runtime gate and then fall back to local display; pages still rendered with HTTP 200.
+- Safety notes: local frontend and documentation changes only. No Vercel command, Neon command, database command, env var read/change, GitHub push, merge（合并）to `main`, Production deployment, Production migration, Production import, authentication（认证）, analytics（分析追踪）, AI generation, embedding（向量嵌入）, FSRS（Free Spaced Repetition Scheduler，自由间隔重复调度算法）, email, notification, external vocabulary source, PTE / IELTS toggle implementation, PWA（Progressive Web App，渐进式 Web 应用）, or 付费/扣款 feature was performed.
+
 ## 2026-07-06 00:22 AEST
 
 - Task: design and execute Stage 6A Production release gate after the user committed the release-sequence confirmation.

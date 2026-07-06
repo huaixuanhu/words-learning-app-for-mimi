@@ -11,6 +11,7 @@ import {
   normalizeSessionLimit,
   updateReviewSettings,
 } from "@/lib/review/settings";
+import { PressableButton } from "@/components/ui/motion-primitives";
 
 function detectTimezone(fallback: string) {
   try {
@@ -57,32 +58,32 @@ export function ReviewSettingsForm() {
       onSubmit={handleSubmit}
     >
       <label className="grid gap-2">
-        <span className="text-sm font-medium">Daily session limit</span>
+        <span className="text-sm font-semibold text-[#203229]">Daily session limit</span>
         <input
           name="session_limit"
           type="number"
           min={1}
           max={80}
           defaultValue={isLoaded ? settings.sessionLimit : DEFAULT_SESSION_LIMIT}
-          className="min-h-11 rounded-md border border-[#d7d4ca] bg-white px-3 text-base outline-none focus:border-[#517056]"
+          className="mimi-input px-3 text-base"
         />
       </label>
       <label className="grid gap-2">
-        <span className="text-sm font-medium">Timezone</span>
+        <span className="text-sm font-semibold text-[#203229]">Timezone</span>
         <input
           name="timezone"
           defaultValue={isLoaded ? settings.timezone : detectTimezone(settings.timezone)}
-          className="min-h-11 rounded-md border border-[#d7d4ca] bg-white px-3 text-base outline-none focus:border-[#517056]"
+          className="mimi-input px-3 text-base"
         />
       </label>
-      <button
+      <PressableButton
         type="submit"
-        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-[#517056] px-4 text-sm font-semibold text-white"
+        className="mimi-button mimi-focus-ring inline-flex items-center justify-center gap-2 px-4 text-sm font-semibold"
       >
         <Save aria-hidden="true" className="size-4" />
         保存设置
-      </button>
-      {message ? <p className="text-sm text-[#517056]">{message}</p> : null}
+      </PressableButton>
+      {message ? <p className="rounded-md bg-[#d9e5d5] px-3 py-2 text-sm text-[#274331]">{message}</p> : null}
     </form>
   );
 }

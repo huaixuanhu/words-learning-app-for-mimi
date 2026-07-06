@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## 2026-07-06 14:20 AEST
+
+- Executed Stage 7 UI visual design locally.
+- Added `plan_docs/PLAN_V1_STAGE7_UI_VISUAL_DESIGN.md` with `Source plan`, `Derived from`, `Scope`, `Non-Scope`, and `Exit criteria` markers.
+- Added `motion` for Motion for React interaction animation.
+- Redesigned the shared app shell with darker sage styling, desktop sidebar navigation, and mobile bottom navigation.
+- Restyled dashboard, review, add, import, library, export, and settings surfaces around the existing local vocabulary and flashcard workflows.
+- Documented that the PTE / IELTS toggle from the design prompt remains out of V1 scope.
+- Reason: complete the dedicated Stage 7 visual design pass before any later Stage 6B Production execution.
+
 ## 2026-07-06 00:22 AEST
 
 - Executed Stage 6A Production release gate design as documentation only.

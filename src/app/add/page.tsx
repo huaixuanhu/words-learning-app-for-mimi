@@ -4,14 +4,14 @@ import { SimplePanel } from "@/components/simple-panel";
 
 export default function AddPage() {
   return (
-    <AppShell title="添加单词" subtitle="Manual entry scaffold">
+    <AppShell title="添加单词" subtitle="Capture a word with enough context to remember it later.">
       <div className="grid gap-4 md:grid-cols-[1fr_280px]">
         <SimplePanel title="Word">
           <AddWordForm />
         </SimplePanel>
 
         <SimplePanel title="Rules">
-          <ul className="space-y-3 text-sm leading-6 text-[#66645c]">
+          <ul className="space-y-3 text-sm leading-6 text-[#5f6d62]">
             <li>新词初始状态: new</li>
             <li>Rarity 不是 proficiency</li>
             <li>Created at 默认自动记录</li>

@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Mimi PTE Words",
-  description: "Mobile-first vocabulary flashcard scaffold for Mimi.",
+  description: "Calm vocabulary flashcards for Mimi.",
 };
 
 export default function RootLayout({

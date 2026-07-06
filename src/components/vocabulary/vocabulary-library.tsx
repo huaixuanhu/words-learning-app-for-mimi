@@ -13,6 +13,7 @@ import {
 } from "@/lib/vocabulary/repository";
 import { normalizeRarityScore, normalizeSurfaceText } from "@/lib/vocabulary/normalize";
 import { useVocabularyData } from "./use-vocabulary-data";
+import { PressableButton } from "@/components/ui/motion-primitives";
 
 type LibraryFilter = "active" | "archived" | "all";
 
@@ -165,25 +166,25 @@ export function VocabularyLibrary() {
 
   return (
     <div className="grid gap-4">
-      <div className="rounded-md border border-[#dfddd6] bg-white p-4">
+      <div className="mimi-panel p-4 sm:p-5">
         <div className="grid gap-3 md:grid-cols-[1fr_auto]">
           <label className="relative grid gap-2">
-            <span className="text-sm font-medium">Search</span>
-            <Search aria-hidden="true" className="absolute bottom-3 left-3 size-4 text-[#66645c]" />
+            <span className="text-sm font-semibold text-[#203229]">Search</span>
+            <Search aria-hidden="true" className="absolute bottom-3 left-3 size-4 text-[#5f6d62]" />
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="word, meaning, example"
-              className="min-h-11 rounded-md border border-[#d7d4ca] bg-white px-9 text-base outline-none focus:border-[#517056]"
+              className="mimi-input px-9 text-base"
             />
           </label>
 
           <label className="grid gap-2">
-            <span className="text-sm font-medium">Filter</span>
+            <span className="text-sm font-semibold text-[#203229]">Filter</span>
             <select
               value={filter}
               onChange={(event) => setFilter(event.target.value as LibraryFilter)}
-              className="min-h-11 rounded-md border border-[#d7d4ca] bg-white px-3 text-base outline-none focus:border-[#517056]"
+              className="mimi-input px-3 text-base"
             >
               <option value="active">Active</option>
               <option value="archived">Archived</option>
@@ -192,12 +193,12 @@ export function VocabularyLibrary() {
           </label>
         </div>
 
-        {message ? <p className="mt-3 text-sm text-[#517056]">{message}</p> : null}
+        {message ? <p className="mt-3 rounded-md bg-[#d9e5d5] px-3 py-2 text-sm text-[#274331]">{message}</p> : null}
       </div>
 
-      <div className="rounded-md border border-[#dfddd6] bg-white">
-        <div className="border-b border-[#dfddd6] px-4 py-3">
-          <p className="text-sm text-[#66645c]">
+      <div className="mimi-panel overflow-hidden">
+        <div className="border-b border-[#d8d1c2] px-4 py-3">
+          <p className="text-sm text-[#5f6d62]">
             {isLoaded
               ? `${visibleItems.length} shown / ${getVocabularyItemsForSelectedPerson(data).length} total`
               : "Loading local vocabulary..."}
@@ -205,138 +206,138 @@ export function VocabularyLibrary() {
         </div>
 
         {visibleItems.length ? (
-          <div className="divide-y divide-[#eeeae1]">
+          <div className="divide-y divide-[#e4dece]">
             {visibleItems.map((item) => {
               const isEditing = editingId === item.id && draft;
 
               return (
-                <div key={item.id} className="grid gap-3 p-4">
+                <div key={item.id} className="grid gap-3 p-4 transition hover:bg-[#fffaf1]/72">
                   {isEditing ? (
                     <div className="grid gap-3">
                       <div className="grid gap-3 md:grid-cols-2">
                         <label className="grid gap-1">
-                          <span className="text-sm font-medium">Word or phrase</span>
+                          <span className="text-sm font-semibold text-[#203229]">Word or phrase</span>
                           <input
                             value={draft.surfaceText}
                             onChange={(event) => setDraft({ ...draft, surfaceText: event.target.value })}
-                            className="min-h-10 rounded-md border border-[#d7d4ca] px-3"
+                            className="mimi-input min-h-10 px-3"
                           />
                         </label>
                         <label className="grid gap-1">
-                          <span className="text-sm font-medium">中文释义</span>
+                          <span className="text-sm font-semibold text-[#203229]">中文释义</span>
                           <input
                             value={draft.meaningZh}
                             onChange={(event) => setDraft({ ...draft, meaningZh: event.target.value })}
-                            className="min-h-10 rounded-md border border-[#d7d4ca] px-3"
+                            className="mimi-input min-h-10 px-3"
                           />
                         </label>
                       </div>
                       <label className="grid gap-1">
-                        <span className="text-sm font-medium">Example</span>
+                        <span className="text-sm font-semibold text-[#203229]">Example</span>
                         <textarea
                           rows={2}
                           value={draft.example}
                           onChange={(event) => setDraft({ ...draft, example: event.target.value })}
-                          className="min-h-20 rounded-md border border-[#d7d4ca] px-3 py-2"
+                          className="mimi-input min-h-20 px-3 py-2"
                         />
                       </label>
                       <div className="grid gap-3 md:grid-cols-3">
                         <label className="grid gap-1">
-                          <span className="text-sm font-medium">Rarity</span>
+                          <span className="text-sm font-semibold text-[#203229]">Rarity</span>
                           <input
                             value={draft.rarityScore}
                             onChange={(event) => setDraft({ ...draft, rarityScore: event.target.value })}
                             type="number"
                             min={1}
                             max={5}
-                            className="min-h-10 rounded-md border border-[#d7d4ca] px-3"
+                            className="mimi-input min-h-10 px-3"
                           />
                         </label>
                         <label className="grid gap-1">
-                          <span className="text-sm font-medium">Created at</span>
+                          <span className="text-sm font-semibold text-[#203229]">Created at</span>
                           <input
                             value={draft.createdAt}
                             onChange={(event) => setDraft({ ...draft, createdAt: event.target.value })}
                             type="datetime-local"
-                            className="min-h-10 rounded-md border border-[#d7d4ca] px-3"
+                            className="mimi-input min-h-10 px-3"
                           />
                         </label>
                         <label className="grid gap-1">
-                          <span className="text-sm font-medium">Timezone</span>
+                          <span className="text-sm font-semibold text-[#203229]">Timezone</span>
                           <input
                             value={draft.timezone}
                             onChange={(event) => setDraft({ ...draft, timezone: event.target.value })}
-                            className="min-h-10 rounded-md border border-[#d7d4ca] px-3"
+                            className="mimi-input min-h-10 px-3"
                           />
                         </label>
                       </div>
                       <div className="flex flex-wrap gap-2">
-                        <button
+                        <PressableButton
                           type="button"
                           onClick={() => void saveDraft()}
-                          className="inline-flex min-h-10 items-center gap-2 rounded-md bg-[#517056] px-3 text-sm font-semibold text-white"
+                          className="mimi-button mimi-focus-ring inline-flex items-center gap-2 px-3 text-sm font-semibold"
                         >
                           <Save aria-hidden="true" className="size-4" />
                           保存
-                        </button>
-                        <button
+                        </PressableButton>
+                        <PressableButton
                           type="button"
                           onClick={() => {
                             setEditingId(null);
                             setDraft(null);
                           }}
-                          className="min-h-10 rounded-md border border-[#d7d4ca] px-3 text-sm font-medium"
+                          className="mimi-button-secondary mimi-focus-ring px-3 text-sm font-semibold"
                         >
                           取消
-                        </button>
+                        </PressableButton>
                       </div>
                     </div>
                   ) : (
                     <div className="grid gap-3 md:grid-cols-[1fr_auto]">
                       <div>
                         <div className="flex flex-wrap items-center gap-2">
-                          <h2 className="text-lg font-semibold">{item.surfaceText}</h2>
-                          <span className="rounded-md bg-[#edf4ef] px-2 py-1 text-xs text-[#517056]">
+                          <h2 className="mimi-word-serif text-2xl text-[#203229]">{item.surfaceText}</h2>
+                          <span className="mimi-pill px-2 py-1 text-xs font-semibold">
                             {item.source}
                           </span>
                           {item.archivedAt ? (
-                            <span className="rounded-md bg-[#f3e7dd] px-2 py-1 text-xs text-[#8a4d21]">
+                            <span className="rounded-md bg-[#efe0d1] px-2 py-1 text-xs font-semibold text-[#8a4d21]">
                               archived
                             </span>
                           ) : null}
                         </div>
-                        <p className="mt-1 text-sm text-[#66645c]">{item.meaningZh || "No meaning yet"}</p>
-                        {item.example ? <p className="mt-2 text-sm leading-6">{item.example}</p> : null}
-                        <p className="mt-2 font-mono text-xs text-[#77736a]">
+                        <p className="mt-1 text-sm text-[#5f6d62]">{item.meaningZh || "No meaning yet"}</p>
+                        {item.example ? <p className="mt-2 text-sm leading-6 text-[#203229]">{item.example}</p> : null}
+                        <p className="mt-2 font-mono text-xs text-[#879087]">
                           created {item.createdAt} · system {item.systemCreatedAt}
                         </p>
                       </div>
                       <div className="flex flex-wrap items-start gap-2 md:justify-end">
-                        <button
+                        <PressableButton
                           type="button"
                           onClick={() => startEditing(item)}
-                          className="min-h-10 rounded-md border border-[#d7d4ca] px-3 text-sm font-medium"
+                          className="mimi-button-secondary mimi-focus-ring px-3 text-sm font-semibold"
                         >
                           编辑
-                        </button>
+                        </PressableButton>
                         {item.archivedAt ? (
-                          <button
+                          <PressableButton
                             type="button"
                             onClick={() => void restoreItem(item.id)}
-                            className="inline-flex min-h-10 items-center gap-2 rounded-md border border-[#d7d4ca] px-3 text-sm font-medium"
+                            className="mimi-button-secondary mimi-focus-ring inline-flex items-center gap-2 px-3 text-sm font-semibold"
                           >
                             <RotateCcw aria-hidden="true" className="size-4" />
                             恢复
-                          </button>
+                          </PressableButton>
                         ) : (
-                          <button
+                          <PressableButton
                             type="button"
                             onClick={() => void archiveItem(item.id)}
-                            className="inline-flex min-h-10 items-center gap-2 rounded-md border border-[#d7d4ca] px-3 text-sm font-medium"
+                            className="mimi-button-secondary mimi-focus-ring inline-flex items-center gap-2 px-3 text-sm font-semibold"
                           >
                             <Archive aria-hidden="true" className="size-4" />
                             归档
-                          </button>
+                          </PressableButton>
                         )}
                       </div>
                     </div>
@@ -346,7 +347,7 @@ export function VocabularyLibrary() {
             })}
           </div>
         ) : (
-          <p className="p-4 text-sm leading-6 text-[#66645c]">
+          <p className="p-4 text-sm leading-6 text-[#5f6d62]">
             {isLoaded ? "没有匹配的本地词条。" : "Loading..."}
           </p>
         )}

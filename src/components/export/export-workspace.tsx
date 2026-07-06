@@ -12,6 +12,7 @@ import {
 import type { BackupParseResult } from "@/lib/backup/types";
 import type { VocabularyData } from "@/lib/vocabulary/types";
 import { useVocabularyData } from "@/components/vocabulary/use-vocabulary-data";
+import { PressableButton } from "@/components/ui/motion-primitives";
 
 function detectTimezone() {
   return Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -48,9 +49,9 @@ function SummaryGrid({ data }: { data: VocabularyData }) {
         ["States", counts.reviewStates],
         ["Events", counts.reviewEvents],
       ].map(([label, value]) => (
-        <div key={label} className="rounded-md bg-[#f8f7f4] p-3">
-          <p className="text-xs font-medium text-[#66645c]">{label}</p>
-          <p className="mt-1 text-xl font-semibold">{value}</p>
+        <div key={label} className="rounded-md bg-[#efe9dc] p-3">
+          <p className="text-xs font-semibold text-[#5f6d62]">{label}</p>
+          <p className="mt-1 text-xl font-semibold text-[#203229]">{value}</p>
         </div>
       ))}
     </div>
@@ -59,7 +60,7 @@ function SummaryGrid({ data }: { data: VocabularyData }) {
 
 function ErrorList({ result }: { result: Extract<BackupParseResult, { ok: false }> }) {
   return (
-    <div className="rounded-md border border-[#e0b9a8] bg-[#fff8f4] p-3 text-sm text-[#7a3421]">
+    <div className="rounded-md border border-[#d8aaa2] bg-[#fff4ef] p-3 text-sm text-[#7a3421]">
       <div className="flex items-start gap-2">
         <AlertTriangle aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
         <div>
@@ -144,72 +145,72 @@ export function ExportWorkspace() {
   return (
     <div className="grid gap-4">
       <SimplePanel title="Current Data">
-        {isLoaded ? <SummaryGrid data={data} /> : <p className="text-sm text-[#66645c]">Loading data...</p>}
+        {isLoaded ? <SummaryGrid data={data} /> : <p className="text-sm text-[#5f6d62]">Loading data...</p>}
       </SimplePanel>
 
       <SimplePanel title="Download">
         <div className="grid gap-3 sm:grid-cols-2">
-          <button
+          <PressableButton
             type="button"
             disabled={!isLoaded}
             onClick={downloadJsonBackup}
-            className="inline-flex min-h-14 items-center justify-center gap-2 rounded-md border border-[#d7d4ca] bg-white px-4 text-sm font-semibold hover:border-[#517056] disabled:opacity-50"
+            className="mimi-button-secondary mimi-focus-ring inline-flex min-h-14 items-center justify-center gap-2 px-4 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50"
           >
             <FileJson aria-hidden="true" className="size-4" />
             JSON backup
-          </button>
-          <button
+          </PressableButton>
+          <PressableButton
             type="button"
             disabled={!isLoaded}
             onClick={downloadCsv}
-            className="inline-flex min-h-14 items-center justify-center gap-2 rounded-md border border-[#d7d4ca] bg-white px-4 text-sm font-semibold hover:border-[#517056] disabled:opacity-50"
+            className="mimi-button-secondary mimi-focus-ring inline-flex min-h-14 items-center justify-center gap-2 px-4 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50"
           >
             <FileSpreadsheet aria-hidden="true" className="size-4" />
             Vocabulary CSV
-          </button>
+          </PressableButton>
         </div>
-        {message ? <p className="mt-3 text-sm text-[#517056]">{message}</p> : null}
+        {message ? <p className="mt-3 rounded-md bg-[#d9e5d5] px-3 py-2 text-sm text-[#274331]">{message}</p> : null}
       </SimplePanel>
 
       <SimplePanel title="Restore Preview">
         <div className="grid gap-3 md:grid-cols-[1fr_auto]">
           <label className="grid gap-2">
-            <span className="text-sm font-medium">JSON backup file</span>
+            <span className="text-sm font-semibold text-[#203229]">JSON backup file</span>
             <input
               ref={fileInputRef}
               type="file"
               accept=".json,application/json"
               onChange={(event) => void readBackupFile(event.target.files?.[0])}
-              className="min-h-11 rounded-md border border-[#d7d4ca] bg-white px-3 py-2 text-sm"
+              className="mimi-input px-3 py-2 text-sm"
             />
           </label>
-          <button
+          <PressableButton
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="inline-flex min-h-11 items-center justify-center gap-2 self-end rounded-md border border-[#d7d4ca] bg-white px-4 text-sm font-semibold"
+            className="mimi-button-secondary mimi-focus-ring inline-flex items-center justify-center gap-2 self-end px-4 text-sm font-semibold"
           >
             <Upload aria-hidden="true" className="size-4" />
             选择文件
-          </button>
+          </PressableButton>
         </div>
 
         {restoreResult?.ok ? (
           <div className="mt-4 grid gap-4">
-            <div className="rounded-md border border-[#dfddd6] bg-[#f8f7f4] p-3 text-sm text-[#464640]">
+            <div className="rounded-md border border-[#d8d1c2] bg-[#efe9dc] p-3 text-sm text-[#203229]">
               <p>Exported at: {new Date(restoreResult.backup.metadata.exportedAt).toLocaleString()}</p>
               <p>Timezone: {restoreResult.backup.metadata.timezone}</p>
               <p>Schema version: {restoreResult.backup.metadata.schemaVersion}</p>
             </div>
             <SummaryGrid data={restoreResult.data} />
-            <button
+            <PressableButton
               type="button"
               disabled={storageRuntime === "postgres-preview"}
               onClick={() => void restoreBackup()}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-[#517056] px-4 text-sm font-semibold text-white"
+              className="mimi-button mimi-focus-ring inline-flex items-center justify-center gap-2 px-4 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Download aria-hidden="true" className="size-4" />
               {storageRuntime === "postgres-preview" ? "Postgres 导入暂用脚本" : "确认恢复到本地"}
-            </button>
+            </PressableButton>
           </div>
         ) : null}
 

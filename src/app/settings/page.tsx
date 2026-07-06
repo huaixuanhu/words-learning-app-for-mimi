@@ -5,7 +5,7 @@ import { ReviewSettingsForm } from "@/components/settings/review-settings-form";
 
 export default function SettingsPage() {
   return (
-    <AppShell title="设置" subtitle="Local person and review settings">
+    <AppShell title="设置" subtitle="Tune the local study rhythm for each person.">
       <div className="grid gap-4">
         <SimplePanel title="People">
           <PersonSettingsForm />
