@@ -1,6 +1,7 @@
 "use client";
 
-import { Archive, RotateCcw, Save, Search } from "lucide-react";
+import Link from "next/link";
+import { Archive, Download, ListPlus, RotateCcw, Save, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { UpdateVocabularyInput, VocabularyItem } from "@/lib/vocabulary/types";
 import {
@@ -15,7 +16,7 @@ import { normalizeRarityScore, normalizeSurfaceText } from "@/lib/vocabulary/nor
 import { useVocabularyData } from "./use-vocabulary-data";
 import { PressableButton } from "@/components/ui/motion-primitives";
 
-type LibraryFilter = "active" | "archived" | "all";
+type LibraryFilter = "all" | "recognition" | "activeVocabulary" | "weak" | "archived";
 
 type EditDraft = Pick<
   VocabularyItem,
@@ -67,18 +68,37 @@ function detectTimezone(fallback = "Australia/Melbourne") {
 export function VocabularyLibrary() {
   const { data, isLoaded, commit } = useVocabularyData();
   const [query, setQuery] = useState("");
-  const [filter, setFilter] = useState<LibraryFilter>("active");
+  const [filter, setFilter] = useState<LibraryFilter>("all");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<EditDraft | null>(null);
   const [message, setMessage] = useState("");
 
+  const allItems = getVocabularyItemsForSelectedPerson(data);
+  const activeItems = getActiveVocabularyItems(data);
+  const archivedItems = getArchivedVocabularyItems(data);
+  const weakWordIds = useMemo(
+    () => new Set(data.reviewStates.filter((state) => state.lapseCount > 0).map((state) => state.vocabularyItemId)),
+    [data.reviewStates],
+  );
+  const filterTabs = [
+    { value: "all", label: "All Words", count: allItems.length },
+    { value: "recognition", label: "Recognition", count: activeItems.length },
+    { value: "activeVocabulary", label: "Active", count: 0 },
+    { value: "weak", label: "Weak Words", count: activeItems.filter((item) => weakWordIds.has(item.id)).length },
+    { value: "archived", label: "Archived", count: archivedItems.length },
+  ] as const satisfies readonly { value: LibraryFilter; label: string; count: number }[];
+
   const visibleItems = useMemo(() => {
     const sourceItems =
-      filter === "active"
-        ? getActiveVocabularyItems(data)
-        : filter === "archived"
-          ? getArchivedVocabularyItems(data)
-          : getVocabularyItemsForSelectedPerson(data);
+      filter === "recognition"
+        ? activeItems
+        : filter === "activeVocabulary"
+          ? []
+          : filter === "weak"
+            ? activeItems.filter((item) => weakWordIds.has(item.id))
+            : filter === "archived"
+              ? archivedItems
+              : allItems;
     const normalizedQuery = normalizeSurfaceText(query);
 
     if (!normalizedQuery) {
@@ -91,7 +111,7 @@ export function VocabularyLibrary() {
         item.meaningZh.includes(query.trim()) ||
         item.example.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()),
     );
-  }, [data, filter, query]);
+  }, [activeItems, allItems, archivedItems, filter, query, weakWordIds]);
 
   const startEditing = (item: VocabularyItem) => {
     setEditingId(item.id);
@@ -167,7 +187,7 @@ export function VocabularyLibrary() {
   return (
     <div className="grid gap-4">
       <div className="mimi-panel p-4 sm:p-5">
-        <div className="grid gap-3 md:grid-cols-[1fr_auto]">
+        <div className="grid gap-4">
           <label className="relative grid gap-2">
             <span className="text-sm font-semibold text-[#203229]">Search</span>
             <Search aria-hidden="true" className="absolute bottom-3 left-3 size-4 text-[#5f6d62]" />
@@ -179,18 +199,55 @@ export function VocabularyLibrary() {
             />
           </label>
 
-          <label className="grid gap-2">
-            <span className="text-sm font-semibold text-[#203229]">Filter</span>
-            <select
-              value={filter}
-              onChange={(event) => setFilter(event.target.value as LibraryFilter)}
-              className="mimi-input px-3 text-base"
-            >
-              <option value="active">Active</option>
-              <option value="archived">Archived</option>
-              <option value="all">All</option>
-            </select>
-          </label>
+          <div className="flex flex-wrap gap-2" role="tablist" aria-label="Library filters">
+            {filterTabs.map((tab) => (
+              <button
+                key={tab.value}
+                type="button"
+                onClick={() => setFilter(tab.value)}
+                aria-pressed={filter === tab.value}
+                className={`mimi-focus-ring rounded-md border px-3 py-2 text-sm font-semibold transition duration-200 ease-[var(--mimi-ease)] ${
+                  filter === tab.value
+                    ? "border-[var(--mimi-primary)] bg-[var(--mimi-primary-soft)] text-[var(--mimi-primary-deep)]"
+                    : "border-[var(--mimi-border)] bg-[#fffaf1]/72 text-[#5f6d62] hover:-translate-y-0.5 hover:border-[var(--mimi-border-strong)] hover:text-[#274331]"
+                }`}
+              >
+                {tab.label}
+                <span className="ml-2 font-mono text-xs opacity-70">{tab.count}</span>
+              </button>
+            ))}
+          </div>
+
+          <div className="grid gap-3 rounded-md border border-[#d8d1c2] bg-[#fffaf1]/64 p-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-semibold uppercase tracking-normal text-[#879087]">Soft tags</span>
+              {["Recognition", "Active", "PTE", "IELTS", "Listening", "Writing", "Spelling Risk"].map((tag) => (
+                <span key={tag} className="mimi-pill-muted px-2 py-1 text-xs font-semibold">
+                  {tag}
+                </span>
+              ))}
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-semibold uppercase tracking-normal text-[#879087]">Mastery</span>
+              <span className="mimi-pill px-2 py-1 text-xs font-semibold">Meaning</span>
+              {["Listening", "Spelling", "Usage"].map((tag) => (
+                <span key={tag} className="mimi-pill-muted px-2 py-1 text-xs font-semibold">
+                  {tag}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <Link href="/add" className="mimi-button-secondary mimi-focus-ring inline-flex items-center gap-2 px-3 text-sm font-semibold">
+              <ListPlus aria-hidden="true" className="size-4" />
+              Add word
+            </Link>
+            <Link href="/export" className="mimi-button-secondary mimi-focus-ring inline-flex items-center gap-2 px-3 text-sm font-semibold">
+              <Download aria-hidden="true" className="size-4" />
+              Export
+            </Link>
+          </div>
         </div>
 
         {message ? <p className="mt-3 rounded-md bg-[#d9e5d5] px-3 py-2 text-sm text-[#274331]">{message}</p> : null}
@@ -200,7 +257,7 @@ export function VocabularyLibrary() {
         <div className="border-b border-[#d8d1c2] px-4 py-3">
           <p className="text-sm text-[#5f6d62]">
             {isLoaded
-              ? `${visibleItems.length} shown / ${getVocabularyItemsForSelectedPerson(data).length} total`
+              ? `${visibleItems.length} shown / ${allItems.length} total`
               : "Loading local vocabulary..."}
           </p>
         </div>
@@ -300,6 +357,15 @@ export function VocabularyLibrary() {
                           <span className="mimi-pill px-2 py-1 text-xs font-semibold">
                             {item.source}
                           </span>
+                          {!item.archivedAt ? (
+                            <span className="mimi-pill px-2 py-1 text-xs font-semibold">Recognition</span>
+                          ) : null}
+                          <span className="mimi-pill px-2 py-1 text-xs font-semibold">PTE</span>
+                          {weakWordIds.has(item.id) ? (
+                            <span className="rounded-md bg-[#efe0d1] px-2 py-1 text-xs font-semibold text-[#8a4d21]">
+                              Weak Words
+                            </span>
+                          ) : null}
                           {item.archivedAt ? (
                             <span className="rounded-md bg-[#efe0d1] px-2 py-1 text-xs font-semibold text-[#8a4d21]">
                               archived
@@ -308,6 +374,12 @@ export function VocabularyLibrary() {
                         </div>
                         <p className="mt-1 text-sm text-[#5f6d62]">{item.meaningZh || "No meaning yet"}</p>
                         {item.example ? <p className="mt-2 text-sm leading-6 text-[#203229]">{item.example}</p> : null}
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <span className="mimi-pill px-2 py-1 text-xs font-semibold">Meaning</span>
+                          <span className="mimi-pill-muted px-2 py-1 text-xs font-semibold">Listening</span>
+                          <span className="mimi-pill-muted px-2 py-1 text-xs font-semibold">Spelling</span>
+                          <span className="mimi-pill-muted px-2 py-1 text-xs font-semibold">Usage</span>
+                        </div>
                         <p className="mt-2 font-mono text-xs text-[#879087]">
                           created {item.createdAt} · system {item.systemCreatedAt}
                         </p>
@@ -348,7 +420,11 @@ export function VocabularyLibrary() {
           </div>
         ) : (
           <p className="p-4 text-sm leading-6 text-[#5f6d62]">
-            {isLoaded ? "没有匹配的本地词条。" : "Loading..."}
+            {isLoaded
+              ? filter === "activeVocabulary"
+                ? "Active Vocabulary classification is reserved for a later practice stage."
+                : "没有匹配的本地词条。"
+              : "Loading..."}
           </p>
         )}
       </div>

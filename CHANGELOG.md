@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## 2026-07-06 23:39 AEST
+
+- Executed Stage 7.8 dual-track UI refinement locally.
+- Added `plan_docs/PLAN_V1_STAGE7_8_DUAL_TRACK_UI_REFINEMENT.md` with `Source plan`, `Derived from`, `Scope`, `Non-Scope`, and `Exit criteria` markers.
+- Redesigned the dashboard around a Today Hub with separate Recognition Vocabulary（阅读词汇）and Active Vocabulary（输出词汇）track cards.
+- Added presentational `/study` and `/practice-lab` route entries while keeping `/add` and `/export` available as quieter tools.
+- Reordered main navigation to center daily learning: dashboard, study, review, library, practice lab, import, and settings.
+- Refined Library filters and soft tags for All Words, Recognition, Active, Weak Words, Archived, and future mastery dimensions.
+- Strengthened the cat Home Brand Button hover / active / focus-visible states while preserving the existing soft sage, calm, fluid interaction style.
+- Verified local validation: `npm run lint`, `npm run typecheck`, `npm run test`, `npm run backup:dry-run:fixture`, `npm run build`, route smoke checks, focused in-app browser checks, `git diff --check`, and `npm run governance:preflight`.
+- Reason: align V1 UI composition with the future Recognition / Active learning-track direction before any separate Stage 6B merge or Production execution, without changing business logic, storage schema, scheduler behavior, API contracts, or remote state.
+
 ## 2026-07-06 23:12 AEST
 
 - Executed Stage 7.7 final acceptance and regression QA locally.

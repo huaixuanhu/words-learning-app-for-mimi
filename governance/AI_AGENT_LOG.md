@@ -1,5 +1,48 @@
 # AI Agent Log
 
+## 2026-07-06 23:39 AEST
+
+- Task: execute the confirmed Stage 7.8 dual-track UI refinement before any V1 merge（合并）or Stage 6B Production（生产环境）execution.
+- Plan agreed: yes. The user confirmed the Stage 7.8 direction and added that the cat Home Brand Button should preserve the existing soft sage, calm, fluid interaction animation（交互动效）style while only adding perceptible hover / active / focus states.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE7_8_DUAL_TRACK_UI_REFINEMENT.md`
+  - `plan_docs/PLAN_V1_STAGE7_UI_VISUAL_DESIGN.md`
+  - `src/app/globals.css`
+  - `src/app/practice-lab/page.tsx`
+  - `src/app/study/page.tsx`
+  - `src/components/app-nav.tsx`
+  - `src/components/app-shell.tsx`
+  - `src/components/vocabulary/home-dashboard.tsx`
+  - `src/components/vocabulary/vocabulary-library.tsx`
+  - `src/lib/stage-two-data.ts`
+- Reason: make V1's UI（用户界面）and information architecture（信息架构）show the future Recognition Vocabulary（阅读词汇）/ Active Vocabulary（输出词汇）learning-track direction while keeping actual Active Vocabulary behavior, AI API（人工智能接口）, and persisted track classification out of V1.
+- Implementation notes:
+  - Added `plan_docs/PLAN_V1_STAGE7_8_DUAL_TRACK_UI_REFINEMENT.md` with required `Source plan`, `Derived from`, `Scope`, `Non-Scope`, and `Exit criteria` markers.
+  - Replaced the dashboard's single generic progress framing with a Today Hub containing Recognition and Active track cards.
+  - Recognition uses the existing reviewed-today / session-limit progress from the local review flow.
+  - Active is a presentational reserved track linking to Practice Lab; it does not write data or create a persisted category.
+  - Added `/study` and `/practice-lab` as local presentational page entries.
+  - Reordered main navigation to dashboard, study, review, library, practice lab, import, and settings; `/add` and `/export` remain available through quieter links.
+  - Updated the cat brand link accessible label to `Go to dashboard` and added pointer, hover, active, and focus-visible states without changing the avatar's approximate visual size.
+  - Updated Library filters to All Words, Recognition, Active, Weak Words, and Archived, and added soft tag / mastery labels for future track structure.
+- Validation:
+  - Passed: `npm run lint`.
+  - Passed: `npm run typecheck`.
+  - Passed: `npm run test` with 14 files and 52 tests.
+  - Passed: `npm run backup:dry-run:fixture`.
+  - Passed: `npm run build`; build output includes `/study` and `/practice-lab` as static routes.
+  - Passed: route smoke checks for `/`, `/study`, `/review`, `/library`, `/practice-lab`, `/import`, `/settings`, `/add`, and `/export`; all returned HTTP 200 with expected text snippets.
+  - Passed: focused in-app browser checks for `/`, `/library`, and `/practice-lab`; Today Hub, Recognition / Active track text, Library filters, mastery labels, Practice Lab content, and `Go to dashboard` brand label were present; no development overlay text or horizontal overflow was detected.
+  - Passed: `git diff --check`.
+  - Passed: `npm run governance:preflight`.
+- Safety notes: local UI, presentational route, and documentation changes only. No Vercel command, Neon command, database command, env var read/change, GitHub push, merge to `main`, Production deployment, Production migration, Production import, formal user backup import, vocabulary schema change, review scheduler change, import parser change, JSON backup schema change, CSV export change, Postgres table change, API payload change, authentication（认证）, analytics（分析追踪）, AI generation, AI API, dictation engine（听写引擎）, spelling checker（拼写检查器）, writing feedback model, notification, background audio, external vocabulary source, persisted PTE / IELTS toggle, PWA（Progressive Web App，渐进式 Web 应用）implementation, email, or 付费/扣款 feature was performed.
+
 ## 2026-07-06 23:12 AEST
 
 - Task: execute Stage 7.7 final acceptance and regression QA after the user accepted Stage 7.6 sound behavior and confirmed the recommended Stage 7 final acceptance step.

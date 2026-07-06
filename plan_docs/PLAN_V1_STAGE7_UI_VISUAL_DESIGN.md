@@ -63,6 +63,12 @@ Stage 7.7 is documented in `plan_docs/PLAN_V1_STAGE7_7_FINAL_ACCEPTANCE.md`.
 
 This child plan closes the local Stage 7 UI（用户界面）work with final acceptance and regression QA（质量保证）. It records passing local validation, route / asset checks, API（应用程序接口）safety smoke checks, and a focused in-app browser Settings check. It does not introduce new UI features, review scheduler changes, storage schema changes, PTE / IELTS toggle behavior, PWA（Progressive Web App，渐进式 Web 应用）work, or Production（生产环境）execution.
 
+## Stage 7.8 Dual-Track UI Refinement Note
+
+Stage 7.8 is documented in `plan_docs/PLAN_V1_STAGE7_8_DUAL_TRACK_UI_REFINEMENT.md`.
+
+This child plan refines the local Stage 7 UI（用户界面）composition around future Recognition Vocabulary（阅读词汇）and Active Vocabulary（输出词汇）tracks before any Stage 6B Production（生产环境）execution. It adds a Today Hub dashboard, a calm Practice Lab / 练习室 reservation, Study / 学习 and Practice Lab page entries, cleaner main navigation（导航）, Library filters and mastery-dimension labels, and a more intentional cat Home Brand Button. It does not add AI API（人工智能接口）, persisted track assignment, PTE / IELTS stored classification, review scheduler changes, storage schema changes, API（应用程序接口）changes, or Production execution.
+
 ## Prompt Drift Boundary
 
 The user-provided prompt mentions a PTE / IELTS toggle because the reference concept mixed broader exam-prep ideas into the UI direction. For this V1 stage:

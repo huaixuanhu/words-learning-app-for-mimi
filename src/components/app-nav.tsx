@@ -16,7 +16,11 @@ export function DesktopSidebar() {
 
   return (
     <aside className="mimi-rail hidden w-[248px] shrink-0 border-r px-4 py-5 lg:flex lg:flex-col">
-      <Link href="/" className="mimi-focus-ring block rounded-md" aria-label="Mimi words home">
+      <Link
+        href="/"
+        className="mimi-brand-home-button mimi-focus-ring block rounded-md"
+        aria-label="Go to dashboard"
+      >
         <BrandIdentity variant="sidebar" />
       </Link>
 

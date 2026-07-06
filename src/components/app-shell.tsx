@@ -17,7 +17,11 @@ export function AppShell({ title, subtitle, children }: AppShellProps) {
 
         <div className="min-w-0 flex-1">
           <header className="mimi-mobile-header border-b px-4 py-4 lg:hidden">
-            <Link href="/" className="mimi-focus-ring inline-flex rounded-md" aria-label="Mimi words home">
+            <Link
+              href="/"
+              className="mimi-brand-home-button mimi-focus-ring inline-flex rounded-md"
+              aria-label="Go to dashboard"
+            >
               <BrandIdentity variant="mobile" />
             </Link>
           </header>

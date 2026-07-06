@@ -1,8 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, BookOpen, Download, Leaf, RotateCcw, Settings } from "lucide-react";
-import { primaryActions } from "@/lib/stage-two-data";
+import {
+  ArrowRight,
+  AudioWaveform,
+  BookOpen,
+  Download,
+  Ear,
+  Leaf,
+  ListPlus,
+  PenLine,
+  Settings,
+  Sparkles,
+  Upload,
+} from "lucide-react";
 import { getActiveVocabularyItems, getArchivedVocabularyItems } from "@/lib/vocabulary/repository";
 import { useVocabularyData } from "./use-vocabulary-data";
 import { DEFAULT_SESSION_LIMIT, getSelectedReviewSettings } from "@/lib/review/settings";
@@ -31,51 +42,119 @@ export function HomeDashboard() {
     (event) => event.personId === selectedPerson.id && isSameLocalDay(event.reviewedAt),
   ).length;
   const sessionLimit = isLoaded ? settings.sessionLimit : DEFAULT_SESSION_LIMIT;
-  const progressPercent = sessionLimit ? Math.min(100, Math.round((completedToday / sessionLimit) * 100)) : 0;
-  const latestItems = activeItems.slice(0, 4);
-  const progressStyle = {
-    background: `conic-gradient(#5f7d66 ${progressPercent}%, #e1dbce ${progressPercent}% 100%)`,
-  };
+  const recognitionProgress = sessionLimit
+    ? Math.min(100, Math.round((completedToday / sessionLimit) * 100))
+    : 0;
+  const activeGoal = 8;
+  const weakWordsCount = data.reviewStates.filter(
+    (state) => state.personId === selectedPerson.id && state.lapseCount > 0,
+  ).length;
+  const latestItems = activeItems.slice(0, 3);
+
+  const trackCards = [
+    {
+      title: "Recognition Vocabulary",
+      titleZh: "阅读词汇",
+      eyebrow: "Higher-volume reading review",
+      description: "Recognize the word, meaning, and example context without adding pressure.",
+      goal: `${sessionLimit} cards today`,
+      progressLabel: `${isLoaded ? completedToday : "-"} / ${sessionLimit}`,
+      progress: recognitionProgress,
+      href: "/review",
+      cta: "Start review",
+      Icon: BookOpen,
+      mastery: ["Meaning", "Example"],
+      tone: "bg-[#d9e5d5] text-[#274331]",
+    },
+    {
+      title: "Active Vocabulary",
+      titleZh: "输出词汇",
+      eyebrow: "Focused listening and writing track",
+      description: "Reserved for dictation, spelling, sentence recall, and writing usage.",
+      goal: `${activeGoal} focused words later`,
+      progressLabel: `0 / ${activeGoal}`,
+      progress: 0,
+      href: "/practice-lab",
+      cta: "Open lab",
+      Icon: PenLine,
+      mastery: ["Listening", "Spelling", "Usage"],
+      tone: "bg-[#e7decb] text-[#5b4c2c]",
+    },
+  ] as const;
 
   return (
     <div className="grid gap-5">
-      <CalmEntrance className="grid items-start gap-5 lg:grid-cols-[1.35fr_0.65fr]">
+      <CalmEntrance className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.65fr)_minmax(260px,0.6fr)]">
         <section className="mimi-panel p-5 sm:p-6">
-          <div className="grid gap-6 md:grid-cols-[auto_1fr] md:items-center">
-            <div
-              className="grid size-36 place-items-center rounded-full p-2 shadow-[inset_0_0_0_1px_rgb(216_209_194/0.8)]"
-              style={progressStyle}
-              aria-label={`今日复习进度 ${progressPercent}%`}
-            >
-              <div className="grid size-28 place-items-center rounded-full bg-[#fffaf1] text-center shadow-[inset_0_0_0_1px_rgb(216_209_194/0.68)]">
-                <span>
-                  <span className="block text-3xl font-semibold text-[#203229]">{progressPercent}%</span>
-                  <span className="mt-1 block text-xs font-medium text-[#5f6d62]">today</span>
-                </span>
-              </div>
-            </div>
-
+          <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-[#d9e5d5] px-3 py-1 text-xs font-semibold text-[#274331]">
                 <Leaf aria-hidden="true" className="size-3.5" />
                 {selectedPerson.displayName}
               </div>
-              <h2 className="text-2xl font-semibold text-[#203229]">Keep going, one word at a time.</h2>
-              <p className="mt-2 max-w-xl text-sm leading-6 text-[#5f6d62]">
-                今日已记录 {isLoaded ? completedToday : "-"} / {sessionLimit} 张卡片。你正在把词汇变成可回忆的材料。
+              <h2 className="text-2xl font-semibold text-[#203229]">Today Hub</h2>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-[#5f6d62]">
+                Pick the right learning track for today. V1 keeps the existing local review flow, while the active track has a calm space ready for later practice.
               </p>
-
-              <div className="mt-5 flex flex-wrap gap-3">
-                <Link href="/review" className="mimi-button mimi-focus-ring inline-flex items-center justify-center gap-2 px-5 text-sm font-semibold">
-                  <RotateCcw aria-hidden="true" className="size-4" />
-                  开始复习
-                </Link>
-                <Link href="/library" className="mimi-button-secondary mimi-focus-ring inline-flex items-center justify-center gap-2 px-5 text-sm font-semibold">
-                  <BookOpen aria-hidden="true" className="size-4" />
-                  浏览词库
-                </Link>
-              </div>
             </div>
+            <Link
+              href="/study"
+              className="mimi-button-secondary mimi-focus-ring inline-flex items-center justify-center gap-2 px-4 text-sm font-semibold"
+            >
+              Study plan
+              <ArrowRight aria-hidden="true" className="size-4" />
+            </Link>
+          </div>
+
+          <div className="mt-6 grid gap-4 xl:grid-cols-2">
+            {trackCards.map((track) => {
+              const Icon = track.Icon;
+
+              return (
+                <CalmCard key={track.title} className="mimi-card">
+                  <div className="grid h-full gap-5 p-5">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-normal text-[#879087]">{track.eyebrow}</p>
+                        <h3 className="mt-2 text-xl font-semibold text-[#203229]">{track.title}</h3>
+                        <p className="mimi-cjk mt-1 text-sm font-semibold text-[#425f4a]">{track.titleZh}</p>
+                      </div>
+                      <span className={`inline-flex size-11 shrink-0 items-center justify-center rounded-md ${track.tone}`}>
+                        <Icon aria-hidden="true" className="size-5" />
+                      </span>
+                    </div>
+
+                    <p className="text-sm leading-6 text-[#5f6d62]">{track.description}</p>
+
+                    <div>
+                      <div className="mb-2 flex items-center justify-between gap-3 text-sm">
+                        <span className="font-semibold text-[#203229]">{track.goal}</span>
+                        <span className="font-mono text-xs text-[#5f6d62]">{track.progressLabel}</span>
+                      </div>
+                      <div className="mimi-progress-track h-2.5">
+                        <div className="mimi-progress-fill h-full" style={{ width: `${track.progress}%` }} />
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      {track.mastery.map((tag) => (
+                        <span key={tag} className="mimi-pill px-2 py-1 text-xs font-semibold">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+
+                    <Link
+                      href={track.href}
+                      className="mimi-button mimi-focus-ring inline-flex w-fit items-center justify-center gap-2 px-4 text-sm font-semibold"
+                    >
+                      {track.cta}
+                      <ArrowRight aria-hidden="true" className="size-4" />
+                    </Link>
+                  </div>
+                </CalmCard>
+              );
+            })}
           </div>
         </section>
 
@@ -84,7 +163,8 @@ export function HomeDashboard() {
           <div className="mt-5 grid gap-3">
             {[
               ["Ready now", isLoaded ? reviewQueue.length : "-"],
-              ["Active words", isLoaded ? activeItems.length : "-"],
+              ["Current words", isLoaded ? activeItems.length : "-"],
+              ["Weak words", isLoaded ? weakWordsCount : "-"],
               ["Archived", isLoaded ? archivedItems.length : "-"],
             ].map(([label, value]) => (
               <div key={label} className="flex items-center justify-between rounded-md border border-[var(--mimi-panel-dark-item-border)] bg-[var(--mimi-panel-dark-item-bg)] px-4 py-3">
@@ -94,37 +174,12 @@ export function HomeDashboard() {
             ))}
           </div>
           <p className="mt-4 text-sm leading-6 text-[var(--mimi-panel-dark-muted)]">
-            Review gently, remember deeply. The queue follows the existing local scheduler.
+            The queue still follows the existing local scheduler.
           </p>
         </section>
       </CalmEntrance>
 
-      <section className="grid gap-3 md:grid-cols-3 lg:max-w-4xl">
-        {primaryActions.map((action) => {
-          const Icon = action.icon;
-
-          return (
-            <CalmCard key={action.href} className="mimi-card mimi-card-interactive">
-              <Link
-                href={action.href}
-                className="mimi-focus-ring block h-full rounded-md p-4 lg:p-3"
-              >
-                <div className="mb-3 inline-flex size-9 items-center justify-center rounded-md bg-[#d9e5d5] text-[#274331]">
-                  <Icon aria-hidden="true" className="size-4" />
-                </div>
-                <p className="text-base font-semibold text-[#203229]">{action.label}</p>
-                <p className="mt-1 text-sm leading-5 text-[#5f6d62]">{action.detail}</p>
-                <span className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-[#5f7d66]">
-                  进入
-                  <ArrowRight aria-hidden="true" className="size-4" />
-                </span>
-              </Link>
-            </CalmCard>
-          );
-        })}
-      </section>
-
-      <div className="grid gap-5 lg:grid-cols-[1.2fr_0.8fr]">
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1.25fr)_minmax(280px,0.75fr)]">
         <section className="mimi-panel p-5">
           <div className="mb-4 flex items-center justify-between gap-3">
             <h2 className="text-base font-semibold text-[#203229]">Latest words</h2>
@@ -136,9 +191,9 @@ export function HomeDashboard() {
             <div className="grid gap-3">
               {latestItems.map((item) => (
                 <div key={item.id} className="rounded-md border border-[#d8d1c2] bg-[#fffaf1] px-4 py-3">
-                  <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
                     <p className="mimi-word-serif text-2xl text-[#203229]">{item.surfaceText}</p>
-                    <span className="text-xs font-semibold uppercase text-[#879087]">{item.source}</span>
+                    <span className="mimi-pill px-2 py-1 text-xs font-semibold">Recognition</span>
                   </div>
                   <p className="mt-1 text-sm leading-6 text-[#5f6d62]">{item.meaningZh || "No meaning yet"}</p>
                 </div>
@@ -151,26 +206,70 @@ export function HomeDashboard() {
           )}
         </section>
 
-        <section className="mimi-panel p-5">
-          <h2 className="text-base font-semibold text-[#203229]">Quiet tools</h2>
-          <div className="mt-4 grid gap-3">
-            <Link href="/export" className="mimi-button-secondary mimi-focus-ring inline-flex items-center justify-between gap-3 px-4 text-sm font-semibold">
-              <span className="inline-flex items-center gap-2">
-                <Download aria-hidden="true" className="size-4" />
-                Export and backup
+        <section className="grid gap-5">
+          <div className="mimi-panel p-5">
+            <div className="flex items-start gap-3">
+              <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-md bg-[#d9e5d5] text-[#274331]">
+                <AudioWaveform aria-hidden="true" className="size-5" />
               </span>
-              <ArrowRight aria-hidden="true" className="size-4" />
-            </Link>
-            <Link href="/settings" className="mimi-button-secondary mimi-focus-ring inline-flex items-center justify-between gap-3 px-4 text-sm font-semibold">
-              <span className="inline-flex items-center gap-2">
-                <Settings aria-hidden="true" className="size-4" />
-                Review settings
-              </span>
+              <div>
+                <h2 className="text-base font-semibold text-[#203229]">Practice Lab / 练习室</h2>
+                <p className="mt-2 text-sm leading-6 text-[#5f6d62]">
+                  Dictation, spelling, and writing practice for Active Vocabulary will be added here later.
+                </p>
+              </div>
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {[
+                { label: "Listen", icon: Ear },
+                { label: "Spell", icon: Sparkles },
+                { label: "Write", icon: PenLine },
+              ].map((labItem) => {
+                const Icon = labItem.icon;
+
+                return (
+                  <span key={labItem.label} className="mimi-pill inline-flex items-center gap-1.5 px-2 py-1 text-xs font-semibold">
+                    <Icon aria-hidden="true" className="size-3.5" />
+                    {labItem.label}
+                  </span>
+                );
+              })}
+            </div>
+            <Link
+              href="/practice-lab"
+              className="mimi-button-secondary mimi-focus-ring mt-4 inline-flex items-center justify-center gap-2 px-4 text-sm font-semibold"
+            >
+              Open lab
               <ArrowRight aria-hidden="true" className="size-4" />
             </Link>
           </div>
-          <div className="mt-5 rounded-md bg-[#d9e5d5] p-4 text-sm leading-6 text-[#274331]">
-            Small steps today. Strong results tomorrow.
+
+          <div className="mimi-panel p-5">
+            <h2 className="text-base font-semibold text-[#203229]">Quiet tools</h2>
+            <div className="mt-4 grid gap-3">
+              {[
+                { href: "/add", label: "Add word", icon: ListPlus },
+                { href: "/import", label: "Import text", icon: Upload },
+                { href: "/export", label: "Export backup", icon: Download },
+                { href: "/settings", label: "Settings", icon: Settings },
+              ].map((tool) => {
+                const Icon = tool.icon;
+
+                return (
+                  <Link
+                    key={tool.href}
+                    href={tool.href}
+                    className="mimi-button-secondary mimi-focus-ring inline-flex items-center justify-between gap-3 px-4 text-sm font-semibold"
+                  >
+                    <span className="inline-flex items-center gap-2">
+                      <Icon aria-hidden="true" className="size-4" />
+                      {tool.label}
+                    </span>
+                    <ArrowRight aria-hidden="true" className="size-4" />
+                  </Link>
+                );
+              })}
+            </div>
           </div>
         </section>
       </div>
