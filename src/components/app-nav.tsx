@@ -15,7 +15,7 @@ export function DesktopSidebar() {
   const reduceMotion = useReducedMotion();
 
   return (
-    <aside className="hidden w-[248px] shrink-0 border-r border-white/10 bg-[#1d2c26]/92 px-4 py-5 text-[#f7f2e8] shadow-[18px_0_50px_rgb(9_16_12/0.16)] lg:flex lg:flex-col">
+    <aside className="mimi-rail hidden w-[248px] shrink-0 border-r px-4 py-5 lg:flex lg:flex-col">
       <Link href="/" className="mimi-focus-ring block rounded-md" aria-label="Mimi words home">
         <BrandIdentity variant="sidebar" />
       </Link>
@@ -32,15 +32,15 @@ export function DesktopSidebar() {
               title={item.label}
               className={`mimi-focus-ring group relative flex min-h-11 items-center gap-3 rounded-md px-3 text-sm font-medium transition duration-200 ease-[var(--mimi-ease)] ${
                 active
-                  ? "bg-[#d9e5d5] text-[#203229] shadow-[0_12px_28px_rgb(15_27_21/0.16)]"
-                  : "text-[#dfe6d9] hover:-translate-y-0.5 hover:bg-white/10 hover:text-white hover:shadow-[0_12px_24px_rgb(9_16_12/0.14)]"
+                  ? "bg-[var(--mimi-primary-soft)] text-[var(--mimi-primary-deep)] shadow-[0_12px_28px_rgb(15_27_21/0.16)]"
+                  : "text-[var(--mimi-rail-soft)] hover:-translate-y-0.5 hover:bg-[var(--mimi-nav-hover-bg)] hover:text-[var(--mimi-rail-strong)] hover:shadow-[0_12px_24px_rgb(9_16_12/0.14)]"
               }`}
             >
               {active ? (
                 <motion.span
                   layoutId="desktop-nav-active"
                   transition={{ duration: reduceMotion ? 0 : 0.24, ease: [0.22, 1, 0.36, 1] }}
-                  className="absolute left-1 top-1/2 h-7 w-1 -translate-y-1/2 rounded-full bg-[#5f7d66]"
+                  className="absolute left-1 top-1/2 h-7 w-1 -translate-y-1/2 rounded-full bg-[var(--mimi-primary)]"
                 />
               ) : null}
               <Icon aria-hidden="true" className="size-4 shrink-0" />
@@ -50,9 +50,9 @@ export function DesktopSidebar() {
         })}
       </nav>
 
-      <div className="mt-auto rounded-md border border-[#afbea9]/24 bg-white/[0.07] p-4 text-sm text-[#dfe6d9]">
-        <p className="font-semibold text-[#fbf7ee]">Small steps today.</p>
-        <p className="mt-1 leading-6 text-[#c8d2c4]">Review gently, remember deeply.</p>
+      <div className="mt-auto rounded-md border border-[var(--mimi-brand-border)] bg-[var(--mimi-rail-card-bg)] p-4 text-sm text-[var(--mimi-rail-soft)]">
+        <p className="font-semibold text-[var(--mimi-rail-strong)]">Small steps today.</p>
+        <p className="mt-1 leading-6 text-[var(--mimi-rail-muted)]">Review gently, remember deeply.</p>
       </div>
     </aside>
   );
@@ -64,7 +64,7 @@ export function MobileBottomNav() {
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-20 border-t border-[#d8d1c2]/80 bg-[#fbf7ee]/96 px-2 py-2 shadow-[0_-18px_42px_rgb(31_47_38/0.16)] backdrop-blur md:hidden"
+      className="mimi-mobile-nav fixed inset-x-0 bottom-0 z-20 border-t px-2 py-2 backdrop-blur md:hidden"
       aria-label="Mobile"
     >
       <div className="mx-auto grid max-w-5xl grid-cols-5 gap-1">
@@ -78,14 +78,14 @@ export function MobileBottomNav() {
               href={item.href}
               title={item.label}
               className={`mimi-focus-ring relative flex min-h-14 flex-col items-center justify-center gap-1 rounded-md text-[11px] font-semibold transition duration-200 ease-[var(--mimi-ease)] ${
-                active ? "text-[#274331]" : "text-[#6c766c] hover:-translate-y-0.5 hover:bg-[#e9efdf] hover:text-[#274331]"
+                active ? "text-[var(--mimi-primary-deep)]" : "text-[var(--mimi-text-soft)] hover:-translate-y-0.5 hover:bg-[var(--mimi-primary-soft)] hover:text-[var(--mimi-primary-deep)]"
               }`}
             >
               {active ? (
                 <motion.span
                   layoutId="mobile-nav-active"
                   transition={{ duration: reduceMotion ? 0 : 0.24, ease: [0.22, 1, 0.36, 1] }}
-                  className="absolute inset-x-2 inset-y-1 rounded-md bg-[#d9e5d5]"
+                  className="absolute inset-x-2 inset-y-1 rounded-md bg-[var(--mimi-primary-soft)]"
                 />
               ) : null}
               <span className="relative z-10">

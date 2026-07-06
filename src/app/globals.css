@@ -34,7 +34,78 @@
   --mimi-shadow: 0 18px 50px rgb(20 31 25 / 0.18);
   --mimi-shadow-soft: 0 10px 30px rgb(31 47 38 / 0.12);
   --mimi-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --mimi-shell-gradient: linear-gradient(135deg, rgb(31 45 39 / 0.98), rgb(50 71 61 / 0.96));
+  --mimi-rail-bg: rgb(29 44 38 / 0.92);
+  --mimi-rail-border: rgb(255 255 255 / 0.1);
+  --mimi-rail-shadow: 18px 0 50px rgb(9 16 12 / 0.16);
+  --mimi-rail-text: #f7f2e8;
+  --mimi-rail-strong: #fbf7ee;
+  --mimi-rail-soft: #dfe6d9;
+  --mimi-rail-muted: #c8d2c4;
+  --mimi-rail-card-bg: rgb(255 255 255 / 0.07);
+  --mimi-nav-hover-bg: rgb(255 255 255 / 0.1);
+  --mimi-mobile-nav-bg: rgb(251 247 238 / 0.96);
+  --mimi-page-heading: #fbf7ee;
+  --mimi-page-kicker: #c8d2c4;
+  --mimi-page-copy: #dfe6d9;
+  --mimi-panel-dark-start: rgb(49 70 61 / 0.96);
+  --mimi-panel-dark-end: rgb(35 53 45 / 0.98);
+  --mimi-panel-dark-text: var(--mimi-surface);
+  --mimi-panel-dark-muted: #c8d2c4;
+  --mimi-panel-dark-border: rgb(175 190 169 / 0.28);
+  --mimi-panel-dark-item-bg: rgb(255 255 255 / 0.07);
+  --mimi-panel-dark-item-border: rgb(255 255 255 / 0.1);
+  --mimi-brand-bg: rgb(255 255 255 / 0.06);
+  --mimi-brand-border: rgb(175 190 169 / 0.3);
+  --mimi-brand-hover-bg: rgb(255 255 255 / 0.09);
   --font-cjk-rounded: "ChillRoundF", "Hiragino Maru Gothic ProN", "Yu Gothic", "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", "Songti SC", "Noto Serif CJK SC", serif;
+}
+
+:root[data-mimi-theme="light"] {
+  --background: #e8eee3;
+  --foreground: #203229;
+  --mimi-bg: #e8eee3;
+  --mimi-bg-deep: #d9e5d5;
+  --mimi-bg-soft: #f1f4ea;
+  --mimi-bg-panel: #f5f5e9;
+  --mimi-surface: #fffaf1;
+  --mimi-surface-strong: #fffdf7;
+  --mimi-surface-muted: #efe9dc;
+  --mimi-primary: #6c8d70;
+  --mimi-primary-dark: #55735d;
+  --mimi-primary-deep: #274331;
+  --mimi-primary-soft: #dcead8;
+  --mimi-border: #cbd7c4;
+  --mimi-border-strong: #9fb49d;
+  --mimi-text: #203229;
+  --mimi-text-soft: #526457;
+  --mimi-text-muted: #738074;
+  --mimi-shadow: 0 18px 42px rgb(78 93 78 / 0.14);
+  --mimi-shadow-soft: 0 10px 26px rgb(78 93 78 / 0.1);
+  --mimi-shell-gradient: linear-gradient(135deg, rgb(231 239 226 / 0.98), rgb(250 247 235 / 0.96));
+  --mimi-rail-bg: rgb(247 249 238 / 0.92);
+  --mimi-rail-border: rgb(159 180 157 / 0.38);
+  --mimi-rail-shadow: 16px 0 38px rgb(78 93 78 / 0.12);
+  --mimi-rail-text: #203229;
+  --mimi-rail-strong: #203229;
+  --mimi-rail-soft: #425f4a;
+  --mimi-rail-muted: #5f6d62;
+  --mimi-rail-card-bg: rgb(217 229 213 / 0.42);
+  --mimi-nav-hover-bg: rgb(217 229 213 / 0.62);
+  --mimi-mobile-nav-bg: rgb(255 250 241 / 0.96);
+  --mimi-page-heading: #203229;
+  --mimi-page-kicker: #526457;
+  --mimi-page-copy: #425f4a;
+  --mimi-panel-dark-start: rgb(244 247 236 / 0.98);
+  --mimi-panel-dark-end: rgb(228 237 223 / 0.98);
+  --mimi-panel-dark-text: #203229;
+  --mimi-panel-dark-muted: #526457;
+  --mimi-panel-dark-border: rgb(159 180 157 / 0.34);
+  --mimi-panel-dark-item-bg: rgb(255 250 241 / 0.58);
+  --mimi-panel-dark-item-border: rgb(159 180 157 / 0.22);
+  --mimi-brand-bg: rgb(217 229 213 / 0.36);
+  --mimi-brand-border: rgb(159 180 157 / 0.42);
+  --mimi-brand-hover-bg: rgb(217 229 213 / 0.58);
 }
 
 @theme inline {
@@ -52,6 +123,11 @@
 
 html {
   background: var(--background);
+  color-scheme: dark;
+}
+
+html[data-mimi-theme="light"] {
+  color-scheme: light;
 }
 
 body {
@@ -68,21 +144,53 @@ select {
 }
 
 ::selection {
-  background: #d9e5d5;
-  color: #203229;
+  background: var(--mimi-primary-soft);
+  color: var(--mimi-primary-deep);
 }
 
 .mimi-shell {
   min-height: 100dvh;
-  background:
-    linear-gradient(135deg, rgb(31 45 39 / 0.98), rgb(50 71 61 / 0.96)),
-    var(--mimi-bg);
+  background: var(--mimi-shell-gradient), var(--mimi-bg);
   color: var(--mimi-text);
+  transition:
+    background 220ms var(--mimi-ease),
+    color 220ms var(--mimi-ease);
+}
+
+.mimi-rail {
+  border-color: var(--mimi-rail-border);
+  background: var(--mimi-rail-bg);
+  color: var(--mimi-rail-text);
+  box-shadow: var(--mimi-rail-shadow);
+}
+
+.mimi-mobile-header {
+  border-color: var(--mimi-rail-border);
+  background: var(--mimi-rail-bg);
+  color: var(--mimi-rail-text);
+}
+
+.mimi-mobile-nav {
+  border-color: rgb(216 209 194 / 0.8);
+  background: var(--mimi-mobile-nav-bg);
+  box-shadow: 0 -18px 42px rgb(31 47 38 / 0.16);
+}
+
+.mimi-page-heading {
+  color: var(--mimi-page-heading);
+}
+
+.mimi-page-kicker {
+  color: var(--mimi-page-kicker);
+}
+
+.mimi-page-copy {
+  color: var(--mimi-page-copy);
 }
 
 .mimi-panel {
   min-width: 0;
-  border: 1px solid rgb(216 209 194 / 0.86);
+  border: 1px solid var(--mimi-border);
   border-radius: 8px;
   background: linear-gradient(180deg, var(--mimi-surface-strong), var(--mimi-surface));
   box-shadow: var(--mimi-shadow-soft);
@@ -90,10 +198,10 @@ select {
 
 .mimi-panel-dark {
   min-width: 0;
-  border: 1px solid rgb(175 190 169 / 0.28);
+  border: 1px solid var(--mimi-panel-dark-border);
   border-radius: 8px;
-  background: linear-gradient(180deg, rgb(49 70 61 / 0.96), rgb(35 53 45 / 0.98));
-  color: var(--mimi-surface);
+  background: linear-gradient(180deg, var(--mimi-panel-dark-start), var(--mimi-panel-dark-end));
+  color: var(--mimi-panel-dark-text);
   box-shadow: 0 20px 60px rgb(9 16 12 / 0.2);
 }
 
@@ -117,6 +225,8 @@ select {
 }
 
 .mimi-brand-card {
+  border-color: var(--mimi-brand-border);
+  background-color: var(--mimi-brand-bg);
   transition:
     border-color 220ms var(--mimi-ease),
     box-shadow 220ms var(--mimi-ease),
@@ -125,8 +235,8 @@ select {
 }
 
 .mimi-brand-card:hover {
-  border-color: rgb(217 229 213 / 0.44);
-  background-color: rgb(255 255 255 / 0.09);
+  border-color: var(--mimi-border-strong);
+  background-color: var(--mimi-brand-hover-bg);
   box-shadow: 0 18px 36px rgb(9 16 12 / 0.2);
   transform: translateY(-3px) scale(1.01);
 }

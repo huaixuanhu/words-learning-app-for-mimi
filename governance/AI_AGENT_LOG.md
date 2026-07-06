@@ -1,5 +1,48 @@
 # AI Agent Log
 
+## 2026-07-06 17:26 AEST
+
+- Task: execute Stage 7.4 light / dark theme toggle after the user requested a new light version while keeping light and dark switching in Settings.
+- Plan agreed: yes. The user confirmed the Stage 7.4 plan after scope was limited to a local UI（用户界面）theme（主题）preference and explicitly excluded study-data, storage, Production（生产环境）, PTE / IELTS toggle, PWA（Progressive Web App，渐进式 Web 应用）, and external vocabulary-source changes.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE7_4_THEME_TOGGLE.md`
+  - `plan_docs/PLAN_V1_STAGE7_UI_VISUAL_DESIGN.md`
+  - `src/app/globals.css`
+  - `src/app/layout.tsx`
+  - `src/app/settings/page.tsx`
+  - `src/components/app-nav.tsx`
+  - `src/components/app-shell.tsx`
+  - `src/components/brand-identity.tsx`
+  - `src/components/settings/theme-settings-form.tsx`
+  - `src/components/simple-panel.tsx`
+  - `src/components/theme-provider.tsx`
+  - `src/components/vocabulary/home-dashboard.tsx`
+- Reason: add a softer warm sage light reading mode without losing the accepted darker sage default and without reopening V1 product or storage scope.
+- Implementation notes:
+  - Added `plan_docs/PLAN_V1_STAGE7_4_THEME_TOGGLE.md` with required `Source plan`, `Derived from`, `Scope`, `Non-Scope`, and `Exit criteria` markers.
+  - Added a client ThemeProvider（主题提供器）using `useSyncExternalStore` so theme updates stay synchronized across Settings interactions and browser storage events.
+  - Added a body-first inline boot script so a stored light theme is applied before the main UI renders.
+  - Added Settings theme cards for `Dark` and `Light` with `aria-pressed` active state.
+  - Added warm sage light CSS（层叠样式表）variables and converted major shell, navigation, panel, brand, and review-schedule colors to theme variables.
+  - Preserved `dark` as the default and stored only the UI preference under `mimi-ui-theme-v1`.
+  - Fixed a browser-caught hydration issue by moving the initial theme script out of the `<html>` child position and into the start of `<body>`.
+- Validation:
+  - Passed: `npm run lint`.
+  - Passed: `npm run typecheck`.
+  - Passed: `npm run test` with 13 files and 48 tests.
+  - Passed: `npm run build`.
+  - Passed: in-app browser verification at 1280 x 720 for `/settings` and `/`.
+  - Passed: Settings showed Dark and Light theme controls, Light changed `data-mimi-theme` to `light`, reload kept Light active, Dark changed back to `dark`, and `/` retained `咪咪 Vocabulary` without `LexiCalm`.
+  - Passed: no horizontal overflow at the verified viewport and no fresh browser warning / error logs after the boot-script fix.
+  - Limitation: the in-app Browser plugin available in this session does not expose viewport resize, and the repository does not currently have a local Playwright binary installed. Automated mobile-width re-verification was not performed in this Stage 7.4 run.
+- Safety notes: local UI and documentation changes only. No Vercel command, Neon command, database command, env var read/change, GitHub push, merge（合并）to `main`, Production deployment, Production migration, Production import, formal user backup import, vocabulary schema change, review scheduler change, JSON backup schema change, API payload change, authentication（认证）, analytics（分析追踪）, AI generation, embedding（向量嵌入）, FSRS（Free Spaced Repetition Scheduler，自由间隔重复调度算法）, email, notification, external vocabulary source, PTE / IELTS toggle implementation, PWA implementation, or 付费/扣款 feature was performed.
+
 ## 2026-07-06 15:22 AEST
 
 - Task: execute Stage 7.3 ChillRound font trial after the user requested Warren2060/ChillRound 寒蝉全圆体.

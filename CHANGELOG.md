@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## 2026-07-06 17:26 AEST
+
+- Executed Stage 7.4 light / dark theme toggle locally.
+- Added `plan_docs/PLAN_V1_STAGE7_4_THEME_TOGGLE.md` with `Source plan`, `Derived from`, `Scope`, `Non-Scope`, and `Exit criteria` markers.
+- Added a client-side theme（主题）provider that applies `data-mimi-theme` to the document root.
+- Added a body-first inline boot script so the stored theme applies before the main UI renders.
+- Added a Settings theme selector for `dark` and `light`.
+- Added a warm sage light theme through CSS（层叠样式表）variables while keeping `dark` as the default.
+- Stored the selected theme only as UI preference under `mimi-ui-theme-v1`, outside vocabulary data, review settings, JSON backup, CSV export, Postgres tables, and API payloads.
+- Fixed a browser-caught hydration issue by keeping the theme boot script inside `<body>` instead of as a direct `<html>` child.
+- Reason: offer a less dark reading mode without reopening product scope, storage schema, or Production boundaries.
+
 ## 2026-07-06 15:22 AEST
 
 - Executed Stage 7.3 ChillRound font trial locally.

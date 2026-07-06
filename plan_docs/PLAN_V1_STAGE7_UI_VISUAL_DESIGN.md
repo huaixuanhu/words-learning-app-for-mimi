@@ -39,6 +39,12 @@ Stage 7.3 is documented in `plan_docs/PLAN_V1_STAGE7_3_CHILLROUND_FONT_TRIAL.md`
 
 This child plan supersedes the Stage 7.2 Mincho-oriented typography trial for Chinese UI（用户界面）text. The accepted trial self-hosts ChillRoundF 寒蝉全圆体 from Warren2060/ChillRound `v3.200`, includes the upstream OFL-1.1 license, and uses ChillRoundF before local system fallbacks for CJK（中日韩文字）text. It keeps Geist for Latin interface text and does not change route behavior, import behavior, review scheduling, storage, PTE / IELTS toggle boundaries, PWA boundaries, or Production（生产环境）execution boundaries.
 
+## Stage 7.4 Theme Toggle Note
+
+Stage 7.4 is documented in `plan_docs/PLAN_V1_STAGE7_4_THEME_TOGGLE.md`.
+
+This child plan keeps the darker sage design as the default `dark` theme and adds a warm sage `light` theme. The theme preference is stored under the UI-only browser `localStorage`（本地浏览器存储）key `mimi-ui-theme-v1`; it is not part of vocabulary data, people, review settings, JSON backup, CSV export, Postgres tables, API payloads, or Production（生产环境）state.
+
 ## Prompt Drift Boundary
 
 The user-provided prompt mentions a PTE / IELTS toggle because the reference concept mixed broader exam-prep ideas into the UI direction. For this V1 stage:

@@ -1,6 +1,18 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
+
+const themeInitScript = `
+(() => {
+  try {
+    const theme = window.localStorage.getItem("mimi-ui-theme-v1");
+    document.documentElement.dataset.mimiTheme = theme === "light" ? "light" : "dark";
+  } catch {
+    document.documentElement.dataset.mimiTheme = "dark";
+  }
+})();
+`;
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -23,8 +35,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="zh-Hans" className={`${geistSans.variable} ${geistMono.variable}`}>
-      <body className="min-h-full font-sans antialiased">{children}</body>
+    <html lang="zh-Hans" className={`${geistSans.variable} ${geistMono.variable}`} suppressHydrationWarning>
+      <body className="min-h-full font-sans antialiased">
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        <ThemeProvider>{children}</ThemeProvider>
+      </body>
     </html>
   );
 }

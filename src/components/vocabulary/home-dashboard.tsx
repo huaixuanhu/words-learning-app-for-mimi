@@ -80,20 +80,20 @@ export function HomeDashboard() {
         </section>
 
         <section className="mimi-panel-dark p-5">
-          <p className="text-sm font-semibold text-[#fbf7ee]">Review schedule</p>
+          <p className="text-sm font-semibold text-[var(--mimi-panel-dark-text)]">Review schedule</p>
           <div className="mt-5 grid gap-3">
             {[
               ["Ready now", isLoaded ? reviewQueue.length : "-"],
               ["Active words", isLoaded ? activeItems.length : "-"],
               ["Archived", isLoaded ? archivedItems.length : "-"],
             ].map(([label, value]) => (
-              <div key={label} className="flex items-center justify-between rounded-md border border-white/10 bg-white/[0.07] px-4 py-3">
-                <span className="text-sm text-[#dfe6d9]">{label}</span>
-                <span className="text-xl font-semibold text-[#fbf7ee]">{value}</span>
+              <div key={label} className="flex items-center justify-between rounded-md border border-[var(--mimi-panel-dark-item-border)] bg-[var(--mimi-panel-dark-item-bg)] px-4 py-3">
+                <span className="text-sm text-[var(--mimi-panel-dark-muted)]">{label}</span>
+                <span className="text-xl font-semibold text-[var(--mimi-panel-dark-text)]">{value}</span>
               </div>
             ))}
           </div>
-          <p className="mt-4 text-sm leading-6 text-[#c8d2c4]">
+          <p className="mt-4 text-sm leading-6 text-[var(--mimi-panel-dark-muted)]">
             Review gently, remember deeply. The queue follows the existing local scheduler.
           </p>
         </section>
