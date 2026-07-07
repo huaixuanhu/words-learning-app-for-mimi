@@ -1,13 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { parseTextImport } from "./import-parser";
+import { recordReview } from "@/lib/review/repository";
+import { parseJsonImport, parseTextImport } from "./import-parser";
 import {
   addVocabularyItem,
   archiveVocabularyItem,
   commitImportCandidates,
   createEmptyVocabularyData,
+  deleteVocabularyItem,
   getActiveVocabularyItems,
   getArchivedVocabularyItems,
   restoreVocabularyItem,
+  rollbackImportBatch,
   updateVocabularyItem,
 } from "./repository";
 
@@ -112,5 +115,79 @@ describe("vocabulary repository", () => {
     expect(result.items.map((item) => item.surfaceText)).toEqual(["coherent", "allocate"]);
     expect(result.items[0]?.meaningsZh).toEqual(["连贯的"]);
     expect(result.data.importBatches).toHaveLength(1);
+  });
+
+  it("hard-deletes a vocabulary item and its review history", () => {
+    const added = addVocabularyItem(
+      createEmptyVocabularyData("2026-07-04T00:00:00.000Z"),
+      {
+        id: "vocab-1",
+        surfaceText: "allocate",
+        learningTrack: "recognition",
+        source: "manual",
+        timezone: "Australia/Melbourne",
+      },
+      "2026-07-04T00:01:00.000Z",
+    );
+    const reviewed = recordReview(
+      added.data,
+      { vocabularyItemId: "vocab-1", rating: "forgot" },
+      "2026-07-04T00:02:00.000Z",
+    );
+
+    const deleted = deleteVocabularyItem(reviewed.data, "vocab-1", "2026-07-04T00:03:00.000Z");
+
+    expect(deleted.item.surfaceText).toBe("allocate");
+    expect(deleted.data.items).toHaveLength(0);
+    expect(deleted.data.reviewStates).toHaveLength(0);
+    expect(deleted.data.reviewEvents).toHaveLength(0);
+  });
+
+  it("rolls back a JSON import batch and removes related review data", () => {
+    const candidates = parseJsonImport(
+      JSON.stringify({
+        items: [
+          {
+            word: "allocate",
+            meaningsZh: ["分配"],
+            examples: ["The tutor allocated extra time."],
+            track: "recognition",
+          },
+          {
+            word: "coherent",
+            meaningsZh: ["连贯的"],
+            examples: ["Write a coherent paragraph."],
+            track: "active",
+          },
+        ],
+      }),
+    );
+    const committed = commitImportCandidates(
+      createEmptyVocabularyData("2026-07-04T00:00:00.000Z"),
+      { id: "batch-json-1", sourceType: "json_paste", fileName: null },
+      candidates,
+      candidates.map((candidate) => candidate.tempId),
+      "Australia/Melbourne",
+      "2026-07-04T00:01:00.000Z",
+    );
+    const reviewed = recordReview(
+      committed.data,
+      { vocabularyItemId: committed.items[0]?.id ?? "", rating: "hard" },
+      "2026-07-04T00:02:00.000Z",
+    );
+
+    const rolledBack = rollbackImportBatch(
+      reviewed.data,
+      "batch-json-1",
+      "2026-07-04T00:03:00.000Z",
+    );
+
+    expect(rolledBack.batch.sourceType).toBe("json_paste");
+    expect(rolledBack.deletedItemsCount).toBe(2);
+    expect(rolledBack.deletedReviewEventsCount).toBe(1);
+    expect(rolledBack.data.items).toHaveLength(0);
+    expect(rolledBack.data.importBatches).toHaveLength(0);
+    expect(rolledBack.data.reviewStates).toHaveLength(0);
+    expect(rolledBack.data.reviewEvents).toHaveLength(0);
   });
 });

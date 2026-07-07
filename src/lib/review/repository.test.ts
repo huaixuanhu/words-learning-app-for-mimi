@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getReviewQueue, recordReview } from "./repository";
+import { getReviewQueue, recordReview, resetTodayReviewTask, rollbackReviewEvent } from "./repository";
 import {
   addPerson,
   addVocabularyItem,
@@ -125,5 +125,107 @@ describe("review repository", () => {
     );
 
     expect(reviewed.event.personId).toBe("person_mimi");
+  });
+
+  it("resets only today's review events and rebuilds state from earlier history", () => {
+    const first = recordReview(
+      addReviewableWord(),
+      { vocabularyItemId: "vocab-1", rating: "vague" },
+      "2026-07-04T01:00:00.000Z",
+    );
+    const second = recordReview(
+      first.data,
+      { vocabularyItemId: "vocab-1", rating: "forgot" },
+      "2026-07-05T01:00:00.000Z",
+    );
+
+    const reset = resetTodayReviewTask(second.data, "2026-07-05T02:00:00.000Z");
+
+    expect(reset.resetEventsCount).toBe(1);
+    expect(reset.resetItemsCount).toBe(1);
+    expect(reset.data.reviewEvents).toHaveLength(1);
+    expect(reset.data.reviewEvents[0]).toMatchObject({
+      vocabularyItemId: "vocab-1",
+      rating: "vague",
+      reviewedAt: "2026-07-04T01:00:00.000Z",
+    });
+    expect(reset.data.reviewStates).toHaveLength(1);
+    expect(reset.data.reviewStates[0]).toMatchObject({
+      vocabularyItemId: "vocab-1",
+      reviewCount: 1,
+      lapseCount: 0,
+      dueAt: "2026-07-07T01:00:00.000Z",
+    });
+  });
+
+  it("resets a new item reviewed only today back into the review queue", () => {
+    const reviewed = recordReview(
+      addReviewableWord(),
+      { vocabularyItemId: "vocab-1", rating: "hard" },
+      "2026-07-05T01:00:00.000Z",
+    );
+
+    const reset = resetTodayReviewTask(reviewed.data, "2026-07-05T02:00:00.000Z");
+
+    expect(reset.data.reviewEvents).toHaveLength(0);
+    expect(reset.data.reviewStates).toHaveLength(0);
+    expect(getReviewQueue(reset.data, "2026-07-05T02:00:00.000Z").map((item) => item.id)).toEqual([
+      "vocab-1",
+    ]);
+  });
+
+  it("rolls back the only review event and removes the review state", () => {
+    const reviewed = recordReview(
+      addReviewableWord(),
+      { vocabularyItemId: "vocab-1", rating: "hard" },
+      "2026-07-05T01:00:00.000Z",
+    );
+
+    const rolledBack = rollbackReviewEvent(
+      reviewed.data,
+      reviewed.event.id,
+      "2026-07-05T01:05:00.000Z",
+    );
+
+    expect(rolledBack.event.rating).toBe("hard");
+    expect(rolledBack.state).toBeNull();
+    expect(rolledBack.data.reviewEvents).toHaveLength(0);
+    expect(rolledBack.data.reviewStates).toHaveLength(0);
+    expect(getReviewQueue(rolledBack.data, "2026-07-05T01:05:00.000Z").map((item) => item.id)).toEqual([
+      "vocab-1",
+    ]);
+  });
+
+  it("rolls back a later review event and rebuilds state from earlier history", () => {
+    const first = recordReview(
+      addReviewableWord(),
+      { vocabularyItemId: "vocab-1", rating: "vague" },
+      "2026-07-04T01:00:00.000Z",
+    );
+    const second = recordReview(
+      first.data,
+      { vocabularyItemId: "vocab-1", rating: "forgot" },
+      "2026-07-05T01:00:00.000Z",
+    );
+
+    const rolledBack = rollbackReviewEvent(
+      second.data,
+      second.event.id,
+      "2026-07-05T01:05:00.000Z",
+    );
+
+    expect(rolledBack.data.reviewEvents).toHaveLength(1);
+    expect(rolledBack.data.reviewEvents[0]).toMatchObject({
+      id: first.event.id,
+      rating: "vague",
+    });
+    expect(rolledBack.state).toMatchObject({
+      vocabularyItemId: "vocab-1",
+      reviewCount: 1,
+      lapseCount: 0,
+      intervalMinutes: 4320,
+      dueAt: "2026-07-07T01:00:00.000Z",
+    });
+    expect(rolledBack.data.reviewStates).toHaveLength(1);
   });
 });

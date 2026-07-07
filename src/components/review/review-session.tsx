@@ -1,13 +1,13 @@
 "use client";
 
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { CheckCircle2, Eye, EyeOff, RotateCcw } from "lucide-react";
+import { CheckCircle2, Eye, EyeOff, RotateCcw, Undo2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SimplePanel } from "@/components/simple-panel";
 import { useMimiSound } from "@/components/sound-provider";
 import { useVocabularyData } from "@/components/vocabulary/use-vocabulary-data";
 import { getSelectedPersonId } from "@/lib/people/repository";
-import { recordReview } from "@/lib/review/repository";
+import { recordReview, resetTodayReviewTask, rollbackReviewEvent } from "@/lib/review/repository";
 import { selectReviewQueue } from "@/lib/review/scheduler";
 import { getSelectedReviewSettings } from "@/lib/review/settings";
 import { reviewRatings } from "@/lib/stage-two-data";
@@ -23,8 +23,14 @@ function getDisplayList(values: string[], fallback: string) {
   return values.length ? values : fallback ? [fallback] : [];
 }
 
+type CompletedReview = {
+  vocabularyItemId: string;
+  eventId: string;
+  surfaceText: string;
+};
+
 export function ReviewSession() {
-  const { data, isLoaded, commit } = useVocabularyData();
+  const { data, isLoaded, storageRuntime, commit } = useVocabularyData();
   const { settings: soundSettings } = useMimiSound();
   const reduceMotion = useReducedMotion();
   const [sessionIds, setSessionIds] = useState<string[] | null>(null);
@@ -32,6 +38,8 @@ export function ReviewSession() {
   const [completedCount, setCompletedCount] = useState(0);
   const [showBack, setShowBack] = useState(false);
   const [showCompletionModal, setShowCompletionModal] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [completedReviews, setCompletedReviews] = useState<CompletedReview[]>([]);
   const [cardStartedAt, setCardStartedAt] = useState(0);
   const [submittedItemId, setSubmittedItemId] = useState<string | null>(null);
   const submittedItemIdRef = useRef<string | null>(null);
@@ -39,6 +47,18 @@ export function ReviewSession() {
   const selectedPersonId = getSelectedPersonId(data);
   const recognitionItems = useMemo(() => getRecognitionVocabularyItems(data), [data]);
   const settings = getSelectedReviewSettings(data);
+  const queueSourceSignature = useMemo(
+    () =>
+      [
+        selectedPersonId,
+        settings.recognitionSessionLimit,
+        ...recognitionItems.map(
+          (item) => `${item.id}:${item.status}:${item.updatedAt}:${item.archivedAt ?? ""}`,
+        ),
+      ].join("|"),
+    [recognitionItems, selectedPersonId, settings.recognitionSessionLimit],
+  );
+  const queueSourceSignatureRef = useRef("");
 
   const buildSessionIds = useCallback(() => {
     return selectReviewQueue(data).map((item) => item.id);
@@ -50,9 +70,13 @@ export function ReviewSession() {
     }
 
     const timer = window.setTimeout(() => {
-      setSessionIds(buildSessionIds());
+      const nextSessionIds = buildSessionIds();
+
+      queueSourceSignatureRef.current = queueSourceSignature;
+      setSessionIds(nextSessionIds);
       setSessionPersonId(selectedPersonId);
       setCompletedCount(0);
+      setCompletedReviews([]);
       setShowBack(false);
       setShowCompletionModal(false);
       setSubmittedItemId(null);
@@ -60,7 +84,7 @@ export function ReviewSession() {
     }, 0);
 
     return () => window.clearTimeout(timer);
-  }, [buildSessionIds, isLoaded, selectedPersonId, sessionIds, sessionPersonId]);
+  }, [buildSessionIds, isLoaded, queueSourceSignature, selectedPersonId, sessionIds, sessionPersonId]);
 
   const currentItem = sessionIds?.length ? getItemById(recognitionItems, sessionIds[0]) : null;
   const currentMeanings = currentItem ? getDisplayList(currentItem.meaningsZh, currentItem.meaningZh) : [];
@@ -68,18 +92,51 @@ export function ReviewSession() {
   const sessionTotal = completedCount + (sessionIds?.length ?? 0);
   const remainingCount = sessionIds?.length ?? 0;
   const progressPercent = sessionTotal ? Math.round((completedCount / sessionTotal) * 100) : 0;
+  const ratingDisabled = !currentItem || !showBack || submittedItemId === currentItem.id;
+  const canRollbackPrevious =
+    storageRuntime !== "postgres-preview" && Boolean(currentItem) && completedReviews.length > 0;
 
-  const restartSession = () => {
-    submittedItemIdRef.current = null;
-    setSessionIds(buildSessionIds());
-    setSessionPersonId(selectedPersonId);
-    setCompletedCount(0);
-    setShowBack(false);
-    setShowCompletionModal(false);
-    setCardStartedAt(0);
-    setSubmittedItemId(null);
-    setMessage("");
-  };
+  useEffect(() => {
+    if (
+      !isLoaded ||
+      currentItem ||
+      (sessionIds?.length ?? 0) > 0 ||
+      sessionPersonId !== selectedPersonId ||
+      queueSourceSignatureRef.current === queueSourceSignature
+    ) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      const nextSessionIds = buildSessionIds();
+
+      queueSourceSignatureRef.current = queueSourceSignature;
+
+      if (!nextSessionIds.length) {
+        return;
+      }
+
+      submittedItemIdRef.current = null;
+      setSessionIds(nextSessionIds);
+      setCompletedCount(0);
+      setCompletedReviews([]);
+      setShowBack(false);
+      setShowCompletionModal(false);
+      setCardStartedAt(0);
+      setSubmittedItemId(null);
+      setMessage("");
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [
+    buildSessionIds,
+    currentItem,
+    isLoaded,
+    queueSourceSignature,
+    selectedPersonId,
+    sessionIds?.length,
+    sessionPersonId,
+  ]);
 
   const confirmCompletion = () => {
     setShowCompletionModal(false);
@@ -88,6 +145,83 @@ export function ReviewSession() {
       void playReviewCompleteSound().catch(() => {
         // Completion sound is decorative and should not block review flow.
       });
+    }
+  };
+
+  const resetTodayReview = async () => {
+    if (storageRuntime === "postgres-preview") {
+      setShowResetConfirm(false);
+      setMessage("Postgres Preview runtime 暂不支持重置今日复习任务。请切回本地数据后操作。");
+      return;
+    }
+
+    try {
+      const now = new Date().toISOString();
+      const result = resetTodayReviewTask(data, now);
+
+      if (!result.resetEventsCount) {
+        setShowResetConfirm(false);
+        setMessage("今天还没有复习记录可重置。");
+        return;
+      }
+
+      const nextData = await commit(result.data, {
+        type: "review.resetToday",
+        now,
+        timezone: settings.timezone,
+      });
+
+      submittedItemIdRef.current = null;
+      setSessionIds(selectReviewQueue(nextData, now).map((item) => item.id));
+      setSessionPersonId(selectedPersonId);
+      setCompletedCount(0);
+      setCompletedReviews([]);
+      setShowBack(false);
+      setShowCompletionModal(false);
+      setShowResetConfirm(false);
+      setCardStartedAt(0);
+      setSubmittedItemId(null);
+      setMessage(`已重置今日复习任务：回滚 ${result.resetItemsCount} 个词，移除 ${result.resetEventsCount} 条今日记录。`);
+    } catch (error) {
+      setShowResetConfirm(false);
+      setMessage(error instanceof Error ? error.message : "重置今日复习任务失败");
+    }
+  };
+
+  const rollbackPreviousReview = async () => {
+    if (storageRuntime === "postgres-preview") {
+      setMessage("Postgres Preview runtime 暂不支持回退1词。请切回本地数据后操作。");
+      return;
+    }
+
+    const previousReview = completedReviews.at(-1);
+
+    if (!previousReview || !sessionIds) {
+      return;
+    }
+
+    try {
+      const now = new Date().toISOString();
+      const result = rollbackReviewEvent(data, previousReview.eventId, now);
+
+      await commit(result.data, {
+        type: "review.rollbackEvent",
+        reviewEventId: previousReview.eventId,
+        now,
+        timezone: settings.timezone,
+      });
+
+      submittedItemIdRef.current = null;
+      setSessionIds([previousReview.vocabularyItemId, ...sessionIds]);
+      setCompletedCount((current) => Math.max(0, current - 1));
+      setCompletedReviews((current) => current.slice(0, -1));
+      setShowBack(false);
+      setShowCompletionModal(false);
+      setCardStartedAt(0);
+      setSubmittedItemId(null);
+      setMessage(`已回退 ${previousReview.surfaceText}，可以重新选择熟练度。`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "回退1词失败");
     }
   };
 
@@ -120,6 +254,16 @@ export function ReviewSession() {
       const nextSessionIds = sessionIds ? sessionIds.slice(1) : [];
       const completedSession = nextSessionIds.length === 0 && sessionTotal > 0;
 
+      if (storageRuntime !== "postgres-preview") {
+        setCompletedReviews((current) => [
+          ...current,
+          {
+            vocabularyItemId: currentItem.id,
+            eventId: result.event.id,
+            surfaceText: currentItem.surfaceText,
+          },
+        ]);
+      }
       setSessionIds(nextSessionIds);
       setCompletedCount((current) => current + 1);
       setShowBack(false);
@@ -141,11 +285,23 @@ export function ReviewSession() {
       <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
       <section className="mimi-panel p-4 sm:p-6">
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-          <div>
+          <div className="flex flex-wrap items-start gap-3">
+            {canRollbackPrevious ? (
+              <PressableButton
+                type="button"
+                onClick={() => void rollbackPreviousReview()}
+                className="mimi-button-secondary mimi-focus-ring inline-flex min-h-10 items-center justify-center gap-2 px-3 text-sm font-semibold"
+              >
+                <Undo2 aria-hidden="true" className="size-4" />
+                回退1词
+              </PressableButton>
+            ) : null}
+            <div>
             <p className="text-sm font-semibold text-[#5f7d66]">Review card</p>
             <h2 className="mt-1 text-xl font-semibold text-[#203229]">
               {currentItem ? `${completedCount + 1} / ${sessionTotal || 1}` : "Session"}
             </h2>
+            </div>
           </div>
           <span className="mimi-pill px-3 py-1 text-sm font-semibold">
             {remainingCount || 0} left
@@ -245,7 +401,7 @@ export function ReviewSession() {
                 <PressableButton
                   key={rating.value}
                   type="button"
-                  disabled={!showBack || submittedItemId === currentItem.id}
+                  disabled={ratingDisabled}
                   onClick={(event) => void submitRating(rating.value, event.timeStamp)}
                   className="mimi-focus-ring min-h-14 rounded-md border border-[#d8d1c2] bg-[#fffaf1] px-3 text-sm font-semibold text-[#203229] transition hover:border-[#5f7d66] hover:bg-[#d9e5d5] disabled:cursor-not-allowed disabled:opacity-50"
                 >
@@ -255,16 +411,7 @@ export function ReviewSession() {
               ))}
             </div>
           </>
-        ) : (
-          <PressableButton
-            type="button"
-            onClick={restartSession}
-            className="mimi-button-secondary mimi-focus-ring mt-4 inline-flex items-center justify-center gap-2 px-4 text-sm font-semibold"
-          >
-            <RotateCcw aria-hidden="true" className="size-4" />
-            重新生成本次复习
-          </PressableButton>
-        )}
+        ) : null}
 
         {message ? <p className="mt-3 rounded-md bg-[#d9e5d5] px-3 py-2 text-sm text-[#274331]">{message}</p> : null}
       </section>
@@ -287,20 +434,26 @@ export function ReviewSession() {
 
         <div className="mt-4 space-y-3">
           {reviewRatings.map((rating) => (
-            <div key={rating.value} className="rounded-md border border-[#d8d1c2] bg-[#fffaf1] p-3">
+            <PressableButton
+              key={rating.value}
+              type="button"
+              disabled={ratingDisabled}
+              onClick={(event) => void submitRating(rating.value, event.timeStamp)}
+              className="mimi-focus-ring w-full rounded-md border border-[#d8d1c2] bg-[#fffaf1] p-3 text-left transition hover:border-[#5f7d66] hover:bg-[#d9e5d5] disabled:cursor-not-allowed disabled:opacity-50"
+            >
               <p className="font-medium text-[#203229]">{rating.label}</p>
               <p className="text-sm text-[#5f6d62]">{rating.interval}</p>
-            </div>
+            </PressableButton>
           ))}
         </div>
 
         <PressableButton
           type="button"
-          onClick={restartSession}
-          className="mimi-button mimi-focus-ring mt-4 inline-flex w-full items-center justify-center gap-2 px-3 text-sm font-semibold"
+          onClick={() => setShowResetConfirm(true)}
+          className="mimi-button-secondary mimi-focus-ring mt-3 inline-flex w-full items-center justify-center gap-2 px-3 text-sm font-semibold"
         >
           <RotateCcw aria-hidden="true" className="size-4" />
-          新建本次复习
+          重置今日复习任务
         </PressableButton>
       </SimplePanel>
       </div>
@@ -336,6 +489,53 @@ export function ReviewSession() {
               >
                 确定
               </PressableButton>
+            </motion.div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showResetConfirm ? (
+          <motion.div
+            className="fixed inset-0 z-50 grid place-items-center bg-[#14251d]/55 px-4 py-6 backdrop-blur-sm"
+            initial={reduceMotion ? false : { opacity: 0 }}
+            animate={reduceMotion ? undefined : { opacity: 1 }}
+            exit={reduceMotion ? undefined : { opacity: 0 }}
+            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <motion.div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="review-reset-title"
+              className="mimi-card w-full max-w-sm p-6 text-center shadow-[0_24px_70px_rgb(20_37_29/0.26)]"
+              initial={reduceMotion ? false : { opacity: 0, y: 12, scale: 0.98 }}
+              animate={reduceMotion ? undefined : { opacity: 1, y: 0, scale: 1 }}
+              exit={reduceMotion ? undefined : { opacity: 0, y: 8, scale: 0.98 }}
+              transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <RotateCcw aria-hidden="true" className="mx-auto size-9 text-[var(--mimi-primary)]" />
+              <h2 id="review-reset-title" className="mt-4 text-xl font-semibold text-[var(--mimi-text)]">
+                是否确认重置今日复习任务？
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-[var(--mimi-muted)]">
+                YES 后会移除今天的复习记录，并回到今日开始复习之前。
+              </p>
+              <div className="mt-5 grid grid-cols-2 gap-3">
+                <PressableButton
+                  type="button"
+                  onClick={() => setShowResetConfirm(false)}
+                  className="mimi-button-secondary mimi-focus-ring inline-flex items-center justify-center px-4 text-sm font-semibold"
+                >
+                  取消
+                </PressableButton>
+                <PressableButton
+                  type="button"
+                  onClick={() => void resetTodayReview()}
+                  className="mimi-button mimi-focus-ring inline-flex items-center justify-center px-4 text-sm font-semibold"
+                >
+                  YES
+                </PressableButton>
+              </div>
             </motion.div>
           </motion.div>
         ) : null}

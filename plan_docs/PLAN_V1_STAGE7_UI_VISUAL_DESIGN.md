@@ -75,6 +75,18 @@ Stage 7.9 is documented in `plan_docs/PLAN_V1_STAGE7_9_DUAL_TRACK_DATA_IMPORT.md
 
 This child plan connects the accepted Stage 7.8 Recognition / Active information architecture to local V1 data semantics. It upgrades browser-local storage and JSON backup to schema version 5 with `learningTrack`, nullable `tags`, `meaningsZh`, and `examples`, moves single input and batch JSON import under `/import`, keeps `/add` as a compatibility redirect, adds separate Recognition / Active daily limits in Settings, and keeps current review scheduling limited to Recognition Vocabulary. Batch JSON requires at least one meaning and one example per item, while `rarityScore` remains optional and nullable. It does not add AI API, dictation, spelling, writing feedback, remote database migration, Production import, Production deployment, or external vocabulary sources.
 
+## Stage 7.10 Library / Review Controls Note
+
+Stage 7.10 is documented in `plan_docs/PLAN_V1_STAGE7_10_LIBRARY_REVIEW_CONTROLS.md`.
+
+This child plan refines the accepted Stage 7.9 local UI（用户界面）behavior by making the Review side-panel rating cards interactive, adding a confirmed reset-today review task action, adding Library hard delete, adding JSON batch rollback, and displaying JSON import source chips as `Batch imported`. It keeps browser-local schema version 5, existing scheduler rules, existing routes, existing API（应用程序接口）contracts, and current Postgres Preview behavior. It does not add remote database mutation support for these destructive controls, AI API, dictation, spelling, writing feedback, Production import, Production migration, or Production deployment.
+
+## Stage 7.11 Review Rollback / Auto Refresh Note
+
+Stage 7.11 is documented in `plan_docs/PLAN_V1_STAGE7_11_REVIEW_ROLLBACK_AUTO_REFRESH.md`.
+
+This child plan removes the confusing Review session regeneration buttons, keeps only the confirmed `重置今日复习任务`, adds conservative automatic queue refresh when local Recognition Vocabulary（阅读词汇）data changes and no card is active, and adds browser-local `回退1词` for accidental rating correction during a multi-card session. It keeps browser-local schema version 5, existing scheduler rules, existing routes, and current Postgres Preview（预览环境）behavior. It does not add remote database mutation support for this rollback control, AI API, dictation, spelling, writing feedback, Production import, Production migration, or Production deployment.
+
 ## Prompt Drift Boundary
 
 The user-provided prompt mentions a PTE / IELTS toggle because the reference concept mixed broader exam-prep ideas into the UI direction. For this V1 stage:

@@ -271,6 +271,82 @@ export function restoreVocabularyItem(data: VocabularyData, id: string, now = ne
   };
 }
 
+export function deleteVocabularyItem(data: VocabularyData, id: string, now = new Date().toISOString()) {
+  const selectedPersonId = getSelectedPersonId(data);
+  const item = data.items.find(
+    (candidate) => candidate.id === id && candidate.personId === selectedPersonId,
+  );
+
+  if (!item) {
+    throw new Error(`Vocabulary item not found: ${id}`);
+  }
+
+  return {
+    data: {
+      ...data,
+      items: data.items.filter(
+        (candidate) => !(candidate.id === id && candidate.personId === selectedPersonId),
+      ),
+      reviewStates: data.reviewStates.filter(
+        (state) =>
+          !(state.vocabularyItemId === id && state.personId === selectedPersonId),
+      ),
+      reviewEvents: data.reviewEvents.filter(
+        (event) =>
+          !(event.vocabularyItemId === id && event.personId === selectedPersonId),
+      ),
+      updatedAt: now,
+    },
+    item,
+  };
+}
+
+export function rollbackImportBatch(data: VocabularyData, batchId: string, now = new Date().toISOString()) {
+  const selectedPersonId = getSelectedPersonId(data);
+  const batch = data.importBatches.find(
+    (candidate) => candidate.id === batchId && candidate.personId === selectedPersonId,
+  );
+
+  if (!batch) {
+    throw new Error(`Import batch not found: ${batchId}`);
+  }
+
+  const itemIds = new Set(
+    data.items
+      .filter((item) => item.personId === selectedPersonId && item.importBatchId === batchId)
+      .map((item) => item.id),
+  );
+  const deletedReviewStatesCount = data.reviewStates.filter(
+    (state) => state.personId === selectedPersonId && itemIds.has(state.vocabularyItemId),
+  ).length;
+  const deletedReviewEventsCount = data.reviewEvents.filter(
+    (event) => event.personId === selectedPersonId && itemIds.has(event.vocabularyItemId),
+  ).length;
+
+  return {
+    data: {
+      ...data,
+      importBatches: data.importBatches.filter(
+        (candidate) => !(candidate.id === batchId && candidate.personId === selectedPersonId),
+      ),
+      items: data.items.filter(
+        (item) => !(item.personId === selectedPersonId && itemIds.has(item.id)),
+      ),
+      reviewStates: data.reviewStates.filter(
+        (state) => !(state.personId === selectedPersonId && itemIds.has(state.vocabularyItemId)),
+      ),
+      reviewEvents: data.reviewEvents.filter(
+        (event) => !(event.personId === selectedPersonId && itemIds.has(event.vocabularyItemId)),
+      ),
+      updatedAt: now,
+    },
+    batch,
+    deletedItemsCount: itemIds.size,
+    deletedReviewStatesCount,
+    deletedReviewEventsCount,
+  };
+}
+
 export function commitImportCandidates(
   data: VocabularyData,
   batchInput: ImportBatchInput,

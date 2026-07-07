@@ -1,4 +1,4 @@
-import type { ReviewRating, ReviewState } from "./types";
+import type { ReviewEvent, ReviewRating, ReviewState } from "./types";
 import type { VocabularyData } from "@/lib/vocabulary/types";
 import { makeId } from "@/lib/vocabulary/repository";
 import { getSelectedPersonId } from "@/lib/people/repository";
@@ -25,6 +25,178 @@ export function getReviewQueue(
   sessionLimit = getSelectedReviewSettings(data).recognitionSessionLimit,
 ) {
   return selectReviewQueue(data, now, sessionLimit);
+}
+
+function getDateKey(isoDate: string, timeZone: string) {
+  const date = new Date(isoDate);
+
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  try {
+    const parts = new Intl.DateTimeFormat("en-CA", {
+      timeZone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).formatToParts(date);
+    const year = parts.find((part) => part.type === "year")?.value;
+    const month = parts.find((part) => part.type === "month")?.value;
+    const day = parts.find((part) => part.type === "day")?.value;
+
+    if (year && month && day) {
+      return `${year}-${month}-${day}`;
+    }
+  } catch {
+    // Fall back to UTC when an unexpected timezone value reaches local storage.
+  }
+
+  return date.toISOString().slice(0, 10);
+}
+
+function sortReviewEventsByReviewedAt(a: ReviewEvent, b: ReviewEvent) {
+  const reviewedAtCompare = a.reviewedAt.localeCompare(b.reviewedAt);
+
+  if (reviewedAtCompare !== 0) {
+    return reviewedAtCompare;
+  }
+
+  return a.id.localeCompare(b.id);
+}
+
+function rebuildStateFromEvents(
+  personId: string,
+  vocabularyItemId: string,
+  events: ReviewEvent[],
+  previousState: ReviewState | undefined,
+) {
+  return events.reduce<ReviewState | undefined>((state, event) => {
+    const scheduled = scheduleNextReview(state, event.rating, event.reviewedAt);
+
+    return {
+      id: state?.id ?? previousState?.id ?? makeId("review_state"),
+      personId,
+      vocabularyItemId,
+      status: scheduled.status,
+      dueAt: scheduled.dueAt,
+      lastReviewedAt: event.reviewedAt,
+      reviewCount: scheduled.reviewCount,
+      lapseCount: scheduled.lapseCount,
+      intervalMinutes: scheduled.intervalMinutes,
+      difficulty: previousState?.difficulty ?? null,
+      stability: previousState?.stability ?? null,
+      updatedAt: event.reviewedAt,
+    };
+  }, undefined);
+}
+
+export function resetTodayReviewTask(data: VocabularyData, now = new Date().toISOString()) {
+  const personId = getSelectedPersonId(data);
+  const timezone = getSelectedReviewSettings(data).timezone;
+  const todayKey = getDateKey(now, timezone);
+  const todayEvents = data.reviewEvents.filter(
+    (event) => event.personId === personId && getDateKey(event.reviewedAt, timezone) === todayKey,
+  );
+  const affectedItemIds = new Set(todayEvents.map((event) => event.vocabularyItemId));
+
+  if (!todayEvents.length) {
+    return {
+      data,
+      resetEventsCount: 0,
+      resetItemsCount: 0,
+    };
+  }
+
+  const remainingEvents = data.reviewEvents.filter(
+    (event) => !(event.personId === personId && getDateKey(event.reviewedAt, timezone) === todayKey),
+  );
+  const previousStateByItemId = new Map(
+    data.reviewStates
+      .filter((state) => state.personId === personId && affectedItemIds.has(state.vocabularyItemId))
+      .map((state) => [state.vocabularyItemId, state]),
+  );
+  const rebuiltStates = Array.from(affectedItemIds)
+    .map((vocabularyItemId) => {
+      const earlierEvents = remainingEvents
+        .filter((event) => event.personId === personId && event.vocabularyItemId === vocabularyItemId)
+        .sort(sortReviewEventsByReviewedAt);
+
+      return rebuildStateFromEvents(
+        personId,
+        vocabularyItemId,
+        earlierEvents,
+        previousStateByItemId.get(vocabularyItemId),
+      );
+    })
+    .filter((state): state is ReviewState => Boolean(state));
+
+  return {
+    data: {
+      ...data,
+      reviewEvents: remainingEvents,
+      reviewStates: [
+        ...rebuiltStates,
+        ...data.reviewStates.filter(
+          (state) => !(state.personId === personId && affectedItemIds.has(state.vocabularyItemId)),
+        ),
+      ],
+      updatedAt: now,
+    },
+    resetEventsCount: todayEvents.length,
+    resetItemsCount: affectedItemIds.size,
+  };
+}
+
+export function rollbackReviewEvent(
+  data: VocabularyData,
+  reviewEventId: string,
+  now = new Date().toISOString(),
+) {
+  const personId = getSelectedPersonId(data);
+  const event = data.reviewEvents.find(
+    (candidate) => candidate.id === reviewEventId && candidate.personId === personId,
+  );
+
+  if (!event) {
+    throw new Error(`Review event not found: ${reviewEventId}`);
+  }
+
+  const remainingEvents = data.reviewEvents.filter(
+    (candidate) => !(candidate.id === reviewEventId && candidate.personId === personId),
+  );
+  const previousState = data.reviewStates.find(
+    (state) => state.personId === personId && state.vocabularyItemId === event.vocabularyItemId,
+  );
+  const earlierEvents = remainingEvents
+    .filter(
+      (candidate) =>
+        candidate.personId === personId && candidate.vocabularyItemId === event.vocabularyItemId,
+    )
+    .sort(sortReviewEventsByReviewedAt);
+  const rebuiltState = rebuildStateFromEvents(
+    personId,
+    event.vocabularyItemId,
+    earlierEvents,
+    previousState,
+  );
+
+  return {
+    data: {
+      ...data,
+      reviewEvents: remainingEvents,
+      reviewStates: [
+        ...(rebuiltState ? [rebuiltState] : []),
+        ...data.reviewStates.filter(
+          (state) =>
+            !(state.personId === personId && state.vocabularyItemId === event.vocabularyItemId),
+        ),
+      ],
+      updatedAt: now,
+    },
+    event,
+    state: rebuiltState ?? null,
+  };
 }
 
 export function recordReview(

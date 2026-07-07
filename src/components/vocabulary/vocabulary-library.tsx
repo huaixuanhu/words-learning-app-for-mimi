@@ -1,17 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { Archive, Download, RotateCcw, Save, Search, Upload } from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { Archive, Download, RotateCcw, Save, Search, Trash2, Upload } from "lucide-react";
 import { useMemo, useState } from "react";
-import type { UpdateVocabularyInput, VocabularyItem } from "@/lib/vocabulary/types";
+import type { ImportBatch, UpdateVocabularyInput, VocabularyItem } from "@/lib/vocabulary/types";
+import { getSelectedPersonId } from "@/lib/people/repository";
 import {
   archiveVocabularyItem,
+  deleteVocabularyItem,
   getActiveVocabularyItems,
   getActiveTrackVocabularyItems,
   getArchivedVocabularyItems,
   getRecognitionVocabularyItems,
   getVocabularyItemsForSelectedPerson,
   restoreVocabularyItem,
+  rollbackImportBatch,
   updateVocabularyItem,
 } from "@/lib/vocabulary/repository";
 import {
@@ -25,6 +29,19 @@ import { useVocabularyData } from "./use-vocabulary-data";
 import { PressableButton } from "@/components/ui/motion-primitives";
 
 type LibraryFilter = "all" | "recognition" | "activeVocabulary" | "weak" | "archived";
+
+type PendingLibraryAction =
+  | {
+      type: "delete";
+      itemId: string;
+      label: string;
+    }
+  | {
+      type: "rollback";
+      batchId: string;
+      label: string;
+      remainingItems: number;
+    };
 
 type EditDraft = Pick<
   VocabularyItem,
@@ -93,14 +110,38 @@ function detectTimezone(fallback = "Australia/Melbourne") {
   }
 }
 
+function getSourceLabel(source: VocabularyItem["source"]) {
+  if (source === "json_file" || source === "json_paste") {
+    return "Batch imported";
+  }
+
+  if (source === "manual") {
+    return "Manual";
+  }
+
+  return "Text imported";
+}
+
+function getBatchLabel(batch: ImportBatch) {
+  const sourceLabel =
+    batch.sourceType === "json_file" || batch.sourceType === "json_paste"
+      ? "Batch imported"
+      : "Text imported";
+
+  return batch.fileName ? `${sourceLabel} · ${batch.fileName}` : `${sourceLabel} · ${batch.createdAt}`;
+}
+
 export function VocabularyLibrary() {
-  const { data, isLoaded, commit } = useVocabularyData();
+  const { data, isLoaded, storageRuntime, commit } = useVocabularyData();
+  const reduceMotion = useReducedMotion();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<LibraryFilter>("all");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<EditDraft | null>(null);
+  const [pendingAction, setPendingAction] = useState<PendingLibraryAction | null>(null);
   const [message, setMessage] = useState("");
 
+  const selectedPersonId = getSelectedPersonId(data);
   const allItems = getVocabularyItemsForSelectedPerson(data);
   const activeItems = getActiveVocabularyItems(data);
   const recognitionItems = getRecognitionVocabularyItems(data);
@@ -117,6 +158,21 @@ export function VocabularyLibrary() {
     { value: "weak", label: "Weak Words", count: activeItems.filter((item) => weakWordIds.has(item.id)).length },
     { value: "archived", label: "Archived", count: archivedItems.length },
   ] as const satisfies readonly { value: LibraryFilter; label: string; count: number }[];
+  const batchSummaries = useMemo(
+    () =>
+      data.importBatches
+        .filter(
+          (batch) =>
+            batch.personId === selectedPersonId &&
+            (batch.sourceType === "json_file" || batch.sourceType === "json_paste"),
+        )
+        .map((batch) => ({
+          batch,
+          remainingItems: allItems.filter((item) => item.importBatchId === batch.id).length,
+        }))
+        .sort((a, b) => b.batch.createdAt.localeCompare(a.batch.createdAt)),
+    [allItems, data.importBatches, selectedPersonId],
+  );
 
   const visibleItems = useMemo(() => {
     const sourceItems =
@@ -222,6 +278,75 @@ export function VocabularyLibrary() {
     }
   };
 
+  const deleteItem = async (id: string) => {
+    if (storageRuntime === "postgres-preview") {
+      setMessage("Postgres Preview runtime 暂不支持硬删除词条。请切回本地数据后操作。");
+      return;
+    }
+
+    const now = new Date().toISOString();
+
+    try {
+      const result = deleteVocabularyItem(data, id, now);
+
+      await commit(result.data, {
+        type: "vocabulary.delete",
+        vocabularyItemId: id,
+        now,
+        timezone: detectTimezone(),
+      });
+      setEditingId(null);
+      setDraft(null);
+      setMessage(`已删除 ${result.item.surfaceText}`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "删除失败");
+    }
+  };
+
+  const rollbackBatch = async (batchId: string) => {
+    if (storageRuntime === "postgres-preview") {
+      setMessage("Postgres Preview runtime 暂不支持 batch rollback。请切回本地数据后操作。");
+      return;
+    }
+
+    const now = new Date().toISOString();
+
+    try {
+      const result = rollbackImportBatch(data, batchId, now);
+
+      await commit(result.data, {
+        type: "import.rollbackBatch",
+        importBatchId: batchId,
+        now,
+        timezone: detectTimezone(),
+      });
+      setEditingId(null);
+      setDraft(null);
+      setMessage(
+        `已 rollback batch imported：删除 ${result.deletedItemsCount} 个词条，移除 ${result.deletedReviewEventsCount} 条复习记录。`,
+      );
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Batch rollback 失败");
+    }
+  };
+
+  const confirmPendingAction = async () => {
+    if (!pendingAction) {
+      return;
+    }
+
+    const action = pendingAction;
+
+    setPendingAction(null);
+
+    if (action.type === "delete") {
+      await deleteItem(action.itemId);
+      return;
+    }
+
+    await rollbackBatch(action.batchId);
+  };
+
   return (
     <div className="grid gap-4">
       <div className="mimi-panel p-4 sm:p-5">
@@ -286,6 +411,49 @@ export function VocabularyLibrary() {
               Export
             </Link>
           </div>
+
+          {batchSummaries.length ? (
+            <div className="grid gap-3 rounded-md border border-[#d8d1c2] bg-[#fffaf1]/64 p-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <h2 className="text-sm font-semibold text-[#203229]">Batch imported</h2>
+                  <p className="text-xs leading-5 text-[#5f6d62]">
+                    Roll back a JSON batch if an import was added by mistake.
+                  </p>
+                </div>
+              </div>
+              <div className="grid gap-2">
+                {batchSummaries.map(({ batch, remainingItems }) => (
+                  <div
+                    key={batch.id}
+                    className="grid gap-2 rounded-md border border-[#e4dece] bg-[#fffaf1] p-3 sm:grid-cols-[1fr_auto] sm:items-center"
+                  >
+                    <div>
+                      <p className="text-sm font-semibold text-[#203229]">{getBatchLabel(batch)}</p>
+                      <p className="text-xs leading-5 text-[#5f6d62]">
+                        {remainingItems} remaining / {batch.acceptedRows} accepted · {batch.createdAt}
+                      </p>
+                    </div>
+                    <PressableButton
+                      type="button"
+                      onClick={() =>
+                        setPendingAction({
+                          type: "rollback",
+                          batchId: batch.id,
+                          label: getBatchLabel(batch),
+                          remainingItems,
+                        })
+                      }
+                      className="mimi-button-secondary mimi-focus-ring inline-flex items-center justify-center gap-2 px-3 text-sm font-semibold"
+                    >
+                      <RotateCcw aria-hidden="true" className="size-4" />
+                      Rollback
+                    </PressableButton>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
         </div>
 
         {message ? <p className="mt-3 rounded-md bg-[#d9e5d5] px-3 py-2 text-sm text-[#274331]">{message}</p> : null}
@@ -448,7 +616,7 @@ export function VocabularyLibrary() {
                         <div className="flex flex-wrap items-center gap-2">
                           <h2 className="mimi-word-serif text-2xl text-[#203229]">{item.surfaceText}</h2>
                           <span className="mimi-pill px-2 py-1 text-xs font-semibold">
-                            {item.source}
+                            {getSourceLabel(item.source)}
                           </span>
                           {!item.archivedAt ? (
                             <span className="mimi-pill px-2 py-1 text-xs font-semibold">
@@ -534,6 +702,20 @@ export function VocabularyLibrary() {
                             归档
                           </PressableButton>
                         )}
+                        <PressableButton
+                          type="button"
+                          onClick={() =>
+                            setPendingAction({
+                              type: "delete",
+                              itemId: item.id,
+                              label: item.surfaceText,
+                            })
+                          }
+                          className="mimi-button-secondary mimi-focus-ring inline-flex items-center gap-2 px-3 text-sm font-semibold"
+                        >
+                          <Trash2 aria-hidden="true" className="size-4" />
+                          删除
+                        </PressableButton>
                       </div>
                     </div>
                   )}
@@ -551,6 +733,59 @@ export function VocabularyLibrary() {
           </p>
         )}
       </div>
+
+      <AnimatePresence>
+        {pendingAction ? (
+          <motion.div
+            className="fixed inset-0 z-50 grid place-items-center bg-[#14251d]/55 px-4 py-6 backdrop-blur-sm"
+            initial={reduceMotion ? false : { opacity: 0 }}
+            animate={reduceMotion ? undefined : { opacity: 1 }}
+            exit={reduceMotion ? undefined : { opacity: 0 }}
+            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <motion.div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="library-confirm-title"
+              className="mimi-card w-full max-w-sm p-6 text-center shadow-[0_24px_70px_rgb(20_37_29/0.26)]"
+              initial={reduceMotion ? false : { opacity: 0, y: 12, scale: 0.98 }}
+              animate={reduceMotion ? undefined : { opacity: 1, y: 0, scale: 1 }}
+              exit={reduceMotion ? undefined : { opacity: 0, y: 8, scale: 0.98 }}
+              transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
+            >
+              {pendingAction.type === "delete" ? (
+                <Trash2 aria-hidden="true" className="mx-auto size-9 text-[#8a4d21]" />
+              ) : (
+                <RotateCcw aria-hidden="true" className="mx-auto size-9 text-[var(--mimi-primary)]" />
+              )}
+              <h2 id="library-confirm-title" className="mt-4 text-xl font-semibold text-[var(--mimi-text)]">
+                {pendingAction.type === "delete" ? "确认删除这个词条？" : "确认 rollback 这个 batch？"}
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-[var(--mimi-muted)]">
+                {pendingAction.type === "delete"
+                  ? `将删除 ${pendingAction.label} 和它的复习记录。`
+                  : `将删除 ${pendingAction.remainingItems} 个仍在词库中的词条，并移除相关复习记录。`}
+              </p>
+              <div className="mt-5 grid grid-cols-2 gap-3">
+                <PressableButton
+                  type="button"
+                  onClick={() => setPendingAction(null)}
+                  className="mimi-button-secondary mimi-focus-ring inline-flex items-center justify-center px-4 text-sm font-semibold"
+                >
+                  取消
+                </PressableButton>
+                <PressableButton
+                  type="button"
+                  onClick={() => void confirmPendingAction()}
+                  className="mimi-button mimi-focus-ring inline-flex items-center justify-center px-4 text-sm font-semibold"
+                >
+                  YES
+                </PressableButton>
+              </div>
+            </motion.div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
     </div>
   );
 }

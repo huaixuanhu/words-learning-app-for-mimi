@@ -52,10 +52,22 @@ export type VocabularyStorageMutation =
       timezone: string;
     }
   | {
+      type: "vocabulary.delete";
+      vocabularyItemId: string;
+      now: string;
+      timezone: string;
+    }
+  | {
       type: "import.commitCandidates";
       batchInput: ImportBatchInput;
       candidates: ImportCandidate[];
       acceptedTempIds: string[];
+      now: string;
+      timezone: string;
+    }
+  | {
+      type: "import.rollbackBatch";
+      importBatchId: string;
       now: string;
       timezone: string;
     }
@@ -67,6 +79,17 @@ export type VocabularyStorageMutation =
         elapsedMs?: number | null;
       };
       now: string;
+    }
+  | {
+      type: "review.resetToday";
+      now: string;
+      timezone: string;
+    }
+  | {
+      type: "review.rollbackEvent";
+      reviewEventId: string;
+      now: string;
+      timezone: string;
     }
   | {
       type: "reviewSettings.update";

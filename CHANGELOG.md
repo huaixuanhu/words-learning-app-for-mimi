@@ -1,5 +1,29 @@
 # CHANGELOG
 
+## 2026-07-07 23:12 AEST
+
+- Executed Stage 7.11 Review rollback / auto-refresh controls locally.
+- Added `plan_docs/PLAN_V1_STAGE7_11_REVIEW_ROLLBACK_AUTO_REFRESH.md` with `Source plan`, `Derived from`, `Scope`, `Non-Scope`, and `Exit criteria` markers.
+- Removed the confusing `重新生成本次复习` and `新建本次复习` buttons from Review.
+- Added conservative Review queue auto-refresh when local Recognition Vocabulary data changes while no card is actively being answered.
+- Added browser-local `回退1词` for multi-card review sessions; it removes the previous completed card's review event, rebuilds that word's review state from earlier history, and places the word back at the front of the current session.
+- Kept the final completed card as direct completion without a completion-screen rollback.
+- Kept one-word rollback browser-local; `postgres-preview` remains out of scope for this destructive control until a later approved database-control stage.
+- Verified local validation: `npm run typecheck`, `npm run test -- --run`, `npm run lint`, `npm run backup:dry-run:fixture`, `npm run build`, `git diff --check`, and `npm run governance:preflight`.
+- Reason: remove unclear session-regeneration controls and give the learner a small, calm correction path after an accidental rating tap without changing schema version 5, scheduler rules, remote database state, or Production（生产环境）scope.
+
+## 2026-07-07 22:39 AEST
+
+- Executed Stage 7.10 Library / Review controls locally.
+- Added `plan_docs/PLAN_V1_STAGE7_10_LIBRARY_REVIEW_CONTROLS.md` with `Source plan`, `Derived from`, `Scope`, `Non-Scope`, and `Exit criteria` markers.
+- Made the Review side-panel rating cards real interactive buttons while preserving the existing four-rating scheduler behavior.
+- Added a confirmed `重置今日复习任务` action that removes today's selected-person review events and rebuilds affected review states from earlier history.
+- Added Library hard delete for vocabulary items and JSON batch rollback for batch imported records; both remove matching local review states and review events.
+- Changed JSON import source chips from raw `json_paste` / `json_file` display to `Batch imported`.
+- Kept the new destructive controls browser-local; `postgres-preview` UI blocks them until a later approved database-control stage adds matching adapter/API behavior.
+- Verified local validation: `npm run typecheck`, `npm run test`, `npm run lint`, `npm run backup:dry-run:fixture`, `npm run build`, `git diff --check`, and `npm run governance:preflight`.
+- Reason: make imported vocabulary and review sessions recoverable after user mistakes without changing schema version 5, scheduler rules, route contracts, remote database state, or Production（生产环境）scope.
+
 ## 2026-07-07 20:02 AEST
 
 - Refined Stage 7.9 batch JSON import semantics after user clarification.

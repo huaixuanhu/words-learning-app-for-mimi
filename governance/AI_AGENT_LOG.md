@@ -1,5 +1,89 @@
 # AI Agent Log
 
+## 2026-07-07 23:12 AEST
+
+- Task: document and implement the user's requested Review refinement: remove confusing regenerate/new-session buttons, add automatic queue refresh, and add `回退1词` to undo the previous completed card when a rating is tapped by mistake.
+- Plan agreed: yes. The user explicitly asked to write the change into documents first, then start implementation. Scope was local Review UI（用户界面）, browser-local Review repository behavior, tests, and docs.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE7_11_REVIEW_ROLLBACK_AUTO_REFRESH.md`
+  - `plan_docs/PLAN_V1_STAGE7_UI_VISUAL_DESIGN.md`
+  - `src/components/review/review-session.tsx`
+  - `src/components/vocabulary/use-vocabulary-data.ts`
+  - `src/lib/review/repository.test.ts`
+  - `src/lib/review/repository.ts`
+- Reason: remove low-value Review queue regeneration controls and add a bounded one-step correction path for accidental rating taps while preserving Recognition Vocabulary（阅读词汇）scheduler behavior and Production（生产环境）boundaries.
+- Implementation notes:
+  - Added the Stage 7.11 child plan before implementation, with local runtime boundary and final-card rollback boundary documented.
+  - Added `rollbackReviewEvent()` to remove one selected-person review event and rebuild that vocabulary item's `ReviewState` from remaining earlier events.
+  - Added `review.rollbackEvent` local mutation metadata.
+  - Removed the left `重新生成本次复习` and right `新建本次复习` controls.
+  - Added conservative automatic queue refresh keyed to local Recognition Vocabulary data changes when the Review page has no active card.
+  - Added `回退1词` while a later card is active and at least one card has already been completed in the current local session.
+  - Kept `回退1词` hidden after final completion so the final submitted card completes the session directly.
+  - Kept the rollback control blocked in `postgres-preview` until a later approved database-control stage.
+- Validation:
+  - Passed: `npm run typecheck`.
+  - Passed: `npm run test -- --run` with 14 files and 61 tests.
+  - Passed: `npm run lint`.
+  - Passed: `npm run backup:dry-run:fixture`.
+  - Passed: `npm run build`.
+  - Passed: `git diff --check`.
+  - Passed: `npm run governance:preflight`.
+- Residual risks:
+  - Browser visual verification is still pending for the exact placement and feel of `回退1词`.
+  - Auto-refresh is intentionally conservative and data-change based; it does not poll the clock for due-time changes while the page sits idle.
+- Safety notes: local documentation, browser-local Review repository logic, local UI, local tests, and local validation only. No Vercel command, Neon command, remote database command, env var read/change, GitHub push, merge to `main`, Production deployment, Production migration, Production import, formal user backup import, AI API（人工智能接口）, dictation engine（听写引擎）, spelling checker（拼写检查器）, writing feedback model, external vocabulary source, authentication（认证）, analytics（分析追踪）, notification, background audio, email, or 付费/扣款 feature was performed.
+
+## 2026-07-07 22:39 AEST
+
+- Task: fix the Review and Library interaction issues after the user reported that right-side rating cards were not clickable, imported words could not be deleted, batch imports needed rollback, `json_paste` should display as `Batch imported`, and Review needed a confirmed reset-today action.
+- Plan agreed: yes. The user confirmed the Stage 7.10 plan to update docs first, then implement local UI and browser-local repository controls.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE7_10_LIBRARY_REVIEW_CONTROLS.md`
+  - `plan_docs/PLAN_V1_STAGE7_UI_VISUAL_DESIGN.md`
+  - `src/components/review/review-session.tsx`
+  - `src/components/vocabulary/use-vocabulary-data.ts`
+  - `src/components/vocabulary/vocabulary-library.tsx`
+  - `src/lib/review/repository.test.ts`
+  - `src/lib/review/repository.ts`
+  - `src/lib/vocabulary/repository.test.ts`
+  - `src/lib/vocabulary/repository.ts`
+- Reason: make local review and import mistakes recoverable while preserving the accepted soft sage UI（用户界面）, schema version 5, Recognition Vocabulary（阅读词汇）scheduler rules, and Stage 6B / Production（生产环境）boundary.
+- Implementation notes:
+  - Added the Stage 7.10 child plan with explicit scope, non-scope, local runtime boundary, and exit criteria.
+  - Added local `deleteVocabularyItem()` and `rollbackImportBatch()` repository operations; both are selected-person scoped and remove matching local `reviewStates` / `reviewEvents`.
+  - Added `resetTodayReviewTask()` to remove only today's selected-person review events according to saved timezone and rebuild affected review states from earlier event history.
+  - Added local mutation metadata for `vocabulary.delete`, `import.rollbackBatch`, and `review.resetToday`.
+  - Converted the Review side-panel rating cards from passive display cards into clickable `PressableButton` controls.
+  - Added a calm reset-today confirmation modal to Review.
+  - Added Library hard-delete and batch rollback confirmation modals.
+  - Renamed JSON import source chips to `Batch imported`.
+  - Blocked the new destructive controls in `postgres-preview` UI runtime until a later approved database-control stage adds matching API（应用程序接口）and adapter behavior.
+- Validation:
+  - Passed: `npm run typecheck`.
+  - Passed: `npm run test -- --run` with 14 files and 59 tests.
+  - Passed: `npm run lint`.
+  - Passed: `npm run backup:dry-run:fixture`.
+  - Passed: `npm run build`.
+  - Passed: `git diff --check`.
+  - Passed: `npm run governance:preflight`.
+- Residual risks:
+  - Browser visual verification is still pending for the new Library and Review modals.
+  - The destructive controls are intentionally local-only; Postgres Preview and future Production runtime need a separate accepted plan before gaining delete / rollback / reset mutations.
+- Safety notes: local documentation, browser-local repository logic, local UI, local tests, and local validation only. No Vercel command, Neon command, remote database command, env var read/change, GitHub push, merge to `main`, Production deployment, Production migration, Production import, formal user backup import, AI API（人工智能接口）, dictation engine（听写引擎）, spelling checker（拼写检查器）, writing feedback model, external vocabulary source, authentication（认证）, analytics（分析追踪）, notification, background audio, email, or 付费/扣款 feature was performed.
+
 ## 2026-07-07 20:02 AEST
 
 - Task: refine Stage 7.9 batch JSON import after the user clarified that `meaningZh` and `example` should be at least one entry but unlimited, and asked what `rarityScore` does and whether it can be `null`.
