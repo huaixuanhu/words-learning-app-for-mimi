@@ -22,10 +22,11 @@ import {
   normalizeLearningTrack,
   normalizeRarityScore,
   normalizeSurfaceText,
+  normalizeTextList,
   normalizeVocabularyTags,
 } from "./normalize";
 
-export const VOCABULARY_SCHEMA_VERSION = 4;
+export const VOCABULARY_SCHEMA_VERSION = 5;
 
 export function createEmptyVocabularyData(now = new Date().toISOString()): VocabularyData {
   const person = createDefaultPerson(now);
@@ -94,8 +95,30 @@ export function getVocabularyItemsForSelectedPerson(data: VocabularyData) {
   return data.items.filter((item) => item.personId === personId);
 }
 
+function buildMeaningFields(input: { meaningZh?: string; meaningsZh?: string[] }) {
+  const legacyMeaning = normalizeOptionalText(input.meaningZh);
+  const meaningsZh = normalizeTextList(input.meaningsZh?.length ? input.meaningsZh : legacyMeaning);
+
+  return {
+    meaningZh: meaningsZh[0] ?? legacyMeaning,
+    meaningsZh,
+  };
+}
+
+function buildExampleFields(input: { example?: string; examples?: string[] }) {
+  const legacyExample = normalizeOptionalText(input.example);
+  const examples = normalizeTextList(input.examples?.length ? input.examples : legacyExample);
+
+  return {
+    example: examples[0] ?? legacyExample,
+    examples,
+  };
+}
+
 export function buildVocabularyItem(input: NewVocabularyInput, now = new Date().toISOString()): VocabularyItem {
   const surfaceText = cleanSurfaceText(input.surfaceText);
+  const meaningFields = buildMeaningFields(input);
+  const exampleFields = buildExampleFields(input);
 
   if (!surfaceText) {
     throw new Error("surfaceText is required");
@@ -106,8 +129,8 @@ export function buildVocabularyItem(input: NewVocabularyInput, now = new Date().
     personId: input.personId ?? "",
     surfaceText,
     normalizedText: normalizeSurfaceText(surfaceText),
-    meaningZh: normalizeOptionalText(input.meaningZh),
-    example: normalizeOptionalText(input.example),
+    ...meaningFields,
+    ...exampleFields,
     notes: normalizeOptionalText(input.notes),
     rarityScore: normalizeRarityScore(input.rarityScore),
     learningTrack: normalizeLearningTrack(input.learningTrack),
@@ -157,6 +180,26 @@ export function updateVocabularyItem(
   const currentItem = data.items[itemIndex];
   const surfaceText =
     input.surfaceText === undefined ? currentItem.surfaceText : cleanSurfaceText(input.surfaceText);
+  const meaningFields =
+    input.meaningZh === undefined && input.meaningsZh === undefined
+      ? {
+          meaningZh: currentItem.meaningZh,
+          meaningsZh: currentItem.meaningsZh,
+        }
+      : buildMeaningFields({
+          meaningZh: input.meaningZh,
+          meaningsZh: input.meaningsZh,
+        });
+  const exampleFields =
+    input.example === undefined && input.examples === undefined
+      ? {
+          example: currentItem.example,
+          examples: currentItem.examples,
+        }
+      : buildExampleFields({
+          example: input.example,
+          examples: input.examples,
+        });
 
   if (!surfaceText) {
     throw new Error("surfaceText is required");
@@ -166,9 +209,8 @@ export function updateVocabularyItem(
     ...currentItem,
     surfaceText,
     normalizedText: normalizeSurfaceText(surfaceText),
-    meaningZh:
-      input.meaningZh === undefined ? currentItem.meaningZh : normalizeOptionalText(input.meaningZh),
-    example: input.example === undefined ? currentItem.example : normalizeOptionalText(input.example),
+    ...meaningFields,
+    ...exampleFields,
     notes: input.notes === undefined ? currentItem.notes : normalizeOptionalText(input.notes),
     rarityScore:
       input.rarityScore === undefined ? currentItem.rarityScore : normalizeRarityScore(input.rarityScore),
@@ -258,7 +300,9 @@ export function commitImportCandidates(
       {
         surfaceText: candidate.surfaceText,
         meaningZh: candidate.meaningZh,
+        meaningsZh: candidate.meaningsZh,
         example: candidate.example,
+        examples: candidate.examples,
         notes: candidate.notes,
         rarityScore: candidate.rarityScore,
         learningTrack: candidate.learningTrack,

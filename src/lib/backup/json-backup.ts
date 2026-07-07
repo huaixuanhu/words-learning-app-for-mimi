@@ -43,6 +43,10 @@ function isStringArrayOrNull(value: unknown): value is string[] | null {
   return value === null || (Array.isArray(value) && value.every((entry) => typeof entry === "string"));
 }
 
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((entry) => typeof entry === "string");
+}
+
 function isNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
 }
@@ -111,6 +115,7 @@ function validateVocabularyItem(
   errors: string[],
   requiresPersonId: boolean,
   requiresTrackFields: boolean,
+  requiresTextListFields: boolean,
 ) {
   if (!isRecord(value)) {
     errors.push(`items[${index}] must be an object`);
@@ -158,6 +163,16 @@ function validateVocabularyItem(
           errors.push(`items[${index}].tags contains unsupported tag`);
         }
       });
+    }
+  }
+
+  if (requiresTextListFields) {
+    if (!isStringArray(value.meaningsZh)) {
+      errors.push(`items[${index}].meaningsZh must be an array`);
+    }
+
+    if (!isStringArray(value.examples)) {
+      errors.push(`items[${index}].examples must be an array`);
     }
   }
 
@@ -372,11 +387,18 @@ function validateBackupData(value: unknown, errors: string[]) {
     return;
   }
 
-  if (value.schemaVersion !== 2 && value.schemaVersion !== 3 && value.schemaVersion !== 4) {
-    errors.push("data.schemaVersion must be 2, 3, or 4");
+  if (
+    value.schemaVersion !== 2 &&
+    value.schemaVersion !== 3 &&
+    value.schemaVersion !== 4 &&
+    value.schemaVersion !== 5
+  ) {
+    errors.push("data.schemaVersion must be 2, 3, 4, or 5");
   }
-  const requiresPersonId = value.schemaVersion === 3 || value.schemaVersion === 4;
-  const requiresTrackFields = value.schemaVersion === 4;
+  const requiresPersonId =
+    value.schemaVersion === 3 || value.schemaVersion === 4 || value.schemaVersion === 5;
+  const requiresTrackFields = value.schemaVersion === 4 || value.schemaVersion === 5;
+  const requiresTextListFields = value.schemaVersion === 5;
 
   if (requiresPersonId) {
     if (!Array.isArray(value.people)) {
@@ -394,7 +416,7 @@ function validateBackupData(value: unknown, errors: string[]) {
     errors.push("data.items must be an array");
   } else {
     value.items.forEach((item, index) =>
-      validateVocabularyItem(item, index, errors, requiresPersonId, requiresTrackFields),
+      validateVocabularyItem(item, index, errors, requiresPersonId, requiresTrackFields, requiresTextListFields),
     );
   }
 
@@ -521,9 +543,10 @@ export function parseVocabularyBackupValue(value: unknown, now = new Date().toIS
     if (
       value.metadata.schemaVersion !== 2 &&
       value.metadata.schemaVersion !== 3 &&
-      value.metadata.schemaVersion !== 4
+      value.metadata.schemaVersion !== 4 &&
+      value.metadata.schemaVersion !== 5
     ) {
-      errors.push("metadata.schemaVersion must be 2, 3, or 4");
+      errors.push("metadata.schemaVersion must be 2, 3, 4, or 5");
     }
 
     validateCounts(value.metadata.counts, errors);

@@ -1,7 +1,12 @@
 import type { VocabularyData } from "./types";
 import { createEmptyVocabularyData } from "./repository";
 import { normalizeReviewSettings } from "@/lib/review/settings";
-import { normalizeLearningTrack, normalizeVocabularyTags } from "./normalize";
+import {
+  normalizeLearningTrack,
+  normalizeOptionalText,
+  normalizeTextList,
+  normalizeVocabularyTags,
+} from "./normalize";
 import {
   DEFAULT_PERSON_ID,
   createDefaultPerson,
@@ -32,10 +37,27 @@ function isObject(value: unknown): value is Record<string, unknown> {
 }
 
 function migrateItem(value: unknown, personId: string) {
+  if (!isObject(value)) {
+    return value;
+  }
+
+  const legacyMeaning = normalizeOptionalText(typeof value.meaningZh === "string" ? value.meaningZh : "");
+  const meaningsZh = normalizeTextList(
+    Array.isArray(value.meaningsZh) && value.meaningsZh.length ? value.meaningsZh : legacyMeaning,
+  );
+  const legacyExample = normalizeOptionalText(typeof value.example === "string" ? value.example : "");
+  const examples = normalizeTextList(
+    Array.isArray(value.examples) && value.examples.length ? value.examples : legacyExample,
+  );
+
   return isObject(value)
     ? {
         ...value,
         personId: typeof value.personId === "string" ? value.personId : personId,
+        meaningZh: meaningsZh[0] ?? legacyMeaning,
+        meaningsZh,
+        example: examples[0] ?? legacyExample,
+        examples,
         learningTrack: normalizeLearningTrack(value.learningTrack),
         tags: normalizeVocabularyTags(value.tags),
       }
@@ -66,7 +88,7 @@ export function migrateVocabularyData(value: unknown, now = new Date().toISOStri
     );
 
     return {
-      schemaVersion: 4,
+      schemaVersion: 5,
       people: [person],
       selectedPersonId: person.id,
       items: items.map((item) => migrateItem(item, person.id)) as VocabularyData["items"],
@@ -91,7 +113,7 @@ export function migrateVocabularyData(value: unknown, now = new Date().toISOStri
     };
   }
 
-  if (maybeData.schemaVersion === 3 || maybeData.schemaVersion === 4) {
+  if (maybeData.schemaVersion === 3 || maybeData.schemaVersion === 4 || maybeData.schemaVersion === 5) {
     const people = Array.isArray(maybeData.people) && maybeData.people.length
       ? (maybeData.people as VocabularyData["people"])
       : [createDefaultPerson(now)];
@@ -102,7 +124,7 @@ export function migrateVocabularyData(value: unknown, now = new Date().toISOStri
         ? maybeData.selectedPersonId
         : fallbackPersonId;
     const migrated: VocabularyData = {
-      schemaVersion: 4,
+      schemaVersion: 5,
       people,
       selectedPersonId,
       items: items.map((item) => migrateItem(item, fallbackPersonId)) as VocabularyData["items"],

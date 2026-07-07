@@ -1,6 +1,10 @@
 import type { PersonReviewSettings, ReviewEvent, ReviewState } from "@/lib/review/types";
 import { DEFAULT_ACTIVE_SESSION_LIMIT } from "@/lib/review/settings";
-import { normalizeLearningTrack, normalizeVocabularyTags } from "@/lib/vocabulary/normalize";
+import {
+  normalizeLearningTrack,
+  normalizeTextList,
+  normalizeVocabularyTags,
+} from "@/lib/vocabulary/normalize";
 import type { ImportBatch, Person, VocabularyItem } from "@/lib/vocabulary/types";
 
 type DatabaseTimestamp = string | Date;
@@ -119,7 +123,9 @@ export function mapVocabularyItemRow(row: VocabularyItemRow): VocabularyItem {
     surfaceText: row.surface_text,
     normalizedText: row.normalized_text,
     meaningZh: row.meaning_zh,
+    meaningsZh: normalizeTextList(row.meaning_zh),
     example: row.example,
+    examples: normalizeTextList(row.example),
     notes: row.notes,
     rarityScore: row.rarity_score,
     learningTrack: normalizeLearningTrack(row.learning_track),

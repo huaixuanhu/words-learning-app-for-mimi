@@ -69,6 +69,10 @@ describe("Postgres row mappers", () => {
       personId,
       surfaceText: "Allocate",
       normalizedText: "allocate",
+      meaningZh: "分配",
+      meaningsZh: ["分配"],
+      example: "Allocate time wisely.",
+      examples: ["Allocate time wisely."],
       archivedAt: null,
     });
     expect(

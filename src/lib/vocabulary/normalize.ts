@@ -49,6 +49,14 @@ export function normalizeOptionalText(input: string | undefined | null) {
   return (input ?? "").normalize("NFKC").replace(/\s+/g, " ").trim();
 }
 
+export function normalizeTextList(input: unknown) {
+  const rawEntries = Array.isArray(input) ? input : [input];
+
+  return rawEntries
+    .map((entry) => normalizeOptionalText(typeof entry === "string" ? entry : ""))
+    .filter(Boolean);
+}
+
 export function normalizeRarityScore(input: number | string | null | undefined) {
   if (input === null || input === undefined || input === "") {
     return null;

@@ -34,6 +34,8 @@ describe("vocabulary repository", () => {
     expect(added.item).toMatchObject({
       surfaceText: "Allocate",
       normalizedText: "allocate",
+      meaningsZh: ["分配"],
+      examples: ["Allocate time wisely."],
       createdAt: "2026-07-03T14:00:00.000Z",
       systemCreatedAt: "2026-07-04T00:01:00.000Z",
     });
@@ -43,6 +45,8 @@ describe("vocabulary repository", () => {
       "vocab-1",
       {
         surfaceText: "allocated",
+        meaningsZh: ["分配", "划拨"],
+        examples: ["Allocate time wisely.", "Allocate budget carefully."],
         rarityScore: 5,
         createdAt: "2026-07-03T15:00:00.000Z",
       },
@@ -52,6 +56,10 @@ describe("vocabulary repository", () => {
     expect(updated.item).toMatchObject({
       surfaceText: "allocated",
       normalizedText: "allocated",
+      meaningZh: "分配",
+      meaningsZh: ["分配", "划拨"],
+      example: "Allocate time wisely.",
+      examples: ["Allocate time wisely.", "Allocate budget carefully."],
       rarityScore: 5,
       createdAt: "2026-07-03T15:00:00.000Z",
       systemCreatedAt: "2026-07-04T00:01:00.000Z",
@@ -102,6 +110,7 @@ describe("vocabulary repository", () => {
       invalidRows: 1,
     });
     expect(result.items.map((item) => item.surfaceText)).toEqual(["coherent", "allocate"]);
+    expect(result.items[0]?.meaningsZh).toEqual(["连贯的"]);
     expect(result.data.importBatches).toHaveLength(1);
   });
 });

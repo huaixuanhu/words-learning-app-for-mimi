@@ -18,6 +18,7 @@ import {
   VOCABULARY_TAGS,
   normalizeRarityScore,
   normalizeSurfaceText,
+  normalizeTextList,
   normalizeVocabularyTags,
 } from "@/lib/vocabulary/normalize";
 import { useVocabularyData } from "./use-vocabulary-data";
@@ -27,10 +28,28 @@ type LibraryFilter = "all" | "recognition" | "activeVocabulary" | "weak" | "arch
 
 type EditDraft = Pick<
   VocabularyItem,
-  "surfaceText" | "meaningZh" | "example" | "notes" | "learningTrack" | "tags" | "createdAt" | "timezone"
+  "surfaceText" | "notes" | "learningTrack" | "tags" | "createdAt" | "timezone"
 > & {
+  meaningsZhText: string;
+  examplesText: string;
   rarityScore: string;
 };
+
+function getItemMeanings(item: VocabularyItem) {
+  return item.meaningsZh.length ? item.meaningsZh : normalizeTextList(item.meaningZh);
+}
+
+function getItemExamples(item: VocabularyItem) {
+  return item.examples.length ? item.examples : normalizeTextList(item.example);
+}
+
+function toMultilineText(values: string[]) {
+  return values.join("\n");
+}
+
+function fromMultilineText(value: string) {
+  return normalizeTextList(value.split(/\r?\n/));
+}
 
 function toDateTimeLocalValue(value: string) {
   const date = new Date(value);
@@ -47,8 +66,8 @@ function toDateTimeLocalValue(value: string) {
 function createDraft(item: VocabularyItem): EditDraft {
   return {
     surfaceText: item.surfaceText,
-    meaningZh: item.meaningZh,
-    example: item.example,
+    meaningsZhText: toMultilineText(getItemMeanings(item)),
+    examplesText: toMultilineText(getItemExamples(item)),
     notes: item.notes,
     learningTrack: item.learningTrack,
     tags: item.tags,
@@ -119,8 +138,10 @@ export function VocabularyLibrary() {
     return sourceItems.filter(
       (item) =>
         item.normalizedText.includes(normalizedQuery) ||
-        item.meaningZh.includes(query.trim()) ||
-        item.example.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()),
+        getItemMeanings(item).some((meaning) => meaning.includes(query.trim())) ||
+        getItemExamples(item).some((example) =>
+          example.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()),
+        ),
     );
   }, [activeItems, activeTrackItems, allItems, archivedItems, filter, query, recognitionItems, weakWordIds]);
 
@@ -137,10 +158,14 @@ export function VocabularyLibrary() {
 
     try {
       const now = new Date().toISOString();
+      const meaningsZh = fromMultilineText(draft.meaningsZhText);
+      const examples = fromMultilineText(draft.examplesText);
       const input: UpdateVocabularyInput = {
         surfaceText: draft.surfaceText,
-        meaningZh: draft.meaningZh,
-        example: draft.example,
+        meaningZh: meaningsZh[0] ?? "",
+        meaningsZh,
+        example: examples[0] ?? "",
+        examples,
         notes: draft.notes,
         rarityScore: normalizeRarityScore(draft.rarityScore),
         learningTrack: draft.learningTrack,
@@ -279,6 +304,8 @@ export function VocabularyLibrary() {
           <div className="divide-y divide-[#e4dece]">
             {visibleItems.map((item) => {
               const isEditing = editingId === item.id && draft;
+              const itemMeanings = getItemMeanings(item);
+              const itemExamples = getItemExamples(item);
 
               return (
                 <div key={item.id} className="grid gap-3 p-4 transition hover:bg-[#fffaf1]/72">
@@ -295,10 +322,11 @@ export function VocabularyLibrary() {
                         </label>
                         <label className="grid gap-1">
                           <span className="text-sm font-semibold text-[#203229]">中文释义</span>
-                          <input
-                            value={draft.meaningZh}
-                            onChange={(event) => setDraft({ ...draft, meaningZh: event.target.value })}
-                            className="mimi-input min-h-10 px-3"
+                          <textarea
+                            rows={2}
+                            value={draft.meaningsZhText}
+                            onChange={(event) => setDraft({ ...draft, meaningsZhText: event.target.value })}
+                            className="mimi-input min-h-20 px-3 py-2"
                           />
                         </label>
                       </div>
@@ -306,8 +334,8 @@ export function VocabularyLibrary() {
                         <span className="text-sm font-semibold text-[#203229]">Example</span>
                         <textarea
                           rows={2}
-                          value={draft.example}
-                          onChange={(event) => setDraft({ ...draft, example: event.target.value })}
+                          value={draft.examplesText}
+                          onChange={(event) => setDraft({ ...draft, examplesText: event.target.value })}
                           className="mimi-input min-h-20 px-3 py-2"
                         />
                       </label>
@@ -443,8 +471,22 @@ export function VocabularyLibrary() {
                             </span>
                           ) : null}
                         </div>
-                        <p className="mt-1 text-sm text-[#5f6d62]">{item.meaningZh || "No meaning yet"}</p>
-                        {item.example ? <p className="mt-2 text-sm leading-6 text-[#203229]">{item.example}</p> : null}
+                        {itemMeanings.length ? (
+                          <div className="mt-1 grid gap-1 text-sm text-[#5f6d62]">
+                            {itemMeanings.map((meaning, index) => (
+                              <p key={`${item.id}-meaning-${index}`}>{meaning}</p>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="mt-1 text-sm text-[#5f6d62]">No meaning yet</p>
+                        )}
+                        {itemExamples.length ? (
+                          <div className="mt-2 grid gap-1 text-sm leading-6 text-[#203229]">
+                            {itemExamples.map((example, index) => (
+                              <p key={`${item.id}-example-${index}`}>{example}</p>
+                            ))}
+                          </div>
+                        ) : null}
                         <div className="mt-3 flex flex-wrap gap-2">
                           <span className="mimi-pill px-2 py-1 text-xs font-semibold">Meaning</span>
                           {item.learningTrack === "active" ? (

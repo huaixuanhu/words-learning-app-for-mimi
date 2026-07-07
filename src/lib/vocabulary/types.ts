@@ -27,7 +27,9 @@ export type VocabularyItem = {
   surfaceText: string;
   normalizedText: string;
   meaningZh: string;
+  meaningsZh: string[];
   example: string;
+  examples: string[];
   notes: string;
   rarityScore: number | null;
   learningTrack: LearningTrack;
@@ -61,7 +63,9 @@ export type ImportCandidate = {
   surfaceText: string;
   normalizedText: string;
   meaningZh: string;
+  meaningsZh: string[];
   example: string;
+  examples: string[];
   notes: string;
   rarityScore: number | null;
   learningTrack: LearningTrack;
@@ -71,7 +75,7 @@ export type ImportCandidate = {
 };
 
 export type VocabularyData = {
-  schemaVersion: 4;
+  schemaVersion: 5;
   people: Person[];
   selectedPersonId: string;
   items: VocabularyItem[];
@@ -87,7 +91,9 @@ export type NewVocabularyInput = {
   personId?: string;
   surfaceText: string;
   meaningZh?: string;
+  meaningsZh?: string[];
   example?: string;
+  examples?: string[];
   notes?: string;
   rarityScore?: number | null;
   learningTrack?: LearningTrack;
@@ -105,7 +111,9 @@ export type UpdateVocabularyInput = Partial<
     VocabularyItem,
     | "surfaceText"
     | "meaningZh"
+    | "meaningsZh"
     | "example"
+    | "examples"
     | "notes"
     | "rarityScore"
     | "learningTrack"

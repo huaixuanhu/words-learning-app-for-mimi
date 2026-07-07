@@ -99,7 +99,7 @@ describe("JSON vocabulary backup", () => {
       appName: "words-learning-app-for-mimi",
       exportedAt: "2026-07-05T00:20:00.000Z",
       timezone: "Australia/Melbourne",
-      schemaVersion: 4,
+      schemaVersion: 5,
     });
     expect(backup.metadata.counts).toEqual({
       people: 1,
@@ -126,12 +126,14 @@ describe("JSON vocabulary backup", () => {
       return;
     }
 
-    expect(parsed.data.schemaVersion).toBe(4);
+    expect(parsed.data.schemaVersion).toBe(5);
     expect(parsed.data.people).toHaveLength(1);
     expect(parsed.data.items[0]?.id).toBe("vocab-1");
     expect(parsed.data.items[0]?.personId).toBe("person_mimi");
     expect(parsed.data.items[0]?.learningTrack).toBe("active");
     expect(parsed.data.items[0]?.tags).toEqual(["PTE", "Writing"]);
+    expect(parsed.data.items[0]?.meaningsZh).toEqual(["分配"]);
+    expect(parsed.data.items[0]?.examples).toEqual(["Allocate time wisely."]);
     expect(parsed.data.importBatches).toHaveLength(1);
     expect(parsed.data.reviewStates).toHaveLength(1);
     expect(parsed.data.reviewEvents).toHaveLength(1);
@@ -141,7 +143,7 @@ describe("JSON vocabulary backup", () => {
     expect(parsed.counts).toEqual(summarizeVocabularyData(data));
   });
 
-  it("restores schema version 2 backups by migrating them to version 4", () => {
+  it("restores schema version 2 backups by migrating them to version 5", () => {
     const parsed = parseVocabularyBackupText(
       JSON.stringify({
         format: "mimi-pte-vocabulary-backup",
@@ -200,10 +202,12 @@ describe("JSON vocabulary backup", () => {
       return;
     }
 
-    expect(parsed.data.schemaVersion).toBe(4);
+    expect(parsed.data.schemaVersion).toBe(5);
     expect(parsed.data.items[0]?.personId).toBe("person_mimi");
     expect(parsed.data.items[0]?.learningTrack).toBe("recognition");
     expect(parsed.data.items[0]?.tags).toBeNull();
+    expect(parsed.data.items[0]?.meaningsZh).toEqual([]);
+    expect(parsed.data.items[0]?.examples).toEqual([]);
     expect(parsed.data.settingsByPerson[0]?.sessionLimit).toBe(10);
     expect(parsed.data.settingsByPerson[0]?.recognitionSessionLimit).toBe(10);
     expect(parsed.data.settingsByPerson[0]?.activeSessionLimit).toBe(8);

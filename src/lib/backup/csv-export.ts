@@ -7,7 +7,9 @@ export const VOCABULARY_CSV_COLUMNS = [
   "surfaceText",
   "normalizedText",
   "meaningZh",
+  "meaningsZh",
   "example",
+  "examples",
   "notes",
   "rarityScore",
   "learningTrack",
@@ -41,6 +43,10 @@ function getVocabularyCsvValue(data: VocabularyData, item: VocabularyItem, colum
 
   if (column === "tags") {
     return item.tags?.join("|") ?? "";
+  }
+
+  if (column === "meaningsZh" || column === "examples") {
+    return JSON.stringify(item[column]);
   }
 
   return item[column];

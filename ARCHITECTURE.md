@@ -1,7 +1,7 @@
 # Words Learning App For Mimi Architecture
 
 Created: 2026-07-02 23:30 AEST
-Last updated: 2026-07-07 00:35 AEST
+Last updated: 2026-07-07 19:48 AEST
 
 ## Current State
 
@@ -21,7 +21,7 @@ Current local stack:
 - `lucide-react` 0.562.0 for simple interface icons
 - npm `overrides` pins PostCSS（CSS 处理器）to 8.5.16 so the Next.js nested PostCSS copy resolves to the patched version.
 
-Stage 7.9 stores local study data in browser `localStorage`（本地浏览器存储）under `mimi-pte-vocabulary-v1`, with schema version 4. This enables local single vocabulary input, batch JSON import（批量 JSON 导入）preview, edit, archive, restore, search, recognition-only review sessions, review history, per-person Recognition / Active daily limits, JSON backup（JSON 备份）, vocabulary CSV（逗号分隔值）export, JSON restore preview, and selected-person switching without remote services.
+Stage 7.9 stores local study data in browser `localStorage`（本地浏览器存储）under `mimi-pte-vocabulary-v1`; the 2026-07-07 multi-meaning / multi-example refinement upgrades the browser-local and backup shape to schema version 5. This enables local single vocabulary input, batch JSON import（批量 JSON 导入）preview, edit, archive, restore, search, recognition-only review sessions, review history, per-person Recognition / Active daily limits, multiple Chinese meanings, multiple examples, JSON backup（JSON 备份）, vocabulary CSV（逗号分隔值）export, JSON restore preview, and selected-person switching without remote services.
 
 Stage 5D added durable storage readiness without connecting to any remote service. The local SQL migration lives at `db/migrations/0001_initial.sql`, the JSON backup to Postgres（关系型数据库）mapping lives at `db/LOCAL_BACKUP_TO_POSTGRES.md`, and the repository adapter contract（仓储适配层接口）lives at `src/lib/storage/durable-repository-contract.ts`.
 
@@ -47,7 +47,7 @@ The confirmed release sequence is Stage 6A Production（生产环境）release g
 
 Stage 6A documents the Production release gate. It confirms that current `person_id` behavior separates learner data but does not provide security isolation, that `postgres-preview` must not be used as a Production runtime mode, and that Stage 6B must either keep first Production browser-local or introduce a separate accepted Production runtime before durable shared writes.
 
-Stage 7 implements the local UI（用户界面）visual design pass. `plan_docs/PLAN_V1_STAGE7_UI_VISUAL_DESIGN.md` records the design guardrails, including the darker soft sage palette, Motion for React dependency, reduced-motion boundary, mobile / desktop layout expectations, and the explicit decision not to implement a PTE / IELTS toggle in V1. `plan_docs/PLAN_V1_STAGE7_2_UI_REFINEMENT.md` records the accepted brand and interaction refinement: visible brand surfaces now use the local cat avatar and `咪咪 Vocabulary`, desktop dashboard action cards are slightly smaller, and hover / tap feedback is stronger. `plan_docs/PLAN_V1_STAGE7_3_CHILLROUND_FONT_TRIAL.md` records the typography follow-up: the app self-hosts ChillRoundF 寒蝉全圆体 `v3.200` from Warren2060/ChillRound under OFL-1.1 and uses it for CJK（中日韩文字）UI text before system fallbacks. `plan_docs/PLAN_V1_STAGE7_4_THEME_TOGGLE.md` records the local light / dark theme（主题）toggle: `dark` remains the default, `light` is a warm sage paper version, the selected theme is stored only as UI preference under `mimi-ui-theme-v1`, and a body-first boot script applies the stored theme before the main UI renders. `plan_docs/PLAN_V1_STAGE7_5_SOFT_CLICK_SOUND_TRIAL.md` records the sound audition: the app stores one Kenney CC0 click sound in OGG（Ogg Vorbis 音频格式）and M4A（MPEG-4 音频格式）forms, keeps the license note in `public/sounds/`, and exposed a low-volume Settings preview through a low-pass filter（低通滤波器）before global use. `plan_docs/PLAN_V1_STAGE7_6_SOUND_DESIGN.md` records the accepted sound layer: the generated soft click is used for normal button feedback through a client sound provider, Settings stores separate button / review-completion sound preferences under `mimi-ui-sound-v1`, and the review flow shows a calm `已完成今日复习任务` modal whose `确定` button can play the user-provided Mimi completion sound from `public/sounds/mimi-review-complete.m4a`. `plan_docs/PLAN_V1_STAGE7_7_FINAL_ACCEPTANCE.md` records the local final acceptance pass: core local validation, route / asset checks, API safety smoke checks, and a focused in-app browser Settings check passed. `plan_docs/PLAN_V1_STAGE7_8_DUAL_TRACK_UI_REFINEMENT.md` records the dual-track UI refinement: dashboard becomes a Today Hub with Recognition Vocabulary and Active Vocabulary cards, navigation（导航）centers daily learning, `/study` and `/practice-lab` become presentational route entries, Library prepares track filters and mastery labels, and the cat avatar becomes an accessible Home Brand Button. `plan_docs/PLAN_V1_STAGE7_9_DUAL_TRACK_DATA_IMPORT.md` records the accepted local data refinement: `learningTrack` and nullable `tags` become schema version 4 vocabulary fields, `/import` becomes the parent page for Single input and Batch JSON import, `/add` remains a compatibility redirect, Review settings store separate Recognition / Active daily limits, and the current review scheduler uses Recognition Vocabulary only. Theme and sound preferences remain UI-only and are not part of vocabulary data, review history, review settings, JSON backup, CSV export, Postgres tables, API payloads, or Production（生产环境）state. Stage 7.9 did not add AI API（人工智能接口）, dictation, spelling, writing feedback, external vocabulary sources, PTE / IELTS persisted classification, Production database migration, Production import, or Production deployment.
+Stage 7 implements the local UI（用户界面）visual design pass. `plan_docs/PLAN_V1_STAGE7_UI_VISUAL_DESIGN.md` records the design guardrails, including the darker soft sage palette, Motion for React dependency, reduced-motion boundary, mobile / desktop layout expectations, and the explicit decision not to implement a PTE / IELTS toggle in V1. `plan_docs/PLAN_V1_STAGE7_2_UI_REFINEMENT.md` records the accepted brand and interaction refinement: visible brand surfaces now use the local cat avatar and `咪咪 Vocabulary`, desktop dashboard action cards are slightly smaller, and hover / tap feedback is stronger. `plan_docs/PLAN_V1_STAGE7_3_CHILLROUND_FONT_TRIAL.md` records the typography follow-up: the app self-hosts ChillRoundF 寒蝉全圆体 `v3.200` from Warren2060/ChillRound under OFL-1.1 and uses it for CJK（中日韩文字）UI text before system fallbacks. `plan_docs/PLAN_V1_STAGE7_4_THEME_TOGGLE.md` records the local light / dark theme（主题）toggle: `dark` remains the default, `light` is a warm sage paper version, the selected theme is stored only as UI preference under `mimi-ui-theme-v1`, and a body-first boot script applies the stored theme before the main UI renders. `plan_docs/PLAN_V1_STAGE7_5_SOFT_CLICK_SOUND_TRIAL.md` records the sound audition: the app stores one Kenney CC0 click sound in OGG（Ogg Vorbis 音频格式）and M4A（MPEG-4 音频格式）forms, keeps the license note in `public/sounds/`, and exposed a low-volume Settings preview through a low-pass filter（低通滤波器）before global use. `plan_docs/PLAN_V1_STAGE7_6_SOUND_DESIGN.md` records the accepted sound layer: the generated soft click is used for normal button feedback through a client sound provider, Settings stores separate button / review-completion sound preferences under `mimi-ui-sound-v1`, and the review flow shows a calm `已完成今日复习任务` modal whose `确定` button can play the user-provided Mimi completion sound from `public/sounds/mimi-review-complete.m4a`. `plan_docs/PLAN_V1_STAGE7_7_FINAL_ACCEPTANCE.md` records the local final acceptance pass: core local validation, route / asset checks, API safety smoke checks, and a focused in-app browser Settings check passed. `plan_docs/PLAN_V1_STAGE7_8_DUAL_TRACK_UI_REFINEMENT.md` records the dual-track UI refinement: dashboard becomes a Today Hub with Recognition Vocabulary and Active Vocabulary cards, navigation（导航）centers daily learning, `/study` and `/practice-lab` become presentational route entries, Library prepares track filters and mastery labels, and the cat avatar becomes an accessible Home Brand Button. `plan_docs/PLAN_V1_STAGE7_9_DUAL_TRACK_DATA_IMPORT.md` records the accepted local data refinement: `learningTrack` and nullable `tags` became schema version 4 vocabulary fields, then the multi-meaning / multi-example correction upgrades browser-local data to schema version 5 with `meaningsZh` and `examples`; `/import` is the parent page for Single input and Batch JSON import, `/add` remains a compatibility redirect, Review settings store separate Recognition / Active daily limits, and the current review scheduler uses Recognition Vocabulary only. Theme and sound preferences remain UI-only and are not part of vocabulary data, review history, review settings, JSON backup, CSV export, Postgres tables, API payloads, or Production（生产环境）state. Stage 7.9 did not add AI API（人工智能接口）, dictation, spelling, writing feedback, external vocabulary sources, PTE / IELTS persisted classification, Production database migration, Production import, or Production deployment.
 
 The GitHub repository URL was provided by the user:
 
@@ -111,7 +111,7 @@ Current routes:
 Responsibilities:
 
 - add word or phrase
-- add Chinese meaning, example, PTE context, and notes
+- add one or more Chinese meanings, one or more examples, PTE context, and notes
 - record self-rated rarity
 - explicitly choose Recognition Vocabulary or Active Vocabulary at input time
 - allow nullable soft tags such as PTE, IELTS, Listening, Writing, and Spelling Risk
@@ -192,7 +192,7 @@ Current route: `/settings`. It can save separate Recognition / Active daily limi
 
 ### Storage Adapter
 
-Development storage currently uses browser `localStorage`（本地浏览器存储）through `src/lib/vocabulary/local-storage-repository.ts`. The local migration path upgrades schema version 1 / 2 / 3 vocabulary data to schema version 4 by adding review data, `people`, `selectedPersonId`, person-scoped learning records, per-person settings, `learningTrack`, nullable `tags`, and separate Recognition / Active limits. Existing vocabulary items default to `learningTrack: "recognition"` and `tags: null`. Production storage should use a Postgres provider suitable for Vercel deployment, specifically the accepted Neon Postgres path through Vercel Marketplace.
+Development storage currently uses browser `localStorage`（本地浏览器存储）through `src/lib/vocabulary/local-storage-repository.ts`. The local migration path upgrades schema version 1 / 2 / 3 / 4 vocabulary data to schema version 5 by adding review data, `people`, `selectedPersonId`, person-scoped learning records, per-person settings, `learningTrack`, nullable `tags`, `meaningsZh`, `examples`, and separate Recognition / Active limits. Existing vocabulary items default to `learningTrack: "recognition"` and `tags: null`; `meaningsZh` and `examples` are derived from legacy `meaningZh` / `example` strings when present. Production storage should use a Postgres provider suitable for Vercel deployment, specifically the accepted Neon Postgres path through Vercel Marketplace.
 
 Stage 5B storage decision:
 
@@ -348,15 +348,16 @@ There is no accepted password, OAuth, or credential-isolation requirement yet. A
 
 Current local implementation:
 
-- `VocabularyData.schemaVersion` is 4.
+- `VocabularyData.schemaVersion` is 5.
 - Local data includes `people` and `selectedPersonId`.
 - Vocabulary items, import batches, review states, and review events include `personId`.
-- Vocabulary items include required `learningTrack` and nullable `tags`.
+- Vocabulary items include required `learningTrack`, nullable `tags`, `meaningsZh`, and `examples`.
+- Legacy `meaningZh` and `example` remain as first-entry compatibility display fields for existing views and Postgres preview mapping.
 - Review settings are stored in `settingsByPerson` with legacy `sessionLimit`, `recognitionSessionLimit`, and `activeSessionLimit`.
 - `/settings` includes a minimal person switch and add-person control.
 - Local repository helpers filter active, archived, all-library, duplicate detection, review queues, and review writes by selected person.
-- Schema version 1 / 2 / 3 local data migrates into version 4 by assigning existing data to the default person and defaulting existing words to Recognition Vocabulary with `tags: null`.
-- JSON backup export uses version 4; JSON backup restore still accepts version 2 and 3 backups and migrates them to version 4.
+- Schema version 1 / 2 / 3 / 4 local data migrates into version 5 by assigning existing data to the default person, defaulting existing words to Recognition Vocabulary with `tags: null`, and deriving `meaningsZh` / `examples` from legacy `meaningZh` / `example` strings.
+- JSON backup export uses version 5; JSON backup restore still accepts version 2 / 3 / 4 backups and migrates them to version 5.
 
 ### Import And Export
 
@@ -367,7 +368,7 @@ Responsibilities:
 - defer `.docx` and PDF import until a later document-parsing stage
 - protect against duplicate imports, malformed rows, and timezone drift
 
-Current route: `/export`. It can download a complete schema version 4 JSON backup with metadata（元数据）, download a vocabulary CSV that includes `learningTrack` and `tags`, parse JSON backup files locally, show restore counts, and restore schema version 2 / 3 / 4 data after explicit confirmation when runtime is browser-local. JSON restore rejects malformed files, unsupported backup shapes, incomplete required fields, invalid review references, unsupported track / tag values, and missing metadata counts before mutating local browser storage. In `postgres-preview`, UI restore is disabled and formal backup import uses the guarded Stage 5M script path.
+Current route: `/export`. It can download a complete schema version 5 JSON backup with metadata（元数据）, download a vocabulary CSV that includes `learningTrack`, `tags`, `meaningsZh`, and `examples`, parse JSON backup files locally, show restore counts, and restore schema version 2 / 3 / 4 / 5 data after explicit confirmation when runtime is browser-local. JSON restore rejects malformed files, unsupported backup shapes, incomplete required fields, invalid review references, unsupported track / tag values, invalid multi-meaning / multi-example fields, and missing metadata counts before mutating local browser storage. In `postgres-preview`, UI restore is disabled and formal backup import uses the guarded Stage 5M script path.
 
 ### Backup Format
 
@@ -378,7 +379,7 @@ Stage 5A uses a local backup envelope:
 - `metadata`
 - `data`
 
-The `data` field contains the current `VocabularyData` schema version 4 shape. The metadata records app name, exported time, timezone, schema version, and counts for people, vocabulary items, archived items, import batches, review states, and review events. Schema version 4 vocabulary items include `learningTrack` and `tags`, and review settings include separate Recognition / Active daily limits.
+The `data` field contains the current `VocabularyData` schema version 5 shape. The metadata records app name, exported time, timezone, schema version, and counts for people, vocabulary items, archived items, import batches, review states, and review events. Schema version 5 vocabulary items include `learningTrack`, `tags`, `meaningsZh`, and `examples`, while legacy `meaningZh` / `example` remain for compatibility. Review settings include separate Recognition / Active daily limits.
 
 ### Deployment Boundary
 
@@ -390,7 +391,7 @@ This is the current development database schema model. It is applied only to the
 
 Stage 5F applied `db/migrations/0001_initial.sql` after explicit approval. Production execution still requires a separate confirmation.
 
-Stage 7.9 updates the browser-local and backup JSON data model to schema version 4. The Postgres draft below remains the already-applied Stage 5F development / preview schema; no Stage 7.9 remote database migration was executed.
+Stage 7.9 updates the browser-local and backup JSON data model to schema version 5. The Postgres draft below remains the already-applied Stage 5F development / preview schema; no Stage 7.9 remote database migration was executed. The Postgres preview adapter maps only the first `meaningsZh` / `examples` entry through the existing `meaning_zh` / `example` columns until a later approved database migration exists.
 
 ### Vocabulary Item
 
@@ -403,8 +404,10 @@ Stage 7.9 updates the browser-local and backup JSON data model to schema version
 - `context`
 - `notes`
 - `rarity_score`
-- browser-local schema version 4 field: `learningTrack`
-- browser-local schema version 4 field: nullable `tags`
+- browser-local schema version 5 field: `learningTrack`
+- browser-local schema version 5 field: nullable `tags`
+- browser-local schema version 5 field: `meaningsZh`
+- browser-local schema version 5 field: `examples`
 - `source`
 - `import_batch_id`
 - `created_at`

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { migrateVocabularyData } from "./local-storage-repository";
 
 describe("local storage vocabulary migration", () => {
-  it("migrates schema version 1 data to version 4 without dropping vocabulary", () => {
+  it("migrates schema version 1 data to version 5 without dropping vocabulary", () => {
     const migrated = migrateVocabularyData(
       {
         schemaVersion: 1,
@@ -42,13 +42,15 @@ describe("local storage vocabulary migration", () => {
       "2026-07-04T01:00:00.000Z",
     );
 
-    expect(migrated.schemaVersion).toBe(4);
+    expect(migrated.schemaVersion).toBe(5);
     expect(migrated.people).toHaveLength(1);
     expect(migrated.selectedPersonId).toBe("person_mimi");
     expect(migrated.items).toHaveLength(1);
     expect(migrated.items[0]?.personId).toBe("person_mimi");
     expect(migrated.items[0]?.learningTrack).toBe("recognition");
     expect(migrated.items[0]?.tags).toBeNull();
+    expect(migrated.items[0]?.meaningsZh).toEqual(["分配"]);
+    expect(migrated.items[0]?.examples).toEqual([]);
     expect(migrated.importBatches).toHaveLength(1);
     expect(migrated.importBatches[0]?.personId).toBe("person_mimi");
     expect(migrated.reviewStates).toEqual([]);
@@ -61,11 +63,62 @@ describe("local storage vocabulary migration", () => {
     });
   });
 
-  it("returns an empty version 4 shape for invalid data", () => {
+  it("migrates schema version 4 meaning and example strings into version 5 arrays", () => {
+    const migrated = migrateVocabularyData(
+      {
+        schemaVersion: 4,
+        people: [
+          {
+            id: "person_mimi",
+            displayName: "Mimi",
+            slug: "mimi",
+            isActive: true,
+            createdAt: "2026-07-04T00:00:00.000Z",
+            updatedAt: "2026-07-04T00:00:00.000Z",
+          },
+        ],
+        selectedPersonId: "person_mimi",
+        items: [
+          {
+            id: "vocab-1",
+            personId: "person_mimi",
+            surfaceText: "coherent",
+            normalizedText: "coherent",
+            meaningZh: "连贯的",
+            example: "Write a coherent paragraph.",
+            notes: "",
+            rarityScore: null,
+            learningTrack: "active",
+            tags: null,
+            source: "manual",
+            importBatchId: null,
+            status: "new",
+            createdAt: "2026-07-04T00:00:00.000Z",
+            systemCreatedAt: "2026-07-04T00:00:00.000Z",
+            updatedAt: "2026-07-04T00:00:00.000Z",
+            timezone: "Australia/Melbourne",
+            archivedAt: null,
+          },
+        ],
+        importBatches: [],
+        reviewStates: [],
+        reviewEvents: [],
+        settingsByPerson: [],
+        updatedAt: "2026-07-04T00:00:00.000Z",
+      },
+      "2026-07-04T01:00:00.000Z",
+    );
+
+    expect(migrated.schemaVersion).toBe(5);
+    expect(migrated.items[0]?.meaningsZh).toEqual(["连贯的"]);
+    expect(migrated.items[0]?.examples).toEqual(["Write a coherent paragraph."]);
+  });
+
+  it("returns an empty version 5 shape for invalid data", () => {
     const migrated = migrateVocabularyData("not-json", "2026-07-04T01:00:00.000Z");
 
     expect(migrated).toMatchObject({
-      schemaVersion: 4,
+      schemaVersion: 5,
       selectedPersonId: "person_mimi",
       items: [],
       importBatches: [],

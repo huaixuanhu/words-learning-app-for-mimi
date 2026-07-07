@@ -39,6 +39,10 @@ function isSameLocalDay(value: string, now = new Date()) {
   );
 }
 
+function getFirstMeaning(item: { meaningsZh: string[]; meaningZh: string }) {
+  return item.meaningsZh[0] ?? item.meaningZh;
+}
+
 export function HomeDashboard() {
   const { data, isLoaded } = useVocabularyData();
   const activeItems = getActiveVocabularyItems(data);
@@ -209,7 +213,7 @@ export function HomeDashboard() {
                     <p className="mimi-word-serif text-xl text-[#203229]">{item.surfaceText}</p>
                     <span className="mimi-pill px-2 py-1 text-xs font-semibold">Recognition</span>
                   </div>
-                  <p className="mt-1 text-sm leading-6 text-[#5f6d62]">{item.meaningZh || "No meaning yet"}</p>
+                  <p className="mt-1 text-sm leading-6 text-[#5f6d62]">{getFirstMeaning(item) || "No meaning yet"}</p>
                 </div>
               ))}
             </div>

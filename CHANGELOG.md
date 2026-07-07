@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## 2026-07-07 20:02 AEST
+
+- Refined Stage 7.9 batch JSON import semantics after user clarification.
+- Upgraded browser-local vocabulary data and JSON backup shape to schema version 5 with `meaningsZh` and `examples` arrays while preserving legacy `meaningZh` / `example` compatibility display fields.
+- Batch JSON now requires at least one meaning and one example per item, accepts unlimited entries, accepts legacy single-string fields for compatibility, and keeps `rarityScore` optional / nullable.
+- Updated `/import` sample and preview editing so meanings and examples are edited as multi-line lists.
+- Updated Library search/edit/display, Review answer display, Latest words summary, JSON backup validation, CSV export, local migration, Postgres preview mapping, and tests for the multi-meaning / multi-example model.
+- Kept Review scheduling Recognition-only and did not add AI API（人工智能接口）, dictation, spelling, writing feedback, remote database migration, Production import, Production deployment, or Postgres schema columns.
+- Verified local validation: `npm run typecheck`, `npm run test`, `npm run lint`, `npm run backup:dry-run:fixture`, `git diff --check`, `npm run build`, localhost route smoke checks for `/`, `/import`, `/library`, `/review`, and `/export`, and `npm run governance:preflight`.
+- Reason: make batch JSON directly support multiple meanings/examples as first-class V1 local data while keeping the current calm UI and existing scheduler / Production boundaries.
+
 ## 2026-07-07 16:17 AEST
 
 - Tightened the Dashboard composition after user visual review.

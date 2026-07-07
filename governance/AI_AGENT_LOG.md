@@ -1,5 +1,62 @@
 # AI Agent Log
 
+## 2026-07-07 20:02 AEST
+
+- Task: refine Stage 7.9 batch JSON import after the user clarified that `meaningZh` and `example` should be at least one entry but unlimited, and asked what `rarityScore` does and whether it can be `null`.
+- Plan agreed: yes. The user confirmed updating the corresponding docs first, then implementing. Scope was local documentation, browser-local data schema, import UI, backup/export, migration, and tests.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE7_9_DUAL_TRACK_DATA_IMPORT.md`
+  - `plan_docs/PLAN_V1_STAGE7_UI_VISUAL_DESIGN.md`
+  - `src/components/add-word-form.tsx`
+  - `src/components/review/review-session.tsx`
+  - `src/components/vocabulary/home-dashboard.tsx`
+  - `src/components/vocabulary/import-workspace.tsx`
+  - `src/components/vocabulary/vocabulary-library.tsx`
+  - `src/lib/backup/csv-export.test.ts`
+  - `src/lib/backup/csv-export.ts`
+  - `src/lib/backup/json-backup.test.ts`
+  - `src/lib/backup/json-backup.ts`
+  - `src/lib/storage/postgres/mappers.test.ts`
+  - `src/lib/storage/postgres/mappers.ts`
+  - `src/lib/storage/postgres/repository.ts`
+  - `src/lib/vocabulary/import-parser.test.ts`
+  - `src/lib/vocabulary/import-parser.ts`
+  - `src/lib/vocabulary/local-storage-repository.test.ts`
+  - `src/lib/vocabulary/local-storage-repository.ts`
+  - `src/lib/vocabulary/normalize.ts`
+  - `src/lib/vocabulary/repository.test.ts`
+  - `src/lib/vocabulary/repository.ts`
+  - `src/lib/vocabulary/types.ts`
+- Reason: make multiple Chinese meanings and examples first-class V1 local data for Batch JSON import（批量 JSON 导入）while keeping Recognition Vocabulary（阅读词汇）review scheduling, Active Vocabulary（输出词汇）future readiness, and Production（生产环境）boundaries unchanged.
+- Implementation notes:
+  - Updated Stage 7.9 docs first to define schema version 5, `meaningsZh: string[]`, `examples: string[]`, legacy `meaningZh` / `example` compatibility fields, nullable `tags`, and nullable `rarityScore`.
+  - Added `normalizeTextList()` and upgraded `VocabularyData` to schema version 5.
+  - Migrated schema version 1 / 2 / 3 / 4 local data into schema version 5 by deriving `meaningsZh` / `examples` from legacy strings.
+  - Made Batch JSON import accept `meaningsZh` / `examples` arrays, reject missing or empty arrays, accept legacy single-string fields, and keep `rarityScore` nullable.
+  - Changed the `/import` sample and preview table so meanings and examples can be edited as newline-separated lists.
+  - Updated Library editing / search / display and Review answer display to use the full arrays.
+  - Updated JSON backup validation and CSV export to preserve `meaningsZh` and `examples`.
+  - Kept the Postgres preview adapter compatible with the existing Stage 5F database schema by mapping only the first meaning/example through existing columns. No database migration was executed.
+- Validation:
+  - Passed: `npm run typecheck`.
+  - Passed: `npm run test` with 14 files and 55 tests.
+  - Passed: `npm run lint`.
+  - Passed: `npm run backup:dry-run:fixture`.
+  - Passed: `git diff --check`.
+  - Passed: `npm run build`.
+  - Passed: local route smoke for `/`, `/import`, `/library`, `/review`, and `/export`.
+  - Passed: `npm run governance:preflight`.
+- Residual risks:
+  - Browser-side tab interaction was not re-run; HTTP route smoke and build verification passed.
+  - The Postgres preview database still has the Stage 5F schema and therefore cannot persist all array entries until a later explicitly approved database migration.
+- Safety notes: local documentation, local browser-storage schema, local UI, local tests, and read-only local validation only. No Vercel command, Neon command, remote database command, env var read/change, GitHub push, merge to `main`, Production deployment, Production migration, Production import, formal user backup import, AI API, dictation engine（听写引擎）, spelling checker（拼写检查器）, writing feedback model, external vocabulary source, authentication（认证）, analytics（分析追踪）, notification, background audio, email, or 付费/扣款 feature was performed.
+
 ## 2026-07-07 16:17 AEST
 
 - Task: tighten the Dashboard UI（用户界面）composition after the user reported that the feature frames were still too large and not symmetrical enough.

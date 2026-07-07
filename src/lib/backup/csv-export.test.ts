@@ -29,11 +29,13 @@ describe("vocabulary CSV export", () => {
     const csv = exportVocabularyCsv(result.data);
 
     expect(csv.split("\n")[0]).toBe(
-      "personId,personDisplayName,id,surfaceText,normalizedText,meaningZh,example,notes,rarityScore,learningTrack,tags,source,importBatchId,status,createdAt,systemCreatedAt,updatedAt,timezone,archivedAt",
+      "personId,personDisplayName,id,surfaceText,normalizedText,meaningZh,meaningsZh,example,examples,notes,rarityScore,learningTrack,tags,source,importBatchId,status,createdAt,systemCreatedAt,updatedAt,timezone,archivedAt",
     );
     expect(csv).toContain("person_mimi,Mimi");
     expect(csv).toContain('"allocate, ""time"" card"');
     expect(csv).toContain("active,PTE|Writing");
     expect(csv).toContain("分配 时间");
+    expect(csv).toContain('"[""分配 时间""]"');
+    expect(csv).toContain('"[""Allocate time wisely.""]"');
   });
 });

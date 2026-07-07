@@ -4,12 +4,14 @@ import {
   normalizeLearningTrack,
   normalizeOptionalText,
   normalizeRarityScore,
+  normalizeTextList,
   validateSurfaceText,
   validateVocabularyTags,
 } from "./normalize";
 
 type ParseTextImportOptions = {
   existingNormalizedTexts?: Iterable<string>;
+  requireMeaningAndExample?: boolean;
 };
 
 type RawCandidate = {
@@ -127,12 +129,34 @@ function getCandidateStatus(errors: string[], duplicate: boolean): ImportCandida
     errors.includes("sentence_like") ||
     errors.includes("invalid_track") ||
     errors.includes("invalid_tags") ||
-    errors.includes("unsupported_tag")
+    errors.includes("unsupported_tag") ||
+    errors.includes("invalid_json") ||
+    errors.includes("missing_items") ||
+    errors.includes("missing_meaning") ||
+    errors.includes("missing_example")
   ) {
     return "invalid" as const;
   }
 
   return duplicate ? "duplicate" : "new";
+}
+
+function normalizeCandidateLists(candidate: Pick<ImportCandidate, "meaningZh" | "meaningsZh" | "example" | "examples">) {
+  const meaningsZh = normalizeTextList(
+    Array.isArray(candidate.meaningsZh) && candidate.meaningsZh.length
+      ? candidate.meaningsZh
+      : candidate.meaningZh,
+  );
+  const examples = normalizeTextList(
+    Array.isArray(candidate.examples) && candidate.examples.length ? candidate.examples : candidate.example,
+  );
+
+  return {
+    meaningsZh,
+    meaningZh: meaningsZh[0] ?? normalizeOptionalText(candidate.meaningZh),
+    examples,
+    example: examples[0] ?? normalizeOptionalText(candidate.example),
+  };
 }
 
 export function recomputeImportCandidates(
@@ -145,13 +169,18 @@ export function recomputeImportCandidates(
   return candidates.map((candidate) => {
     const validation = validateSurfaceText(candidate.surfaceText);
     const tagValidation = validateVocabularyTags(candidate.tags);
+    const textLists = normalizeCandidateLists(candidate);
     const carriedErrors = candidate.errors.filter((error) => error === "invalid_track");
     const duplicate =
       validation.normalizedText &&
       (existing.has(validation.normalizedText) || seen.has(validation.normalizedText));
+    const listErrors = [
+      ...(options.requireMeaningAndExample && !textLists.meaningsZh.length ? ["missing_meaning"] : []),
+      ...(options.requireMeaningAndExample && !textLists.examples.length ? ["missing_example"] : []),
+    ];
     const errors = duplicate
-      ? [...validation.errors, ...tagValidation.errors, ...carriedErrors, "duplicate"]
-      : [...validation.errors, ...tagValidation.errors, ...carriedErrors];
+      ? [...validation.errors, ...tagValidation.errors, ...listErrors, ...carriedErrors, "duplicate"]
+      : [...validation.errors, ...tagValidation.errors, ...listErrors, ...carriedErrors];
 
     if (validation.normalizedText) {
       seen.add(validation.normalizedText);
@@ -161,6 +190,7 @@ export function recomputeImportCandidates(
       ...candidate,
       surfaceText: validation.surfaceText,
       normalizedText: validation.normalizedText,
+      ...textLists,
       learningTrack: normalizeLearningTrack(candidate.learningTrack),
       tags: tagValidation.tags,
       status: getCandidateStatus(errors, Boolean(duplicate)),
@@ -202,7 +232,9 @@ export function parseTextImport(text: string, options: ParseTextImportOptions = 
         surfaceText: validation.surfaceText,
         normalizedText: validation.normalizedText,
         meaningZh: normalizeOptionalText(rawCandidate.meaningZh),
+        meaningsZh: normalizeTextList(rawCandidate.meaningZh),
         example: normalizeOptionalText(rawCandidate.example),
+        examples: normalizeTextList(rawCandidate.example),
         notes: normalizeOptionalText(rawCandidate.notes),
         rarityScore: normalizeRarityScore(rawCandidate.rarityScore),
         learningTrack: normalizeLearningTrack(rawCandidate.learningTrack),
@@ -250,7 +282,9 @@ export function parseJsonImport(text: string, options: ParseTextImportOptions = 
         surfaceText: "",
         normalizedText: "",
         meaningZh: "",
+        meaningsZh: [],
         example: "",
+        examples: [],
         notes: "",
         rarityScore: null,
         learningTrack: "recognition" as const,
@@ -272,7 +306,9 @@ export function parseJsonImport(text: string, options: ParseTextImportOptions = 
         surfaceText: "",
         normalizedText: "",
         meaningZh: "",
+        meaningsZh: [],
         example: "",
+        examples: [],
         notes: "",
         rarityScore: null,
         learningTrack: "recognition" as const,
@@ -288,10 +324,20 @@ export function parseJsonImport(text: string, options: ParseTextImportOptions = 
     const rawTrack = record.track ?? record.learningTrack;
     const validation = validateSurfaceText(readString(record.word ?? record.surfaceText));
     const tagValidation = validateVocabularyTags(record.tags);
+    const meaningsZh = normalizeTextList(record.meaningsZh ?? record.meaningZh);
+    const examples = normalizeTextList(record.examples ?? record.example);
     const errors = [...validation.errors, ...tagValidation.errors];
 
     if (!isLearningTrack(rawTrack)) {
       errors.push("invalid_track");
+    }
+
+    if (!meaningsZh.length) {
+      errors.push("missing_meaning");
+    }
+
+    if (!examples.length) {
+      errors.push("missing_example");
     }
 
     return {
@@ -300,8 +346,10 @@ export function parseJsonImport(text: string, options: ParseTextImportOptions = 
       rawLine: JSON.stringify(item),
       surfaceText: validation.surfaceText,
       normalizedText: validation.normalizedText,
-      meaningZh: normalizeOptionalText(readString(record.meaningZh)),
-      example: normalizeOptionalText(readString(record.example)),
+      meaningZh: meaningsZh[0] ?? "",
+      meaningsZh,
+      example: examples[0] ?? "",
+      examples,
       notes: normalizeOptionalText(readString(record.notes)),
       rarityScore: normalizeRarityScore(record.rarityScore as number | string | null | undefined),
       learningTrack: normalizeLearningTrack(rawTrack),
@@ -311,7 +359,7 @@ export function parseJsonImport(text: string, options: ParseTextImportOptions = 
     };
   });
 
-  return recomputeImportCandidates(candidates, options);
+  return recomputeImportCandidates(candidates, { ...options, requireMeaningAndExample: true });
 }
 
 export function summarizeImportCandidates(candidates: ImportCandidate[]) {

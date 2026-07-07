@@ -19,6 +19,10 @@ function getItemById(dataItems: ReturnType<typeof getRecognitionVocabularyItems>
   return dataItems.find((item) => item.id === id);
 }
 
+function getDisplayList(values: string[], fallback: string) {
+  return values.length ? values : fallback ? [fallback] : [];
+}
+
 export function ReviewSession() {
   const { data, isLoaded, commit } = useVocabularyData();
   const { settings: soundSettings } = useMimiSound();
@@ -59,6 +63,8 @@ export function ReviewSession() {
   }, [buildSessionIds, isLoaded, selectedPersonId, sessionIds, sessionPersonId]);
 
   const currentItem = sessionIds?.length ? getItemById(recognitionItems, sessionIds[0]) : null;
+  const currentMeanings = currentItem ? getDisplayList(currentItem.meaningsZh, currentItem.meaningZh) : [];
+  const currentExamples = currentItem ? getDisplayList(currentItem.examples, currentItem.example) : [];
   const sessionTotal = completedCount + (sessionIds?.length ?? 0);
   const remainingCount = sessionIds?.length ?? 0;
   const progressPercent = sessionTotal ? Math.round((completedCount / sessionTotal) * 100) : 0;
@@ -175,12 +181,24 @@ export function ReviewSession() {
                     >
                       <div>
                         <p className="text-xs font-semibold uppercase text-[#879087]">Meaning</p>
-                        <p className="mt-1 text-lg font-semibold text-[#203229]">{currentItem.meaningZh || "No meaning yet"}</p>
+                        {currentMeanings.length ? (
+                          <div className="mt-1 grid gap-1 text-lg font-semibold text-[#203229]">
+                            {currentMeanings.map((meaning, index) => (
+                              <p key={`${currentItem.id}-meaning-${index}`}>{meaning}</p>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="mt-1 text-lg font-semibold text-[#203229]">No meaning yet</p>
+                        )}
                       </div>
-                      {currentItem.example ? (
+                      {currentExamples.length ? (
                         <div>
                           <p className="text-xs font-semibold uppercase text-[#879087]">Example</p>
-                          <p className="mt-1 text-sm leading-6 text-[#5f6d62]">{currentItem.example}</p>
+                          <div className="mt-1 grid gap-1 text-sm leading-6 text-[#5f6d62]">
+                            {currentExamples.map((example, index) => (
+                              <p key={`${currentItem.id}-example-${index}`}>{example}</p>
+                            ))}
+                          </div>
                         </div>
                       ) : null}
                       {currentItem.notes ? (

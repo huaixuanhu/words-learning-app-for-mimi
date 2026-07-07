@@ -73,7 +73,7 @@ This child plan refines the local Stage 7 UI（用户界面）composition around
 
 Stage 7.9 is documented in `plan_docs/PLAN_V1_STAGE7_9_DUAL_TRACK_DATA_IMPORT.md`.
 
-This child plan connects the accepted Stage 7.8 Recognition / Active information architecture to local V1 data semantics. It upgrades browser-local storage and JSON backup to schema version 4 with `learningTrack` and nullable `tags`, moves single input and batch JSON import under `/import`, keeps `/add` as a compatibility redirect, adds separate Recognition / Active daily limits in Settings, and keeps current review scheduling limited to Recognition Vocabulary. It does not add AI API, dictation, spelling, writing feedback, remote database migration, Production import, Production deployment, or external vocabulary sources.
+This child plan connects the accepted Stage 7.8 Recognition / Active information architecture to local V1 data semantics. It upgrades browser-local storage and JSON backup to schema version 5 with `learningTrack`, nullable `tags`, `meaningsZh`, and `examples`, moves single input and batch JSON import under `/import`, keeps `/add` as a compatibility redirect, adds separate Recognition / Active daily limits in Settings, and keeps current review scheduling limited to Recognition Vocabulary. Batch JSON requires at least one meaning and one example per item, while `rarityScore` remains optional and nullable. It does not add AI API, dictation, spelling, writing feedback, remote database migration, Production import, Production deployment, or external vocabulary sources.
 
 ## Prompt Drift Boundary
 

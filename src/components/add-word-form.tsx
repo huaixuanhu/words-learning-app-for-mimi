@@ -4,7 +4,12 @@ import { CalendarClock, ChevronDown, Save } from "lucide-react";
 import type { FormEvent } from "react";
 import { useEffect, useState } from "react";
 import { useVocabularyData } from "@/components/vocabulary/use-vocabulary-data";
-import { VOCABULARY_TAGS, normalizeRarityScore, normalizeVocabularyTags } from "@/lib/vocabulary/normalize";
+import {
+  VOCABULARY_TAGS,
+  normalizeRarityScore,
+  normalizeTextList,
+  normalizeVocabularyTags,
+} from "@/lib/vocabulary/normalize";
 import { addVocabularyItem } from "@/lib/vocabulary/repository";
 import type { LearningTrack, NewVocabularyInput, VocabularyTag } from "@/lib/vocabulary/types";
 import { PressableButton } from "@/components/ui/motion-primitives";
@@ -44,7 +49,9 @@ export function AddWordForm() {
       const input: NewVocabularyInput = {
         surfaceText: String(formData.get("word_or_phrase") ?? ""),
         meaningZh: String(formData.get("meaning_zh") ?? ""),
+        meaningsZh: normalizeTextList(String(formData.get("meaning_zh") ?? "")),
         example: String(formData.get("example") ?? ""),
+        examples: normalizeTextList(String(formData.get("example") ?? "")),
         notes: String(formData.get("notes") ?? ""),
         rarityScore: normalizeRarityScore(rarityScore),
         learningTrack,

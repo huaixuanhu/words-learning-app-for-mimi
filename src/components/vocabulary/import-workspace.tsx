@@ -13,6 +13,7 @@ import { commitImportCandidates, getExistingNormalizedTexts, addVocabularyItem }
 import {
   VOCABULARY_TAGS,
   normalizeRarityScore,
+  normalizeTextList,
   normalizeVocabularyTags,
 } from "@/lib/vocabulary/normalize";
 import { useVocabularyData } from "./use-vocabulary-data";
@@ -23,18 +24,21 @@ const JSON_IMPORT_SAMPLE = `{
     {
       "word": "allocate",
       "track": "recognition",
-      "meaningZh": "分配",
-      "example": "The tutor allocated extra practice time.",
+      "meaningsZh": ["分配", "拨出时间或资源"],
+      "examples": [
+        "The tutor allocated extra practice time.",
+        "The budget allocates more money to language support."
+      ],
       "tags": ["PTE"],
       "rarityScore": 3
     },
     {
       "word": "coherent",
       "track": "active",
-      "meaningZh": "连贯的",
-      "example": "Write a coherent paragraph using this word.",
+      "meaningsZh": ["连贯的", "条理清楚的"],
+      "examples": ["Write a coherent paragraph using this word."],
       "tags": null,
-      "rarityScore": 4
+      "rarityScore": null
     }
   ]
 }`;
@@ -45,6 +49,14 @@ function detectTimezone() {
 
 function trackLabel(track: LearningTrack) {
   return track === "active" ? "Active" : "Recognition";
+}
+
+function toMultilineText(values: string[]) {
+  return values.join("\n");
+}
+
+function fromMultilineText(value: string) {
+  return normalizeTextList(value.split(/\r?\n/));
 }
 
 type ImportMode = "single" | "batch";
@@ -96,6 +108,7 @@ export function ImportWorkspace() {
 
       return recomputeImportCandidates(patched, {
         existingNormalizedTexts: getExistingNormalizedTexts(data),
+        requireMeaningAndExample: true,
       });
     });
   };
@@ -126,7 +139,9 @@ export function ImportWorkspace() {
       const input = {
         surfaceText: String(formData.get("word_or_phrase") ?? ""),
         meaningZh: String(formData.get("meaning_zh") ?? ""),
+        meaningsZh: normalizeTextList(String(formData.get("meaning_zh") ?? "")),
         example: String(formData.get("example") ?? ""),
+        examples: normalizeTextList(String(formData.get("example") ?? "")),
         notes: String(formData.get("notes") ?? ""),
         rarityScore: normalizeRarityScore(singleRarityScore),
         learningTrack: singleTrack,
@@ -350,8 +365,11 @@ export function ImportWorkspace() {
                 <p className="mt-2">
                   可以使用对话 AI 根据这个 JSON 文件格式整理词汇。整理后的 JSON 可以被本 app 直接读取并入库。
                 </p>
+                  <p className="mt-3">
+                  `track` 必须是 `recognition` 或 `active`。`meaningsZh` 和 `examples` 都是数组，至少需要 1 条，不限制数量。
+                </p>
                 <p className="mt-3">
-                  `track` 必须是 `recognition` 或 `active`。`tags` 可以是数组、`null`，也可以省略后归一为 `null`。
+                  `tags` 可以是数组、`null`，也可以省略后归一为 `null`。`rarityScore` 可以是 1-5，也可以是 `null`。
                 </p>
               </aside>
             </div>
@@ -395,7 +413,7 @@ export function ImportWorkspace() {
 
             {candidates.length ? (
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[1080px] border-collapse text-left text-sm">
+                <table className="w-full min-w-[1180px] border-collapse text-left text-sm">
                   <thead>
                     <tr className="border-b border-[#d8d1c2] text-[#5f6d62]">
                       <th className="py-2 pr-3 font-medium">Save</th>
@@ -443,17 +461,33 @@ export function ImportWorkspace() {
                           />
                         </td>
                         <td className="py-2 pr-3">
-                          <input
-                            value={candidate.meaningZh}
-                            onChange={(event) => updateCandidate(candidate.tempId, { meaningZh: event.target.value })}
-                            className="mimi-input min-h-9 w-full px-2"
+                          <textarea
+                            value={toMultilineText(candidate.meaningsZh)}
+                            onChange={(event) => {
+                              const meaningsZh = fromMultilineText(event.target.value);
+
+                              updateCandidate(candidate.tempId, {
+                                meaningZh: meaningsZh[0] ?? "",
+                                meaningsZh,
+                              });
+                            }}
+                            rows={3}
+                            className="mimi-input min-h-24 w-full resize-y px-2 py-2"
                           />
                         </td>
                         <td className="py-2 pr-3">
-                          <input
-                            value={candidate.example}
-                            onChange={(event) => updateCandidate(candidate.tempId, { example: event.target.value })}
-                            className="mimi-input min-h-9 w-full px-2"
+                          <textarea
+                            value={toMultilineText(candidate.examples)}
+                            onChange={(event) => {
+                              const examples = fromMultilineText(event.target.value);
+
+                              updateCandidate(candidate.tempId, {
+                                example: examples[0] ?? "",
+                                examples,
+                              });
+                            }}
+                            rows={3}
+                            className="mimi-input min-h-24 w-full resize-y px-2 py-2"
                           />
                         </td>
                         <td className="min-w-56 py-2 pr-3">

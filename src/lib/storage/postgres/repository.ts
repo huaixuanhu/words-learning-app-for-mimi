@@ -29,6 +29,7 @@ import {
   normalizeLearningTrack,
   normalizeOptionalText,
   normalizeRarityScore,
+  normalizeTextList,
   normalizeVocabularyTags,
   normalizeSurfaceText,
 } from "@/lib/vocabulary/normalize";
@@ -334,7 +335,7 @@ async function buildVocabularyDataSnapshot(
   ]);
 
   return {
-    schemaVersion: 4,
+    schemaVersion: 5,
     people: [person],
     selectedPersonId: context.personId,
     items,
@@ -383,7 +384,7 @@ export async function getPostgresVocabularyDataSnapshot(
   );
 
   return {
-    schemaVersion: 4,
+    schemaVersion: 5,
     people,
     selectedPersonId: selected,
     items: perPersonData.flatMap((entry) => entry.items),
@@ -531,13 +532,27 @@ function buildUpdatedVocabularyItem(
     throw new Error("surfaceText is required");
   }
 
+  const legacyMeaning =
+    input.meaningZh === undefined ? currentItem.meaningZh : normalizeOptionalText(input.meaningZh);
+  const meaningsZh =
+    input.meaningZh === undefined && input.meaningsZh === undefined
+      ? currentItem.meaningsZh
+      : normalizeTextList(input.meaningsZh?.length ? input.meaningsZh : legacyMeaning);
+  const legacyExample =
+    input.example === undefined ? currentItem.example : normalizeOptionalText(input.example);
+  const examples =
+    input.example === undefined && input.examples === undefined
+      ? currentItem.examples
+      : normalizeTextList(input.examples?.length ? input.examples : legacyExample);
+
   return {
     ...currentItem,
     surfaceText,
     normalizedText: normalizeSurfaceText(surfaceText),
-    meaningZh:
-      input.meaningZh === undefined ? currentItem.meaningZh : normalizeOptionalText(input.meaningZh),
-    example: input.example === undefined ? currentItem.example : normalizeOptionalText(input.example),
+    meaningZh: meaningsZh[0] ?? legacyMeaning,
+    meaningsZh,
+    example: examples[0] ?? legacyExample,
+    examples,
     notes: input.notes === undefined ? currentItem.notes : normalizeOptionalText(input.notes),
     rarityScore:
       input.rarityScore === undefined ? currentItem.rarityScore : normalizeRarityScore(input.rarityScore),
@@ -822,7 +837,9 @@ export function createPostgresRepository(): DurableRepositoryPort {
               id: randomUUID(),
               surfaceText: candidate.surfaceText,
               meaningZh: candidate.meaningZh,
+              meaningsZh: candidate.meaningsZh,
               example: candidate.example,
+              examples: candidate.examples,
               rarityScore: candidate.rarityScore,
               notes: candidate.notes,
               learningTrack: candidate.learningTrack,
@@ -858,7 +875,7 @@ export function createPostgresRepository(): DurableRepositoryPort {
           getReviewSettings(queryable, context),
         ]);
         const data: VocabularyData = {
-          schemaVersion: 4,
+          schemaVersion: 5,
           people: [person],
           selectedPersonId: context.personId,
           items,
