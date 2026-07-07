@@ -1,5 +1,29 @@
 # AI Agent Log
 
+## 2026-07-07 16:17 AEST
+
+- Task: tighten the Dashboard UI（用户界面）composition after the user reported that the feature frames were still too large and not symmetrical enough.
+- Plan agreed: yes. The user confirmed a narrow local Dashboard-only polish: reduce feature-frame size, improve symmetry, preserve the soft sage calm style, and avoid data/model/routing changes.
+- Changed files:
+  - `CHANGELOG.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `src/components/vocabulary/home-dashboard.tsx`
+- Reason: make the Today Hub feel more compact and balanced without changing Recognition Vocabulary（阅读词汇）/ Active Vocabulary（输出词汇）semantics, import behavior, review scheduling, storage schema, API（应用程序接口）, or Production（生产环境）state.
+- Implementation notes:
+  - Constrained the Dashboard content to a local `max-w-5xl` composition.
+  - Reduced Today Hub panel padding, track card padding, card gap, icon size, progress bar height, and button height.
+  - Set the Recognition / Active track cards to matching minimum height and bottom-aligned primary actions.
+  - Tightened the Review schedule card spacing and metric row height.
+  - Reworked the lower area into three equal compact cards: Latest words, Practice Lab, and Quiet tools.
+- Validation:
+  - Passed: `npm run lint`.
+  - Passed: `npm run typecheck`.
+  - Passed: `npm run test` with 14 files and 52 tests.
+  - Passed: `npm run build`.
+  - Passed: local route smoke for `/`, confirming Today Hub, Practice Lab, and Quiet tools render.
+  - Passed: `git diff --check`.
+- Safety notes: local Dashboard visual composition and documentation only. No vocabulary data mutation, import parser change, review scheduler change, storage schema change, API payload change, database command, Vercel command, Neon command, env var read/change, GitHub push, merge to `main`, Production deployment, AI API（人工智能接口）, analytics（分析追踪）, notification, email, or 付费/扣款 feature was performed.
+
 ## 2026-07-07 00:35 AEST
 
 - Task: execute the confirmed Stage 7.9 dual-track data/import refinement after the user accepted Stage 7.8 overall and requested three changes: separate Recognition / Active daily limits, remove Study's add-material card and route main add/import flows into `/import`, and require explicit Recognition / Active classification during single or batch import with JSON batch input and nullable tags.

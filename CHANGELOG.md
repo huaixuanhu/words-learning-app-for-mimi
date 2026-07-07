@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 2026-07-07 16:17 AEST
+
+- Tightened the Dashboard composition after user visual review.
+- Reduced Today Hub panel padding, track-card spacing, icon size, progress height, and button height to make the feature frames feel lighter.
+- Rebalanced the top dashboard grid to a more compact main area plus a narrower Review schedule column.
+- Changed the lower dashboard section into three equal-width compact cards for Latest words, Practice Lab, and Quiet tools.
+- Reason: keep the existing soft sage calm style while making the homepage less oversized and more symmetrical.
+
 ## 2026-07-07 00:35 AEST
 
 - Executed Stage 7.9 dual-track data/import refinement locally.
