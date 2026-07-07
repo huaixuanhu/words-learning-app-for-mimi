@@ -19,11 +19,13 @@ import {
 import {
   cleanSurfaceText,
   normalizeOptionalText,
+  normalizeLearningTrack,
   normalizeRarityScore,
   normalizeSurfaceText,
+  normalizeVocabularyTags,
 } from "./normalize";
 
-export const VOCABULARY_SCHEMA_VERSION = 3;
+export const VOCABULARY_SCHEMA_VERSION = 4;
 
 export function createEmptyVocabularyData(now = new Date().toISOString()): VocabularyData {
   const person = createDefaultPerson(now);
@@ -60,6 +62,14 @@ export function getActiveVocabularyItems(data: VocabularyData) {
   return data.items.filter(
     (item) => item.personId === personId && !item.archivedAt && item.status !== "archived",
   );
+}
+
+export function getRecognitionVocabularyItems(data: VocabularyData) {
+  return getActiveVocabularyItems(data).filter((item) => item.learningTrack === "recognition");
+}
+
+export function getActiveTrackVocabularyItems(data: VocabularyData) {
+  return getActiveVocabularyItems(data).filter((item) => item.learningTrack === "active");
 }
 
 export function getArchivedVocabularyItems(data: VocabularyData) {
@@ -100,6 +110,8 @@ export function buildVocabularyItem(input: NewVocabularyInput, now = new Date().
     example: normalizeOptionalText(input.example),
     notes: normalizeOptionalText(input.notes),
     rarityScore: normalizeRarityScore(input.rarityScore),
+    learningTrack: normalizeLearningTrack(input.learningTrack),
+    tags: normalizeVocabularyTags(input.tags),
     source: input.source,
     importBatchId: input.importBatchId ?? null,
     status: "new",
@@ -160,6 +172,9 @@ export function updateVocabularyItem(
     notes: input.notes === undefined ? currentItem.notes : normalizeOptionalText(input.notes),
     rarityScore:
       input.rarityScore === undefined ? currentItem.rarityScore : normalizeRarityScore(input.rarityScore),
+    learningTrack:
+      input.learningTrack === undefined ? currentItem.learningTrack : normalizeLearningTrack(input.learningTrack),
+    tags: input.tags === undefined ? currentItem.tags : normalizeVocabularyTags(input.tags),
     createdAt: input.createdAt ?? currentItem.createdAt,
     timezone: input.timezone ?? currentItem.timezone,
     updatedAt: now,
@@ -244,9 +259,11 @@ export function commitImportCandidates(
         surfaceText: candidate.surfaceText,
         meaningZh: candidate.meaningZh,
         example: candidate.example,
-        notes: "",
+        notes: candidate.notes,
         rarityScore: candidate.rarityScore,
-        source: batch.sourceType === "txt_file" ? "txt_file" : "pasted_text",
+        learningTrack: candidate.learningTrack,
+        tags: candidate.tags,
+        source: batch.sourceType,
         importBatchId: batch.id,
         personId,
         timezone,

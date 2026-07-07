@@ -26,8 +26,10 @@ import { scheduleNextReview, selectReviewQueue } from "@/lib/review/scheduler";
 import type { PersonReviewSettings, ReviewState } from "@/lib/review/types";
 import {
   cleanSurfaceText,
+  normalizeLearningTrack,
   normalizeOptionalText,
   normalizeRarityScore,
+  normalizeVocabularyTags,
   normalizeSurfaceText,
 } from "@/lib/vocabulary/normalize";
 import { buildPerson, type NewPersonInput } from "@/lib/people/repository";
@@ -332,7 +334,7 @@ async function buildVocabularyDataSnapshot(
   ]);
 
   return {
-    schemaVersion: 3,
+    schemaVersion: 4,
     people: [person],
     selectedPersonId: context.personId,
     items,
@@ -381,7 +383,7 @@ export async function getPostgresVocabularyDataSnapshot(
   );
 
   return {
-    schemaVersion: 3,
+    schemaVersion: 4,
     people,
     selectedPersonId: selected,
     items: perPersonData.flatMap((entry) => entry.items),
@@ -539,6 +541,9 @@ function buildUpdatedVocabularyItem(
     notes: input.notes === undefined ? currentItem.notes : normalizeOptionalText(input.notes),
     rarityScore:
       input.rarityScore === undefined ? currentItem.rarityScore : normalizeRarityScore(input.rarityScore),
+    learningTrack:
+      input.learningTrack === undefined ? currentItem.learningTrack : normalizeLearningTrack(input.learningTrack),
+    tags: input.tags === undefined ? currentItem.tags : normalizeVocabularyTags(input.tags),
     createdAt: input.createdAt ?? currentItem.createdAt,
     timezone: input.timezone ?? currentItem.timezone,
     updatedAt: context.now,
@@ -662,13 +667,18 @@ async function setVocabularyArchiveState(
 async function updateReviewSettings(
   queryable: PostgresQueryable,
   context: TimestampedPersonContext,
-  input: Pick<PersonReviewSettings, "sessionLimit" | "timezone">,
+  input: Pick<
+    PersonReviewSettings,
+    "sessionLimit" | "recognitionSessionLimit" | "activeSessionLimit" | "timezone"
+  >,
 ) {
   assertPersonContext(context);
 
   const settings = normalizeReviewSettings(
     {
-      sessionLimit: input.sessionLimit,
+      sessionLimit: input.recognitionSessionLimit ?? input.sessionLimit,
+      recognitionSessionLimit: input.recognitionSessionLimit ?? input.sessionLimit,
+      activeSessionLimit: input.activeSessionLimit,
       timezone: input.timezone,
     },
     context.now,
@@ -765,6 +775,7 @@ export function createPostgresRepository(): DurableRepositoryPort {
           (candidate) => acceptedIds.has(candidate.tempId) && candidate.status !== "invalid",
         );
         const batchId = databaseUuid(batchInput.id, "importBatch.id");
+        const persistedSourceType = batchInput.sourceType === "txt_file" ? "txt_file" : "pasted_text";
         const transactionResult = await withPostgresTransaction(async (client) => {
           const batchResult = await client.query<ImportBatchRow>(
             `
@@ -794,7 +805,7 @@ export function createPostgresRepository(): DurableRepositoryPort {
             [
               batchId,
               context.personId,
-              batchInput.sourceType,
+              persistedSourceType,
               batchInput.fileName ?? null,
               context.now,
               candidates.length,
@@ -812,8 +823,10 @@ export function createPostgresRepository(): DurableRepositoryPort {
               surfaceText: candidate.surfaceText,
               meaningZh: candidate.meaningZh,
               example: candidate.example,
-              notes: "",
               rarityScore: candidate.rarityScore,
+              notes: candidate.notes,
+              learningTrack: candidate.learningTrack,
+              tags: candidate.tags,
               source: batch.sourceType === "txt_file" ? "txt_file" : "pasted_text",
               importBatchId: batch.id,
               timezone: context.timezone,
@@ -845,7 +858,7 @@ export function createPostgresRepository(): DurableRepositoryPort {
           getReviewSettings(queryable, context),
         ]);
         const data: VocabularyData = {
-          schemaVersion: 3,
+          schemaVersion: 4,
           people: [person],
           selectedPersonId: context.personId,
           items,

@@ -8,15 +8,23 @@ import {
   Download,
   Ear,
   Leaf,
-  ListPlus,
   PenLine,
   Settings,
   Sparkles,
   Upload,
 } from "lucide-react";
-import { getActiveVocabularyItems, getArchivedVocabularyItems } from "@/lib/vocabulary/repository";
+import {
+  getActiveTrackVocabularyItems,
+  getActiveVocabularyItems,
+  getArchivedVocabularyItems,
+  getRecognitionVocabularyItems,
+} from "@/lib/vocabulary/repository";
 import { useVocabularyData } from "./use-vocabulary-data";
-import { DEFAULT_SESSION_LIMIT, getSelectedReviewSettings } from "@/lib/review/settings";
+import {
+  DEFAULT_ACTIVE_SESSION_LIMIT,
+  DEFAULT_RECOGNITION_SESSION_LIMIT,
+  getSelectedReviewSettings,
+} from "@/lib/review/settings";
 import { getSelectedPerson } from "@/lib/people/repository";
 import { selectReviewQueue } from "@/lib/review/scheduler";
 import { CalmCard, CalmEntrance } from "@/components/ui/motion-primitives";
@@ -34,6 +42,8 @@ function isSameLocalDay(value: string, now = new Date()) {
 export function HomeDashboard() {
   const { data, isLoaded } = useVocabularyData();
   const activeItems = getActiveVocabularyItems(data);
+  const recognitionItems = getRecognitionVocabularyItems(data);
+  const activeTrackItems = getActiveTrackVocabularyItems(data);
   const archivedItems = getArchivedVocabularyItems(data);
   const selectedPerson = getSelectedPerson(data);
   const settings = getSelectedReviewSettings(data);
@@ -41,11 +51,14 @@ export function HomeDashboard() {
   const completedToday = data.reviewEvents.filter(
     (event) => event.personId === selectedPerson.id && isSameLocalDay(event.reviewedAt),
   ).length;
-  const sessionLimit = isLoaded ? settings.sessionLimit : DEFAULT_SESSION_LIMIT;
-  const recognitionProgress = sessionLimit
-    ? Math.min(100, Math.round((completedToday / sessionLimit) * 100))
+  const recognitionLimit = isLoaded ? settings.recognitionSessionLimit : DEFAULT_RECOGNITION_SESSION_LIMIT;
+  const activeLimit = isLoaded ? settings.activeSessionLimit : DEFAULT_ACTIVE_SESSION_LIMIT;
+  const recognitionProgress = recognitionLimit
+    ? Math.min(100, Math.round((completedToday / recognitionLimit) * 100))
     : 0;
-  const activeGoal = 8;
+  const activeProgress = activeLimit
+    ? Math.min(100, Math.round((activeTrackItems.length / activeLimit) * 100))
+    : 0;
   const weakWordsCount = data.reviewStates.filter(
     (state) => state.personId === selectedPerson.id && state.lapseCount > 0,
   ).length;
@@ -57,8 +70,8 @@ export function HomeDashboard() {
       titleZh: "阅读词汇",
       eyebrow: "Higher-volume reading review",
       description: "Recognize the word, meaning, and example context without adding pressure.",
-      goal: `${sessionLimit} cards today`,
-      progressLabel: `${isLoaded ? completedToday : "-"} / ${sessionLimit}`,
+      goal: `${recognitionLimit} cards today`,
+      progressLabel: `${isLoaded ? completedToday : "-"} / ${recognitionLimit}`,
       progress: recognitionProgress,
       href: "/review",
       cta: "Start review",
@@ -71,9 +84,9 @@ export function HomeDashboard() {
       titleZh: "输出词汇",
       eyebrow: "Focused listening and writing track",
       description: "Reserved for dictation, spelling, sentence recall, and writing usage.",
-      goal: `${activeGoal} focused words later`,
-      progressLabel: `0 / ${activeGoal}`,
-      progress: 0,
+      goal: `${activeLimit} focused words later`,
+      progressLabel: `${isLoaded ? activeTrackItems.length : "-"} / ${activeLimit}`,
+      progress: activeProgress,
       href: "/practice-lab",
       cta: "Open lab",
       Icon: PenLine,
@@ -163,7 +176,8 @@ export function HomeDashboard() {
           <div className="mt-5 grid gap-3">
             {[
               ["Ready now", isLoaded ? reviewQueue.length : "-"],
-              ["Current words", isLoaded ? activeItems.length : "-"],
+              ["Recognition", isLoaded ? recognitionItems.length : "-"],
+              ["Active", isLoaded ? activeTrackItems.length : "-"],
               ["Weak words", isLoaded ? weakWordsCount : "-"],
               ["Archived", isLoaded ? archivedItems.length : "-"],
             ].map(([label, value]) => (
@@ -201,7 +215,7 @@ export function HomeDashboard() {
             </div>
           ) : (
             <p className="rounded-md border border-dashed border-[#afbea9] bg-[#fffaf1] p-4 text-sm leading-6 text-[#5f6d62]">
-              {isLoaded ? "还没有本地词条。可以先添加一个单词或导入 .txt。" : "Loading local vocabulary..."}
+              {isLoaded ? "还没有本地词条。可以从导入页添加单个词或导入 JSON。" : "Loading local vocabulary..."}
             </p>
           )}
         </section>
@@ -248,8 +262,7 @@ export function HomeDashboard() {
             <h2 className="text-base font-semibold text-[#203229]">Quiet tools</h2>
             <div className="mt-4 grid gap-3">
               {[
-                { href: "/add", label: "Add word", icon: ListPlus },
-                { href: "/import", label: "Import text", icon: Upload },
+                { href: "/import", label: "Input vocabulary", icon: Upload },
                 { href: "/export", label: "Export backup", icon: Download },
                 { href: "/settings", label: "Settings", icon: Settings },
               ].map((tool) => {

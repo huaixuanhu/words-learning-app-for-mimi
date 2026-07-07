@@ -72,6 +72,8 @@ export type VocabularyStorageMutation =
       type: "reviewSettings.update";
       input: {
         sessionLimit: number;
+        recognitionSessionLimit: number;
+        activeSessionLimit: number;
         timezone: string;
       };
       now: string;

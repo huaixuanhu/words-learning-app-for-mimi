@@ -3,7 +3,7 @@ import { ImportWorkspace } from "@/components/vocabulary/import-workspace";
 
 export default function ImportPage() {
   return (
-    <AppShell title="批量导入" subtitle="Turn a plain text list into reviewable cards.">
+    <AppShell title="导入" subtitle="Choose single input or batch JSON import with an explicit learning track.">
       <ImportWorkspace />
     </AppShell>
   );

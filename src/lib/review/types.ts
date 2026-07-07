@@ -32,6 +32,8 @@ export type ReviewEvent = {
 
 export type ReviewSettings = {
   sessionLimit: number;
+  recognitionSessionLimit: number;
+  activeSessionLimit: number;
   timezone: string;
   updatedAt: string;
 };

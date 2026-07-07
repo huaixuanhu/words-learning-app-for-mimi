@@ -6,7 +6,8 @@ import { useState } from "react";
 import { useVocabularyData } from "@/components/vocabulary/use-vocabulary-data";
 import { getSelectedPersonId } from "@/lib/people/repository";
 import {
-  DEFAULT_SESSION_LIMIT,
+  DEFAULT_ACTIVE_SESSION_LIMIT,
+  DEFAULT_RECOGNITION_SESSION_LIMIT,
   getSelectedReviewSettings,
   normalizeSessionLimit,
   updateReviewSettings,
@@ -33,7 +34,9 @@ export function ReviewSettingsForm() {
     const formData = new FormData(event.currentTarget);
     const now = new Date().toISOString();
     const input = {
-      sessionLimit: normalizeSessionLimit(String(formData.get("session_limit") ?? "")),
+      sessionLimit: normalizeSessionLimit(String(formData.get("recognition_session_limit") ?? "")),
+      recognitionSessionLimit: normalizeSessionLimit(String(formData.get("recognition_session_limit") ?? "")),
+      activeSessionLimit: normalizeSessionLimit(String(formData.get("active_session_limit") ?? "")),
       timezone: String(formData.get("timezone") ?? ""),
     };
     const nextData = updateReviewSettings(data, input, now);
@@ -45,7 +48,9 @@ export function ReviewSettingsForm() {
         now,
         timezone: input.timezone,
       });
-      setMessage(`已保存，每次最多复习 ${getSelectedReviewSettings(nextData).sessionLimit} 张卡片`);
+      const saved = getSelectedReviewSettings(nextData);
+
+      setMessage(`已保存：阅读 ${saved.recognitionSessionLimit}，输出 ${saved.activeSessionLimit}`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "设置保存失败");
     }
@@ -58,13 +63,24 @@ export function ReviewSettingsForm() {
       onSubmit={handleSubmit}
     >
       <label className="grid gap-2">
-        <span className="text-sm font-semibold text-[#203229]">Daily session limit</span>
+        <span className="text-sm font-semibold text-[#203229]">Recognition daily limit / 阅读词汇</span>
         <input
-          name="session_limit"
+          name="recognition_session_limit"
           type="number"
           min={1}
           max={80}
-          defaultValue={isLoaded ? settings.sessionLimit : DEFAULT_SESSION_LIMIT}
+          defaultValue={isLoaded ? settings.recognitionSessionLimit : DEFAULT_RECOGNITION_SESSION_LIMIT}
+          className="mimi-input px-3 text-base"
+        />
+      </label>
+      <label className="grid gap-2">
+        <span className="text-sm font-semibold text-[#203229]">Active daily limit / 输出词汇</span>
+        <input
+          name="active_session_limit"
+          type="number"
+          min={1}
+          max={80}
+          defaultValue={isLoaded ? settings.activeSessionLimit : DEFAULT_ACTIVE_SESSION_LIMIT}
           className="mimi-input px-3 text-base"
         />
       </label>

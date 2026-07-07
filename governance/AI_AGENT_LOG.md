@@ -1,5 +1,73 @@
 # AI Agent Log
 
+## 2026-07-07 00:35 AEST
+
+- Task: execute the confirmed Stage 7.9 dual-track data/import refinement after the user accepted Stage 7.8 overall and requested three changes: separate Recognition / Active daily limits, remove Study's add-material card and route main add/import flows into `/import`, and require explicit Recognition / Active classification during single or batch import with JSON batch input and nullable tags.
+- Plan agreed: yes. The user confirmed `/import` should be the parent page with Single input（单个输入）and Batch JSON import（批量 JSON 导入）, `tags` may be `null`, and the JSON sample should tell the learner they can use conversation AI（对话式 AI）to organize vocabulary in a format the app can directly read and store.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE7_UI_VISUAL_DESIGN.md`
+  - `plan_docs/PLAN_V1_STAGE7_8_DUAL_TRACK_UI_REFINEMENT.md`
+  - `plan_docs/PLAN_V1_STAGE7_9_DUAL_TRACK_DATA_IMPORT.md`
+  - `src/app/add/page.tsx`
+  - `src/app/api/storage/data/route.ts`
+  - `src/app/api/storage/smoke/route.ts`
+  - `src/app/import/page.tsx`
+  - `src/app/study/page.tsx`
+  - `src/components/add-word-form.tsx`
+  - `src/components/review/review-session.tsx`
+  - `src/components/settings/review-settings-form.tsx`
+  - `src/components/vocabulary/home-dashboard.tsx`
+  - `src/components/vocabulary/import-workspace.tsx`
+  - `src/components/vocabulary/use-vocabulary-data.ts`
+  - `src/components/vocabulary/vocabulary-library.tsx`
+  - `src/lib/backup/csv-export.test.ts`
+  - `src/lib/backup/csv-export.ts`
+  - `src/lib/backup/json-backup.test.ts`
+  - `src/lib/backup/json-backup.ts`
+  - `src/lib/backup/types.ts`
+  - `src/lib/review/repository.ts`
+  - `src/lib/review/scheduler.ts`
+  - `src/lib/review/settings.ts`
+  - `src/lib/review/types.ts`
+  - `src/lib/stage-two-data.ts`
+  - `src/lib/storage/durable-repository-contract.ts`
+  - `src/lib/storage/postgres/mappers.ts`
+  - `src/lib/storage/postgres/repository.ts`
+  - `src/lib/vocabulary/import-parser.ts`
+  - `src/lib/vocabulary/local-storage-repository.test.ts`
+  - `src/lib/vocabulary/local-storage-repository.ts`
+  - `src/lib/vocabulary/normalize.ts`
+  - `src/lib/vocabulary/repository.ts`
+  - `src/lib/vocabulary/types.ts`
+- Reason: connect the accepted Stage 7.8 Recognition Vocabulary（阅读词汇）/ Active Vocabulary（输出词汇）information architecture（信息架构）to explicit local V1 data fields, import UX, backup/export semantics, and settings without starting AI API（人工智能接口）or Production（生产环境）work.
+- Implementation notes:
+  - Added `plan_docs/PLAN_V1_STAGE7_9_DUAL_TRACK_DATA_IMPORT.md` with required `Source plan`, `Derived from`, `Scope`, `Non-Scope`, and `Exit criteria` markers.
+  - Upgraded browser-local data to schema version 4 with required stored `learningTrack` and nullable `tags`; legacy data defaults to Recognition Vocabulary with `tags: null`.
+  - Added `Recognition` / `Active` classification to single input, batch JSON preview, Library editing, Library filters, CSV export, and JSON backup validation.
+  - Replaced user-facing batch `.txt` import with `.json` file / pasted JSON import, including a sample that can be used as a prompt for conversation AI so the returned JSON can be directly read and stored by the app.
+  - Added separate Recognition / Active daily limits in Settings while keeping legacy `sessionLimit` as compatibility data.
+  - Kept current review queue and review writes limited to Recognition Vocabulary.
+  - Removed the Study page's Add study material card and made `/add` redirect to `/import` for compatibility.
+  - Kept the Postgres preview adapter compatible with the already-applied Stage 5F database schema by defaulting track/tag fields in mapped rows and mapping JSON import source to the legacy `pasted_text` source when writing preview rows. No remote database migration was executed.
+- Validation:
+  - Passed: `npm run lint`.
+  - Passed: `npm run typecheck`.
+  - Passed: `npm run test` with 14 files and 52 tests.
+  - Passed: `npm run backup:dry-run:fixture`.
+  - Passed: `npm run build`.
+  - Passed: local dev route smoke checks for `/`, `/study`, `/import`, `/library`, `/review`, `/settings`, `/practice-lab`, and `/add`; `/add` returned HTTP 307 with `location=/import`.
+- Residual risks:
+  - Browser MCP visual verification was attempted, but both the in-app browser and Chrome extension backend returned a tab session mismatch. No browser-side form interaction was completed in this verification pass.
+  - Stage 5L file-backed backup import tooling still validates the historical schema version 3 fixture; Stage 7.9 app backup/export now produces schema version 4, while remote import/migration remains a later explicit gate.
+  - The Postgres preview adapter does not persist `learningTrack` / `tags` into new database columns because no Stage 7.9 database migration was approved or executed.
+- Safety notes: local app code, local tests, and documentation only. No Vercel command, Neon command, remote database command, env var read/change, GitHub push, merge to `main`, Production deployment, Production migration, Production import, formal user backup import, AI API, dictation engine（听写引擎）, spelling checker（拼写检查器）, writing feedback model, external vocabulary source, authentication（认证）, analytics（分析追踪）, notification, background audio, email, or 付费/扣款 feature was performed.
+
 ## 2026-07-06 23:39 AEST
 
 - Task: execute the confirmed Stage 7.8 dual-track UI refinement before any V1 merge（合并）or Stage 6B Production（生产环境）execution.

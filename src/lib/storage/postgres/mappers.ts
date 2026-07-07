@@ -1,4 +1,6 @@
 import type { PersonReviewSettings, ReviewEvent, ReviewState } from "@/lib/review/types";
+import { DEFAULT_ACTIVE_SESSION_LIMIT } from "@/lib/review/settings";
+import { normalizeLearningTrack, normalizeVocabularyTags } from "@/lib/vocabulary/normalize";
 import type { ImportBatch, Person, VocabularyItem } from "@/lib/vocabulary/types";
 
 type DatabaseTimestamp = string | Date;
@@ -21,6 +23,8 @@ export type VocabularyItemRow = {
   example: string;
   notes: string;
   rarity_score: number | null;
+  learning_track?: unknown;
+  tags?: unknown;
   source: VocabularyItem["source"];
   import_batch_id: string | null;
   status: VocabularyItem["status"];
@@ -74,6 +78,7 @@ export type ReviewEventRow = {
 export type ReviewSettingsRow = {
   person_id: string;
   session_limit: number;
+  active_session_limit?: number | null;
   timezone: string;
   updated_at: DatabaseTimestamp;
 };
@@ -117,6 +122,8 @@ export function mapVocabularyItemRow(row: VocabularyItemRow): VocabularyItem {
     example: row.example,
     notes: row.notes,
     rarityScore: row.rarity_score,
+    learningTrack: normalizeLearningTrack(row.learning_track),
+    tags: normalizeVocabularyTags(row.tags),
     source: row.source,
     importBatchId: row.import_batch_id,
     status: row.status,
@@ -178,6 +185,8 @@ export function mapReviewSettingsRow(row: ReviewSettingsRow): PersonReviewSettin
   return {
     personId: row.person_id,
     sessionLimit: row.session_limit,
+    recognitionSessionLimit: row.session_limit,
+    activeSessionLimit: row.active_session_limit ?? DEFAULT_ACTIVE_SESSION_LIMIT,
     timezone: row.timezone,
     updatedAt: toIsoString(row.updated_at),
   };

@@ -10,9 +10,11 @@ import {
   type VocabularyBackupFile,
 } from "./types";
 
-const VOCABULARY_SOURCES = new Set(["manual", "txt_file", "pasted_text"]);
+const VOCABULARY_SOURCES = new Set(["manual", "txt_file", "pasted_text", "json_file", "json_paste"]);
 const VOCABULARY_STATUSES = new Set(["new", "archived"]);
-const IMPORT_SOURCE_TYPES = new Set(["txt_file", "pasted_text"]);
+const IMPORT_SOURCE_TYPES = new Set(["txt_file", "pasted_text", "json_file", "json_paste"]);
+const LEARNING_TRACKS = new Set(["recognition", "active"]);
+const VOCABULARY_TAGS = new Set(["PTE", "IELTS", "Listening", "Writing", "Spelling Risk"]);
 const REVIEW_STATUSES = new Set(["learning", "review"]);
 const REVIEW_RATINGS = new Set(["forgot", "hard", "vague", "remembered"]);
 
@@ -35,6 +37,10 @@ function isStringOrNull(value: unknown): value is string | null {
 
 function isNumberOrNull(value: unknown): value is number | null {
   return value === null || (typeof value === "number" && Number.isFinite(value));
+}
+
+function isStringArrayOrNull(value: unknown): value is string[] | null {
+  return value === null || (Array.isArray(value) && value.every((entry) => typeof entry === "string"));
 }
 
 function isNumber(value: unknown): value is number {
@@ -104,6 +110,7 @@ function validateVocabularyItem(
   index: number,
   errors: string[],
   requiresPersonId: boolean,
+  requiresTrackFields: boolean,
 ) {
   if (!isRecord(value)) {
     errors.push(`items[${index}] must be an object`);
@@ -136,6 +143,22 @@ function validateVocabularyItem(
 
   if (!VOCABULARY_STATUSES.has(String(value.status))) {
     errors.push(`items[${index}].status is unsupported`);
+  }
+
+  if (requiresTrackFields) {
+    if (!LEARNING_TRACKS.has(String(value.learningTrack))) {
+      errors.push(`items[${index}].learningTrack is unsupported`);
+    }
+
+    if (!isStringArrayOrNull(value.tags)) {
+      errors.push(`items[${index}].tags must be an array or null`);
+    } else if (Array.isArray(value.tags)) {
+      value.tags.forEach((tag) => {
+        if (!VOCABULARY_TAGS.has(tag)) {
+          errors.push(`items[${index}].tags contains unsupported tag`);
+        }
+      });
+    }
   }
 
   if (!isStringOrNull(value.importBatchId)) {
@@ -274,7 +297,7 @@ function validateCounts(value: unknown, errors: string[]) {
   }
 }
 
-function validateSettings(value: unknown, errors: string[]) {
+function validateSettings(value: unknown, errors: string[], requiresDualLimits: boolean) {
   if (!isRecord(value)) {
     errors.push("data.settings must be an object");
     return;
@@ -282,6 +305,16 @@ function validateSettings(value: unknown, errors: string[]) {
 
   if (!isNumber(value.sessionLimit)) {
     errors.push("data.settings.sessionLimit must be a number");
+  }
+
+  if (requiresDualLimits) {
+    if (!isNumber(value.recognitionSessionLimit)) {
+      errors.push("data.settings.recognitionSessionLimit must be a number");
+    }
+
+    if (!isNumber(value.activeSessionLimit)) {
+      errors.push("data.settings.activeSessionLimit must be a number");
+    }
   }
 
   if (!isString(value.timezone)) {
@@ -293,7 +326,7 @@ function validateSettings(value: unknown, errors: string[]) {
   }
 }
 
-function validateSettingsByPerson(value: unknown, errors: string[]) {
+function validateSettingsByPerson(value: unknown, errors: string[], requiresDualLimits: boolean) {
   if (!Array.isArray(value)) {
     errors.push("data.settingsByPerson must be an array");
     return;
@@ -313,6 +346,16 @@ function validateSettingsByPerson(value: unknown, errors: string[]) {
       errors.push(`settingsByPerson[${index}].sessionLimit must be a number`);
     }
 
+    if (requiresDualLimits) {
+      if (!isNumber(settings.recognitionSessionLimit)) {
+        errors.push(`settingsByPerson[${index}].recognitionSessionLimit must be a number`);
+      }
+
+      if (!isNumber(settings.activeSessionLimit)) {
+        errors.push(`settingsByPerson[${index}].activeSessionLimit must be a number`);
+      }
+    }
+
     if (!isString(settings.timezone)) {
       errors.push(`settingsByPerson[${index}].timezone must be a string`);
     }
@@ -329,10 +372,11 @@ function validateBackupData(value: unknown, errors: string[]) {
     return;
   }
 
-  if (value.schemaVersion !== 2 && value.schemaVersion !== 3) {
-    errors.push("data.schemaVersion must be 2 or 3");
+  if (value.schemaVersion !== 2 && value.schemaVersion !== 3 && value.schemaVersion !== 4) {
+    errors.push("data.schemaVersion must be 2, 3, or 4");
   }
-  const requiresPersonId = value.schemaVersion === 3;
+  const requiresPersonId = value.schemaVersion === 3 || value.schemaVersion === 4;
+  const requiresTrackFields = value.schemaVersion === 4;
 
   if (requiresPersonId) {
     if (!Array.isArray(value.people)) {
@@ -350,7 +394,7 @@ function validateBackupData(value: unknown, errors: string[]) {
     errors.push("data.items must be an array");
   } else {
     value.items.forEach((item, index) =>
-      validateVocabularyItem(item, index, errors, requiresPersonId),
+      validateVocabularyItem(item, index, errors, requiresPersonId, requiresTrackFields),
     );
   }
 
@@ -379,9 +423,9 @@ function validateBackupData(value: unknown, errors: string[]) {
   }
 
   if (requiresPersonId) {
-    validateSettingsByPerson(value.settingsByPerson, errors);
+    validateSettingsByPerson(value.settingsByPerson, errors, requiresTrackFields);
   } else {
-    validateSettings(value.settings, errors);
+    validateSettings(value.settings, errors, requiresTrackFields);
   }
 
   if (!isString(value.updatedAt)) {
@@ -455,8 +499,8 @@ export function parseVocabularyBackupValue(value: unknown, now = new Date().toIS
     errors.push(`format must be ${BACKUP_FORMAT}`);
   }
 
-  if (value.backupVersion !== BACKUP_VERSION) {
-    errors.push(`backupVersion must be ${BACKUP_VERSION}`);
+  if (value.backupVersion !== 1 && value.backupVersion !== BACKUP_VERSION) {
+    errors.push(`backupVersion must be 1 or ${BACKUP_VERSION}`);
   }
 
   if (!isRecord(value.metadata)) {
@@ -474,8 +518,12 @@ export function parseVocabularyBackupValue(value: unknown, now = new Date().toIS
       errors.push("metadata.timezone must be a string");
     }
 
-    if (value.metadata.schemaVersion !== 2 && value.metadata.schemaVersion !== 3) {
-      errors.push("metadata.schemaVersion must be 2 or 3");
+    if (
+      value.metadata.schemaVersion !== 2 &&
+      value.metadata.schemaVersion !== 3 &&
+      value.metadata.schemaVersion !== 4
+    ) {
+      errors.push("metadata.schemaVersion must be 2, 3, or 4");
     }
 
     validateCounts(value.metadata.counts, errors);

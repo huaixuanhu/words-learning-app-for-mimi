@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { migrateVocabularyData } from "./local-storage-repository";
 
 describe("local storage vocabulary migration", () => {
-  it("migrates schema version 1 data to version 3 without dropping vocabulary", () => {
+  it("migrates schema version 1 data to version 4 without dropping vocabulary", () => {
     const migrated = migrateVocabularyData(
       {
         schemaVersion: 1,
@@ -42,11 +42,13 @@ describe("local storage vocabulary migration", () => {
       "2026-07-04T01:00:00.000Z",
     );
 
-    expect(migrated.schemaVersion).toBe(3);
+    expect(migrated.schemaVersion).toBe(4);
     expect(migrated.people).toHaveLength(1);
     expect(migrated.selectedPersonId).toBe("person_mimi");
     expect(migrated.items).toHaveLength(1);
     expect(migrated.items[0]?.personId).toBe("person_mimi");
+    expect(migrated.items[0]?.learningTrack).toBe("recognition");
+    expect(migrated.items[0]?.tags).toBeNull();
     expect(migrated.importBatches).toHaveLength(1);
     expect(migrated.importBatches[0]?.personId).toBe("person_mimi");
     expect(migrated.reviewStates).toEqual([]);
@@ -54,14 +56,16 @@ describe("local storage vocabulary migration", () => {
     expect(migrated.settingsByPerson[0]).toMatchObject({
       personId: "person_mimi",
       sessionLimit: 24,
+      recognitionSessionLimit: 24,
+      activeSessionLimit: 8,
     });
   });
 
-  it("returns an empty version 3 shape for invalid data", () => {
+  it("returns an empty version 4 shape for invalid data", () => {
     const migrated = migrateVocabularyData("not-json", "2026-07-04T01:00:00.000Z");
 
     expect(migrated).toMatchObject({
-      schemaVersion: 3,
+      schemaVersion: 4,
       selectedPersonId: "person_mimi",
       items: [],
       importBatches: [],

@@ -4,9 +4,9 @@ import { CalendarClock, ChevronDown, Save } from "lucide-react";
 import type { FormEvent } from "react";
 import { useEffect, useState } from "react";
 import { useVocabularyData } from "@/components/vocabulary/use-vocabulary-data";
-import { normalizeRarityScore } from "@/lib/vocabulary/normalize";
+import { VOCABULARY_TAGS, normalizeRarityScore, normalizeVocabularyTags } from "@/lib/vocabulary/normalize";
 import { addVocabularyItem } from "@/lib/vocabulary/repository";
-import type { NewVocabularyInput } from "@/lib/vocabulary/types";
+import type { LearningTrack, NewVocabularyInput, VocabularyTag } from "@/lib/vocabulary/types";
 import { PressableButton } from "@/components/ui/motion-primitives";
 
 function toDateTimeLocalValue(date: Date) {
@@ -20,6 +20,8 @@ export function AddWordForm() {
   const [timezone, setTimezone] = useState("Detecting");
   const [showAddedTime, setShowAddedTime] = useState(false);
   const [rarityScore, setRarityScore] = useState("");
+  const [learningTrack, setLearningTrack] = useState<LearningTrack>("recognition");
+  const [tags, setTags] = useState<VocabularyTag[] | null>(null);
   const [message, setMessage] = useState("");
 
   useEffect(() => {
@@ -45,6 +47,8 @@ export function AddWordForm() {
         example: String(formData.get("example") ?? ""),
         notes: String(formData.get("notes") ?? ""),
         rarityScore: normalizeRarityScore(rarityScore),
+        learningTrack,
+        tags: normalizeVocabularyTags(tags),
         source: "manual",
         createdAt: addedAt ? new Date(addedAt).toISOString() : now,
         timezone,
@@ -59,6 +63,8 @@ export function AddWordForm() {
       });
       form.reset();
       setRarityScore("");
+      setLearningTrack("recognition");
+      setTags(null);
       setAddedAt(toDateTimeLocalValue(new Date()));
       setMessage(`已保存 ${result.item.surfaceText}`);
     } catch (error) {
@@ -105,6 +111,58 @@ export function AddWordForm() {
           className="mimi-input min-h-20 resize-y px-3 py-2 text-base"
         />
       </label>
+
+      <fieldset className="grid gap-2">
+        <legend className="text-sm font-semibold text-[#203229]">Learning track</legend>
+        <div className="grid gap-2 sm:grid-cols-2">
+          {[
+            { value: "recognition", label: "Recognition / 阅读词汇" },
+            { value: "active", label: "Active / 输出词汇" },
+          ].map((track) => (
+            <label
+              key={track.value}
+              className="mimi-focus-ring flex min-h-11 items-center justify-center rounded-md border border-[#d8d1c2] bg-[#fffaf1] px-3 text-sm font-semibold text-[#203229] transition has-checked:border-[#5f7d66] has-checked:bg-[#d9e5d5]"
+            >
+              <input
+                className="sr-only"
+                name="learning_track"
+                type="radio"
+                value={track.value}
+                checked={learningTrack === track.value}
+                onChange={(event) => setLearningTrack(event.target.value as LearningTrack)}
+              />
+              {track.label}
+            </label>
+          ))}
+        </div>
+      </fieldset>
+
+      <fieldset className="grid gap-2">
+        <legend className="text-sm font-semibold text-[#203229]">Tags</legend>
+        <div className="flex flex-wrap gap-2">
+          {VOCABULARY_TAGS.map((tag) => (
+            <label
+              key={tag}
+              className="mimi-focus-ring flex min-h-9 items-center justify-center rounded-md border border-[#d8d1c2] bg-[#fffaf1] px-3 text-xs font-semibold text-[#203229] transition has-checked:border-[#5f7d66] has-checked:bg-[#d9e5d5]"
+            >
+              <input
+                className="sr-only"
+                type="checkbox"
+                checked={tags?.includes(tag) ?? false}
+                onChange={(event) => {
+                  const currentTags = tags ?? [];
+                  const nextTags = event.target.checked
+                    ? [...currentTags, tag]
+                    : currentTags.filter((currentTag) => currentTag !== tag);
+
+                  setTags(nextTags.length ? nextTags : null);
+                }}
+              />
+              {tag}
+            </label>
+          ))}
+        </div>
+      </fieldset>
 
       <fieldset className="grid gap-2">
         <legend className="text-sm font-semibold text-[#203229]">Self-rated rarity</legend>

@@ -63,7 +63,7 @@ export type BackupImportMode = "workspace" | "selected_person";
 export type BackupImportPlan = Readonly<{
   mode: BackupImportMode;
   targetPersonId?: string;
-  sourceSchemaVersion: 2 | 3;
+  sourceSchemaVersion: 2 | 3 | 4;
   backupData: unknown;
 }>;
 
@@ -120,7 +120,10 @@ export type ReviewSettingsRepositoryPort = Readonly<{
   getSettings(context: PersonScopedContext): Promise<PersonReviewSettings>;
   updateSettings(
     context: TimestampedPersonContext,
-    input: Pick<PersonReviewSettings, "sessionLimit" | "timezone">,
+    input: Pick<
+      PersonReviewSettings,
+      "sessionLimit" | "recognitionSessionLimit" | "activeSessionLimit" | "timezone"
+    >,
   ): Promise<PersonReviewSettings>;
 }>;
 

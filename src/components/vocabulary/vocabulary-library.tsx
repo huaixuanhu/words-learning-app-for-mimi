@@ -1,18 +1,25 @@
 "use client";
 
 import Link from "next/link";
-import { Archive, Download, ListPlus, RotateCcw, Save, Search } from "lucide-react";
+import { Archive, Download, RotateCcw, Save, Search, Upload } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { UpdateVocabularyInput, VocabularyItem } from "@/lib/vocabulary/types";
 import {
   archiveVocabularyItem,
   getActiveVocabularyItems,
+  getActiveTrackVocabularyItems,
   getArchivedVocabularyItems,
+  getRecognitionVocabularyItems,
   getVocabularyItemsForSelectedPerson,
   restoreVocabularyItem,
   updateVocabularyItem,
 } from "@/lib/vocabulary/repository";
-import { normalizeRarityScore, normalizeSurfaceText } from "@/lib/vocabulary/normalize";
+import {
+  VOCABULARY_TAGS,
+  normalizeRarityScore,
+  normalizeSurfaceText,
+  normalizeVocabularyTags,
+} from "@/lib/vocabulary/normalize";
 import { useVocabularyData } from "./use-vocabulary-data";
 import { PressableButton } from "@/components/ui/motion-primitives";
 
@@ -20,7 +27,7 @@ type LibraryFilter = "all" | "recognition" | "activeVocabulary" | "weak" | "arch
 
 type EditDraft = Pick<
   VocabularyItem,
-  "surfaceText" | "meaningZh" | "example" | "notes" | "createdAt" | "timezone"
+  "surfaceText" | "meaningZh" | "example" | "notes" | "learningTrack" | "tags" | "createdAt" | "timezone"
 > & {
   rarityScore: string;
 };
@@ -43,6 +50,8 @@ function createDraft(item: VocabularyItem): EditDraft {
     meaningZh: item.meaningZh,
     example: item.example,
     notes: item.notes,
+    learningTrack: item.learningTrack,
+    tags: item.tags,
     rarityScore: item.rarityScore?.toString() ?? "",
     createdAt: toDateTimeLocalValue(item.createdAt),
     timezone: item.timezone,
@@ -75,6 +84,8 @@ export function VocabularyLibrary() {
 
   const allItems = getVocabularyItemsForSelectedPerson(data);
   const activeItems = getActiveVocabularyItems(data);
+  const recognitionItems = getRecognitionVocabularyItems(data);
+  const activeTrackItems = getActiveTrackVocabularyItems(data);
   const archivedItems = getArchivedVocabularyItems(data);
   const weakWordIds = useMemo(
     () => new Set(data.reviewStates.filter((state) => state.lapseCount > 0).map((state) => state.vocabularyItemId)),
@@ -82,8 +93,8 @@ export function VocabularyLibrary() {
   );
   const filterTabs = [
     { value: "all", label: "All Words", count: allItems.length },
-    { value: "recognition", label: "Recognition", count: activeItems.length },
-    { value: "activeVocabulary", label: "Active", count: 0 },
+    { value: "recognition", label: "Recognition", count: recognitionItems.length },
+    { value: "activeVocabulary", label: "Active", count: activeTrackItems.length },
     { value: "weak", label: "Weak Words", count: activeItems.filter((item) => weakWordIds.has(item.id)).length },
     { value: "archived", label: "Archived", count: archivedItems.length },
   ] as const satisfies readonly { value: LibraryFilter; label: string; count: number }[];
@@ -91,9 +102,9 @@ export function VocabularyLibrary() {
   const visibleItems = useMemo(() => {
     const sourceItems =
       filter === "recognition"
-        ? activeItems
+        ? recognitionItems
         : filter === "activeVocabulary"
-          ? []
+          ? activeTrackItems
           : filter === "weak"
             ? activeItems.filter((item) => weakWordIds.has(item.id))
             : filter === "archived"
@@ -111,7 +122,7 @@ export function VocabularyLibrary() {
         item.meaningZh.includes(query.trim()) ||
         item.example.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()),
     );
-  }, [activeItems, allItems, archivedItems, filter, query, weakWordIds]);
+  }, [activeItems, activeTrackItems, allItems, archivedItems, filter, query, recognitionItems, weakWordIds]);
 
   const startEditing = (item: VocabularyItem) => {
     setEditingId(item.id);
@@ -132,6 +143,8 @@ export function VocabularyLibrary() {
         example: draft.example,
         notes: draft.notes,
         rarityScore: normalizeRarityScore(draft.rarityScore),
+        learningTrack: draft.learningTrack,
+        tags: normalizeVocabularyTags(draft.tags),
         createdAt: toIsoFromLocalDateTime(draft.createdAt),
         timezone: draft.timezone,
       };
@@ -221,7 +234,7 @@ export function VocabularyLibrary() {
           <div className="grid gap-3 rounded-md border border-[#d8d1c2] bg-[#fffaf1]/64 p-3">
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-xs font-semibold uppercase tracking-normal text-[#879087]">Soft tags</span>
-              {["Recognition", "Active", "PTE", "IELTS", "Listening", "Writing", "Spelling Risk"].map((tag) => (
+              {["Recognition", "Active", ...VOCABULARY_TAGS].map((tag) => (
                 <span key={tag} className="mimi-pill-muted px-2 py-1 text-xs font-semibold">
                   {tag}
                 </span>
@@ -239,9 +252,9 @@ export function VocabularyLibrary() {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <Link href="/add" className="mimi-button-secondary mimi-focus-ring inline-flex items-center gap-2 px-3 text-sm font-semibold">
-              <ListPlus aria-hidden="true" className="size-4" />
-              Add word
+            <Link href="/import" className="mimi-button-secondary mimi-focus-ring inline-flex items-center gap-2 px-3 text-sm font-semibold">
+              <Upload aria-hidden="true" className="size-4" />
+              Input vocabulary
             </Link>
             <Link href="/export" className="mimi-button-secondary mimi-focus-ring inline-flex items-center gap-2 px-3 text-sm font-semibold">
               <Download aria-hidden="true" className="size-4" />
@@ -298,6 +311,58 @@ export function VocabularyLibrary() {
                           className="mimi-input min-h-20 px-3 py-2"
                         />
                       </label>
+                      <fieldset className="grid gap-2">
+                        <legend className="text-sm font-semibold text-[#203229]">Learning track</legend>
+                        <div className="grid gap-2 sm:grid-cols-2">
+                          {[
+                            { value: "recognition", label: "Recognition / 阅读词汇" },
+                            { value: "active", label: "Active / 输出词汇" },
+                          ].map((track) => (
+                            <label
+                              key={track.value}
+                              className="mimi-focus-ring flex min-h-11 items-center justify-center rounded-md border border-[#d8d1c2] bg-[#fffaf1] px-3 text-sm font-semibold text-[#203229] transition has-checked:border-[#5f7d66] has-checked:bg-[#d9e5d5]"
+                            >
+                              <input
+                                className="sr-only"
+                                name={`learning_track_${item.id}`}
+                                type="radio"
+                                value={track.value}
+                                checked={draft.learningTrack === track.value}
+                                onChange={(event) =>
+                                  setDraft({ ...draft, learningTrack: event.target.value as VocabularyItem["learningTrack"] })
+                                }
+                              />
+                              {track.label}
+                            </label>
+                          ))}
+                        </div>
+                      </fieldset>
+                      <fieldset className="grid gap-2">
+                        <legend className="text-sm font-semibold text-[#203229]">Tags</legend>
+                        <div className="flex flex-wrap gap-2">
+                          {VOCABULARY_TAGS.map((tag) => (
+                            <label
+                              key={tag}
+                              className="mimi-focus-ring flex min-h-9 items-center justify-center rounded-md border border-[#d8d1c2] bg-[#fffaf1] px-3 text-xs font-semibold text-[#203229] transition has-checked:border-[#5f7d66] has-checked:bg-[#d9e5d5]"
+                            >
+                              <input
+                                className="sr-only"
+                                type="checkbox"
+                                checked={draft.tags?.includes(tag) ?? false}
+                                onChange={(event) => {
+                                  const currentTags = draft.tags ?? [];
+                                  const nextTags = event.target.checked
+                                    ? [...currentTags, tag]
+                                    : currentTags.filter((currentTag) => currentTag !== tag);
+
+                                  setDraft({ ...draft, tags: nextTags.length ? nextTags : null });
+                                }}
+                              />
+                              {tag}
+                            </label>
+                          ))}
+                        </div>
+                      </fieldset>
                       <div className="grid gap-3 md:grid-cols-3">
                         <label className="grid gap-1">
                           <span className="text-sm font-semibold text-[#203229]">Rarity</span>
@@ -358,9 +423,15 @@ export function VocabularyLibrary() {
                             {item.source}
                           </span>
                           {!item.archivedAt ? (
-                            <span className="mimi-pill px-2 py-1 text-xs font-semibold">Recognition</span>
+                            <span className="mimi-pill px-2 py-1 text-xs font-semibold">
+                              {item.learningTrack === "active" ? "Active" : "Recognition"}
+                            </span>
                           ) : null}
-                          <span className="mimi-pill px-2 py-1 text-xs font-semibold">PTE</span>
+                          {item.tags?.map((tag) => (
+                            <span key={tag} className="mimi-pill px-2 py-1 text-xs font-semibold">
+                              {tag}
+                            </span>
+                          ))}
                           {weakWordIds.has(item.id) ? (
                             <span className="rounded-md bg-[#efe0d1] px-2 py-1 text-xs font-semibold text-[#8a4d21]">
                               Weak Words
@@ -376,9 +447,19 @@ export function VocabularyLibrary() {
                         {item.example ? <p className="mt-2 text-sm leading-6 text-[#203229]">{item.example}</p> : null}
                         <div className="mt-3 flex flex-wrap gap-2">
                           <span className="mimi-pill px-2 py-1 text-xs font-semibold">Meaning</span>
-                          <span className="mimi-pill-muted px-2 py-1 text-xs font-semibold">Listening</span>
-                          <span className="mimi-pill-muted px-2 py-1 text-xs font-semibold">Spelling</span>
-                          <span className="mimi-pill-muted px-2 py-1 text-xs font-semibold">Usage</span>
+                          {item.learningTrack === "active" ? (
+                            <>
+                              <span className="mimi-pill px-2 py-1 text-xs font-semibold">Listening</span>
+                              <span className="mimi-pill px-2 py-1 text-xs font-semibold">Spelling</span>
+                              <span className="mimi-pill px-2 py-1 text-xs font-semibold">Usage</span>
+                            </>
+                          ) : (
+                            <>
+                              <span className="mimi-pill-muted px-2 py-1 text-xs font-semibold">Listening</span>
+                              <span className="mimi-pill-muted px-2 py-1 text-xs font-semibold">Spelling</span>
+                              <span className="mimi-pill-muted px-2 py-1 text-xs font-semibold">Usage</span>
+                            </>
+                          )}
                         </div>
                         <p className="mt-2 font-mono text-xs text-[#879087]">
                           created {item.createdAt} · system {item.systemCreatedAt}
@@ -422,7 +503,7 @@ export function VocabularyLibrary() {
           <p className="p-4 text-sm leading-6 text-[#5f6d62]">
             {isLoaded
               ? filter === "activeVocabulary"
-                ? "Active Vocabulary classification is reserved for a later practice stage."
+                ? "还没有 Active Vocabulary 词条。可以从导入页添加输出词汇。"
                 : "没有匹配的本地词条。"
               : "Loading..."}
           </p>

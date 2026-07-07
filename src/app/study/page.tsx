@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, BookOpen, ListPlus, PenLine, RotateCcw } from "lucide-react";
+import { ArrowRight, BookOpen, PenLine, RotateCcw } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 
 export default function StudyPage() {
@@ -13,14 +13,6 @@ export default function StudyPage() {
       cta: "Start review",
     },
     {
-      href: "/add",
-      title: "Add study material",
-      titleZh: "添加材料",
-      description: "Capture a new word, meaning, example sentence, and study notes.",
-      icon: ListPlus,
-      cta: "Add word",
-    },
-    {
       href: "/practice-lab",
       title: "Active Vocabulary",
       titleZh: "输出词汇",
@@ -31,7 +23,7 @@ export default function StudyPage() {
   ] as const;
 
   return (
-    <AppShell title="学习" subtitle="Choose the daily path without changing the local study model.">
+    <AppShell title="学习" subtitle="Choose the daily path for Recognition or future Active practice.">
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(260px,0.6fr)]">
         <section className="grid gap-4">
           {studyCards.map((card) => {

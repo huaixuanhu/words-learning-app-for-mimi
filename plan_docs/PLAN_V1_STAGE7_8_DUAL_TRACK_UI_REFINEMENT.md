@@ -99,6 +99,7 @@ Validation:
 
 Residual risks / deferred work:
 
-- Active Vocabulary remains UI-only in V1; no persisted track assignment exists.
+- At Stage 7.8 completion time, Active Vocabulary remained UI-only with no persisted track assignment.
 - Practice Lab is a planned module entry, not an active dictation, spelling, writing, or AI feedback workflow.
-- Real Recognition / Active data modeling, backup/export semantics, scheduler behavior, and privacy boundaries need a separate later plan.
+- Stage 7.9 later added local `learningTrack`, nullable `tags`, schema version 4 backup/export semantics, and recognition-only scheduler filtering in `plan_docs/PLAN_V1_STAGE7_9_DUAL_TRACK_DATA_IMPORT.md`.
+- Practice Lab, dictation, spelling, writing usage, AI feedback, and remote database migration still need separate later plans.

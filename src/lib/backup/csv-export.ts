@@ -10,6 +10,8 @@ export const VOCABULARY_CSV_COLUMNS = [
   "example",
   "notes",
   "rarityScore",
+  "learningTrack",
+  "tags",
   "source",
   "importBatchId",
   "status",
@@ -35,6 +37,10 @@ export function escapeCsvValue(value: string | number | null) {
 function getVocabularyCsvValue(data: VocabularyData, item: VocabularyItem, column: VocabularyCsvColumn) {
   if (column === "personDisplayName") {
     return data.people.find((person) => person.id === item.personId)?.displayName ?? "";
+  }
+
+  if (column === "tags") {
+    return item.tags?.join("|") ?? "";
   }
 
   return item[column];

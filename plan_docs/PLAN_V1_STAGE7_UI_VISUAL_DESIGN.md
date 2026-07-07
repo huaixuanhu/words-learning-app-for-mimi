@@ -69,6 +69,12 @@ Stage 7.8 is documented in `plan_docs/PLAN_V1_STAGE7_8_DUAL_TRACK_UI_REFINEMENT.
 
 This child plan refines the local Stage 7 UI（用户界面）composition around future Recognition Vocabulary（阅读词汇）and Active Vocabulary（输出词汇）tracks before any Stage 6B Production（生产环境）execution. It adds a Today Hub dashboard, a calm Practice Lab / 练习室 reservation, Study / 学习 and Practice Lab page entries, cleaner main navigation（导航）, Library filters and mastery-dimension labels, and a more intentional cat Home Brand Button. It does not add AI API（人工智能接口）, persisted track assignment, PTE / IELTS stored classification, review scheduler changes, storage schema changes, API（应用程序接口）changes, or Production execution.
 
+## Stage 7.9 Dual-Track Data Import Note
+
+Stage 7.9 is documented in `plan_docs/PLAN_V1_STAGE7_9_DUAL_TRACK_DATA_IMPORT.md`.
+
+This child plan connects the accepted Stage 7.8 Recognition / Active information architecture to local V1 data semantics. It upgrades browser-local storage and JSON backup to schema version 4 with `learningTrack` and nullable `tags`, moves single input and batch JSON import under `/import`, keeps `/add` as a compatibility redirect, adds separate Recognition / Active daily limits in Settings, and keeps current review scheduling limited to Recognition Vocabulary. It does not add AI API, dictation, spelling, writing feedback, remote database migration, Production import, Production deployment, or external vocabulary sources.
+
 ## Prompt Drift Boundary
 
 The user-provided prompt mentions a PTE / IELTS toggle because the reference concept mixed broader exam-prep ideas into the UI direction. For this V1 stage:

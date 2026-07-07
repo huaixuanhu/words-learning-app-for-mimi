@@ -88,6 +88,8 @@ export async function POST(request: NextRequest) {
     };
     const settings = await repository.reviewSettings.updateSettings(timestampedContext, {
       sessionLimit: 3,
+      recognitionSessionLimit: 3,
+      activeSessionLimit: 3,
       timezone,
     });
     const item = await repository.vocabulary.addItem(timestampedContext, {
@@ -96,6 +98,8 @@ export async function POST(request: NextRequest) {
       example: "This row was created by the development or preview storage smoke route.",
       notes: "",
       rarityScore: null,
+      learningTrack: "recognition",
+      tags: null,
       source: "manual",
       timezone,
     });

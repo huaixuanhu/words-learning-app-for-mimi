@@ -2,7 +2,7 @@ import type { ReviewRating, ReviewState } from "./types";
 import type { VocabularyData, VocabularyItem } from "@/lib/vocabulary/types";
 import { getSelectedReviewSettings, normalizeSessionLimit } from "./settings";
 import { getSelectedPersonId } from "@/lib/people/repository";
-import { getActiveVocabularyItems } from "@/lib/vocabulary/repository";
+import { getRecognitionVocabularyItems } from "@/lib/vocabulary/repository";
 
 export const REVIEW_INTERVAL_MINUTES: Record<ReviewRating, number> = {
   forgot: 10,
@@ -64,10 +64,10 @@ function compareByDateThenText(a: VocabularyItem, b: VocabularyItem) {
 export function selectReviewQueue(
   data: VocabularyData,
   now = new Date().toISOString(),
-  sessionLimit = getSelectedReviewSettings(data).sessionLimit,
+  sessionLimit = getSelectedReviewSettings(data).recognitionSessionLimit,
 ) {
   const stateByVocabularyId = getReviewStateByVocabularyId(data);
-  const activeItems = getActiveVocabularyItems(data);
+  const activeItems = getRecognitionVocabularyItems(data);
   const dueItems = activeItems
     .filter((item) => {
       const state = stateByVocabularyId.get(item.id);

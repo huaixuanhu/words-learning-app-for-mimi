@@ -4,7 +4,6 @@ import {
   GraduationCap,
   Home,
   Library,
-  ListPlus,
   RotateCcw,
   Settings,
   Upload,
@@ -29,15 +28,9 @@ export const primaryActions = [
     icon: RotateCcw,
   },
   {
-    href: "/add",
-    label: "添加单词",
-    detail: "manual entry",
-    icon: ListPlus,
-  },
-  {
     href: "/import",
-    label: "批量导入",
-    detail: ".txt / paste text",
+    label: "输入词汇",
+    detail: "single / JSON",
     icon: Upload,
   },
   {

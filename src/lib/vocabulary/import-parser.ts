@@ -1,5 +1,12 @@
 import type { ImportCandidate, ImportCandidateStatus } from "./types";
-import { normalizeOptionalText, validateSurfaceText } from "./normalize";
+import {
+  isLearningTrack,
+  normalizeLearningTrack,
+  normalizeOptionalText,
+  normalizeRarityScore,
+  validateSurfaceText,
+  validateVocabularyTags,
+} from "./normalize";
 
 type ParseTextImportOptions = {
   existingNormalizedTexts?: Iterable<string>;
@@ -11,6 +18,10 @@ type RawCandidate = {
   surfaceText: string;
   meaningZh: string;
   example: string;
+  notes: string;
+  learningTrack: unknown;
+  tags: unknown;
+  rarityScore: number | string | null | undefined;
 };
 
 function makeTempId(lineNumber: number, index: number) {
@@ -33,6 +44,10 @@ function parseRawLine(line: string, lineNumber: number): RawCandidate[] {
         surfaceText: "",
         meaningZh: "",
         example: "",
+        notes: "",
+        learningTrack: "recognition",
+        tags: null,
+        rarityScore: null,
       },
     ];
   }
@@ -49,6 +64,10 @@ function parseRawLine(line: string, lineNumber: number): RawCandidate[] {
         surfaceText,
         meaningZh,
         example: exampleParts.join(" "),
+        notes: "",
+        learningTrack: "recognition",
+        tags: null,
+        rarityScore: null,
       },
     ];
   }
@@ -64,6 +83,10 @@ function parseRawLine(line: string, lineNumber: number): RawCandidate[] {
         surfaceText,
         meaningZh,
         example: exampleParts.join(" - "),
+        notes: "",
+        learningTrack: "recognition",
+        tags: null,
+        rarityScore: null,
       },
     ];
   }
@@ -75,6 +98,10 @@ function parseRawLine(line: string, lineNumber: number): RawCandidate[] {
       surfaceText: part.trim(),
       meaningZh: "",
       example: "",
+      notes: "",
+      learningTrack: "recognition",
+      tags: null,
+      rarityScore: null,
     }));
   }
 
@@ -85,12 +112,23 @@ function parseRawLine(line: string, lineNumber: number): RawCandidate[] {
       surfaceText: trimmed,
       meaningZh: "",
       example: "",
+      notes: "",
+      learningTrack: "recognition",
+      tags: null,
+      rarityScore: null,
     },
   ];
 }
 
 function getCandidateStatus(errors: string[], duplicate: boolean): ImportCandidateStatus {
-  if (errors.includes("empty") || errors.includes("too_long") || errors.includes("sentence_like")) {
+  if (
+    errors.includes("empty") ||
+    errors.includes("too_long") ||
+    errors.includes("sentence_like") ||
+    errors.includes("invalid_track") ||
+    errors.includes("invalid_tags") ||
+    errors.includes("unsupported_tag")
+  ) {
     return "invalid" as const;
   }
 
@@ -106,10 +144,14 @@ export function recomputeImportCandidates(
 
   return candidates.map((candidate) => {
     const validation = validateSurfaceText(candidate.surfaceText);
+    const tagValidation = validateVocabularyTags(candidate.tags);
+    const carriedErrors = candidate.errors.filter((error) => error === "invalid_track");
     const duplicate =
       validation.normalizedText &&
       (existing.has(validation.normalizedText) || seen.has(validation.normalizedText));
-    const errors = duplicate ? [...validation.errors, "duplicate"] : validation.errors;
+    const errors = duplicate
+      ? [...validation.errors, ...tagValidation.errors, ...carriedErrors, "duplicate"]
+      : [...validation.errors, ...tagValidation.errors, ...carriedErrors];
 
     if (validation.normalizedText) {
       seen.add(validation.normalizedText);
@@ -119,6 +161,8 @@ export function recomputeImportCandidates(
       ...candidate,
       surfaceText: validation.surfaceText,
       normalizedText: validation.normalizedText,
+      learningTrack: normalizeLearningTrack(candidate.learningTrack),
+      tags: tagValidation.tags,
       status: getCandidateStatus(errors, Boolean(duplicate)),
       errors,
     };
@@ -135,6 +179,7 @@ export function parseTextImport(text: string, options: ParseTextImportOptions = 
 
     rawCandidates.forEach((rawCandidate, candidateIndex) => {
       const validation = validateSurfaceText(rawCandidate.surfaceText);
+      const tagValidation = validateVocabularyTags(rawCandidate.tags);
       const errors = [...validation.errors];
       const duplicate =
         validation.normalizedText &&
@@ -143,6 +188,8 @@ export function parseTextImport(text: string, options: ParseTextImportOptions = 
       if (duplicate) {
         errors.push("duplicate");
       }
+
+      errors.push(...tagValidation.errors);
 
       if (validation.normalizedText) {
         seen.add(validation.normalizedText);
@@ -156,7 +203,10 @@ export function parseTextImport(text: string, options: ParseTextImportOptions = 
         normalizedText: validation.normalizedText,
         meaningZh: normalizeOptionalText(rawCandidate.meaningZh),
         example: normalizeOptionalText(rawCandidate.example),
-        rarityScore: null,
+        notes: normalizeOptionalText(rawCandidate.notes),
+        rarityScore: normalizeRarityScore(rawCandidate.rarityScore),
+        learningTrack: normalizeLearningTrack(rawCandidate.learningTrack),
+        tags: tagValidation.tags,
         status: getCandidateStatus(errors, Boolean(duplicate)),
         errors,
       });
@@ -164,6 +214,104 @@ export function parseTextImport(text: string, options: ParseTextImportOptions = 
   });
 
   return candidates;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function getJsonItems(value: unknown): unknown[] {
+  if (Array.isArray(value)) {
+    return value;
+  }
+
+  if (isRecord(value) && Array.isArray(value.items)) {
+    return value.items;
+  }
+
+  return [];
+}
+
+function readString(value: unknown) {
+  return typeof value === "string" ? value : "";
+}
+
+export function parseJsonImport(text: string, options: ParseTextImportOptions = {}) {
+  let parsed: unknown;
+
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    return [
+      {
+        tempId: "candidate-json-1",
+        lineNumber: 1,
+        rawLine: text,
+        surfaceText: "",
+        normalizedText: "",
+        meaningZh: "",
+        example: "",
+        notes: "",
+        rarityScore: null,
+        learningTrack: "recognition" as const,
+        tags: null,
+        status: "invalid" as const,
+        errors: ["invalid_json"],
+      },
+    ];
+  }
+
+  const jsonItems = getJsonItems(parsed);
+
+  if (!jsonItems.length) {
+    return [
+      {
+        tempId: "candidate-json-1",
+        lineNumber: 1,
+        rawLine: text,
+        surfaceText: "",
+        normalizedText: "",
+        meaningZh: "",
+        example: "",
+        notes: "",
+        rarityScore: null,
+        learningTrack: "recognition" as const,
+        tags: null,
+        status: "invalid" as const,
+        errors: ["missing_items"],
+      },
+    ];
+  }
+
+  const candidates = jsonItems.map((item, index): ImportCandidate => {
+    const record = isRecord(item) ? item : {};
+    const rawTrack = record.track ?? record.learningTrack;
+    const validation = validateSurfaceText(readString(record.word ?? record.surfaceText));
+    const tagValidation = validateVocabularyTags(record.tags);
+    const errors = [...validation.errors, ...tagValidation.errors];
+
+    if (!isLearningTrack(rawTrack)) {
+      errors.push("invalid_track");
+    }
+
+    return {
+      tempId: makeTempId(index + 1, 1),
+      lineNumber: index + 1,
+      rawLine: JSON.stringify(item),
+      surfaceText: validation.surfaceText,
+      normalizedText: validation.normalizedText,
+      meaningZh: normalizeOptionalText(readString(record.meaningZh)),
+      example: normalizeOptionalText(readString(record.example)),
+      notes: normalizeOptionalText(readString(record.notes)),
+      rarityScore: normalizeRarityScore(record.rarityScore as number | string | null | undefined),
+      learningTrack: normalizeLearningTrack(rawTrack),
+      tags: tagValidation.tags,
+      status: "new",
+      errors,
+    };
+  });
+
+  return recomputeImportCandidates(candidates, options);
 }
 
 export function summarizeImportCandidates(candidates: ImportCandidate[]) {

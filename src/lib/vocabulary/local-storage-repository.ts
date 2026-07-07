@@ -1,6 +1,7 @@
 import type { VocabularyData } from "./types";
 import { createEmptyVocabularyData } from "./repository";
 import { normalizeReviewSettings } from "@/lib/review/settings";
+import { normalizeLearningTrack, normalizeVocabularyTags } from "./normalize";
 import {
   DEFAULT_PERSON_ID,
   createDefaultPerson,
@@ -30,6 +31,21 @@ function isObject(value: unknown): value is Record<string, unknown> {
   return true;
 }
 
+function migrateItem(value: unknown, personId: string) {
+  return isObject(value)
+    ? {
+        ...value,
+        personId: typeof value.personId === "string" ? value.personId : personId,
+        learningTrack: normalizeLearningTrack(value.learningTrack),
+        tags: normalizeVocabularyTags(value.tags),
+      }
+    : value;
+}
+
+function migrateSettings(value: unknown, now: string) {
+  return normalizeReviewSettings(isObject(value) ? value : undefined, now);
+}
+
 export function migrateVocabularyData(value: unknown, now = new Date().toISOString()): VocabularyData {
   if (!isObject(value)) {
     return createEmptyVocabularyData(now);
@@ -50,12 +66,10 @@ export function migrateVocabularyData(value: unknown, now = new Date().toISOStri
     );
 
     return {
-      schemaVersion: 3,
+      schemaVersion: 4,
       people: [person],
       selectedPersonId: person.id,
-      items: items.map((item) =>
-        isObject(item) ? { ...item, personId: typeof item.personId === "string" ? item.personId : person.id } : item,
-      ) as VocabularyData["items"],
+      items: items.map((item) => migrateItem(item, person.id)) as VocabularyData["items"],
       importBatches: importBatches.map((batch) =>
         isObject(batch)
           ? { ...batch, personId: typeof batch.personId === "string" ? batch.personId : person.id }
@@ -77,7 +91,7 @@ export function migrateVocabularyData(value: unknown, now = new Date().toISOStri
     };
   }
 
-  if (maybeData.schemaVersion === 3) {
+  if (maybeData.schemaVersion === 3 || maybeData.schemaVersion === 4) {
     const people = Array.isArray(maybeData.people) && maybeData.people.length
       ? (maybeData.people as VocabularyData["people"])
       : [createDefaultPerson(now)];
@@ -88,14 +102,10 @@ export function migrateVocabularyData(value: unknown, now = new Date().toISOStri
         ? maybeData.selectedPersonId
         : fallbackPersonId;
     const migrated: VocabularyData = {
-      schemaVersion: 3,
+      schemaVersion: 4,
       people,
       selectedPersonId,
-      items: items.map((item) =>
-        isObject(item)
-          ? { ...item, personId: typeof item.personId === "string" ? item.personId : fallbackPersonId }
-          : item,
-      ) as VocabularyData["items"],
+      items: items.map((item) => migrateItem(item, fallbackPersonId)) as VocabularyData["items"],
       importBatches: importBatches.map((batch) =>
         isObject(batch)
           ? { ...batch, personId: typeof batch.personId === "string" ? batch.personId : fallbackPersonId }
@@ -112,7 +122,12 @@ export function migrateVocabularyData(value: unknown, now = new Date().toISOStri
           : event,
       ) as VocabularyData["reviewEvents"],
       settingsByPerson: Array.isArray(maybeData.settingsByPerson)
-        ? (maybeData.settingsByPerson as VocabularyData["settingsByPerson"])
+        ? maybeData.settingsByPerson
+            .filter(isObject)
+            .map((settings) => ({
+              personId: typeof settings.personId === "string" ? settings.personId : fallbackPersonId,
+              ...migrateSettings(settings, now),
+            }))
         : [],
       updatedAt,
     };

@@ -1,12 +1,16 @@
 import type { PersonReviewSettings, ReviewEvent, ReviewState } from "@/lib/review/types";
 
-export type VocabularySource = "manual" | "txt_file" | "pasted_text";
+export type VocabularySource = "manual" | "txt_file" | "pasted_text" | "json_file" | "json_paste";
 
 export type VocabularyStatus = "new" | "archived";
 
-export type ImportSourceType = "txt_file" | "pasted_text";
+export type ImportSourceType = "txt_file" | "pasted_text" | "json_file" | "json_paste";
 
 export type ImportCandidateStatus = "new" | "duplicate" | "invalid";
+
+export type LearningTrack = "recognition" | "active";
+
+export type VocabularyTag = "PTE" | "IELTS" | "Listening" | "Writing" | "Spelling Risk";
 
 export type Person = {
   id: string;
@@ -26,6 +30,8 @@ export type VocabularyItem = {
   example: string;
   notes: string;
   rarityScore: number | null;
+  learningTrack: LearningTrack;
+  tags: VocabularyTag[] | null;
   source: VocabularySource;
   importBatchId: string | null;
   status: VocabularyStatus;
@@ -56,13 +62,16 @@ export type ImportCandidate = {
   normalizedText: string;
   meaningZh: string;
   example: string;
+  notes: string;
   rarityScore: number | null;
+  learningTrack: LearningTrack;
+  tags: VocabularyTag[] | null;
   status: ImportCandidateStatus;
   errors: string[];
 };
 
 export type VocabularyData = {
-  schemaVersion: 3;
+  schemaVersion: 4;
   people: Person[];
   selectedPersonId: string;
   items: VocabularyItem[];
@@ -81,6 +90,8 @@ export type NewVocabularyInput = {
   example?: string;
   notes?: string;
   rarityScore?: number | null;
+  learningTrack?: LearningTrack;
+  tags?: VocabularyTag[] | null;
   source: VocabularySource;
   importBatchId?: string | null;
   createdAt?: string;
@@ -97,6 +108,8 @@ export type UpdateVocabularyInput = Partial<
     | "example"
     | "notes"
     | "rarityScore"
+    | "learningTrack"
+    | "tags"
     | "createdAt"
     | "timezone"
   >

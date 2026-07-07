@@ -12,10 +12,10 @@ import { selectReviewQueue } from "@/lib/review/scheduler";
 import { getSelectedReviewSettings } from "@/lib/review/settings";
 import { reviewRatings } from "@/lib/stage-two-data";
 import { playReviewCompleteSound } from "@/lib/ui/sound-player";
-import { getActiveVocabularyItems } from "@/lib/vocabulary/repository";
+import { getRecognitionVocabularyItems } from "@/lib/vocabulary/repository";
 import { PressableButton } from "@/components/ui/motion-primitives";
 
-function getItemById(dataItems: ReturnType<typeof getActiveVocabularyItems>, id: string) {
+function getItemById(dataItems: ReturnType<typeof getRecognitionVocabularyItems>, id: string) {
   return dataItems.find((item) => item.id === id);
 }
 
@@ -33,7 +33,7 @@ export function ReviewSession() {
   const submittedItemIdRef = useRef<string | null>(null);
   const [message, setMessage] = useState("");
   const selectedPersonId = getSelectedPersonId(data);
-  const activeItems = useMemo(() => getActiveVocabularyItems(data), [data]);
+  const recognitionItems = useMemo(() => getRecognitionVocabularyItems(data), [data]);
   const settings = getSelectedReviewSettings(data);
 
   const buildSessionIds = useCallback(() => {
@@ -58,7 +58,7 @@ export function ReviewSession() {
     return () => window.clearTimeout(timer);
   }, [buildSessionIds, isLoaded, selectedPersonId, sessionIds, sessionPersonId]);
 
-  const currentItem = sessionIds?.length ? getItemById(activeItems, sessionIds[0]) : null;
+  const currentItem = sessionIds?.length ? getItemById(recognitionItems, sessionIds[0]) : null;
   const sessionTotal = completedCount + (sessionIds?.length ?? 0);
   const remainingCount = sessionIds?.length ?? 0;
   const progressPercent = sessionTotal ? Math.round((completedCount / sessionTotal) * 100) : 0;
@@ -255,7 +255,7 @@ export function ReviewSession() {
         <div className="grid grid-cols-3 gap-3">
           <div className="rounded-md bg-[#efe9dc] p-3">
             <p className="text-xs font-medium text-[#5f6d62]">Limit</p>
-            <p className="mt-1 text-xl font-semibold text-[#203229]">{settings.sessionLimit}</p>
+            <p className="mt-1 text-xl font-semibold text-[#203229]">{settings.recognitionSessionLimit}</p>
           </div>
           <div className="rounded-md bg-[#efe9dc] p-3">
             <p className="text-xs font-medium text-[#5f6d62]">Done</p>

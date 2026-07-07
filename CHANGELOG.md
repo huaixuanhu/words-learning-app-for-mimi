@@ -1,5 +1,21 @@
 # CHANGELOG
 
+## 2026-07-07 00:35 AEST
+
+- Executed Stage 7.9 dual-track data/import refinement locally.
+- Added `plan_docs/PLAN_V1_STAGE7_9_DUAL_TRACK_DATA_IMPORT.md` with `Source plan`, `Derived from`, `Scope`, `Non-Scope`, and `Exit criteria` markers.
+- Upgraded browser-local vocabulary data to schema version 4 with `learningTrack` and nullable `tags`; legacy schema version 1 / 2 / 3 data migrates to Recognition Vocabulary with `tags: null`.
+- Changed `/import` into the parent input page with Single input and Batch JSON import; `/add` now remains only as a compatibility redirect to `/import`.
+- Replaced the user-facing batch import path with `.json` file / pasted JSON preview, including a sample that can be given to conversation AI（对话式 AI）so the returned JSON can be directly read and stored by the app.
+- Added separate Recognition Vocabulary（阅读词汇）and Active Vocabulary（输出词汇）daily limits in Settings.
+- Made Library filters and item chips use real Recognition / Active classification and real nullable tags.
+- Kept current review scheduling limited to Recognition Vocabulary while storing Active Vocabulary for future Practice Lab work.
+- Updated JSON backup and CSV export so schema version 4 includes `learningTrack`, nullable `tags`, and separate Recognition / Active limits.
+- Kept AI API（人工智能接口）, dictation, spelling, writing feedback, remote database migration, Production import, Production deployment, and PTE / IELTS exam-mode classification out of scope.
+- Verified local validation: `npm run lint`, `npm run typecheck`, `npm run test`, `npm run backup:dry-run:fixture`, `npm run build`, and route smoke checks for `/`, `/study`, `/import`, `/library`, `/review`, `/settings`, `/practice-lab`, and `/add`.
+- Browser MCP visual verification was attempted but blocked by a tab session mismatch in the browser backend; route-level localhost smoke checks passed.
+- Reason: turn the accepted Stage 7.8 dual-track UI direction into explicit local V1 input, storage, backup/export, settings, and scheduler semantics without starting AI or Production work.
+
 ## 2026-07-06 23:39 AEST
 
 - Executed Stage 7.8 dual-track UI refinement locally.

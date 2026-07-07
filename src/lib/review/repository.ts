@@ -22,7 +22,7 @@ export function getReviewState(data: VocabularyData, vocabularyItemId: string) {
 export function getReviewQueue(
   data: VocabularyData,
   now = new Date().toISOString(),
-  sessionLimit = getSelectedReviewSettings(data).sessionLimit,
+  sessionLimit = getSelectedReviewSettings(data).recognitionSessionLimit,
 ) {
   return selectReviewQueue(data, now, sessionLimit);
 }
@@ -37,7 +37,7 @@ export function recordReview(
     (candidate) => candidate.id === input.vocabularyItemId && candidate.personId === personId,
   );
 
-  if (!item || item.status === "archived" || item.archivedAt) {
+  if (!item || item.status === "archived" || item.archivedAt || item.learningTrack !== "recognition") {
     throw new Error(`Reviewable vocabulary item not found: ${input.vocabularyItemId}`);
   }
 
