@@ -301,13 +301,14 @@ Exit criteria:
 
 ### Stage 8: Review Memory Algorithm
 
-Status: Stage 8 Review Memory Algorithm is documented in `plan_docs/PLAN_V1_STAGE8_REVIEW_MEMORY_ALGORITHM.md`. Stage 8-B package fit and calibration executed locally on 2026-07-08 with `ts-fsrs@5.4.1`, an isolated Recognition FSRS adapter, deterministic calibration tests, and an Active Vocabulary no-review-state regression test. Stage 8-C implemented same-session repeat for failed Recognition ratings. Stage 8-D replaced the cross-day scheduler with Recognition-only FSRS scheduling, stored FSRS difficulty / stability in neutral state fields, kept reset / rollback deterministic through event replay, and changed Review queue due checks to Mimi's local natural-day bucket.
+Status: Stage 8 Review Memory Algorithm is documented in `plan_docs/PLAN_V1_STAGE8_REVIEW_MEMORY_ALGORITHM.md`. Stage 8-B package fit and calibration executed locally on 2026-07-08 with `ts-fsrs@5.4.1`, an isolated Recognition FSRS adapter, deterministic calibration tests, and an Active Vocabulary no-review-state regression test. Stage 8-C implemented same-session repeat for failed Recognition ratings. Stage 8-D replaced the cross-day scheduler with Recognition-only FSRS scheduling, stored FSRS difficulty / stability in neutral state fields, kept reset / rollback deterministic through event replay, and changed Review queue due checks to Mimi's local natural-day bucket. Stage 8-E confirmed schema version 5 remains sufficient and tightened JSON backup restore so Active Vocabulary review states / events are rejected while Active words without review history still round-trip.
 
 Exit criteria:
 
 - Recognition Vocabulary uses an accepted same-session repeat design for `完全忘记了` and `有点忘记了`.
 - Cross-day Recognition scheduling uses an accepted FSRS-6 design or explicitly documented equivalent after library fit validation.
 - Active Vocabulary remains stored, exportable, importable, and visible as future Practice Lab scope, but does not enter review queue, does not generate review state, and does not generate review event in V1.
+- Backup restore rejects V1-impossible Active Vocabulary review states and review events.
 - `review_states.difficulty` and `review_states.stability` remain neutral state field names, with documentation that V1 uses them only for Recognition.
 - Future Active scheduling must use separate dimensions such as `review_profile`, `skill_type`, or `activity_type` so Recognition and Active state do not share one row.
 - Stage 6B-P1 incorporates the accepted Stage 8 state shape before any Postgres Production migration.

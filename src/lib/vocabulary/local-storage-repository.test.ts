@@ -114,6 +114,76 @@ describe("local storage vocabulary migration", () => {
     expect(migrated.items[0]?.examples).toEqual(["Write a coherent paragraph."]);
   });
 
+  it("keeps schema version 5 after Stage 8 review algorithm fields", () => {
+    const migrated = migrateVocabularyData(
+      {
+        schemaVersion: 5,
+        people: [
+          {
+            id: "person_mimi",
+            displayName: "Mimi",
+            slug: "mimi",
+            isActive: true,
+            createdAt: "2026-07-04T00:00:00.000Z",
+            updatedAt: "2026-07-04T00:00:00.000Z",
+          },
+        ],
+        selectedPersonId: "person_mimi",
+        items: [
+          {
+            id: "vocab-1",
+            personId: "person_mimi",
+            surfaceText: "coherent",
+            normalizedText: "coherent",
+            meaningZh: "连贯的",
+            meaningsZh: ["连贯的"],
+            example: "Write a coherent paragraph.",
+            examples: ["Write a coherent paragraph."],
+            notes: "",
+            rarityScore: null,
+            learningTrack: "recognition",
+            tags: null,
+            source: "manual",
+            importBatchId: null,
+            status: "new",
+            createdAt: "2026-07-04T00:00:00.000Z",
+            systemCreatedAt: "2026-07-04T00:00:00.000Z",
+            updatedAt: "2026-07-04T00:00:00.000Z",
+            timezone: "Australia/Melbourne",
+            archivedAt: null,
+          },
+        ],
+        importBatches: [],
+        reviewStates: [
+          {
+            id: "review-state-1",
+            personId: "person_mimi",
+            vocabularyItemId: "vocab-1",
+            status: "review",
+            dueAt: "2026-07-07T00:00:00.000Z",
+            lastReviewedAt: "2026-07-04T00:00:00.000Z",
+            reviewCount: 1,
+            lapseCount: 0,
+            intervalMinutes: 4320,
+            difficulty: 2.11810397,
+            stability: 2.3065,
+            updatedAt: "2026-07-04T00:00:00.000Z",
+          },
+        ],
+        reviewEvents: [],
+        settingsByPerson: [],
+        updatedAt: "2026-07-04T00:00:00.000Z",
+      },
+      "2026-07-04T01:00:00.000Z",
+    );
+
+    expect(migrated.schemaVersion).toBe(5);
+    expect(migrated.reviewStates[0]).toMatchObject({
+      difficulty: 2.11810397,
+      stability: 2.3065,
+    });
+  });
+
   it("returns an empty version 5 shape for invalid data", () => {
     const migrated = migrateVocabularyData("not-json", "2026-07-04T01:00:00.000Z");
 

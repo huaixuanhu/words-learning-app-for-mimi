@@ -1,5 +1,38 @@
 # AI Agent Log
 
+## 2026-07-08 18:44 AEST
+
+- Task: execute Stage 8-E data migration and backup compatibility after the user confirmed implementation.
+- Plan agreed: yes. Scope was local schema-version decision, JSON backup validation, Active Vocabulary（输出词汇）round-trip behavior, impossible Active review state / event rejection, tests, and documentation/log sync.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE8_REVIEW_MEMORY_ALGORITHM.md`
+  - `src/lib/backup/json-backup.test.ts`
+  - `src/lib/backup/json-backup.ts`
+  - `src/lib/vocabulary/local-storage-repository.test.ts`
+- Reason: prevent broken or future-incompatible backups from importing Active scheduling state into V1 Production（生产环境）data.
+- Implementation notes:
+  - Confirmed schema version 5 remains sufficient for Stage 8 FSRS state because `difficulty`, `stability`, `intervalMinutes`, `dueAt`, `reviewCount`, and `lapseCount` already exist.
+  - Updated JSON backup relationship validation to map item ids to `learningTrack`.
+  - Rejected `reviewStates` / `reviewEvents` that reference Active Vocabulary items when track fields are present.
+  - Updated backup fixtures so Recognition words carry review history and Active words round-trip without review history.
+  - Added a local migration regression test proving Stage 8 review algorithm fields keep schema version 5.
+- Validation:
+  - Passed: `npm run test -- src/lib/backup/json-backup.test.ts src/lib/vocabulary/local-storage-repository.test.ts` with 2 files and 11 tests.
+  - Passed: `npm run lint`.
+  - Passed: `npm run typecheck`.
+  - Passed: `npm run test` with 16 files and 78 tests.
+  - Passed: `npm run backup:dry-run:fixture`, reporting fixture plan counts `people=1`, `importBatches=1`, `vocabularyItems=1`, `reviewStates=1`, `reviewEvents=1`, `reviewSettings=1`, `backupImports=1`, and `backupImportMappings=6`.
+  - Passed: `npm run build`.
+  - Passed: `git diff --check`.
+  - Passed: `npm run governance:preflight`.
+- Safety notes: local code, tests, and documentation only. No local storage schema version change, Postgres schema change, Vercel command, Neon command, `.env` read/change, credential access, database command, database mutation, Production deployment, Production migration, Production import, formal user backup import, AI API（人工智能接口）, dictation engine（听写引擎）, spelling checker（拼写检查器）, writing feedback model, external vocabulary source, authentication（认证）, analytics（分析追踪）, notification, email, or 付费/扣款 feature was performed.
+
 ## 2026-07-08 18:15 AEST
 
 - Task: execute Stage 8-D FSRS scheduler replacement after the user confirmed implementation.

@@ -1,7 +1,7 @@
 # Words Learning App For Mimi Stage 8: Review Memory Algorithm
 
 Created: 2026-07-08 12:45 AEST
-Last updated: 2026-07-08 18:15 AEST
+Last updated: 2026-07-08 18:44 AEST
 
 Source plan: `plan_docs/PLAN_V1_MASTER.md`
 Derived from: `plan_docs/PLAN_V1_STAGE4_REVIEW_SCHEDULER_FLASHCARDS.md`, `plan_docs/PLAN_V1_STAGE7_9_DUAL_TRACK_DATA_IMPORT.md`, `plan_docs/PLAN_V1_STAGE7_10_LIBRARY_REVIEW_CONTROLS.md`, `plan_docs/PLAN_V1_STAGE7_11_REVIEW_ROLLBACK_AUTO_REFRESH.md`, `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md`, `ARCHITECTURE.md`, `src/lib/review/scheduler.ts`, `src/lib/review/repository.ts`, `src/components/review/review-session.tsx`, and the 2026-07-08 user decision to replace the placeholder review algorithm before formal V1 Production（生产环境）launch.
@@ -41,23 +41,23 @@ Planning implications:
 
 The current scheduler lives in `src/lib/review/scheduler.ts`:
 
-- `forgot` schedules 10 minutes later.
-- `hard` schedules 1 day later.
-- `vague` schedules 3 days later.
-- `remembered` schedules 7 days later.
-- This is deterministic and explainable, but it is a bootstrap interval table.
+- Stage 8-D replaced the fixed Stage 4 interval table with `ts-fsrs` scheduling for Recognition.
+- V1 ratings map through `src/lib/review/fsrs-recognition.ts`.
+- FSRS writes neutral `difficulty` and `stability` values into `ReviewState`.
+- Exact `dueAt` timestamps remain stored, while Review queue due checks use local natural-day bucket（本地自然日分桶）semantics.
 
 The current Review session lives in `src/components/review/review-session.tsx`:
 
-- Every rating currently records one event and advances to the next word.
-- `forgot` and `hard` do not repeat inside the current session.
+- Every rating records one event.
+- `forgot` and `hard` repeat later inside the current Recognition session.
+- `vague` and `remembered` are the only ratings that pass the word for the current session.
 - `回退1词` can remove the previous completed review event and place that word back at the front of the session.
 
 The current repository behavior lives in `src/lib/review/repository.ts`:
 
 - `recordReview()` rejects non-Recognition items.
-- `resetTodayReviewTask()` and `rollbackReviewEvent()` rebuild `ReviewState` from historical `ReviewEvent` rows using the current scheduler.
-- Rebuild logic must be updated together with the scheduler so reset / rollback remain deterministic.
+- `resetTodayReviewTask()` and `rollbackReviewEvent()` rebuild `ReviewState` from historical `ReviewEvent` rows using the FSRS-backed scheduler.
+- The future Postgres repository path also rejects non-Recognition review recording.
 
 The current data model already has neutral `difficulty` and `stability` fields in `ReviewState` and `review_states`. These names should stay neutral because V2 may add non-Recognition practice modes with separate state rows.
 
@@ -304,9 +304,16 @@ Due-date boundary:
 
 ### Stage 8-E Data Migration And Backup Compatibility
 
-- Add local schema migration only if needed. Stage 8-D did not require one because the existing neutral `difficulty`, `stability`, `intervalMinutes`, `dueAt`, `reviewCount`, and `lapseCount` fields remain sufficient.
-- Update JSON backup validation / restore tests if the state shape changes.
-- Ensure Active data round-trips without state / event creation.
+Status: implemented locally on 2026-07-08 after explicit approval.
+
+Completed:
+
+- Confirmed no local schema version 6 is needed for Stage 8 because schema version 5 already stores neutral `difficulty`, `stability`, `intervalMinutes`, `dueAt`, `reviewCount`, and `lapseCount` fields.
+- Kept local migration output at schema version 5.
+- Updated JSON backup validation so V1 rejects review states or review events that point to Active Vocabulary items.
+- Preserved Active Vocabulary backup / restore round-trip when no review state or review event is attached.
+- Preserved Recognition review state / review event backup round-trip, including numeric FSRS `difficulty` and `stability`.
+- Added tests for schema 5 staying schema 5, Active no-review-history round-trip, impossible Active review state rejection, impossible Active review event rejection, and FSRS state field preservation.
 
 ### Stage 8-F Postgres Production Handoff
 
@@ -369,16 +376,18 @@ Stop immediately if:
 - validation fails;
 - the user pauses or changes direction.
 
-## Open Decisions
+## Resolved Decisions
 
-Before code implementation:
+- `request_retention` is explicitly set to `0.9` for V1 candidate calibration.
+- `enable_short_term`, `learning_steps`, and `relearning_steps` are disabled / empty so same-session repeat owns short-term failed-card behavior.
+- Stage 8 does not require local schema version 6.
+- Scheduler parameter metadata remains documented and tested in code; it is not stored per review state/event in V1.
+- `activeSessionLimit` remains a lightweight future preference, but Active still has no due queue.
 
-- exact `request_retention` value;
-- whether to use `ts-fsrs` short-term / relearning steps or keep short-term behavior owned by the app's same-session repeat loop;
-- whether Stage 8 requires local schema version 6;
-- whether to store scheduler version / parameter metadata in review state, review events, or a separate settings object;
+## Remaining Acceptance Checks
+
 - exact UI wording for repeated failed cards and progress count;
-- whether `activeSessionLimit` remains visible in Settings as a future preference or is visually softened until Practice Lab exists.
+- optional browser review-flow smoke check before Stage 8-G acceptance.
 
 ## Stage 8 Result
 

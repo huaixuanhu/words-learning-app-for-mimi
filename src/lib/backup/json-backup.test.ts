@@ -17,7 +17,7 @@ function createSampleData() {
       example: "Allocate time wisely.",
       notes: "PTE writing",
       rarityScore: 3,
-      learningTrack: "active",
+      learningTrack: "recognition",
       tags: ["PTE", "Writing"],
       source: "manual",
       timezone: "Australia/Melbourne",
@@ -52,8 +52,8 @@ function createSampleData() {
         reviewCount: 1,
         lapseCount: 0,
         intervalMinutes: 1440,
-        difficulty: null,
-        stability: null,
+        difficulty: 3.25,
+        stability: 1.75,
         updatedAt: "2026-07-05T00:10:00.000Z",
       },
     ],
@@ -130,17 +130,56 @@ describe("JSON vocabulary backup", () => {
     expect(parsed.data.people).toHaveLength(1);
     expect(parsed.data.items[0]?.id).toBe("vocab-1");
     expect(parsed.data.items[0]?.personId).toBe("person_mimi");
-    expect(parsed.data.items[0]?.learningTrack).toBe("active");
+    expect(parsed.data.items[0]?.learningTrack).toBe("recognition");
     expect(parsed.data.items[0]?.tags).toEqual(["PTE", "Writing"]);
     expect(parsed.data.items[0]?.meaningsZh).toEqual(["分配"]);
     expect(parsed.data.items[0]?.examples).toEqual(["Allocate time wisely."]);
     expect(parsed.data.importBatches).toHaveLength(1);
     expect(parsed.data.reviewStates).toHaveLength(1);
+    expect(parsed.data.reviewStates[0]?.difficulty).toBe(3.25);
+    expect(parsed.data.reviewStates[0]?.stability).toBe(1.75);
     expect(parsed.data.reviewEvents).toHaveLength(1);
     expect(parsed.data.settingsByPerson[0]?.sessionLimit).toBe(12);
     expect(parsed.data.settingsByPerson[0]?.recognitionSessionLimit).toBe(12);
     expect(parsed.data.settingsByPerson[0]?.activeSessionLimit).toBe(6);
     expect(parsed.counts).toEqual(summarizeVocabularyData(data));
+  });
+
+  it("round-trips Active vocabulary without review state or review events", () => {
+    const added = addVocabularyItem(
+      createEmptyVocabularyData("2026-07-05T00:00:00.000Z"),
+      {
+        id: "vocab-active",
+        surfaceText: "articulate",
+        meaningZh: "清楚表达",
+        example: "Articulate your position clearly.",
+        learningTrack: "active",
+        tags: ["PTE", "Writing"],
+        source: "manual",
+        timezone: "Australia/Melbourne",
+      },
+      "2026-07-05T00:01:00.000Z",
+    );
+    const serialized = serializeVocabularyBackup(added.data, {
+      exportedAt: "2026-07-05T00:20:00.000Z",
+      timezone: "Australia/Melbourne",
+    });
+    const parsed = parseVocabularyBackupText(serialized, "2026-07-05T00:21:00.000Z");
+
+    expect(parsed.ok).toBe(true);
+
+    if (!parsed.ok) {
+      return;
+    }
+
+    expect(parsed.data.items[0]).toMatchObject({
+      id: "vocab-active",
+      learningTrack: "active",
+      meaningsZh: ["清楚表达"],
+      examples: ["Articulate your position clearly."],
+    });
+    expect(parsed.data.reviewStates).toHaveLength(0);
+    expect(parsed.data.reviewEvents).toHaveLength(0);
   });
 
   it("restores schema version 2 backups by migrating them to version 5", () => {
@@ -272,5 +311,72 @@ describe("JSON vocabulary backup", () => {
     }
 
     expect(parsed.errors).toContain("reviewEvents[0].vocabularyItemId does not match an item");
+  });
+
+  it("rejects Active vocabulary review state and review events in V1 backups", () => {
+    const active = addVocabularyItem(
+      createEmptyVocabularyData("2026-07-05T00:00:00.000Z"),
+      {
+        id: "vocab-active",
+        surfaceText: "articulate",
+        meaningZh: "清楚表达",
+        example: "Articulate your position clearly.",
+        learningTrack: "active",
+        tags: ["PTE", "Writing"],
+        source: "manual",
+        timezone: "Australia/Melbourne",
+      },
+      "2026-07-05T00:01:00.000Z",
+    );
+    const personId = active.item.personId;
+    const backup = createVocabularyBackup(
+      {
+        ...active.data,
+        reviewStates: [
+          {
+            id: "review-state-active",
+            personId,
+            vocabularyItemId: "vocab-active",
+            status: "review",
+            dueAt: "2026-07-06T00:00:00.000Z",
+            lastReviewedAt: "2026-07-05T00:10:00.000Z",
+            reviewCount: 1,
+            lapseCount: 0,
+            intervalMinutes: 1440,
+            difficulty: 3.25,
+            stability: 1.75,
+            updatedAt: "2026-07-05T00:10:00.000Z",
+          },
+        ],
+        reviewEvents: [
+          {
+            id: "review-event-active",
+            personId,
+            vocabularyItemId: "vocab-active",
+            reviewedAt: "2026-07-05T00:10:00.000Z",
+            rating: "remembered",
+            previousDueAt: null,
+            nextDueAt: "2026-07-13T00:10:00.000Z",
+            previousIntervalMinutes: null,
+            nextIntervalMinutes: 11520,
+            elapsedMs: 3200,
+          },
+        ],
+      },
+      {
+        exportedAt: "2026-07-05T00:20:00.000Z",
+        timezone: "Australia/Melbourne",
+      },
+    );
+    const parsed = parseVocabularyBackupText(JSON.stringify(backup));
+
+    expect(parsed.ok).toBe(false);
+
+    if (parsed.ok) {
+      return;
+    }
+
+    expect(parsed.errors).toContain("reviewStates[0].vocabularyItemId references an Active item");
+    expect(parsed.errors).toContain("reviewEvents[0].vocabularyItemId references an Active item");
   });
 });

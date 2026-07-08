@@ -460,16 +460,20 @@ function validateBackupData(value: unknown, errors: string[]) {
         ? value.people.filter(isRecord).map((person) => person.id).filter(isString)
         : [],
     );
-    const itemKeys = new Set(
-      value.items
-        .filter(isRecord)
-        .map((item) =>
-          requiresPersonId && isString(item.personId) && isString(item.id)
-            ? `${item.personId}:${item.id}`
-            : item.id,
-        )
-        .filter(isString),
-    );
+    const itemTrackByKey = new Map<string, unknown>();
+
+    value.items.filter(isRecord).forEach((item) => {
+      const itemKey =
+        requiresPersonId && isString(item.personId) && isString(item.id)
+          ? `${item.personId}:${item.id}`
+          : item.id;
+
+      if (isString(itemKey)) {
+        itemTrackByKey.set(itemKey, item.learningTrack);
+      }
+    });
+
+    const itemKeys = new Set(itemTrackByKey.keys());
 
     if (requiresPersonId) {
       value.items.filter(isRecord).forEach((item, index) => {
@@ -489,6 +493,10 @@ function validateBackupData(value: unknown, errors: string[]) {
         if (isString(itemKey) && !itemKeys.has(itemKey)) {
           errors.push(`reviewStates[${index}].vocabularyItemId does not match an item`);
         }
+
+        if (requiresTrackFields && isString(itemKey) && itemTrackByKey.get(itemKey) === "active") {
+          errors.push(`reviewStates[${index}].vocabularyItemId references an Active item`);
+        }
       });
     }
 
@@ -501,6 +509,10 @@ function validateBackupData(value: unknown, errors: string[]) {
 
         if (isString(itemKey) && !itemKeys.has(itemKey)) {
           errors.push(`reviewEvents[${index}].vocabularyItemId does not match an item`);
+        }
+
+        if (requiresTrackFields && isString(itemKey) && itemTrackByKey.get(itemKey) === "active") {
+          errors.push(`reviewEvents[${index}].vocabularyItemId references an Active item`);
         }
       });
     }

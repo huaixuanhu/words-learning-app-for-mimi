@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## 2026-07-08 18:44 AEST
+
+- Executed Stage 8-E data migration and backup compatibility locally.
+- Confirmed Stage 8 does not need schema version 6 because schema version 5 already has neutral FSRS-compatible review state fields.
+- Tightened JSON backup restore validation so review states and review events that point to Active Vocabulary（输出词汇）items are rejected as V1-impossible data.
+- Preserved Active Vocabulary backup / restore round-trip when no review history is attached.
+- Preserved Recognition Vocabulary（阅读词汇）review history round-trip, including numeric FSRS `difficulty` and `stability` values.
+- Added local migration and backup tests for schema version 5 preservation, Active no-review-history round-trip, and impossible Active review state / event rejection.
+- Reason: prevent broken or future-incompatible backups from importing Active scheduling state into V1 Production（生产环境）data.
+
 ## 2026-07-08 18:15 AEST
 
 - Executed Stage 8-D FSRS scheduler replacement locally.
