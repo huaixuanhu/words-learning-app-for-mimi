@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## 2026-07-08 22:05 AEST
+
+- Executed Stage 8-G final acceptance locally.
+- Ran local browser review-flow smoke checks on temporary dev server origins.
+- Verified that a Recognition Vocabulary（阅读词汇）smoke word entered Review while an Active Vocabulary（输出词汇）smoke word did not enter the Review queue.
+- Verified that `完全忘记了` repeated the Recognition smoke word inside the same session and that `完全记得` completed the repeated item with the `已完成今日复习任务` modal.
+- Marked Stage 8 Review Memory Algorithm（复习记忆算法）as accepted and handed the next step to Stage 6B-P1 Postgres Production runtime implementation after separate approval.
+- Fixed a UI-only decorative button-sound fallback path so blocked audio playback in automated browser smoke checks is caught quietly instead of surfacing an unhandled rejection.
+- Re-ran the browser smoke check after the sound fallback fix and verified the Review flow still passed without new audio errors for the clean origin.
+- Reason: close the pre-Production review algorithm stage before moving to the cloud-backed V1 runtime bridge.
+
 ## 2026-07-08 21:31 AEST
 
 - Executed Stage 8-F Postgres Production handoff locally.

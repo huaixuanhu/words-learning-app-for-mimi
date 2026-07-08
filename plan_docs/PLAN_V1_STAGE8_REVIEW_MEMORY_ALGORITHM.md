@@ -1,7 +1,7 @@
 # Words Learning App For Mimi Stage 8: Review Memory Algorithm
 
 Created: 2026-07-08 12:45 AEST
-Last updated: 2026-07-08 21:31 AEST
+Last updated: 2026-07-08 22:05 AEST
 
 Source plan: `plan_docs/PLAN_V1_MASTER.md`
 Derived from: `plan_docs/PLAN_V1_STAGE4_REVIEW_SCHEDULER_FLASHCARDS.md`, `plan_docs/PLAN_V1_STAGE7_9_DUAL_TRACK_DATA_IMPORT.md`, `plan_docs/PLAN_V1_STAGE7_10_LIBRARY_REVIEW_CONTROLS.md`, `plan_docs/PLAN_V1_STAGE7_11_REVIEW_ROLLBACK_AUTO_REFRESH.md`, `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md`, `ARCHITECTURE.md`, `src/lib/review/scheduler.ts`, `src/lib/review/repository.ts`, `src/components/review/review-session.tsx`, and the 2026-07-08 user decision to replace the placeholder review algorithm before formal V1 Production（生产环境）launch.
@@ -332,10 +332,27 @@ Completed:
 
 ### Stage 8-G Acceptance
 
-- Run the full local validation ladder.
-- Run browser review-flow smoke checks.
-- Update docs and logs with final behavior.
-- Only then return to Stage 6B-P1 implementation.
+Status: accepted locally on 2026-07-08 after explicit approval.
+
+Completed:
+
+- Ran the full local validation ladder for Stage 8.
+- Ran browser review-flow smoke checks against temporary local dev server origins at `http://127.0.0.1:4318` and `http://127.0.0.1:4319`.
+- Added one Recognition Vocabulary（阅读词汇）smoke item and one Active Vocabulary（输出词汇）smoke item through the visible Single input UI.
+- Confirmed the Review queue showed only the Recognition smoke item; the Active smoke item did not enter the queue.
+- Confirmed `完全忘记了` recorded the attempt and repeated the same Recognition item inside the current session, with the visible message `已记录，stage-eight-g-recognition 会在本局稍后再出现。`
+- Confirmed `完全记得` completed the repeated item, changed the queue to `0 left`, and showed the `已完成今日复习任务` completion modal.
+- Quietly handled blocked decorative button-sound fallback playback so automated browser smoke checks do not surface non-learning-flow audio rejections.
+- Updated docs and logs with the final Stage 8 behavior and handoff status.
+- Returned the project to Stage 6B-P1 as the next separately approved implementation stage.
+
+Browser smoke observation:
+
+- The first automated browser run on `http://127.0.0.1:4318` surfaced `NotAllowedError: play() failed because the user didn't interact with the document first` from decorative UI sound playback. A UI-only fix now catches blocked button-sound fallback playback. The clean rerun on `http://127.0.0.1:4319` passed the same Review flow without new audio errors for that origin.
+
+Boundary:
+
+- No remote database command, Vercel command, Neon command, `.env` read/change, Production（生产环境）deployment, Production migration（数据库迁移）, Production import, formal user backup（备份）import, or persistent user-data mutation outside the temporary local browser origin was performed.
 
 ## Validation Plan
 
@@ -395,11 +412,12 @@ Stop immediately if:
 
 ## Remaining Acceptance Checks
 
-- exact UI wording for repeated failed cards and progress count;
-- optional browser review-flow smoke check before Stage 8-G acceptance.
+No remaining Stage 8 acceptance checks are open.
+
+Stage 6B-P1 still needs a separate implementation approval before any `postgres-production` runtime（运行模式）, Production migration, non-production Neon branch verification, or formal Production execution.
 
 ## Stage 8 Result
 
-Stage 8 is a required pre-Production learning-behavior stage.
+Stage 8 is accepted as the required pre-Production learning-behavior stage.
 
-Formal V1 should not proceed to shared Postgres Production until the Recognition review algorithm is accepted and Active Vocabulary remains explicitly unscheduled, stored safely, and V2-compatible.
+Formal V1 can now proceed to the separately approved Stage 6B-P1 implementation path. Shared Postgres Production must still wait until Stage 6B-P1 implements and validates the accepted Recognition review algorithm, keeps Active Vocabulary explicitly unscheduled, preserves V2-compatible state separation, and passes the later Production gates.

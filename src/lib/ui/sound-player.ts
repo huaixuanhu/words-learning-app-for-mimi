@@ -118,12 +118,18 @@ async function playButtonFallbackAudio() {
   }
 }
 
+function quietlyPlayButtonFallbackAudio() {
+  void playButtonFallbackAudio().catch(() => {
+    // UI audio is decorative; blocked playback should never surface as an app error.
+  });
+}
+
 export function playSoftButtonClick() {
   try {
     const AudioContextCtor = getAudioContextConstructor();
 
     if (!AudioContextCtor) {
-      void playButtonFallbackAudio();
+      quietlyPlayButtonFallbackAudio();
       return;
     }
 
@@ -132,15 +138,13 @@ export function playSoftButtonClick() {
 
     if (audioContext.state === "suspended") {
       void withTimeout(audioContext.resume(), PLAY_TIMEOUT_MS).catch(() => {
-        void playButtonFallbackAudio();
+        quietlyPlayButtonFallbackAudio();
       });
     }
 
     playGeneratedSoftClick(audioContext);
   } catch {
-    void playButtonFallbackAudio().catch(() => {
-      // UI audio is decorative; blocked playback should never break app actions.
-    });
+    quietlyPlayButtonFallbackAudio();
   }
 }
 

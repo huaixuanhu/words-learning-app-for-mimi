@@ -1,5 +1,43 @@
 # AI Agent Log
 
+## 2026-07-08 22:05 AEST
+
+- Task: execute Stage 8-G final acceptance after the user committed Stage 8-F and asked to continue.
+- Plan agreed: yes. Scope was Stage 8 acceptance, local browser review-flow smoke check, documentation/log sync, and validation.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md`
+  - `plan_docs/PLAN_V1_STAGE8_REVIEW_MEMORY_ALGORITHM.md`
+  - `src/lib/ui/sound-player.ts`
+- Reason: close the pre-Production review memory algorithm stage before returning to the cloud-backed V1 runtime bridge.
+- Implementation notes:
+  - Marked Stage 8 Review Memory Algorithm（复习记忆算法）as accepted.
+  - Updated Stage 6B-P1 so Stage 8 is no longer a blocking unknown; Stage 6B-P1 remains a separate implementation stage requiring explicit approval.
+  - Ran local browser review-flow smoke checks against temporary origins `http://127.0.0.1:4318` and `http://127.0.0.1:4319`.
+  - Added one Recognition Vocabulary（阅读词汇）smoke item and one Active Vocabulary（输出词汇）smoke item through the visible Single input UI.
+  - Verified the Review queue showed only the Recognition smoke item, proving the Active smoke item did not enter the V1 review queue（复习队列）.
+  - Verified `完全忘记了` repeated the Recognition smoke item inside the same session.
+  - Verified `完全记得` completed the repeated item, changed the queue to `0 left`, and showed the `已完成今日复习任务` modal.
+  - The first browser smoke surfaced a decorative button-sound fallback `NotAllowedError` / unhandled rejection in the automated browser environment.
+  - Fixed the UI-only sound fallback path so blocked button-sound playback is caught quietly and does not surface as an app error.
+  - Re-ran the browser smoke check on the clean `4319` origin and verified the same Review flow passed without new audio errors for that origin.
+- Validation:
+  - Passed: browser review-flow smoke check on `http://127.0.0.1:4318`; this run exposed the decorative audio fallback issue after the Review flow passed.
+  - Passed: browser review-flow smoke check on `http://127.0.0.1:4319` after the sound fallback fix.
+  - Passed: `npm run lint`.
+  - Passed: `npm run typecheck`.
+  - Passed: `npm run test` with 16 files and 79 tests.
+  - Passed: `npm run backup:dry-run:fixture`, reporting fixture plan counts `people=1`, `importBatches=1`, `vocabularyItems=1`, `reviewStates=1`, `reviewEvents=1`, `reviewSettings=1`, `backupImports=1`, and `backupImportMappings=6`.
+  - Passed: `npm run build`.
+  - Passed: `git diff --check`.
+  - Passed: `npm run governance:preflight`.
+- Safety notes: local documentation, local browser smoke, and UI-only decorative sound handling only. No migration file was created, no local storage schema version change, no Postgres schema change, no Vercel command, no Neon command, no `.env` read/change, no credential access, no database command, no database mutation, no Production（生产环境）deployment, no Production migration（数据库迁移）, no Production import, no formal user backup（备份）import, no AI API（人工智能接口）, no dictation engine（听写引擎）, no spelling checker（拼写检查器）, no writing feedback model, no external vocabulary source, no authentication（认证）, no analytics（分析追踪）, no notification, no email, and no 付费/扣款 feature was performed.
+
 ## 2026-07-08 21:31 AEST
 
 - Task: execute Stage 8-F Postgres Production handoff after the user asked to start the next stage.

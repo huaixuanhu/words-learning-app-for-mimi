@@ -1,7 +1,7 @@
 # Words Learning App For Mimi PLAN V1 Master
 
 Created: 2026-07-02 23:30 AEST
-Last updated: 2026-07-08 12:45 AEST
+Last updated: 2026-07-08 22:05 AEST
 
 Source plan:
 
@@ -273,11 +273,11 @@ Confirmed release sequence as of 2026-07-08:
 
 - Stage 6A is Production（生产环境）release gate design only. It may define the final deployment checklist, access boundary, environment variable（环境变量）matrix, database migration（数据库迁移）plan, backup/import/rollback path, and smoke test（冒烟测试）criteria, but it must not merge to `main`, mutate Production data, add Production env vars, or create/promote a formal Production deployment.
 - Stage 7 must complete UI（用户界面）/ visual design, mobile interaction polish, review-flow comfort, accessibility（可访问性）review, and optional PWA（Progressive Web App，渐进式 Web 应用）evaluation before formal Production.
-- Stage 8 must complete the Recognition Vocabulary（阅读词汇）review memory algorithm before formal Production. It replaces the placeholder fixed scheduler with V1 Recognition-only FSRS-6（Free Spaced Repetition Scheduler 6，自由间隔重复调度器第 6 版）scheduling, adds same-session repeat for failed Recognition ratings, uses local natural-day bucket（本地自然日分桶）due checks, and explicitly keeps Active Vocabulary（输出词汇）out of review queue（复习队列）, review state（复习状态）, and review event（复习事件）creation.
+- Stage 8 has accepted the Recognition Vocabulary（阅读词汇）review memory algorithm before formal Production. It replaces the placeholder fixed scheduler with V1 Recognition-only FSRS-6（Free Spaced Repetition Scheduler 6，自由间隔重复调度器第 6 版）scheduling, adds same-session repeat for failed Recognition ratings, uses local natural-day bucket（本地自然日分桶）due checks, and explicitly keeps Active Vocabulary（输出词汇）out of review queue（复习队列）, review state（复习状态）, and review event（复习事件）creation.
 - Stage 6B is the later formal execution step. Only after Stage 7, Stage 8, and Stage 6B-P1 are accepted should `V1` be merged to `main`, Vercel's production branch remain `main`, Production env vars be configured, Production database work run, and the final Production smoke test be performed.
 - The current active Production deployment from branch `V1` remains a documented non-official artifact, not the formal V1 production release.
 - Stage 6A is documented in `plan_docs/PLAN_V1_STAGE6A_PRODUCTION_RELEASE_GATE.md`; it confirms that `person_id` is data separation, not security isolation, and that durable Production writes need either explicit no-credential private-URL risk acceptance or a separate access gate.
-- Stage 6B execution planning is documented in `plan_docs/PLAN_V1_STAGE6B_PRODUCTION_EXECUTION.md`; on 2026-07-08 the user chose shared Postgres Production for formal V1, so `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md` is the required runtime bridge before merge, Production migration/import, and deployment. Stage 8 now blocks Stage 6B-P1 implementation until the scheduler state shape is accepted.
+- Stage 6B execution planning is documented in `plan_docs/PLAN_V1_STAGE6B_PRODUCTION_EXECUTION.md`; on 2026-07-08 the user chose shared Postgres Production for formal V1, so `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md` is the required runtime bridge before merge, Production migration/import, and deployment. Stage 8 is accepted, so Stage 6B-P1 implementation is the next separate stage after explicit approval.
 
 Exit criteria:
 
@@ -301,7 +301,7 @@ Exit criteria:
 
 ### Stage 8: Review Memory Algorithm
 
-Status: Stage 8 Review Memory Algorithm is documented in `plan_docs/PLAN_V1_STAGE8_REVIEW_MEMORY_ALGORITHM.md`. Stage 8-B package fit and calibration executed locally on 2026-07-08 with `ts-fsrs@5.4.1`, an isolated Recognition FSRS adapter, deterministic calibration tests, and an Active Vocabulary no-review-state regression test. Stage 8-C implemented same-session repeat for failed Recognition ratings. Stage 8-D replaced the cross-day scheduler with Recognition-only FSRS scheduling, stored FSRS difficulty / stability in neutral state fields, kept reset / rollback deterministic through event replay, and changed Review queue due checks to Mimi's local natural-day bucket. Stage 8-E confirmed schema version 5 remains sufficient and tightened JSON backup restore so Active Vocabulary review states / events are rejected while Active words without review history still round-trip. Stage 8-F handed the final V1 Recognition scheduler state shape to Stage 6B-P1 and added a static SQL regression for the neutral review state/event shape.
+Status: Stage 8 Review Memory Algorithm is accepted locally in `plan_docs/PLAN_V1_STAGE8_REVIEW_MEMORY_ALGORITHM.md`. Stage 8-B package fit and calibration executed locally on 2026-07-08 with `ts-fsrs@5.4.1`, an isolated Recognition FSRS adapter, deterministic calibration tests, and an Active Vocabulary no-review-state regression test. Stage 8-C implemented same-session repeat for failed Recognition ratings. Stage 8-D replaced the cross-day scheduler with Recognition-only FSRS scheduling, stored FSRS difficulty / stability in neutral state fields, kept reset / rollback deterministic through event replay, and changed Review queue due checks to Mimi's local natural-day bucket. Stage 8-E confirmed schema version 5 remains sufficient and tightened JSON backup restore so Active Vocabulary review states / events are rejected while Active words without review history still round-trip. Stage 8-F handed the final V1 Recognition scheduler state shape to Stage 6B-P1 and added a static SQL regression for the neutral review state/event shape. Stage 8-G ran full local validation plus a local browser review-flow smoke check and accepted Stage 8 for handoff to Stage 6B-P1.
 
 Exit criteria:
 
@@ -314,7 +314,7 @@ Exit criteria:
 - Stage 6B-P1 incorporates the accepted Stage 8 state shape before any Postgres Production migration.
 - Stage 6B-P1 still needs a separate approved implementation pass before creating/running `0002_schema5_production_runtime.sql`.
 
-The fixed Stage 4 scheduler is no longer the active Recognition scheduler. Stage 8 remains the required learning-behavior bridge before the cloud-backed V1 Production path continues.
+The fixed Stage 4 scheduler is no longer the active Recognition scheduler. Stage 8 has completed the learning-behavior bridge; the cloud-backed V1 Production path now continues through the separately approved Stage 6B-P1 implementation.
 
 ## Scheduling Strategy
 

@@ -1,7 +1,7 @@
 # Words Learning App For Mimi Stage 6B-P1: Postgres Production Runtime
 
 Created: 2026-07-08 00:25 AEST
-Last updated: 2026-07-08 21:31 AEST
+Last updated: 2026-07-08 22:05 AEST
 
 Source plan: `plan_docs/PLAN_V1_STAGE6B_PRODUCTION_EXECUTION.md`
 Derived from: `plan_docs/PLAN_V1_STAGE6A_PRODUCTION_RELEASE_GATE.md`, `plan_docs/PLAN_V1_STAGE7_9_DUAL_TRACK_DATA_IMPORT.md`, `plan_docs/PLAN_V1_STAGE7_10_LIBRARY_REVIEW_CONTROLS.md`, `plan_docs/PLAN_V1_STAGE7_11_REVIEW_ROLLBACK_AUTO_REFRESH.md`, `plan_docs/PLAN_V1_STAGE8_REVIEW_MEMORY_ALGORITHM.md`, `ARCHITECTURE.md`, `db/migrations/0001_initial.sql`, `src/lib/storage/runtime-mode.ts`, `src/app/api/storage/data/route.ts`, `src/lib/storage/postgres/repository.ts`, and the 2026-07-08 user decision to make V1's formal release fully cloud-backed instead of browser-local.
@@ -39,6 +39,12 @@ Stage 8 implications for this plan:
 - Stage 8 does not require a `scheduled_days`, scheduler metadata, or scheduler version column in V1 review rows.
 - Future Active scheduling should use a separate dimension such as `review_profile`, `skill_type`, or `activity_type`, rather than sharing a single state row with Recognition.
 - Any Production migration plan must incorporate the accepted Stage 8 state shape before remote execution.
+
+Stage 8-G acceptance update on 2026-07-08:
+
+- Stage 8 is now accepted locally after the full validation ladder and a browser review-flow smoke check.
+- The accepted Stage 8 behavior is ready to be carried into Stage 6B-P1 implementation.
+- Stage 6B-P1 is still a separate implementation stage and still requires explicit approval before creating/running `0002_schema5_production_runtime.sql`, touching Neon, changing Vercel environment variables（环境变量）, importing backups（备份）, or deploying Production.
 
 ## Reference Check
 
@@ -347,6 +353,6 @@ Before code implementation:
 
 ## P1 Result
 
-Stage 6B-P1 is the required database/runtime bridge between the accepted local V1 app and the desired fully cloud-backed V1 launch. Stage 8-F has handed off the final V1 Recognition review memory state shape; P1 must still implement and validate the Production migration / runtime path locally and on a non-production database branch before any Production execution.
+Stage 6B-P1 is the required database/runtime bridge between the accepted local V1 app and the desired fully cloud-backed V1 launch. Stage 8-G accepted the final V1 Recognition review memory behavior and handoff shape; P1 must still implement and validate the Production migration / runtime path locally and on a non-production database branch before any Production execution.
 
 No Production release should proceed until P1 has passed local validation, non-production database verification, and explicit human acceptance.
