@@ -1,5 +1,39 @@
 # AI Agent Log
 
+## 2026-07-08 23:52 AEST
+
+- Task: execute Stage 6B-P1-B local schema and static tests after the user confirmed the plan.
+- Plan agreed: yes. Scope was local schema version 5 Production runtime migration draft, static SQL tests, and documentation/log sync.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `db/migrations/0002_schema5_production_runtime.sql`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md`
+  - `src/lib/storage/durable-schema.test.ts`
+- Reason: prepare the schema version 5 Postgres（关系型数据库）shape locally before implementing `postgres-production` runtime（运行模式）and API（应用程序接口）behavior.
+- Implementation notes:
+  - Added `0002_schema5_production_runtime.sql` as an additive migration after historical `0001_initial.sql`.
+  - Added schema version 5 fields for `learning_track`, nullable `tags`, `meanings_zh`, `examples`, `recognition_session_limit`, and `active_session_limit`.
+  - Added JSON source type support for `json_file` and `json_paste`.
+  - Added backup import（备份导入）schema version 5 support.
+  - Added database-level trigger guards so V1 `review_states` and `review_events` can target only Recognition Vocabulary（阅读词汇）items.
+  - Kept Stage 8 FSRS state fields neutral; no `scheduled_days`, scheduler version, `recognition_difficulty`, `recognition_stability`, `active_difficulty`, or `active_stability` fields were added.
+  - Extended static schema tests for `0002`, while keeping `0001_initial.sql` historical.
+- Validation:
+  - Passed: `npm run test -- src/lib/storage/durable-schema.test.ts` with 1 file and 12 tests.
+  - Passed: `npm run lint`.
+  - Passed: `npm run typecheck`.
+  - Passed: `npm run test` with 16 files and 85 tests.
+  - Passed: `npm run backup:dry-run:fixture`, reporting fixture plan counts `people=1`, `importBatches=1`, `vocabularyItems=1`, `reviewStates=1`, `reviewEvents=1`, `reviewSettings=1`, `backupImports=1`, and `backupImportMappings=6`.
+  - Passed: `npm run build`.
+  - Passed: `git diff --check`.
+  - Passed: `npm run governance:preflight`.
+- Safety notes: local SQL draft, static tests, and documentation only. No database command was run, no migration was applied, no `.env` file was read or changed, no credential access occurred, no Vercel command, no Neon command, no database mutation, no Production（生产环境）deployment, no Production migration（生产迁移）, no Production import, no formal user backup import, no AI API（人工智能接口）, no dictation engine（听写引擎）, no spelling checker（拼写检查器）, no writing feedback model, no external vocabulary source, no authentication（认证）, no analytics（分析追踪）, no notification, no email, and no 付费/扣款 feature was performed.
+
 ## 2026-07-08 22:05 AEST
 
 - Task: execute Stage 8-G final acceptance after the user committed Stage 8-F and asked to continue.

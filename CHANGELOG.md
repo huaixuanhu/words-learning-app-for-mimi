@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## 2026-07-08 23:52 AEST
+
+- Executed Stage 6B-P1-B local schema and static tests after explicit approval.
+- Added `db/migrations/0002_schema5_production_runtime.sql` as the local schema version 5 Production runtime migration draft.
+- Added schema fields for `learning_track`, nullable `tags`, `meanings_zh`, `examples`, `recognition_session_limit`, and `active_session_limit`.
+- Added JSON source type support for `json_file` and `json_paste`, plus backup import schema version 5 support.
+- Added database-level trigger guards so V1 `review_states` and `review_events` can target only Recognition Vocabulary（阅读词汇）items.
+- Extended static schema tests to cover the new `0002` migration, neutral Stage 8 review state naming, and Active Vocabulary（输出词汇）no-review-row protection.
+- Kept `0001_initial.sql` historical and did not execute any database command, Vercel command, Neon command, Production migration（生产迁移）, Production import, or Production deployment.
+- Reason: prepare the schema version 5 database shape locally before implementing the `postgres-production` runtime / API path.
+
 ## 2026-07-08 22:05 AEST
 
 - Executed Stage 8-G final acceptance locally.

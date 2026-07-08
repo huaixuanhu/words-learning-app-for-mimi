@@ -6,6 +6,10 @@ const migrationSql = readFileSync(
   join(process.cwd(), "db", "migrations", "0001_initial.sql"),
   "utf8",
 );
+const productionMigrationSql = readFileSync(
+  join(process.cwd(), "db", "migrations", "0002_schema5_production_runtime.sql"),
+  "utf8",
+);
 
 function tableBlock(tableName: string) {
   const match = migrationSql.match(
@@ -110,5 +114,56 @@ describe("durable storage schema", () => {
     expect(migrationSql).not.toMatch(/database_url|postgres_url|@vercel\/postgres/i);
     expect(migrationSql).toContain("non-production Neon development/preview database");
     expect(migrationSql).toContain("Production execution still requires separate human confirmation");
+  });
+
+  it("adds schema version 5 vocabulary fields in the Production runtime migration", () => {
+    expect(productionMigrationSql).toContain("add column learning_track text not null default 'recognition'");
+    expect(productionMigrationSql).toContain("add column tags jsonb null");
+    expect(productionMigrationSql).toContain("add column meanings_zh jsonb not null default '[]'::jsonb");
+    expect(productionMigrationSql).toContain("add column examples jsonb not null default '[]'::jsonb");
+    expect(productionMigrationSql).toContain("vocabulary_items_learning_track_valid");
+    expect(productionMigrationSql).toContain("learning_track in ('recognition', 'active')");
+    expect(productionMigrationSql).toContain("vocabulary_items_tags_array_or_null");
+    expect(productionMigrationSql).toContain("vocabulary_items_meanings_zh_array");
+    expect(productionMigrationSql).toContain("vocabulary_items_examples_array");
+    expect(productionMigrationSql).toContain("vocabulary_items_person_learning_track_idx");
+  });
+
+  it("allows schema version 5 import sources and backup imports in the Production runtime migration", () => {
+    expect(productionMigrationSql).toContain("source_type in ('txt_file', 'pasted_text', 'json_file', 'json_paste')");
+    expect(productionMigrationSql).toContain("source in ('manual', 'txt_file', 'pasted_text', 'json_file', 'json_paste')");
+    expect(productionMigrationSql).toContain("schema_version in (2, 3, 4, 5)");
+  });
+
+  it("adds separate Recognition and Active review limits in the Production runtime migration", () => {
+    expect(productionMigrationSql).toContain("add column recognition_session_limit integer null");
+    expect(productionMigrationSql).toContain("add column active_session_limit integer null");
+    expect(productionMigrationSql).toContain("recognition_session_limit = session_limit");
+    expect(productionMigrationSql).toContain("active_session_limit = 8");
+    expect(productionMigrationSql).toContain("review_settings_recognition_session_limit_range");
+    expect(productionMigrationSql).toContain("review_settings_active_session_limit_range");
+  });
+
+  it("keeps the Stage 8 review state shape neutral in the Production runtime migration", () => {
+    expect(productionMigrationSql).not.toMatch(
+      /scheduled_days|scheduler_version|recognition_difficulty|recognition_stability|active_difficulty|active_stability/i,
+    );
+    expect(productionMigrationSql).not.toMatch(/\badd column difficulty\b/i);
+    expect(productionMigrationSql).not.toMatch(/\badd column stability\b/i);
+  });
+
+  it("adds database-level guards against Active review rows in the Production runtime migration", () => {
+    expect(productionMigrationSql).toContain("create or replace function ensure_v1_recognition_review_target()");
+    expect(productionMigrationSql).toContain("vocabulary_items.learning_track <> 'recognition'");
+    expect(productionMigrationSql).toContain("create trigger review_states_recognition_only");
+    expect(productionMigrationSql).toContain("on review_states");
+    expect(productionMigrationSql).toContain("create trigger review_events_recognition_only");
+    expect(productionMigrationSql).toContain("on review_events");
+  });
+
+  it("keeps the Production runtime migration local and credential-free", () => {
+    expect(productionMigrationSql).toContain("Apply only after db/migrations/0001_initial.sql");
+    expect(productionMigrationSql).toContain("Remote database execution still requires separate Tier 3 approval");
+    expect(productionMigrationSql).not.toMatch(/database_url|postgres_url|neon_.*key|password|secret|@vercel\/postgres/i);
   });
 });

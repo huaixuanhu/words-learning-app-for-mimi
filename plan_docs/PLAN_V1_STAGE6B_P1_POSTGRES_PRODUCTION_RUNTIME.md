@@ -1,12 +1,12 @@
 # Words Learning App For Mimi Stage 6B-P1: Postgres Production Runtime
 
 Created: 2026-07-08 00:25 AEST
-Last updated: 2026-07-08 22:05 AEST
+Last updated: 2026-07-08 23:52 AEST
 
 Source plan: `plan_docs/PLAN_V1_STAGE6B_PRODUCTION_EXECUTION.md`
 Derived from: `plan_docs/PLAN_V1_STAGE6A_PRODUCTION_RELEASE_GATE.md`, `plan_docs/PLAN_V1_STAGE7_9_DUAL_TRACK_DATA_IMPORT.md`, `plan_docs/PLAN_V1_STAGE7_10_LIBRARY_REVIEW_CONTROLS.md`, `plan_docs/PLAN_V1_STAGE7_11_REVIEW_ROLLBACK_AUTO_REFRESH.md`, `plan_docs/PLAN_V1_STAGE8_REVIEW_MEMORY_ALGORITHM.md`, `ARCHITECTURE.md`, `db/migrations/0001_initial.sql`, `src/lib/storage/runtime-mode.ts`, `src/app/api/storage/data/route.ts`, `src/lib/storage/postgres/repository.ts`, and the 2026-07-08 user decision to make V1's formal release fully cloud-backed instead of browser-local.
-Scope: plan the implementation of a real `postgres-production` runtime（运行模式）for V1 after Stage 8 is accepted, including schema version 5 or later database migration（数据库迁移）, server-only Production（生产环境）runtime gating, API（应用程序接口）read/write behavior, repository parity with browser-local features, backup import（备份导入）, non-production Neon branch（分支）verification, Production migration/import/deploy sequence, rollback（回滚）, and validation.
-Non-Scope: no code implementation in this document-only step, no GitHub push, no pull request, no merge（合并）to `main`, no Vercel command, no Neon command, no `.env` or credential read/change, no Production env var change, no database mutation, no backup import, no Production deployment, no authentication（认证）implementation, no AI API（人工智能接口）, no dictation engine（听写引擎）, no spelling checker（拼写检查器）, no writing feedback model, no external vocabulary source, no analytics（分析追踪）, no notification, no email, and no 付费/扣款 feature.
+Scope: plan and track the implementation of a real `postgres-production` runtime（运行模式）for V1 after Stage 8 is accepted, including schema version 5 or later database migration（数据库迁移）, server-only Production（生产环境）runtime gating, API（应用程序接口）read/write behavior, repository parity with browser-local features, backup import（备份导入）, non-production Neon branch（分支）verification, Production migration/import/deploy sequence, rollback（回滚）, and validation. Stage 6B-P1-B has implemented the local schema migration draft and static tests only.
+Non-Scope: no GitHub push, no pull request, no merge（合并）to `main`, no Vercel command, no Neon command, no `.env` or credential read/change, no Production env var change, no database mutation, no backup import, no Production deployment, no authentication（认证）implementation, no AI API（人工智能接口）, no dictation engine（听写引擎）, no spelling checker（拼写检查器）, no writing feedback model, no external vocabulary source, no analytics（分析追踪）, no notification, no email, and no 付费/扣款 feature.
 Exit criteria: Stage 6B-P1 implementation plan exists, parent docs and logs link to it, the required schema/runtime/API/backup validation sequence is explicit, and every future remote / credential / Production action remains behind explicit human approval.
 
 ## Decision Record
@@ -44,7 +44,7 @@ Stage 8-G acceptance update on 2026-07-08:
 
 - Stage 8 is now accepted locally after the full validation ladder and a browser review-flow smoke check.
 - The accepted Stage 8 behavior is ready to be carried into Stage 6B-P1 implementation.
-- Stage 6B-P1 is still a separate implementation stage and still requires explicit approval before creating/running `0002_schema5_production_runtime.sql`, touching Neon, changing Vercel environment variables（环境变量）, importing backups（备份）, or deploying Production.
+- Stage 6B-P1 is still a separate implementation stage and still requires explicit approval before running `0002_schema5_production_runtime.sql`, touching Neon, changing Vercel environment variables（环境变量）, importing backups（备份）, or deploying Production.
 
 ## Reference Check
 
@@ -83,6 +83,7 @@ Database schema:
 - `import_batches.source_type` and `vocabulary_items.source` currently allow the older text sources only.
 - `backup_imports.schema_version` currently supports older backup versions, not the current schema version 5 backup path.
 - The Stage 8 scheduler state shape is now defined locally, but `0001_initial.sql` is still the historical development / Preview schema and has not been promoted or migrated for Production schema version 5.
+- Stage 6B-P1-B added `db/migrations/0002_schema5_production_runtime.sql` as a local static migration draft for schema version 5. It has not been applied to any local, Preview, non-production Neon branch, or Production database.
 
 Repository / API behavior:
 
@@ -99,7 +100,7 @@ Access boundary:
 
 ## Proposed Production Data Shape
 
-Stage 6B-P1 should create a new migration, tentatively `db/migrations/0002_schema5_production_runtime.sql`.
+Stage 6B-P1-B created the local migration draft `db/migrations/0002_schema5_production_runtime.sql`.
 
 Recommended V1 database shape:
 
@@ -238,15 +239,25 @@ If option 2 is chosen, create a child plan before Production writes. A minimal g
 
 ### P1-B Local Schema And Static Tests
 
-- Add `0002_schema5_production_runtime.sql`.
-- Update static schema tests for schema version 5 fields and constraints.
-- Keep `0001_initial.sql` historical and avoid rewriting applied migration history.
-- Add fixture expectations for JSON source types and Recognition / Active limits.
-- Add fixture expectations that Active vocabulary persists without review state or review event rows.
-- Add fixture expectations for the accepted Stage 8 Recognition scheduler state fields.
-- Add static expectations for any database-level Active review guard if implemented through trigger / function logic.
+Status: implemented locally on 2026-07-08 after explicit approval.
 
-Stage 8-F local handoff added a static test that pins the existing neutral `review_states` / `review_events` shape in `0001_initial.sql`; P1-B must extend these tests to the new `0002` Production migration before any remote database action.
+Completed:
+
+- Added `db/migrations/0002_schema5_production_runtime.sql` as the schema version 5 Production runtime migration draft.
+- Kept `db/migrations/0001_initial.sql` historical and did not rewrite applied migration history.
+- Added schema version 5 fields for `learning_track`, nullable `tags`, `meanings_zh`, `examples`, `recognition_session_limit`, and `active_session_limit`.
+- Added JSON source type support for `json_file` and `json_paste` in `import_batches.source_type` and `vocabulary_items.source`.
+- Added backup import schema version 5 support in the migration draft.
+- Preserved neutral Stage 8 FSRS state fields by not adding `scheduled_days`, scheduler version, `recognition_difficulty`, `recognition_stability`, `active_difficulty`, or `active_stability`.
+- Added database-level trigger guards so direct SQL inserts / updates to `review_states` or `review_events` reject vocabulary items whose `learning_track` is not `recognition`.
+- Updated static schema tests for schema version 5 fields, JSON source types, dual limits, backup schema support, neutral review state shape, and Active review row guards.
+
+Stage 8-F local handoff added a static test that pins the existing neutral `review_states` / `review_events` shape in `0001_initial.sql`; P1-B extended these tests to the new `0002` Production migration before any remote database action.
+
+Boundary:
+
+- P1-B did not execute the migration, inspect a remote database, read or change `.env`, run Vercel / Neon commands, import a backup, or deploy Production.
+- The new `0002` migration must still be applied and inspected first on an explicitly confirmed non-production database target in a later approved stage.
 
 ### P1-C Runtime And API Contract
 
@@ -345,7 +356,6 @@ Stop immediately if:
 
 Before code implementation:
 
-- whether to use JSONB arrays for `tags`, `meaningsZh`, and `examples` as proposed here;
 - whether Production writes will launch with no-credential private-URL risk acceptance or a separate access gate;
 - whether formal user backup import is required before first Production use, given the user has deleted test words;
 - whether `main` merge should happen by direct merge or pull request after P1 passes;
@@ -353,6 +363,6 @@ Before code implementation:
 
 ## P1 Result
 
-Stage 6B-P1 is the required database/runtime bridge between the accepted local V1 app and the desired fully cloud-backed V1 launch. Stage 8-G accepted the final V1 Recognition review memory behavior and handoff shape; P1 must still implement and validate the Production migration / runtime path locally and on a non-production database branch before any Production execution.
+Stage 6B-P1 is the required database/runtime bridge between the accepted local V1 app and the desired fully cloud-backed V1 launch. Stage 8-G accepted the final V1 Recognition review memory behavior and handoff shape, and P1-B added the local schema version 5 migration draft plus static tests. P1 must still implement the runtime / API / repository / backup path locally and validate the migration on a non-production database branch before any Production execution.
 
 No Production release should proceed until P1 has passed local validation, non-production database verification, and explicit human acceptance.

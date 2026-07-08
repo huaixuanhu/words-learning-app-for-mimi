@@ -1,7 +1,7 @@
 # Words Learning App For Mimi PLAN V1 Master
 
 Created: 2026-07-02 23:30 AEST
-Last updated: 2026-07-08 22:05 AEST
+Last updated: 2026-07-08 23:52 AEST
 
 Source plan:
 
@@ -277,7 +277,7 @@ Confirmed release sequence as of 2026-07-08:
 - Stage 6B is the later formal execution step. Only after Stage 7, Stage 8, and Stage 6B-P1 are accepted should `V1` be merged to `main`, Vercel's production branch remain `main`, Production env vars be configured, Production database work run, and the final Production smoke test be performed.
 - The current active Production deployment from branch `V1` remains a documented non-official artifact, not the formal V1 production release.
 - Stage 6A is documented in `plan_docs/PLAN_V1_STAGE6A_PRODUCTION_RELEASE_GATE.md`; it confirms that `person_id` is data separation, not security isolation, and that durable Production writes need either explicit no-credential private-URL risk acceptance or a separate access gate.
-- Stage 6B execution planning is documented in `plan_docs/PLAN_V1_STAGE6B_PRODUCTION_EXECUTION.md`; on 2026-07-08 the user chose shared Postgres Production for formal V1, so `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md` is the required runtime bridge before merge, Production migration/import, and deployment. Stage 8 is accepted, so Stage 6B-P1 implementation is the next separate stage after explicit approval.
+- Stage 6B execution planning is documented in `plan_docs/PLAN_V1_STAGE6B_PRODUCTION_EXECUTION.md`; on 2026-07-08 the user chose shared Postgres Production for formal V1, so `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md` is the required runtime bridge before merge, Production migration/import, and deployment. Stage 8 is accepted, and Stage 6B-P1-B has added the local schema version 5 migration draft; Stage 6B-P1-C runtime/API implementation is the next separate stage after explicit approval.
 
 Exit criteria:
 
@@ -312,9 +312,9 @@ Exit criteria:
 - `review_states.difficulty` and `review_states.stability` remain neutral state field names, with documentation that V1 uses them only for Recognition.
 - Future Active scheduling must use separate dimensions such as `review_profile`, `skill_type`, or `activity_type` so Recognition and Active state do not share one row.
 - Stage 6B-P1 incorporates the accepted Stage 8 state shape before any Postgres Production migration.
-- Stage 6B-P1 still needs a separate approved implementation pass before creating/running `0002_schema5_production_runtime.sql`.
+- Stage 6B-P1-B created `0002_schema5_production_runtime.sql` locally, but running it against any database still requires a later explicit approval and a confirmed non-production target first.
 
-The fixed Stage 4 scheduler is no longer the active Recognition scheduler. Stage 8 has completed the learning-behavior bridge; the cloud-backed V1 Production path now continues through the separately approved Stage 6B-P1 implementation.
+The fixed Stage 4 scheduler is no longer the active Recognition scheduler. Stage 8 has completed the learning-behavior bridge; the cloud-backed V1 Production path now continues through the separately approved Stage 6B-P1 runtime/API/backup implementation.
 
 ## Scheduling Strategy
 
