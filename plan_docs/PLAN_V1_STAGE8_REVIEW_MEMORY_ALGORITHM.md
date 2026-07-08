@@ -1,7 +1,7 @@
 # Words Learning App For Mimi Stage 8: Review Memory Algorithm
 
 Created: 2026-07-08 12:45 AEST
-Last updated: 2026-07-08 12:45 AEST
+Last updated: 2026-07-08 17:51 AEST
 
 Source plan: `plan_docs/PLAN_V1_MASTER.md`
 Derived from: `plan_docs/PLAN_V1_STAGE4_REVIEW_SCHEDULER_FLASHCARDS.md`, `plan_docs/PLAN_V1_STAGE7_9_DUAL_TRACK_DATA_IMPORT.md`, `plan_docs/PLAN_V1_STAGE7_10_LIBRARY_REVIEW_CONTROLS.md`, `plan_docs/PLAN_V1_STAGE7_11_REVIEW_ROLLBACK_AUTO_REFRESH.md`, `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md`, `ARCHITECTURE.md`, `src/lib/review/scheduler.ts`, `src/lib/review/repository.ts`, `src/components/review/review-session.tsx`, and the 2026-07-08 user decision to replace the placeholder review algorithm before formal V1 Production（生产环境）launch.
@@ -222,13 +222,38 @@ Active UI:
 
 ### Stage 8-B Package Fit And Calibration
 
-Only after explicit approval:
+Status: executed locally on 2026-07-08 after explicit approval.
 
-- Confirm local Node.js version.
-- Inspect current `ts-fsrs` package docs and installed type shape.
-- Add `ts-fsrs` through npm if accepted.
-- Write a small deterministic scheduler calibration test with fuzz disabled.
-- Decide parameter defaults.
+Completed:
+
+- Confirmed local Node.js version is `v25.3.0`.
+- Installed `ts-fsrs@5.4.1`; package metadata reports Node.js `>=20.0.0`, MIT license, ESM / CJS outputs, and TypeScript（类型脚本）types.
+- Inspected the installed `dist/index.d.ts` type shape before writing code.
+- Added `src/lib/review/fsrs-recognition.ts` as an isolated Recognition FSRS adapter.
+- Added `src/lib/review/fsrs-recognition.test.ts` with deterministic calibration tests.
+- Added an Active Vocabulary boundary regression test in `src/lib/review/repository.test.ts`.
+
+Candidate calibration parameters:
+
+- `request_retention: 0.9`
+- `maximum_interval: 36500`
+- `enable_fuzz: false`
+- `enable_short_term: false`
+- `learning_steps: []`
+- `relearning_steps: []`
+
+Rationale:
+
+- `enable_fuzz: false` keeps unit tests deterministic.
+- `enable_short_term: false` keeps short-term failed-card repetition owned by the app's same-session repeat loop rather than by FSRS learning steps.
+- First-review calibration outputs for Again / Hard / Good / Easy are 1 / 2 / 3 / 8 scheduled days from the frozen test time.
+
+Boundary:
+
+- This substage does not replace `src/lib/review/scheduler.ts`.
+- This substage does not change Review UI behavior.
+- This substage does not change local storage schema or Postgres schema.
+- This substage does not create Active review state or Active review events.
 
 ### Stage 8-C Recognition Session Loop
 

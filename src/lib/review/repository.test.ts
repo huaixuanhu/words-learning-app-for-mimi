@@ -25,6 +25,24 @@ function addReviewableWord() {
   ).data;
 }
 
+function addActiveWord() {
+  return addVocabularyItem(
+    createEmptyVocabularyData("2026-07-04T00:00:00.000Z"),
+    {
+      id: "vocab-active",
+      surfaceText: "articulate",
+      meaningZh: "清楚表达",
+      source: "manual",
+      learningTrack: "active",
+      timezone: "Australia/Melbourne",
+      createdAt: "2026-07-04T00:00:00.000Z",
+      systemCreatedAt: "2026-07-04T00:00:00.000Z",
+      updatedAt: "2026-07-04T00:00:00.000Z",
+    },
+    "2026-07-04T00:00:00.000Z",
+  ).data;
+}
+
 describe("review repository", () => {
   it("records a first review event and state", () => {
     const data = addReviewableWord();
@@ -94,6 +112,21 @@ describe("review repository", () => {
       ),
     ).toThrow("Reviewable vocabulary item not found");
     expect(getReviewQueue(archived, "2026-07-04T01:00:00.000Z")).toHaveLength(0);
+  });
+
+  it("does not schedule or record Active vocabulary in V1 review state", () => {
+    const data = addActiveWord();
+
+    expect(getReviewQueue(data, "2026-07-04T01:00:00.000Z")).toHaveLength(0);
+    expect(() =>
+      recordReview(
+        data,
+        { vocabularyItemId: "vocab-active", rating: "remembered" },
+        "2026-07-04T01:00:00.000Z",
+      ),
+    ).toThrow("Reviewable vocabulary item not found");
+    expect(data.reviewEvents).toHaveLength(0);
+    expect(data.reviewStates).toHaveLength(0);
   });
 
   it("records reviews only for the selected person's vocabulary", () => {

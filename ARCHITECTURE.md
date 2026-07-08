@@ -1,7 +1,7 @@
 # Words Learning App For Mimi Architecture
 
 Created: 2026-07-02 23:30 AEST
-Last updated: 2026-07-08 12:45 AEST
+Last updated: 2026-07-08 17:51 AEST
 
 ## Current State
 
@@ -16,6 +16,7 @@ Current local stack:
 - ESLint 9.39.4
 - Vitest 4.1.9 for vocabulary domain unit tests
 - `@neondatabase/serverless` 1.1.0 for minimal database scripts
+- `ts-fsrs` 5.4.1 for isolated Stage 8-B Recognition FSRS calibration
 - `dotenv-cli` 11.0.0 for explicit `.env.local` loading in database scripts
 - npm with `package-lock.json`
 - `lucide-react` 0.562.0 for simple interface icons
@@ -164,6 +165,8 @@ Responsibilities:
 - treat the first review rating as the starting point for review state
 
 Stage 4 implements an explainable deterministic scheduler for the local MVP. The fixed rules are a bootstrap only. Stage 8 plans to replace this placeholder with Recognition-only FSRS-6 scheduling after reviewing library fit, data requirements, migration impact, privacy, and explainability. Embedding（向量嵌入）for semantic similarity, confusing pairs, and queue ordering remains future scope.
+
+Stage 8-B has installed `ts-fsrs@5.4.1` and added an isolated `src/lib/review/fsrs-recognition.ts` calibration adapter. It does not replace the current scheduler or change app runtime behavior yet.
 
 Current route: `/review`. It creates a local Recognition Vocabulary review session from due cards first and new cards second, obeys the saved `recognitionSessionLimit`, lets the learner flip a card, records one of four ratings from either the main card controls or the right Session panel, appends `ReviewEvent`, and updates `ReviewState`. It can roll back the previous completed card with `回退1词` during a multi-card local session by removing that event and rebuilding that word's state from earlier history. It can also reset today's local review task after confirmation by removing only today's selected-person review events and rebuilding affected review states from earlier history. Stage 8 will change failed Recognition ratings so `完全忘记了` and `有点忘记了` repeat inside the same session until the learner selects `模糊记得` or `完全记得`. Active Vocabulary items are stored and visible in Library, but V1 must not schedule them, create review states for them, or create review events for them.
 

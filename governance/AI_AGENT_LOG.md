@@ -1,5 +1,42 @@
 # AI Agent Log
 
+## 2026-07-08 17:51 AEST
+
+- Task: execute Stage 8-B package fit and calibration after the user confirmed implementation.
+- Plan agreed: yes. Scope was package installation, isolated Recognition FSRS adapter, calibration tests, Active boundary regression, and documentation/log sync.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `package-lock.json`
+  - `package.json`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE8_REVIEW_MEMORY_ALGORITHM.md`
+  - `src/lib/review/fsrs-recognition.test.ts`
+  - `src/lib/review/fsrs-recognition.ts`
+  - `src/lib/review/repository.test.ts`
+- Reason: validate `ts-fsrs` package fit before replacing the app's placeholder review scheduler.
+- Implementation notes:
+  - Installed `ts-fsrs@5.4.1`.
+  - Confirmed installed package types export `Card`, `FSRSParameters`, `Rating`, `State`, `createEmptyCard`, `fsrs`, and `generatorParameters`.
+  - Added `fsrs-recognition.ts` with deterministic candidate parameters: `request_retention: 0.9`, `maximum_interval: 36500`, `enable_fuzz: false`, `enable_short_term: false`, `learning_steps: []`, and `relearning_steps: []`.
+  - Mapped V1 ratings to FSRS ratings: `forgot -> Again`, `hard -> Hard`, `vague -> Good`, and `remembered -> Easy`.
+  - Added calibration tests for package version, parameter snapshot, first-review outcomes, and deterministic fuzz-disabled behavior.
+  - Added an Active Vocabulary（输出词汇）regression test that proves Active words do not enter review queue（复习队列）or create review state（复习状态）/ review event（复习事件）through `recordReview()`.
+  - Kept the current Stage 4 scheduler and Review UI behavior unchanged.
+- Validation:
+  - Passed: `npm run test -- --run src/lib/review/fsrs-recognition.test.ts src/lib/review/repository.test.ts`.
+  - Passed: `npm run typecheck`.
+  - Passed: `npm run lint`.
+  - Passed: `npm run test` with 15 files and 66 tests.
+  - Passed: `npm run backup:dry-run:fixture`.
+  - Passed: `npm run build`.
+  - Passed: `git diff --check`.
+  - Passed: `npm run governance:preflight`.
+- Safety notes: local package installation, isolated adapter, local tests, and documentation only. No Vercel command, Neon command, `.env` read/change, credential access, database command, database mutation, Production（生产环境）deployment, Production migration, Production import, formal user backup import, AI API（人工智能接口）, dictation engine（听写引擎）, spelling checker（拼写检查器）, writing feedback model, external vocabulary source, authentication（认证）, analytics（分析追踪）, notification, email, or 付费/扣款 feature was performed.
+
 ## 2026-07-08 12:45 AEST
 
 - Task: document the user's decision to create a separate Stage 8 Review Memory Algorithm before completing shared Postgres Production launch work.

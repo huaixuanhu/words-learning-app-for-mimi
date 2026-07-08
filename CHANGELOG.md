@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## 2026-07-08 17:51 AEST
+
+- Executed Stage 8-B package fit and calibration locally.
+- Installed `ts-fsrs@5.4.1` and inspected its installed TypeScript（类型脚本）types before writing adapter code.
+- Added `src/lib/review/fsrs-recognition.ts` as an isolated Recognition Vocabulary（阅读词汇）FSRS-6（Free Spaced Repetition Scheduler 6，自由间隔重复调度器第 6 版）adapter.
+- Added deterministic calibration tests for package version, V1 rating mapping, fuzz-disabled parameters, and first-review outcomes.
+- Added an Active Vocabulary（输出词汇）boundary regression test proving Active words do not enter review queue（复习队列）and cannot create review state（复习状态）or review event（复习事件）through V1 review recording.
+- Kept the existing Stage 4 scheduler and Review UI behavior unchanged.
+- Reason: validate the FSRS package fit and lock the Recognition / Active boundary before replacing the real scheduler.
+
 ## 2026-07-08 12:45 AEST
 
 - Added `plan_docs/PLAN_V1_STAGE8_REVIEW_MEMORY_ALGORITHM.md` as the required review memory algorithm stage before formal V1 Production（生产环境）launch.

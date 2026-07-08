@@ -40,6 +40,7 @@ STAGE5F_DATABASE_TARGET=development dotenv -e .env.local -- node scripts/backup-
 - Minimal routes for dashboard, study, add, import, review, library, practice lab, export, and settings.
 - Local single vocabulary input, library search/edit/archive/restore/hard delete, JSON batch rollback, and `.json` / pasted JSON import preview.
 - Local Recognition Vocabulary（阅读词汇）review sessions with four fixed ratings, side-panel rating buttons, review event/state updates, one-word rollback, reset-today review control, conservative empty-queue auto-refresh, customizable Recognition daily limit（每日上限）, and Stage 8 planning for same-session repeat plus FSRS-6（Free Spaced Repetition Scheduler 6，自由间隔重复调度器第 6 版）cross-day scheduling.
+- Isolated Stage 8-B `ts-fsrs` calibration adapter and tests; the current Review runtime still uses the Stage 4 placeholder scheduler until the later Stage 8 implementation slice replaces it.
 - Local Active Vocabulary（输出词汇）classification and lower-volume daily limit setting; Active words are stored, exported, and imported, but V1 must not put them in review queue（复习队列）, create review state（复习状态）, or create review event（复习事件）. Dictation, spelling, writing practice, prompt version（提示词版本）, and AI API（人工智能接口）feedback remain future work.
 - Local JSON backup（JSON 备份）download, vocabulary CSV（逗号分隔值）download with `learningTrack` / `tags`, and JSON restore preview.
 - Local `people` and selected person switching, with vocabulary, imports, review history, and review settings scoped by `personId`.
