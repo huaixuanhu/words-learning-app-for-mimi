@@ -1,11 +1,11 @@
 # Words Learning App For Mimi Stage 6B-P1: Postgres Production Runtime
 
 Created: 2026-07-08 00:25 AEST
-Last updated: 2026-07-08 23:52 AEST
+Last updated: 2026-07-09 00:11 AEST
 
 Source plan: `plan_docs/PLAN_V1_STAGE6B_PRODUCTION_EXECUTION.md`
 Derived from: `plan_docs/PLAN_V1_STAGE6A_PRODUCTION_RELEASE_GATE.md`, `plan_docs/PLAN_V1_STAGE7_9_DUAL_TRACK_DATA_IMPORT.md`, `plan_docs/PLAN_V1_STAGE7_10_LIBRARY_REVIEW_CONTROLS.md`, `plan_docs/PLAN_V1_STAGE7_11_REVIEW_ROLLBACK_AUTO_REFRESH.md`, `plan_docs/PLAN_V1_STAGE8_REVIEW_MEMORY_ALGORITHM.md`, `ARCHITECTURE.md`, `db/migrations/0001_initial.sql`, `src/lib/storage/runtime-mode.ts`, `src/app/api/storage/data/route.ts`, `src/lib/storage/postgres/repository.ts`, and the 2026-07-08 user decision to make V1's formal release fully cloud-backed instead of browser-local.
-Scope: plan and track the implementation of a real `postgres-production` runtime（运行模式）for V1 after Stage 8 is accepted, including schema version 5 or later database migration（数据库迁移）, server-only Production（生产环境）runtime gating, API（应用程序接口）read/write behavior, repository parity with browser-local features, backup import（备份导入）, non-production Neon branch（分支）verification, Production migration/import/deploy sequence, rollback（回滚）, and validation. Stage 6B-P1-B has implemented the local schema migration draft and static tests only.
+Scope: plan and track the implementation of a real `postgres-production` runtime（运行模式）for V1 after Stage 8 is accepted, including schema version 5 or later database migration（数据库迁移）, server-only Production（生产环境）runtime gating, API（应用程序接口）read/write behavior, repository parity with browser-local features, backup import（备份导入）, non-production Neon branch（分支）verification, Production migration/import/deploy sequence, rollback（回滚）, and validation. Stage 6B-P1-B has implemented the local schema migration draft and static tests. Stage 6B-P1-C has implemented the local runtime / API contract only.
 Non-Scope: no GitHub push, no pull request, no merge（合并）to `main`, no Vercel command, no Neon command, no `.env` or credential read/change, no Production env var change, no database mutation, no backup import, no Production deployment, no authentication（认证）implementation, no AI API（人工智能接口）, no dictation engine（听写引擎）, no spelling checker（拼写检查器）, no writing feedback model, no external vocabulary source, no analytics（分析追踪）, no notification, no email, and no 付费/扣款 feature.
 Exit criteria: Stage 6B-P1 implementation plan exists, parent docs and logs link to it, the required schema/runtime/API/backup validation sequence is explicit, and every future remote / credential / Production action remains behind explicit human approval.
 
@@ -66,9 +66,10 @@ Planning implications:
 
 Runtime:
 
-- `src/lib/storage/runtime-mode.ts` currently supports only `local` and `postgres-preview`.
-- `postgres-preview` is intentionally blocked in Vercel Production.
-- `/api/storage/data` currently returns disabled in Vercel Production.
+- `src/lib/storage/runtime-mode.ts` now supports `local`, `postgres-preview`, and `postgres-production`.
+- `postgres-preview` remains blocked in Vercel Production.
+- `postgres-production` is accepted only when `VERCEL_ENV=production`.
+- `/api/storage/health` and `/api/storage/data` now have local code paths for `postgres-production`, but those paths have not been exercised against any database.
 - Preview write flags are named and designed for development / Preview only.
 
 Database schema:
@@ -261,14 +262,23 @@ Boundary:
 
 ### P1-C Runtime And API Contract
 
-- Add `postgres-production` runtime parsing and guards.
-- Add tests that:
-  - reject `postgres-preview` in Production;
-  - reject `postgres-production` outside Production;
-  - accept `postgres-production` only with the intended environment shape;
-  - keep missing runtime defaulting to `local`.
-- Update health/data route behavior for Production.
-- Keep secrets server-only.
+Status: implemented locally on 2026-07-09 after explicit approval.
+
+Completed:
+
+- Added `postgres-production` to `StorageRuntimeMode`.
+- Added guard functions so `postgres-preview` is valid only outside Vercel Production and `postgres-production` is valid only in Vercel Production.
+- Updated the server-only Postgres client to accept the shared guarded Postgres runtime path without moving credentials into client code.
+- Updated `/api/storage/health` so Production with `postgres-production` can run a readiness probe without returning public table counts; Preview still returns development / preview counts.
+- Updated `/api/storage/data` so Production requires `postgres-production`, non-Production rejects `postgres-production`, Preview writes still require the development / preview UI write flag and confirmation header, and Production does not use the Preview confirmation header as its permission model.
+- Updated the browser data hook to recognize `postgres-production` distinctly instead of mislabeling it as `postgres-preview`.
+- Kept hard delete, JSON batch rollback, reset-today Review, and one-word Review rollback disabled for all Postgres runtime modes until P1-D repository parity is implemented.
+- Added local runtime / route contract tests for the accepted and rejected environment shapes.
+
+Boundary:
+
+- P1-C did not execute a database command, inspect a remote database, read or change `.env`, run Vercel / Neon commands, import a backup, deploy Production, or validate `postgres-production` against a real database.
+- P1-C does not complete formal Production readiness because repository parity, backup import version 5, non-production database verification, access-boundary decision, and formal Production execution remain later stages.
 
 ### P1-D Repository Parity
 
@@ -363,6 +373,6 @@ Before code implementation:
 
 ## P1 Result
 
-Stage 6B-P1 is the required database/runtime bridge between the accepted local V1 app and the desired fully cloud-backed V1 launch. Stage 8-G accepted the final V1 Recognition review memory behavior and handoff shape, and P1-B added the local schema version 5 migration draft plus static tests. P1 must still implement the runtime / API / repository / backup path locally and validate the migration on a non-production database branch before any Production execution.
+Stage 6B-P1 is the required database/runtime bridge between the accepted local V1 app and the desired fully cloud-backed V1 launch. Stage 8-G accepted the final V1 Recognition review memory behavior and handoff shape. P1-B added the local schema version 5 migration draft plus static tests. P1-C added the local `postgres-production` runtime / API contract and safety tests. P1 must still implement repository parity, backup import version 5, and non-production database validation before any Production execution.
 
 No Production release should proceed until P1 has passed local validation, non-production database verification, and explicit human acceptance.

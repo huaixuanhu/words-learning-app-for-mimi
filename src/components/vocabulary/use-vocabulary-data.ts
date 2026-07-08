@@ -10,10 +10,11 @@ import type {
 } from "@/lib/vocabulary/types";
 import { getSelectedPersonId } from "@/lib/people/repository";
 import type { ReviewRating } from "@/lib/review/types";
+import type { StorageRuntimeMode } from "@/lib/storage/runtime-mode";
 import { createEmptyVocabularyData } from "@/lib/vocabulary/repository";
 import { readVocabularyData, writeVocabularyData } from "@/lib/vocabulary/local-storage-repository";
 
-export type ClientStorageRuntime = "loading" | "local" | "postgres-preview";
+export type ClientStorageRuntime = "loading" | StorageRuntimeMode;
 
 export type VocabularyStorageMutation =
   | {
@@ -106,6 +107,9 @@ export type VocabularyStorageMutation =
 type StorageDataResponse = {
   ok: boolean;
   status: string;
+  runtime?: {
+    mode: StorageRuntimeMode;
+  };
   data?: VocabularyData;
   error?: string;
   reason?: string;
@@ -134,6 +138,10 @@ function rememberSelectedPersonId(personId: string) {
 
 function dispatchVocabularyChange() {
   window.dispatchEvent(new Event("mimi-vocabulary-data-changed"));
+}
+
+export function isPostgresClientStorageRuntime(runtime: ClientStorageRuntime) {
+  return runtime === "postgres-preview" || runtime === "postgres-production";
 }
 
 function readLocalData() {
@@ -167,7 +175,10 @@ async function readPostgresData(selectedPersonId: string | null) {
 
   rememberSelectedPersonId(getSelectedPersonId(payload.data));
 
-  return payload.data;
+  return {
+    data: payload.data,
+    runtime: payload.runtime?.mode === "postgres-production" ? "postgres-production" : "postgres-preview",
+  } satisfies { data: VocabularyData; runtime: ClientStorageRuntime };
 }
 
 async function writePostgresMutation(selectedPersonId: string, mutation: VocabularyStorageMutation) {
@@ -202,8 +213,8 @@ export function useVocabularyData() {
     const postgresData = await readPostgresData(getStoredSelectedPersonId());
 
     if (postgresData) {
-      setData(postgresData);
-      setStorageRuntime("postgres-preview");
+      setData(postgresData.data);
+      setStorageRuntime(postgresData.runtime);
       setIsLoaded(true);
       return;
     }
@@ -233,7 +244,7 @@ export function useVocabularyData() {
 
   const commit = useCallback(
     async (nextData: VocabularyData, mutation?: VocabularyStorageMutation) => {
-      if (storageRuntime === "postgres-preview") {
+      if (isPostgresClientStorageRuntime(storageRuntime)) {
         if (!mutation) {
           throw new Error("Postgres storage commit requires mutation metadata");
         }

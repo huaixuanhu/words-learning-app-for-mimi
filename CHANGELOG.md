@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## 2026-07-09 00:11 AEST
+
+- Executed Stage 6B-P1-C runtime / API contract locally after explicit approval.
+- Added `postgres-production` to the storage runtime（运行模式）parser and guarded it so it is accepted only in Vercel Production.
+- Kept `postgres-preview` rejected in Production and preserved default `local` behavior when the runtime env var is missing or invalid.
+- Updated `/api/storage/health` so Production `postgres-production` readiness does not expose public table counts, while Preview health still reports development / preview counts.
+- Updated `/api/storage/data` so Production requires `postgres-production`; Preview writes still require `MIMI_ENABLE_STORAGE_UI_WRITES=true` plus the preview confirmation header, while Production does not use that header as its permission model.
+- Updated the browser data hook and local UI guards so `postgres-production` is not mislabeled as `postgres-preview`, and local-only destructive controls remain blocked for all Postgres runtimes until repository parity is implemented.
+- Added runtime / API route contract tests without connecting to a database.
+- Kept database migration, Neon / Vercel commands, `.env` access, Production deployment, Production import, and real database validation out of scope.
+- Reason: prepare the guarded `postgres-production` code path before implementing Postgres repository parity.
+
 ## 2026-07-08 23:52 AEST
 
 - Executed Stage 6B-P1-B local schema and static tests after explicit approval.

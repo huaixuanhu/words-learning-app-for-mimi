@@ -11,7 +11,10 @@ import {
 } from "@/lib/backup/json-backup";
 import type { BackupParseResult } from "@/lib/backup/types";
 import type { VocabularyData } from "@/lib/vocabulary/types";
-import { useVocabularyData } from "@/components/vocabulary/use-vocabulary-data";
+import {
+  isPostgresClientStorageRuntime,
+  useVocabularyData,
+} from "@/components/vocabulary/use-vocabulary-data";
 import { PressableButton } from "@/components/ui/motion-primitives";
 
 function detectTimezone() {
@@ -84,6 +87,7 @@ export function ExportWorkspace() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [restoreResult, setRestoreResult] = useState<BackupParseResult | null>(null);
   const [message, setMessage] = useState("");
+  const isPostgresRuntime = isPostgresClientStorageRuntime(storageRuntime);
 
   const downloadJsonBackup = () => {
     const exportedAt = new Date().toISOString();
@@ -128,8 +132,8 @@ export function ExportWorkspace() {
       return;
     }
 
-    if (storageRuntime === "postgres-preview") {
-      setMessage("Postgres preview 请使用 Stage 5M backup import 脚本导入");
+    if (isPostgresRuntime) {
+      setMessage("Postgres runtime 请使用正式 backup import 脚本导入");
       return;
     }
 
@@ -204,12 +208,12 @@ export function ExportWorkspace() {
             <SummaryGrid data={restoreResult.data} />
             <PressableButton
               type="button"
-              disabled={storageRuntime === "postgres-preview"}
+              disabled={isPostgresRuntime}
               onClick={() => void restoreBackup()}
               className="mimi-button mimi-focus-ring inline-flex items-center justify-center gap-2 px-4 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Download aria-hidden="true" className="size-4" />
-              {storageRuntime === "postgres-preview" ? "Postgres 导入暂用脚本" : "确认恢复到本地"}
+              {isPostgresRuntime ? "Postgres 导入暂用脚本" : "确认恢复到本地"}
             </PressableButton>
           </div>
         ) : null}

@@ -25,7 +25,7 @@ import {
   normalizeTextList,
   normalizeVocabularyTags,
 } from "@/lib/vocabulary/normalize";
-import { useVocabularyData } from "./use-vocabulary-data";
+import { isPostgresClientStorageRuntime, useVocabularyData } from "./use-vocabulary-data";
 import { PressableButton } from "@/components/ui/motion-primitives";
 
 type LibraryFilter = "all" | "recognition" | "activeVocabulary" | "weak" | "archived";
@@ -142,6 +142,7 @@ export function VocabularyLibrary() {
   const [message, setMessage] = useState("");
 
   const selectedPersonId = getSelectedPersonId(data);
+  const isPostgresRuntime = isPostgresClientStorageRuntime(storageRuntime);
   const allItems = getVocabularyItemsForSelectedPerson(data);
   const activeItems = getActiveVocabularyItems(data);
   const recognitionItems = getRecognitionVocabularyItems(data);
@@ -279,8 +280,8 @@ export function VocabularyLibrary() {
   };
 
   const deleteItem = async (id: string) => {
-    if (storageRuntime === "postgres-preview") {
-      setMessage("Postgres Preview runtime 暂不支持硬删除词条。请切回本地数据后操作。");
+    if (isPostgresRuntime) {
+      setMessage("Postgres runtime 暂不支持硬删除词条。请切回本地数据后操作。");
       return;
     }
 
@@ -304,8 +305,8 @@ export function VocabularyLibrary() {
   };
 
   const rollbackBatch = async (batchId: string) => {
-    if (storageRuntime === "postgres-preview") {
-      setMessage("Postgres Preview runtime 暂不支持 batch rollback。请切回本地数据后操作。");
+    if (isPostgresRuntime) {
+      setMessage("Postgres runtime 暂不支持 batch rollback。请切回本地数据后操作。");
       return;
     }
 

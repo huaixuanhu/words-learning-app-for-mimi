@@ -5,7 +5,10 @@ import { CheckCircle2, Eye, EyeOff, RotateCcw, Undo2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SimplePanel } from "@/components/simple-panel";
 import { useMimiSound } from "@/components/sound-provider";
-import { useVocabularyData } from "@/components/vocabulary/use-vocabulary-data";
+import {
+  isPostgresClientStorageRuntime,
+  useVocabularyData,
+} from "@/components/vocabulary/use-vocabulary-data";
 import { getSelectedPersonId } from "@/lib/people/repository";
 import { recordReview, resetTodayReviewTask, rollbackReviewEvent } from "@/lib/review/repository";
 import { selectReviewQueue } from "@/lib/review/scheduler";
@@ -47,6 +50,7 @@ export function ReviewSession() {
   const submittedItemIdRef = useRef<string | null>(null);
   const [message, setMessage] = useState("");
   const selectedPersonId = getSelectedPersonId(data);
+  const isPostgresRuntime = isPostgresClientStorageRuntime(storageRuntime);
   const recognitionItems = useMemo(() => getRecognitionVocabularyItems(data), [data]);
   const settings = getSelectedReviewSettings(data);
   const queueSourceSignature = useMemo(
@@ -95,8 +99,7 @@ export function ReviewSession() {
   const remainingCount = sessionIds?.length ?? 0;
   const progressPercent = sessionTotal ? Math.round((completedCount / sessionTotal) * 100) : 0;
   const ratingDisabled = !currentItem || !showBack || submittedItemId === currentItem.id;
-  const canRollbackPrevious =
-    storageRuntime !== "postgres-preview" && Boolean(currentItem) && completedReviews.length > 0;
+  const canRollbackPrevious = !isPostgresRuntime && Boolean(currentItem) && completedReviews.length > 0;
 
   useEffect(() => {
     if (
@@ -151,9 +154,9 @@ export function ReviewSession() {
   };
 
   const resetTodayReview = async () => {
-    if (storageRuntime === "postgres-preview") {
+    if (isPostgresRuntime) {
       setShowResetConfirm(false);
-      setMessage("Postgres Preview runtime 暂不支持重置今日复习任务。请切回本地数据后操作。");
+      setMessage("Postgres runtime 暂不支持重置今日复习任务。请切回本地数据后操作。");
       return;
     }
 
@@ -191,8 +194,8 @@ export function ReviewSession() {
   };
 
   const rollbackPreviousReview = async () => {
-    if (storageRuntime === "postgres-preview") {
-      setMessage("Postgres Preview runtime 暂不支持回退1词。请切回本地数据后操作。");
+    if (isPostgresRuntime) {
+      setMessage("Postgres runtime 暂不支持回退1词。请切回本地数据后操作。");
       return;
     }
 
@@ -258,7 +261,7 @@ export function ReviewSession() {
       const nextSession = getNextSessionIdsAfterRating(sessionIds ?? [], currentItem.id, rating);
       const completedSession = nextSession.passedSession && nextSession.sessionIds.length === 0 && sessionTotal > 0;
 
-      if (storageRuntime !== "postgres-preview") {
+      if (!isPostgresRuntime) {
         setCompletedReviews((current) => [
           ...current,
           {

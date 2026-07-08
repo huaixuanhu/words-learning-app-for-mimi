@@ -6,8 +6,9 @@ import {
   getPostgresVocabularyDataSnapshot,
 } from "@/lib/storage/postgres/repository";
 import {
-  assertPostgresPreviewRuntime,
+  assertPostgresRuntime,
   isProductionVercelEnvironment,
+  isPostgresRuntimeMode,
   isStorageUiWriteEnabled,
   resolveStorageRuntimeMode,
 } from "@/lib/storage/runtime-mode";
@@ -205,19 +206,34 @@ function requestDisabled(status: number, reason: string) {
   );
 }
 
-export async function GET(request: NextRequest) {
-  if (isProductionVercelEnvironment()) {
-    return requestDisabled(404, "production-disabled");
+function storageDataRuntimeDisabledResponse() {
+  const resolution = resolveStorageRuntimeMode();
+  const isProduction = isProductionVercelEnvironment();
+
+  if (isProduction && resolution.mode !== "postgres-production") {
+    return requestDisabled(404, "production-postgres-runtime-not-enabled");
   }
 
-  const resolution = resolveStorageRuntimeMode();
+  if (!isProduction && resolution.mode === "postgres-production") {
+    return requestDisabled(403, "postgres-production-runtime-not-allowed");
+  }
 
-  if (resolution.mode !== "postgres-preview") {
+  if (!isPostgresRuntimeMode(resolution.mode)) {
     return requestDisabled(403, "postgres-runtime-not-enabled");
   }
 
+  return null;
+}
+
+export async function GET(request: NextRequest) {
+  const disabled = storageDataRuntimeDisabledResponse();
+
+  if (disabled) {
+    return disabled;
+  }
+
   try {
-    assertPostgresPreviewRuntime();
+    assertPostgresRuntime();
     const selectedPersonId = request.nextUrl.searchParams.get("selectedPersonId");
     const data = await getPostgresVocabularyDataSnapshot(selectedPersonId);
 
@@ -241,34 +257,34 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  if (isProductionVercelEnvironment()) {
-    return requestDisabled(404, "production-disabled");
+  const disabled = storageDataRuntimeDisabledResponse();
+
+  if (disabled) {
+    return disabled;
   }
 
   const resolution = resolveStorageRuntimeMode();
 
-  if (resolution.mode !== "postgres-preview") {
-    return requestDisabled(403, "postgres-runtime-not-enabled");
-  }
+  if (resolution.mode === "postgres-preview") {
+    if (!isStorageUiWriteEnabled()) {
+      return requestDisabled(403, "ui-writes-not-enabled");
+    }
 
-  if (!isStorageUiWriteEnabled()) {
-    return requestDisabled(403, "ui-writes-not-enabled");
-  }
-
-  if (request.headers.get(UI_WRITE_CONFIRMATION_HEADER) !== UI_WRITE_CONFIRMATION_VALUE) {
-    return NextResponse.json(
-      {
-        ok: false,
-        status: "blocked",
-        runtime: runtimePayload(),
-        reason: "missing-ui-write-confirmation-header",
-      },
-      { status: 428 },
-    );
+    if (request.headers.get(UI_WRITE_CONFIRMATION_HEADER) !== UI_WRITE_CONFIRMATION_VALUE) {
+      return NextResponse.json(
+        {
+          ok: false,
+          status: "blocked",
+          runtime: runtimePayload(),
+          reason: "missing-ui-write-confirmation-header",
+        },
+        { status: 428 },
+      );
+    }
   }
 
   try {
-    assertPostgresPreviewRuntime();
+    assertPostgresRuntime();
     const body = await request.json();
 
     if (!isRecord(body)) {

@@ -1,4 +1,4 @@
-export type StorageRuntimeMode = "local" | "postgres-preview";
+export type StorageRuntimeMode = "local" | "postgres-preview" | "postgres-production";
 
 export const STORAGE_RUNTIME_ENV_VAR = "MIMI_STORAGE_RUNTIME";
 export const STORAGE_SMOKE_WRITES_ENV_VAR = "MIMI_ENABLE_STORAGE_SMOKE_WRITES";
@@ -26,7 +26,7 @@ export function parseStorageRuntimeMode(value: string | undefined): StorageRunti
     return null;
   }
 
-  if (cleaned === "local" || cleaned === "postgres-preview") {
+  if (cleaned === "local" || cleaned === "postgres-preview" || cleaned === "postgres-production") {
     return cleaned;
   }
 
@@ -82,6 +82,10 @@ export function canUsePostgresPreviewRuntime(env: NodeJS.ProcessEnv = process.en
   return env.NODE_ENV !== "production";
 }
 
+export function canUsePostgresProductionRuntime(env: NodeJS.ProcessEnv = process.env) {
+  return isProductionVercelEnvironment(env);
+}
+
 export function assertPostgresPreviewRuntime(env: NodeJS.ProcessEnv = process.env) {
   const resolution = resolveStorageRuntimeMode(env);
 
@@ -94,6 +98,40 @@ export function assertPostgresPreviewRuntime(env: NodeJS.ProcessEnv = process.en
   }
 
   return resolution;
+}
+
+export function assertPostgresProductionRuntime(env: NodeJS.ProcessEnv = process.env) {
+  const resolution = resolveStorageRuntimeMode(env);
+
+  if (resolution.mode !== "postgres-production") {
+    throw new Error("Postgres Production runtime is disabled unless MIMI_STORAGE_RUNTIME=postgres-production");
+  }
+
+  if (!canUsePostgresProductionRuntime(env)) {
+    throw new Error("Postgres Production runtime is allowed only in Vercel Production");
+  }
+
+  return resolution;
+}
+
+export function assertPostgresRuntime(env: NodeJS.ProcessEnv = process.env) {
+  const resolution = resolveStorageRuntimeMode(env);
+
+  if (resolution.mode === "postgres-preview") {
+    return assertPostgresPreviewRuntime(env);
+  }
+
+  if (resolution.mode === "postgres-production") {
+    return assertPostgresProductionRuntime(env);
+  }
+
+  throw new Error(
+    "Postgres runtime is disabled unless MIMI_STORAGE_RUNTIME=postgres-preview or postgres-production",
+  );
+}
+
+export function isPostgresRuntimeMode(mode: StorageRuntimeMode) {
+  return mode === "postgres-preview" || mode === "postgres-production";
 }
 
 export function isStorageSmokeWriteEnabled(env: NodeJS.ProcessEnv = process.env) {

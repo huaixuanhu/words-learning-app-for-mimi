@@ -1,5 +1,50 @@
 # AI Agent Log
 
+## 2026-07-09 00:11 AEST
+
+- Task: execute Stage 6B-P1-C runtime / API contract after the user asked to start the next stage.
+- Plan agreed: yes. Scope was local `postgres-production` runtime（运行模式）guards, `/api/storage/health` and `/api/storage/data` API（应用程序接口）contract behavior, client runtime recognition, safety tests, and documentation/log sync.
+- Changed files:
+  - `.env.example`
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md`
+  - `src/app/api/storage/data/route.test.ts`
+  - `src/app/api/storage/data/route.ts`
+  - `src/app/api/storage/health/route.test.ts`
+  - `src/app/api/storage/health/route.ts`
+  - `src/components/export/export-workspace.tsx`
+  - `src/components/review/review-session.tsx`
+  - `src/components/vocabulary/use-vocabulary-data.ts`
+  - `src/components/vocabulary/vocabulary-library.tsx`
+  - `src/lib/storage/postgres/client.ts`
+  - `src/lib/storage/runtime-mode.test.ts`
+  - `src/lib/storage/runtime-mode.ts`
+- Reason: add a guarded local `postgres-production` code path before implementing Postgres repository parity（仓储层功能对齐）and before any database or Production（生产环境）execution.
+- Implementation notes:
+  - Added `postgres-production` to the storage runtime parser.
+  - Added runtime guards so `postgres-preview` is development / Preview only and `postgres-production` is Vercel Production only.
+  - Updated the server-only Postgres client to use the shared guarded Postgres runtime assertion.
+  - Updated `/api/storage/health` so Production `postgres-production` uses a readiness probe without returning public table counts; Preview keeps development / preview counts.
+  - Updated `/api/storage/data` so Production requires `postgres-production`; non-Production rejects `postgres-production`; Preview writes still require `MIMI_ENABLE_STORAGE_UI_WRITES=true` plus `x-mimi-ui-storage-write: allow-dev-preview-ui-write`; Production does not use the Preview header as its permission model.
+  - Updated the browser data hook to preserve `postgres-production` as a distinct client runtime.
+  - Updated Library, Export, and Review UI guards so local-only destructive controls remain blocked for all Postgres runtimes until P1-D repository parity implements them.
+  - Added mocked route contract tests for health/data behavior without opening a database connection.
+- Validation:
+  - Passed: `npm run test -- src/lib/storage/runtime-mode.test.ts` with 1 file and 9 tests.
+  - Passed: `npm run test -- src/app/api/storage/health/route.test.ts src/app/api/storage/data/route.test.ts src/lib/storage/runtime-mode.test.ts` with 3 files and 19 tests.
+  - Passed: `npm run lint`.
+  - Passed: `npm run typecheck`.
+  - Passed: `npm run test` with 18 files and 98 tests.
+  - Passed: `npm run backup:dry-run:fixture`, reporting fixture plan counts `people=1`, `importBatches=1`, `vocabularyItems=1`, `reviewStates=1`, `reviewEvents=1`, `reviewSettings=1`, `backupImports=1`, and `backupImportMappings=6`.
+  - Passed: `npm run build`.
+  - Passed: `git diff --check`.
+- Safety notes: local code, route mocks, tests, and documentation only. No database command was run, no migration was applied, no remote database was inspected, no `.env` file was opened or changed, no credential value was printed, no Vercel command, no Neon command, no database mutation, no Production deployment, no Production migration, no Production import, no formal user backup import, no AI API（人工智能接口）, no dictation engine（听写引擎）, no spelling checker（拼写检查器）, no writing feedback model, no external vocabulary source, no authentication（认证）, no analytics（分析追踪）, no notification, no email, and no 付费/扣款 feature was performed. The standard Next.js build reported `.env.local` presence but did not print credential values.
+
 ## 2026-07-08 23:52 AEST
 
 - Task: execute Stage 6B-P1-B local schema and static tests after the user confirmed the plan.

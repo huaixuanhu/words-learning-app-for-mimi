@@ -1,5 +1,5 @@
 import { Pool, type PoolClient, type QueryResult, type QueryResultRow } from "@neondatabase/serverless";
-import { assertPostgresPreviewRuntime } from "@/lib/storage/runtime-mode";
+import { assertPostgresRuntime } from "@/lib/storage/runtime-mode";
 
 export type PostgresQueryable = {
   query<R extends QueryResultRow = QueryResultRow>(
@@ -31,7 +31,7 @@ export function getPostgresDatabaseUrl(env: NodeJS.ProcessEnv = process.env) {
 
 export function getPostgresPool() {
   assertServerRuntime();
-  assertPostgresPreviewRuntime();
+  assertPostgresRuntime();
 
   if (!pool) {
     pool = new Pool({ connectionString: getPostgresDatabaseUrl() });

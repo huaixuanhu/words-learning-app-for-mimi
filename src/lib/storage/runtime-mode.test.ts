@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  assertPostgresProductionRuntime,
   assertPostgresPreviewRuntime,
+  assertPostgresRuntime,
+  canUsePostgresProductionRuntime,
   canUsePostgresPreviewRuntime,
+  isPostgresRuntimeMode,
   isStorageSmokeWriteEnabled,
   isStorageUiWriteEnabled,
   resolveStorageRuntimeMode,
@@ -31,6 +35,20 @@ describe("storage runtime mode", () => {
       reason: "invalid",
       rawValue: "postgres",
     });
+  });
+
+  it("accepts the explicit postgres-production runtime value", () => {
+    expect(
+      resolveStorageRuntimeMode(testEnv({ MIMI_STORAGE_RUNTIME: "postgres-production" })),
+    ).toMatchObject({
+      mode: "postgres-production",
+      source: "env",
+      reason: "valid",
+      rawValue: "postgres-production",
+    });
+    expect(isPostgresRuntimeMode("postgres-production")).toBe(true);
+    expect(isPostgresRuntimeMode("postgres-preview")).toBe(true);
+    expect(isPostgresRuntimeMode("local")).toBe(false);
   });
 
   it("allows postgres-preview in development or preview only", () => {
@@ -65,6 +83,55 @@ describe("storage runtime mode", () => {
         NODE_ENV: "production",
       })),
     ).toThrow("development or preview");
+  });
+
+  it("accepts postgres-production only in Vercel Production", () => {
+    expect(
+      canUsePostgresProductionRuntime(testEnv({
+        MIMI_STORAGE_RUNTIME: "postgres-production",
+        VERCEL_ENV: "production",
+        NODE_ENV: "production",
+      })),
+    ).toBe(true);
+    expect(
+      canUsePostgresProductionRuntime(testEnv({
+        MIMI_STORAGE_RUNTIME: "postgres-production",
+        VERCEL_ENV: "preview",
+        NODE_ENV: "production",
+      })),
+    ).toBe(false);
+    expect(() =>
+      assertPostgresProductionRuntime(testEnv({
+        MIMI_STORAGE_RUNTIME: "postgres-production",
+        VERCEL_ENV: "preview",
+        NODE_ENV: "production",
+      })),
+    ).toThrow("Vercel Production");
+    expect(
+      assertPostgresProductionRuntime(testEnv({
+        MIMI_STORAGE_RUNTIME: "postgres-production",
+        VERCEL_ENV: "production",
+        NODE_ENV: "production",
+      })).mode,
+    ).toBe("postgres-production");
+  });
+
+  it("resolves only a valid guarded Postgres runtime through the shared assertion", () => {
+    expect(
+      assertPostgresRuntime(testEnv({
+        MIMI_STORAGE_RUNTIME: "postgres-preview",
+        VERCEL_ENV: "preview",
+        NODE_ENV: "production",
+      })).mode,
+    ).toBe("postgres-preview");
+    expect(
+      assertPostgresRuntime(testEnv({
+        MIMI_STORAGE_RUNTIME: "postgres-production",
+        VERCEL_ENV: "production",
+        NODE_ENV: "production",
+      })).mode,
+    ).toBe("postgres-production");
+    expect(() => assertPostgresRuntime(testEnv())).toThrow("postgres-preview or postgres-production");
   });
 
   it("keeps smoke writes disabled unless explicitly enabled", () => {
