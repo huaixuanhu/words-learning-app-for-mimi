@@ -895,7 +895,12 @@ export function createPostgresRepository(): DurableRepositoryPort {
         return withPostgresTransaction(async (client) => {
           const item = await selectVocabularyItem(client, command, command.vocabularyItemId);
 
-          if (!item || item.status === "archived" || item.archivedAt) {
+          if (
+            !item ||
+            item.status === "archived" ||
+            item.archivedAt ||
+            item.learningTrack !== "recognition"
+          ) {
             throw new Error(`Reviewable vocabulary item not found: ${command.vocabularyItemId}`);
           }
 
@@ -915,8 +920,8 @@ export function createPostgresRepository(): DurableRepositoryPort {
             reviewCount: scheduled.reviewCount,
             lapseCount: scheduled.lapseCount,
             intervalMinutes: scheduled.intervalMinutes,
-            difficulty: previousState?.difficulty ?? null,
-            stability: previousState?.stability ?? null,
+            difficulty: scheduled.difficulty,
+            stability: scheduled.stability,
             updatedAt: command.reviewedAt,
           };
           const eventResult = await client.query<ReviewEventRow>(

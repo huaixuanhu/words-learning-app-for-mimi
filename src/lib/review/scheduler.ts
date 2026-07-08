@@ -1,15 +1,13 @@
 import type { ReviewRating, ReviewState } from "./types";
 import type { VocabularyData, VocabularyItem } from "@/lib/vocabulary/types";
+import { State } from "ts-fsrs";
 import { getSelectedReviewSettings, normalizeSessionLimit } from "./settings";
 import { getSelectedPersonId } from "@/lib/people/repository";
 import { getRecognitionVocabularyItems } from "@/lib/vocabulary/repository";
-
-export const REVIEW_INTERVAL_MINUTES: Record<ReviewRating, number> = {
-  forgot: 10,
-  hard: 60 * 24,
-  vague: 60 * 24 * 3,
-  remembered: 60 * 24 * 7,
-};
+import {
+  applyRecognitionFsrsRating,
+  createRecognitionFsrsCardFromReviewState,
+} from "./fsrs-recognition";
 
 export type ScheduledReview = {
   status: ReviewState["status"];
@@ -17,12 +15,21 @@ export type ScheduledReview = {
   intervalMinutes: number;
   lapseCount: number;
   reviewCount: number;
+  difficulty: number;
+  stability: number;
+  scheduledDays: number;
 };
 
-export function addMinutes(isoDate: string, minutes: number) {
-  const start = new Date(isoDate);
+function getIntervalMinutes(reviewedAt: string, dueAt: string) {
+  const reviewedAtTime = new Date(reviewedAt).getTime();
+  const dueAtTime = new Date(dueAt).getTime();
+  const rawMinutes = Math.round((dueAtTime - reviewedAtTime) / 60_000);
 
-  return new Date(start.getTime() + minutes * 60_000).toISOString();
+  return Math.max(1, rawMinutes);
+}
+
+function toReviewStateStatus(state: State): ReviewState["status"] {
+  return state === State.Review ? "review" : "learning";
 }
 
 export function scheduleNextReview(
@@ -30,15 +37,54 @@ export function scheduleNextReview(
   rating: ReviewRating,
   reviewedAt = new Date().toISOString(),
 ): ScheduledReview {
-  const intervalMinutes = REVIEW_INTERVAL_MINUTES[rating];
+  const card = createRecognitionFsrsCardFromReviewState(previousState, reviewedAt);
+  const outcome = applyRecognitionFsrsRating(card, rating, reviewedAt);
 
   return {
-    status: rating === "forgot" ? "learning" : "review",
-    dueAt: addMinutes(reviewedAt, intervalMinutes),
-    intervalMinutes,
-    lapseCount: (previousState?.lapseCount ?? 0) + (rating === "forgot" ? 1 : 0),
-    reviewCount: (previousState?.reviewCount ?? 0) + 1,
+    status: toReviewStateStatus(outcome.state),
+    dueAt: outcome.dueAt,
+    intervalMinutes: getIntervalMinutes(reviewedAt, outcome.dueAt),
+    lapseCount: outcome.lapses,
+    reviewCount: outcome.reps,
+    difficulty: outcome.difficulty,
+    stability: outcome.stability,
+    scheduledDays: outcome.scheduledDays,
   };
+}
+
+export function getLocalDateKey(isoDate: string, timeZone: string) {
+  const date = new Date(isoDate);
+
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  try {
+    const parts = new Intl.DateTimeFormat("en-CA", {
+      timeZone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).formatToParts(date);
+    const year = parts.find((part) => part.type === "year")?.value;
+    const month = parts.find((part) => part.type === "month")?.value;
+    const day = parts.find((part) => part.type === "day")?.value;
+
+    if (year && month && day) {
+      return `${year}-${month}-${day}`;
+    }
+  } catch {
+    // Fall back to UTC when an unexpected timezone value reaches local storage.
+  }
+
+  return date.toISOString().slice(0, 10);
+}
+
+export function isDueByLocalDateBucket(dueAt: string, now: string, timeZone: string) {
+  const dueDateKey = getLocalDateKey(dueAt, timeZone);
+  const nowDateKey = getLocalDateKey(now, timeZone);
+
+  return Boolean(dueDateKey && nowDateKey && dueDateKey <= nowDateKey);
 }
 
 function getReviewStateByVocabularyId(data: VocabularyData) {
@@ -66,13 +112,14 @@ export function selectReviewQueue(
   now = new Date().toISOString(),
   sessionLimit = getSelectedReviewSettings(data).recognitionSessionLimit,
 ) {
+  const timezone = getSelectedReviewSettings(data).timezone;
   const stateByVocabularyId = getReviewStateByVocabularyId(data);
   const activeItems = getRecognitionVocabularyItems(data);
   const dueItems = activeItems
     .filter((item) => {
       const state = stateByVocabularyId.get(item.id);
 
-      return state ? state.dueAt <= now : false;
+      return state ? isDueByLocalDateBucket(state.dueAt, now, timezone) : false;
     })
     .sort((a, b) => {
       const stateA = stateByVocabularyId.get(a.id);

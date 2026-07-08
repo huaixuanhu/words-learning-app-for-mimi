@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { scheduleNextReview, selectReviewQueue } from "./scheduler";
+import { isDueByLocalDateBucket, scheduleNextReview, selectReviewQueue } from "./scheduler";
 import {
   addPerson,
   addVocabularyItem,
@@ -27,19 +27,35 @@ describe("review scheduler", () => {
     const reviewedAt = "2026-07-04T00:00:00.000Z";
 
     expect(scheduleNextReview(undefined, "forgot", reviewedAt)).toMatchObject({
-      dueAt: "2026-07-04T00:10:00.000Z",
-      intervalMinutes: 10,
-      lapseCount: 1,
-      reviewCount: 1,
-      status: "learning",
-    });
-    expect(scheduleNextReview(undefined, "remembered", reviewedAt)).toMatchObject({
-      dueAt: "2026-07-11T00:00:00.000Z",
-      intervalMinutes: 10080,
+      dueAt: "2026-07-05T00:00:00.000Z",
+      intervalMinutes: 1440,
       lapseCount: 0,
       reviewCount: 1,
+      scheduledDays: 1,
       status: "review",
     });
+    expect(scheduleNextReview(undefined, "remembered", reviewedAt)).toMatchObject({
+      dueAt: "2026-07-12T00:00:00.000Z",
+      intervalMinutes: 11520,
+      lapseCount: 0,
+      reviewCount: 1,
+      scheduledDays: 8,
+      status: "review",
+    });
+  });
+
+  it("treats due cards as due by local calendar day instead of exact clock time", () => {
+    const dueAt = "2026-07-11T13:50:00.000Z";
+
+    expect(
+      isDueByLocalDateBucket(dueAt, "2026-07-10T13:55:00.000Z", "Australia/Melbourne"),
+    ).toBe(false);
+    expect(new Date("2026-07-10T14:05:00.000Z").getTime()).toBeLessThan(
+      new Date(dueAt).getTime(),
+    );
+    expect(
+      isDueByLocalDateBucket(dueAt, "2026-07-10T14:05:00.000Z", "Australia/Melbourne"),
+    ).toBe(true);
   });
 
   it("selects due cards before new cards and obeys session limit", () => {
@@ -67,7 +83,7 @@ describe("review scheduler", () => {
           personId,
           vocabularyItemId: "vocab-b",
           status: "review" as const,
-          dueAt: "2026-07-03T00:00:00.000Z",
+          dueAt: "2026-07-04T13:50:00.000Z",
           lastReviewedAt: "2026-07-02T00:00:00.000Z",
           reviewCount: 1,
           lapseCount: 0,

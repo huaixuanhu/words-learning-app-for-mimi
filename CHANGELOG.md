@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## 2026-07-08 18:15 AEST
+
+- Executed Stage 8-D FSRS scheduler replacement locally.
+- Replaced the fixed Stage 4 Recognition scheduler with the Stage 8-B `ts-fsrs` adapter.
+- Added conversion from existing neutral `ReviewState` fields into FSRS card input, including a compatibility path for older placeholder states without `difficulty` / `stability`.
+- Updated local `recordReview()`, reset-today rebuild, and one-word rollback rebuild so Recognition states store FSRS `difficulty` / `stability`.
+- Changed Review queue due checks to compare Mimi's local timezone（时区）date buckets, while keeping exact `dueAt` timestamps for audit（审计）and compatibility.
+- Added a Postgres repository guard so future durable `recordReview()` rejects Active Vocabulary（输出词汇）items and remains aligned with the V1 no-Active-scheduling boundary.
+- Updated scheduler / repository tests for deterministic FSRS first-review output, continuous review output, local natural-day bucket due behavior, reset, rollback, and Active no-scheduling behavior.
+- Reason: remove the placeholder linear cross-day scheduler before V1 Production（生产环境）can persist durable review memory state.
+
 ## 2026-07-08 18:03 AEST
 
 - Executed Stage 8-C Recognition same-session repeat locally.

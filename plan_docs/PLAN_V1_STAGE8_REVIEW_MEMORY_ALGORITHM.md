@@ -1,7 +1,7 @@
 # Words Learning App For Mimi Stage 8: Review Memory Algorithm
 
 Created: 2026-07-08 12:45 AEST
-Last updated: 2026-07-08 18:03 AEST
+Last updated: 2026-07-08 18:15 AEST
 
 Source plan: `plan_docs/PLAN_V1_MASTER.md`
 Derived from: `plan_docs/PLAN_V1_STAGE4_REVIEW_SCHEDULER_FLASHCARDS.md`, `plan_docs/PLAN_V1_STAGE7_9_DUAL_TRACK_DATA_IMPORT.md`, `plan_docs/PLAN_V1_STAGE7_10_LIBRARY_REVIEW_CONTROLS.md`, `plan_docs/PLAN_V1_STAGE7_11_REVIEW_ROLLBACK_AUTO_REFRESH.md`, `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md`, `ARCHITECTURE.md`, `src/lib/review/scheduler.ts`, `src/lib/review/repository.ts`, `src/components/review/review-session.tsx`, and the 2026-07-08 user decision to replace the placeholder review algorithm before formal V1 Production（生产环境）launch.
@@ -277,27 +277,34 @@ Boundary:
 
 ### Stage 8-D FSRS Scheduler Replacement
 
-Status: not implemented. The natural-day due boundary below is documented before implementation.
+Status: implemented locally on 2026-07-08 after explicit approval.
 
-- Replace the fixed Stage 4 interval table with an FSRS-backed scheduler for Recognition.
-- Map V1 ratings to FSRS ratings.
-- Rebuild Recognition state from events.
-- Preserve person scoping and Recognition-only filtering.
-- Use local natural-day bucket（本地自然日分桶）due semantics for the Review queue.
-- Add deterministic tests for new, learning, review, lapse, rollback, reset, and missed-day behavior.
+Completed:
+
+- Replaced the fixed Stage 4 interval table with an FSRS-backed scheduler for Recognition.
+- Mapped V1 ratings to FSRS ratings through the Stage 8-B adapter.
+- Converted existing neutral `ReviewState` fields into FSRS card input for sequential scheduling.
+- Wrote FSRS `difficulty` and `stability` values back into neutral state fields.
+- Kept exact `dueAt` timestamps for audit（审计）, compatibility, backup, and future analysis.
+- Rebuilt Recognition state from events during reset / rollback using the same scheduler path.
+- Preserved person scoping and Recognition-only filtering.
+- Added a Postgres repository guard so future durable `recordReview()` rejects non-Recognition items.
+- Used local natural-day bucket due semantics for the Review queue.
+- Added deterministic tests for first-review scheduling, local bucket due behavior, FSRS state writes, Active no-scheduling, rollback, and reset.
 
 Due-date boundary:
 
 - FSRS is responsible for `scheduled_days`.
+- `dueAt` remains stored as an exact timestamp.
 - The Review queue decides whether a card is due by comparing local date buckets in the selected person's timezone（时区）.
 - Example: if Mimi reviews a word at 23:50 and FSRS returns `scheduled_days = 3`, the word becomes due once the local calendar reaches the third day, even in the morning.
-- Do not make V1 daily review depend on the exact clock time of the previous review.
-- Keep exact `reviewedAt` timestamps for audit（审计）and future analysis, but the daily queue should use local date keys for due checks.
-- If `dueAt` remains stored as an exact timestamp for compatibility, Stage 8-D must ensure queue selection does not hide a due word until the same clock time arrives.
+- V1 daily review does not depend on the exact clock time of the previous review.
+- Exact `reviewedAt` timestamps remain in review events for audit and future analysis.
+- Queue selection no longer hides a card until the exact same clock time arrives once the local due date has started.
 
 ### Stage 8-E Data Migration And Backup Compatibility
 
-- Add local schema migration only if needed.
+- Add local schema migration only if needed. Stage 8-D did not require one because the existing neutral `difficulty`, `stability`, `intervalMinutes`, `dueAt`, `reviewCount`, and `lapseCount` fields remain sufficient.
 - Update JSON backup validation / restore tests if the state shape changes.
 - Ensure Active data round-trips without state / event creation.
 

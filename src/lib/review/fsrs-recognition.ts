@@ -6,9 +6,10 @@ import {
   type Grade,
   type RecordLogItem,
   Rating,
+  State,
   type FSRSParameters,
 } from "ts-fsrs";
-import type { ReviewRating } from "./types";
+import type { ReviewRating, ReviewState } from "./types";
 
 export const RECOGNITION_FSRS_PARAMETERS: FSRSParameters = generatorParameters({
   request_retention: 0.9,
@@ -48,6 +49,57 @@ export function mapReviewRatingToFsrsRating(rating: ReviewRating): Grade {
 
 export function createRecognitionFsrsCard(now: string | Date = new Date()) {
   return createEmptyCard(now);
+}
+
+function coerceDate(input: string | null | undefined, fallback: string | Date) {
+  if (!input) {
+    return new Date(fallback);
+  }
+
+  const date = new Date(input);
+
+  return Number.isNaN(date.getTime()) ? new Date(fallback) : date;
+}
+
+function hasFsrsMetric(value: number | null): value is number {
+  return typeof value === "number" && Number.isFinite(value) && value > 0;
+}
+
+export function createRecognitionFsrsCardFromReviewState(
+  previousState: ReviewState | undefined,
+  reviewedAt: string | Date,
+): Card {
+  if (!previousState) {
+    return createRecognitionFsrsCard(reviewedAt);
+  }
+
+  const rawDifficulty = previousState.difficulty;
+  const rawStability = previousState.stability;
+  const hasDifficulty = hasFsrsMetric(rawDifficulty);
+  const hasStability = hasFsrsMetric(rawStability);
+  const hasFsrsState = hasDifficulty && hasStability;
+  const difficulty = hasDifficulty ? rawDifficulty : 0;
+  const stability = hasStability ? rawStability : 0;
+  const reviewedAtDate = new Date(reviewedAt);
+  const due = coerceDate(previousState.dueAt, reviewedAtDate);
+  const lastReview = coerceDate(previousState.lastReviewedAt, reviewedAtDate);
+
+  return {
+    due,
+    stability,
+    difficulty,
+    elapsed_days: 0,
+    scheduled_days: Math.max(0, Math.round(previousState.intervalMinutes / 1440)),
+    learning_steps: 0,
+    reps: previousState.reviewCount,
+    lapses: previousState.lapseCount,
+    state: hasFsrsState
+      ? previousState.status === "learning"
+        ? State.Relearning
+        : State.Review
+      : State.New,
+    last_review: previousState.lastReviewedAt ? lastReview : undefined,
+  };
 }
 
 function toRecognitionOutcome(

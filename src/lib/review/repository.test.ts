@@ -71,6 +71,8 @@ describe("review repository", () => {
       lapseCount: 0,
       intervalMinutes: 4320,
     });
+    expect(result.state.difficulty).toBeCloseTo(2.11810397, 6);
+    expect(result.state.stability).toBeCloseTo(2.3065, 6);
     expect(result.data.reviewEvents).toHaveLength(1);
     expect(result.data.reviewStates).toHaveLength(1);
   });
@@ -90,10 +92,12 @@ describe("review repository", () => {
     expect(second.data.reviewStates).toHaveLength(1);
     expect(second.state).toMatchObject({
       reviewCount: 2,
-      lapseCount: 1,
-      intervalMinutes: 10080,
-      dueAt: "2026-07-11T01:10:00.000Z",
+      lapseCount: 0,
+      intervalMinutes: 5760,
+      dueAt: "2026-07-08T01:10:00.000Z",
     });
+    expect(second.state.difficulty).toBeCloseTo(5.20002037, 6);
+    expect(second.state.stability).toBeCloseTo(0.212, 6);
     expect(second.data.reviewEvents).toHaveLength(2);
   });
 

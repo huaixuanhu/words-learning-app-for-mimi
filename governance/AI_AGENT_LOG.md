@@ -1,5 +1,43 @@
 # AI Agent Log
 
+## 2026-07-08 18:15 AEST
+
+- Task: execute Stage 8-D FSRS scheduler replacement after the user confirmed implementation.
+- Plan agreed: yes. Scope was Recognition-only FSRS scheduler wiring, local natural-day bucket due checks, reset / rollback rebuild parity, Postgres repository parity guard, tests, and documentation/log sync.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE8_REVIEW_MEMORY_ALGORITHM.md`
+  - `src/lib/review/fsrs-recognition.ts`
+  - `src/lib/review/repository.test.ts`
+  - `src/lib/review/repository.ts`
+  - `src/lib/review/scheduler.test.ts`
+  - `src/lib/review/scheduler.ts`
+  - `src/lib/storage/postgres/repository.ts`
+- Reason: replace the placeholder linear cross-day Recognition scheduler before formal V1 Production（生产环境）can persist durable review memory state.
+- Implementation notes:
+  - Added `createRecognitionFsrsCardFromReviewState()` so existing neutral `ReviewState` fields become FSRS card input.
+  - Preserved compatibility for older placeholder states that have review counts but no FSRS `difficulty` / `stability`.
+  - Replaced `REVIEW_INTERVAL_MINUTES` scheduling with `ts-fsrs` outcomes for Recognition ratings.
+  - Stored exact `dueAt` timestamps and FSRS `difficulty` / `stability` in local review state.
+  - Added local date-key due checks in the selected person's timezone（时区）so a card becomes due when Mimi's local due date starts.
+  - Updated reset-today and one-word rollback rebuilds to replay events through the same FSRS scheduler.
+  - Updated the Postgres repository path to write FSRS state fields and reject non-Recognition review recording.
+- Validation:
+  - Passed: `npm run test -- src/lib/review/scheduler.test.ts src/lib/review/repository.test.ts src/lib/review/fsrs-recognition.test.ts`.
+  - Passed: `npm run typecheck`.
+  - Passed: `npm run lint`.
+  - Passed: `npm run test` with 16 files and 75 tests.
+  - Passed: `npm run backup:dry-run:fixture`, reporting fixture plan counts `people=1`, `importBatches=1`, `vocabularyItems=1`, `reviewStates=1`, `reviewEvents=1`, `reviewSettings=1`, `backupImports=1`, and `backupImportMappings=6`.
+  - Passed: `npm run build`.
+  - Passed: `git diff --check`.
+  - Passed: `npm run governance:preflight`.
+- Safety notes: local code, tests, and documentation only. No local storage schema version change, Postgres schema change, Vercel command, Neon command, `.env` read/change, credential access, database command, database mutation, Production deployment, Production migration, Production import, formal user backup import, AI API（人工智能接口）, dictation engine（听写引擎）, spelling checker（拼写检查器）, writing feedback model, external vocabulary source, authentication（认证）, analytics（分析追踪）, notification, email, or 付费/扣款 feature was performed.
+
 ## 2026-07-08 18:03 AEST
 
 - Task: execute Stage 8-C same-session Recognition repeat, and document the Stage 8-D local natural-day bucket due boundary before implementation.

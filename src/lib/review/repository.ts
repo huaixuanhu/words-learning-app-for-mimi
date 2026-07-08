@@ -3,7 +3,7 @@ import type { VocabularyData } from "@/lib/vocabulary/types";
 import { makeId } from "@/lib/vocabulary/repository";
 import { getSelectedPersonId } from "@/lib/people/repository";
 import { getSelectedReviewSettings } from "./settings";
-import { scheduleNextReview, selectReviewQueue } from "./scheduler";
+import { getLocalDateKey, scheduleNextReview, selectReviewQueue } from "./scheduler";
 
 export type RecordReviewInput = {
   vocabularyItemId: string;
@@ -25,34 +25,6 @@ export function getReviewQueue(
   sessionLimit = getSelectedReviewSettings(data).recognitionSessionLimit,
 ) {
   return selectReviewQueue(data, now, sessionLimit);
-}
-
-function getDateKey(isoDate: string, timeZone: string) {
-  const date = new Date(isoDate);
-
-  if (Number.isNaN(date.getTime())) {
-    return "";
-  }
-
-  try {
-    const parts = new Intl.DateTimeFormat("en-CA", {
-      timeZone,
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    }).formatToParts(date);
-    const year = parts.find((part) => part.type === "year")?.value;
-    const month = parts.find((part) => part.type === "month")?.value;
-    const day = parts.find((part) => part.type === "day")?.value;
-
-    if (year && month && day) {
-      return `${year}-${month}-${day}`;
-    }
-  } catch {
-    // Fall back to UTC when an unexpected timezone value reaches local storage.
-  }
-
-  return date.toISOString().slice(0, 10);
 }
 
 function sortReviewEventsByReviewedAt(a: ReviewEvent, b: ReviewEvent) {
@@ -84,8 +56,8 @@ function rebuildStateFromEvents(
       reviewCount: scheduled.reviewCount,
       lapseCount: scheduled.lapseCount,
       intervalMinutes: scheduled.intervalMinutes,
-      difficulty: previousState?.difficulty ?? null,
-      stability: previousState?.stability ?? null,
+      difficulty: scheduled.difficulty,
+      stability: scheduled.stability,
       updatedAt: event.reviewedAt,
     };
   }, undefined);
@@ -94,9 +66,10 @@ function rebuildStateFromEvents(
 export function resetTodayReviewTask(data: VocabularyData, now = new Date().toISOString()) {
   const personId = getSelectedPersonId(data);
   const timezone = getSelectedReviewSettings(data).timezone;
-  const todayKey = getDateKey(now, timezone);
+  const todayKey = getLocalDateKey(now, timezone);
   const todayEvents = data.reviewEvents.filter(
-    (event) => event.personId === personId && getDateKey(event.reviewedAt, timezone) === todayKey,
+    (event) =>
+      event.personId === personId && getLocalDateKey(event.reviewedAt, timezone) === todayKey,
   );
   const affectedItemIds = new Set(todayEvents.map((event) => event.vocabularyItemId));
 
@@ -109,7 +82,8 @@ export function resetTodayReviewTask(data: VocabularyData, now = new Date().toIS
   }
 
   const remainingEvents = data.reviewEvents.filter(
-    (event) => !(event.personId === personId && getDateKey(event.reviewedAt, timezone) === todayKey),
+    (event) =>
+      !(event.personId === personId && getLocalDateKey(event.reviewedAt, timezone) === todayKey),
   );
   const previousStateByItemId = new Map(
     data.reviewStates
@@ -229,8 +203,8 @@ export function recordReview(
     reviewCount: scheduled.reviewCount,
     lapseCount: scheduled.lapseCount,
     intervalMinutes: scheduled.intervalMinutes,
-    difficulty: previousState?.difficulty ?? null,
-    stability: previousState?.stability ?? null,
+    difficulty: scheduled.difficulty,
+    stability: scheduled.stability,
     updatedAt: now,
   };
   const event = {

@@ -273,7 +273,7 @@ Confirmed release sequence as of 2026-07-08:
 
 - Stage 6A is Production（生产环境）release gate design only. It may define the final deployment checklist, access boundary, environment variable（环境变量）matrix, database migration（数据库迁移）plan, backup/import/rollback path, and smoke test（冒烟测试）criteria, but it must not merge to `main`, mutate Production data, add Production env vars, or create/promote a formal Production deployment.
 - Stage 7 must complete UI（用户界面）/ visual design, mobile interaction polish, review-flow comfort, accessibility（可访问性）review, and optional PWA（Progressive Web App，渐进式 Web 应用）evaluation before formal Production.
-- Stage 8 must complete the Recognition Vocabulary（阅读词汇）review memory algorithm before formal Production. It replaces the placeholder fixed scheduler with a V1 Recognition-only FSRS-6（Free Spaced Repetition Scheduler 6，自由间隔重复调度器第 6 版）plan, adds same-session repeat for failed Recognition ratings, and explicitly keeps Active Vocabulary（输出词汇）out of review queue（复习队列）, review state（复习状态）, and review event（复习事件）creation.
+- Stage 8 must complete the Recognition Vocabulary（阅读词汇）review memory algorithm before formal Production. It replaces the placeholder fixed scheduler with V1 Recognition-only FSRS-6（Free Spaced Repetition Scheduler 6，自由间隔重复调度器第 6 版）scheduling, adds same-session repeat for failed Recognition ratings, uses local natural-day bucket（本地自然日分桶）due checks, and explicitly keeps Active Vocabulary（输出词汇）out of review queue（复习队列）, review state（复习状态）, and review event（复习事件）creation.
 - Stage 6B is the later formal execution step. Only after Stage 7, Stage 8, and Stage 6B-P1 are accepted should `V1` be merged to `main`, Vercel's production branch remain `main`, Production env vars be configured, Production database work run, and the final Production smoke test be performed.
 - The current active Production deployment from branch `V1` remains a documented non-official artifact, not the formal V1 production release.
 - Stage 6A is documented in `plan_docs/PLAN_V1_STAGE6A_PRODUCTION_RELEASE_GATE.md`; it confirms that `person_id` is data separation, not security isolation, and that durable Production writes need either explicit no-credential private-URL risk acceptance or a separate access gate.
@@ -301,7 +301,7 @@ Exit criteria:
 
 ### Stage 8: Review Memory Algorithm
 
-Status: Stage 8 Review Memory Algorithm planning is documented in `plan_docs/PLAN_V1_STAGE8_REVIEW_MEMORY_ALGORITHM.md`. Stage 8-B package fit and calibration executed locally on 2026-07-08 with `ts-fsrs@5.4.1`, an isolated Recognition FSRS adapter, deterministic calibration tests, and an Active Vocabulary no-review-state regression test. Stage 8-C implemented same-session repeat for failed Recognition ratings without replacing the cross-day scheduler.
+Status: Stage 8 Review Memory Algorithm is documented in `plan_docs/PLAN_V1_STAGE8_REVIEW_MEMORY_ALGORITHM.md`. Stage 8-B package fit and calibration executed locally on 2026-07-08 with `ts-fsrs@5.4.1`, an isolated Recognition FSRS adapter, deterministic calibration tests, and an Active Vocabulary no-review-state regression test. Stage 8-C implemented same-session repeat for failed Recognition ratings. Stage 8-D replaced the cross-day scheduler with Recognition-only FSRS scheduling, stored FSRS difficulty / stability in neutral state fields, kept reset / rollback deterministic through event replay, and changed Review queue due checks to Mimi's local natural-day bucket.
 
 Exit criteria:
 
@@ -312,7 +312,7 @@ Exit criteria:
 - Future Active scheduling must use separate dimensions such as `review_profile`, `skill_type`, or `activity_type` so Recognition and Active state do not share one row.
 - Stage 6B-P1 incorporates the accepted Stage 8 state shape before any Postgres Production migration.
 
-The fixed Stage 4 scheduler is no longer a launch-ready assumption. Stage 8 is the required learning-behavior bridge before the cloud-backed V1 Production path continues.
+The fixed Stage 4 scheduler is no longer the active Recognition scheduler. Stage 8 remains the required learning-behavior bridge before the cloud-backed V1 Production path continues.
 
 ## Scheduling Strategy
 
@@ -326,7 +326,7 @@ MVP scheduler should prioritize clarity:
 - Self-rated rarity may help sorting or backlog priority, but it must not pretend to know proficiency.
 - Actual review feedback drives scheduling over time.
 
-The fixed Stage 4 scheduler is only an MVP bootstrap. Stage 8 now owns FSRS-6 evaluation and the V1 Recognition-only scheduler replacement before formal Production. Embedding（向量嵌入）support for semantic similarity（语义相似度）, confusing pairs, and review queue ordering remains a later optional direction.
+The V1 Recognition scheduler now uses the Stage 8 FSRS-6 implementation. Embedding（向量嵌入）support for semantic similarity（语义相似度）, confusing pairs, and review queue ordering remains a later optional direction.
 
 ## Data And Privacy Assumptions
 
