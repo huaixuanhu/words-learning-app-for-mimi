@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## 2026-07-08 21:31 AEST
+
+- Executed Stage 8-F Postgres Production handoff locally.
+- Updated Stage 6B-P1 with the final V1 Recognition Vocabulary（阅读词汇）FSRS state shape from Stage 8-D / 8-E.
+- Documented that Production should keep neutral `review_states.difficulty` / `review_states.stability`, exact `due_at`, application-level natural-day due checks, and no V1 `scheduled_days` / scheduler-version columns.
+- Documented that Stage 6B-P1 must reject Active Vocabulary（输出词汇）review state / event rows through repository, backup import, and preferably database-level direct write protection.
+- Added a static SQL regression test for the existing neutral `review_states` / `review_events` shape in `0001_initial.sql`.
+- Kept `0001_initial.sql` historical and deferred `0002_schema5_production_runtime.sql` to later explicit Stage 6B-P1 implementation approval.
+- Reason: hand off the accepted Stage 8 state shape to the cloud-backed V1 Production planning path without running remote migrations.
+
 ## 2026-07-08 18:44 AEST
 
 - Executed Stage 8-E data migration and backup compatibility locally.

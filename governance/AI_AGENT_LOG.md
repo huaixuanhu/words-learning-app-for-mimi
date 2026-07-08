@@ -1,5 +1,36 @@
 # AI Agent Log
 
+## 2026-07-08 21:31 AEST
+
+- Task: execute Stage 8-F Postgres Production handoff after the user asked to start the next stage.
+- Plan agreed: yes. Scope was Stage 6B-P1 handoff documentation, final V1 Recognition scheduler state shape, local static SQL regression, and documentation/log sync.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md`
+  - `plan_docs/PLAN_V1_STAGE8_REVIEW_MEMORY_ALGORITHM.md`
+  - `src/lib/storage/durable-schema.test.ts`
+- Reason: hand off the accepted Stage 8 Recognition memory state shape to the cloud-backed V1 Production planning path without running remote migrations.
+- Implementation notes:
+  - Updated Stage 6B-P1 with final V1 Recognition FSRS state semantics: neutral `difficulty` / `stability`, exact `due_at`, application-level natural-day queue due checks, and no V1 `scheduled_days` / scheduler-version columns.
+  - Documented that Stage 6B-P1 should reject Active Vocabulary（输出词汇）review state / event rows through repository, backup import, and preferably database-level direct write protection.
+  - Documented that `0001_initial.sql` remains historical and `0002_schema5_production_runtime.sql` is deferred to later explicit Stage 6B-P1 implementation approval.
+  - Added a static SQL regression test for the existing neutral `review_states` / `review_events` shape in `0001_initial.sql`.
+- Validation:
+  - Passed: `npm run test -- src/lib/storage/durable-schema.test.ts` with 1 file and 6 tests.
+  - Passed: `npm run lint`.
+  - Passed: `npm run typecheck`.
+  - Passed: `npm run test` with 16 files and 79 tests.
+  - Passed: `npm run backup:dry-run:fixture`, reporting fixture plan counts `people=1`, `importBatches=1`, `vocabularyItems=1`, `reviewStates=1`, `reviewEvents=1`, `reviewSettings=1`, `backupImports=1`, and `backupImportMappings=6`.
+  - Passed: `npm run build`.
+  - Passed: `git diff --check`.
+  - Passed: `npm run governance:preflight`.
+- Safety notes: local documentation and static tests only. No migration file was created, no local storage schema version change, no Postgres schema change, no Vercel command, no Neon command, no `.env` read/change, no credential access, no database command, no database mutation, no Production deployment, no Production migration, no Production import, no formal user backup import, no AI API（人工智能接口）, no dictation engine（听写引擎）, no spelling checker（拼写检查器）, no writing feedback model, no external vocabulary source, no authentication（认证）, no analytics（分析追踪）, no notification, no email, and no 付费/扣款 feature was performed.
+
 ## 2026-07-08 18:44 AEST
 
 - Task: execute Stage 8-E data migration and backup compatibility after the user confirmed implementation.

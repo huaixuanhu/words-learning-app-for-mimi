@@ -71,6 +71,24 @@ describe("durable storage schema", () => {
     );
   });
 
+  it("keeps review state fields neutral for the Stage 8 FSRS handoff", () => {
+    const reviewStates = tableBlock("review_states");
+    const reviewEvents = tableBlock("review_events");
+
+    expect(reviewStates).toMatch(/\bdue_at timestamptz not null\b/i);
+    expect(reviewStates).toMatch(/\bdifficulty double precision null\b/i);
+    expect(reviewStates).toMatch(/\bstability double precision null\b/i);
+    expect(reviewStates).toMatch(/\binterval_minutes integer not null\b/i);
+    expect(reviewStates).toContain("constraint review_states_person_item_unique unique (person_id, vocabulary_item_id)");
+    expect(reviewStates).toContain("interval_minutes > 0");
+    expect(reviewStates).not.toMatch(/recognition_(difficulty|stability)|active_(difficulty|stability)/i);
+
+    expect(reviewEvents).toMatch(/\bnext_due_at timestamptz not null\b/i);
+    expect(reviewEvents).toMatch(/\bnext_interval_minutes integer not null\b/i);
+    expect(reviewEvents).toContain("rating in ('forgot', 'hard', 'vague', 'remembered')");
+    expect(reviewEvents).not.toMatch(/recognition_|active_/i);
+  });
+
   it("adds person-scoped indexes needed by the future adapter", () => {
     const expectedIndexes = [
       "create index import_batches_person_created_at_idx",

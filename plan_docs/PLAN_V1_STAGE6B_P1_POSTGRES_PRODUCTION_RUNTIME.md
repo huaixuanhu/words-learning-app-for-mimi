@@ -1,7 +1,7 @@
 # Words Learning App For Mimi Stage 6B-P1: Postgres Production Runtime
 
 Created: 2026-07-08 00:25 AEST
-Last updated: 2026-07-08 12:45 AEST
+Last updated: 2026-07-08 21:31 AEST
 
 Source plan: `plan_docs/PLAN_V1_STAGE6B_PRODUCTION_EXECUTION.md`
 Derived from: `plan_docs/PLAN_V1_STAGE6A_PRODUCTION_RELEASE_GATE.md`, `plan_docs/PLAN_V1_STAGE7_9_DUAL_TRACK_DATA_IMPORT.md`, `plan_docs/PLAN_V1_STAGE7_10_LIBRARY_REVIEW_CONTROLS.md`, `plan_docs/PLAN_V1_STAGE7_11_REVIEW_ROLLBACK_AUTO_REFRESH.md`, `plan_docs/PLAN_V1_STAGE8_REVIEW_MEMORY_ALGORITHM.md`, `ARCHITECTURE.md`, `db/migrations/0001_initial.sql`, `src/lib/storage/runtime-mode.ts`, `src/app/api/storage/data/route.ts`, `src/lib/storage/postgres/repository.ts`, and the 2026-07-08 user decision to make V1's formal release fully cloud-backed instead of browser-local.
@@ -21,11 +21,22 @@ This means Stage 6B formal release is blocked until this Stage 6B-P1 runtime and
 
 On 2026-07-08, the user added a required precondition: Stage 8 Review Memory Algorithm must be designed first. Stage 6B-P1 must not freeze a Production schema that still assumes the placeholder Stage 4 fixed interval scheduler.
 
+Stage 8-F handoff update on 2026-07-08:
+
+- Stage 8-B installed and calibrated `ts-fsrs@5.4.1`.
+- Stage 8-C made failed Recognition ratings repeat inside the same session.
+- Stage 8-D replaced the cross-day scheduler with Recognition-only FSRS-6（Free Spaced Repetition Scheduler 6，自由间隔重复调度器第 6 版）scheduling.
+- Stage 8-D keeps exact `dueAt` timestamps but uses local natural-day bucket（本地自然日分桶）queue due checks.
+- Stage 8-E confirmed schema version 5 is sufficient; no local schema version 6 is required for V1 FSRS state.
+- Stage 8-E tightened backup restore so Active Vocabulary review states / events are rejected as V1-impossible data.
+
 Stage 8 implications for this plan:
 
 - V1 scheduler state applies only to Recognition Vocabulary（阅读词汇）.
 - Active Vocabulary（输出词汇） must stay stored, exportable, and importable, but must not enter review queue（复习队列）, review state（复习状态）, or review event（复习事件）creation in V1.
 - `review_states.difficulty` and `review_states.stability` should stay neutral field names because V2 may add separate Active scheduler dimensions.
+- `review_states.due_at` remains an exact timestamp for audit（审计）/ compatibility; queue due semantics are application-level local date bucket checks.
+- Stage 8 does not require a `scheduled_days`, scheduler metadata, or scheduler version column in V1 review rows.
 - Future Active scheduling should use a separate dimension such as `review_profile`, `skill_type`, or `activity_type`, rather than sharing a single state row with Recognition.
 - Any Production migration plan must incorporate the accepted Stage 8 state shape before remote execution.
 
@@ -65,14 +76,14 @@ Database schema:
   - separate `recognitionSessionLimit` / `activeSessionLimit`
 - `import_batches.source_type` and `vocabulary_items.source` currently allow the older text sources only.
 - `backup_imports.schema_version` currently supports older backup versions, not the current schema version 5 backup path.
-- Current review scheduler data still reflects the Stage 4 placeholder interval model and must not be frozen into Production before Stage 8 acceptance.
+- The Stage 8 scheduler state shape is now defined locally, but `0001_initial.sql` is still the historical development / Preview schema and has not been promoted or migrated for Production schema version 5.
 
 Repository / API behavior:
 
 - Postgres Preview maps only the first meaning/example through `meaning_zh` and `example`.
 - JSON imports are down-mapped to legacy source types in the existing Postgres path.
 - Browser-local Library hard delete, JSON batch rollback, reset-today Review, and one-word Review rollback do not yet have matching Postgres API / repository operations.
-- Stage 8 same-session repeat and FSRS-6（Free Spaced Repetition Scheduler 6，自由间隔重复调度器第 6 版）state rebuild behavior do not yet have matching Postgres API / repository operations.
+- The current Postgres `recordReview()` path now rejects non-Recognition items and writes Stage 8 FSRS difficulty / stability values, but reset-today rebuild, one-word rollback rebuild, JSON batch rollback, hard delete parity, and full schema version 5 API parity still need Stage 6B-P1 implementation before Production.
 
 Access boundary:
 
@@ -96,7 +107,10 @@ Recommended V1 database shape:
 - `vocabulary_items.source` allows `manual`, `txt_file`, `pasted_text`, `json_file`, and `json_paste`
 - `backup_imports.schema_version` supports schema version 5
 - `review_states.difficulty` and `review_states.stability` remain neutral FSRS-compatible fields, documented as V1-used only by Recognition
+- `review_states.due_at` remains exact `timestamptz`; daily queue eligibility is computed from local date buckets in application code
+- no V1 `scheduled_days`, scheduler version, `recognition_difficulty`, or `recognition_stability` columns
 - Active vocabulary rows are persisted in `vocabulary_items`, but no V1 migration should create Active `review_states` or Active `review_events`
+- Production import / repository paths must reject Active `review_states` and Active `review_events`; a database trigger should be considered for direct SQL write protection because ordinary check constraints cannot reference `vocabulary_items.learning_track`
 
 For V1, JSONB（JSON 二进制存储）arrays are preferred over new child tables because:
 
@@ -224,6 +238,9 @@ If option 2 is chosen, create a child plan before Production writes. A minimal g
 - Add fixture expectations for JSON source types and Recognition / Active limits.
 - Add fixture expectations that Active vocabulary persists without review state or review event rows.
 - Add fixture expectations for the accepted Stage 8 Recognition scheduler state fields.
+- Add static expectations for any database-level Active review guard if implemented through trigger / function logic.
+
+Stage 8-F local handoff added a static test that pins the existing neutral `review_states` / `review_events` shape in `0001_initial.sql`; P1-B must extend these tests to the new `0002` Production migration before any remote database action.
 
 ### P1-C Runtime And API Contract
 
@@ -323,7 +340,6 @@ Stop immediately if:
 Before code implementation:
 
 - whether to use JSONB arrays for `tags`, `meaningsZh`, and `examples` as proposed here;
-- final Stage 8 scheduler state fields and whether a local schema version 6 is required;
 - whether Production writes will launch with no-credential private-URL risk acceptance or a separate access gate;
 - whether formal user backup import is required before first Production use, given the user has deleted test words;
 - whether `main` merge should happen by direct merge or pull request after P1 passes;
@@ -331,6 +347,6 @@ Before code implementation:
 
 ## P1 Result
 
-Stage 6B-P1 is the required database/runtime bridge between the accepted local V1 app and the desired fully cloud-backed V1 launch, but it must wait for Stage 8 to define the final Recognition review memory state.
+Stage 6B-P1 is the required database/runtime bridge between the accepted local V1 app and the desired fully cloud-backed V1 launch. Stage 8-F has handed off the final V1 Recognition review memory state shape; P1 must still implement and validate the Production migration / runtime path locally and on a non-production database branch before any Production execution.
 
 No Production release should proceed until P1 has passed local validation, non-production database verification, and explicit human acceptance.

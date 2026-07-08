@@ -1,7 +1,7 @@
 # Words Learning App For Mimi Stage 8: Review Memory Algorithm
 
 Created: 2026-07-08 12:45 AEST
-Last updated: 2026-07-08 18:44 AEST
+Last updated: 2026-07-08 21:31 AEST
 
 Source plan: `plan_docs/PLAN_V1_MASTER.md`
 Derived from: `plan_docs/PLAN_V1_STAGE4_REVIEW_SCHEDULER_FLASHCARDS.md`, `plan_docs/PLAN_V1_STAGE7_9_DUAL_TRACK_DATA_IMPORT.md`, `plan_docs/PLAN_V1_STAGE7_10_LIBRARY_REVIEW_CONTROLS.md`, `plan_docs/PLAN_V1_STAGE7_11_REVIEW_ROLLBACK_AUTO_REFRESH.md`, `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md`, `ARCHITECTURE.md`, `src/lib/review/scheduler.ts`, `src/lib/review/repository.ts`, `src/components/review/review-session.tsx`, and the 2026-07-08 user decision to replace the placeholder review algorithm before formal V1 Production（生产环境）launch.
@@ -317,9 +317,18 @@ Completed:
 
 ### Stage 8-F Postgres Production Handoff
 
-- Update Stage 6B-P1 schema plan with final scheduler fields.
-- Keep remote migration blocked until explicit Stage 6B-P1 approval.
-- Add static SQL tests for the chosen state shape before any remote database action.
+Status: implemented locally on 2026-07-08 after explicit approval.
+
+Completed:
+
+- Updated `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md` with the final V1 Recognition scheduler state shape from Stage 8-D / 8-E.
+- Confirmed Production handoff should keep neutral `review_states.difficulty` and `review_states.stability`.
+- Confirmed `review_states.due_at` stays an exact timestamp while queue due checks remain application-level local natural-day bucket semantics.
+- Confirmed V1 does not need `scheduled_days`, scheduler version, `recognition_difficulty`, or `recognition_stability` columns.
+- Confirmed Stage 6B-P1 should reject Active Vocabulary review state / event rows in repository, backup import, and preferably database-level direct write protection.
+- Added a static SQL test for the existing neutral review state / event shape in `db/migrations/0001_initial.sql`.
+- Kept `0001_initial.sql` historical and did not create or execute a remote migration.
+- Kept `0002_schema5_production_runtime.sql` deferred to Stage 6B-P1 implementation.
 
 ### Stage 8-G Acceptance
 

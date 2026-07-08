@@ -301,7 +301,7 @@ Exit criteria:
 
 ### Stage 8: Review Memory Algorithm
 
-Status: Stage 8 Review Memory Algorithm is documented in `plan_docs/PLAN_V1_STAGE8_REVIEW_MEMORY_ALGORITHM.md`. Stage 8-B package fit and calibration executed locally on 2026-07-08 with `ts-fsrs@5.4.1`, an isolated Recognition FSRS adapter, deterministic calibration tests, and an Active Vocabulary no-review-state regression test. Stage 8-C implemented same-session repeat for failed Recognition ratings. Stage 8-D replaced the cross-day scheduler with Recognition-only FSRS scheduling, stored FSRS difficulty / stability in neutral state fields, kept reset / rollback deterministic through event replay, and changed Review queue due checks to Mimi's local natural-day bucket. Stage 8-E confirmed schema version 5 remains sufficient and tightened JSON backup restore so Active Vocabulary review states / events are rejected while Active words without review history still round-trip.
+Status: Stage 8 Review Memory Algorithm is documented in `plan_docs/PLAN_V1_STAGE8_REVIEW_MEMORY_ALGORITHM.md`. Stage 8-B package fit and calibration executed locally on 2026-07-08 with `ts-fsrs@5.4.1`, an isolated Recognition FSRS adapter, deterministic calibration tests, and an Active Vocabulary no-review-state regression test. Stage 8-C implemented same-session repeat for failed Recognition ratings. Stage 8-D replaced the cross-day scheduler with Recognition-only FSRS scheduling, stored FSRS difficulty / stability in neutral state fields, kept reset / rollback deterministic through event replay, and changed Review queue due checks to Mimi's local natural-day bucket. Stage 8-E confirmed schema version 5 remains sufficient and tightened JSON backup restore so Active Vocabulary review states / events are rejected while Active words without review history still round-trip. Stage 8-F handed the final V1 Recognition scheduler state shape to Stage 6B-P1 and added a static SQL regression for the neutral review state/event shape.
 
 Exit criteria:
 
@@ -312,6 +312,7 @@ Exit criteria:
 - `review_states.difficulty` and `review_states.stability` remain neutral state field names, with documentation that V1 uses them only for Recognition.
 - Future Active scheduling must use separate dimensions such as `review_profile`, `skill_type`, or `activity_type` so Recognition and Active state do not share one row.
 - Stage 6B-P1 incorporates the accepted Stage 8 state shape before any Postgres Production migration.
+- Stage 6B-P1 still needs a separate approved implementation pass before creating/running `0002_schema5_production_runtime.sql`.
 
 The fixed Stage 4 scheduler is no longer the active Recognition scheduler. Stage 8 remains the required learning-behavior bridge before the cloud-backed V1 Production path continues.
 
