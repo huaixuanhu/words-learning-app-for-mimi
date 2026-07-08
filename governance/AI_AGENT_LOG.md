@@ -1,5 +1,47 @@
 # AI Agent Log
 
+## 2026-07-09 00:37 AEST
+
+- Task: execute Stage 6B-P1-D repository parity after the user asked to start the next stage.
+- Plan agreed: yes. Scope was local Postgres repository parity（仓储层功能对齐）, API（应用程序接口）mutation wiring, UI unblock for matched parity controls, local tests, and documentation/log sync.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md`
+  - `src/app/api/storage/data/route.test.ts`
+  - `src/app/api/storage/data/route.ts`
+  - `src/components/review/review-session.tsx`
+  - `src/components/vocabulary/vocabulary-library.tsx`
+  - `src/lib/storage/durable-repository-contract.ts`
+  - `src/lib/storage/postgres/mappers.test.ts`
+  - `src/lib/storage/postgres/mappers.ts`
+  - `src/lib/storage/postgres/repository-parity.test.ts`
+  - `src/lib/storage/postgres/repository.ts`
+- Reason: make the Postgres repository path match the accepted V1 browser-local Library / Review behavior before backup import version 5 and real database verification.
+- Implementation notes:
+  - Extended the durable repository contract with hard delete, import batch rollback, reset-today review, and one-word review rollback operations.
+  - Updated Postgres mappers and repository SQL for schema version 5 `learning_track`, nullable `tags`, `meanings_zh`, `examples`, JSON import source types, and separate Recognition / Active daily limits.
+  - Removed JSON import source down-mapping in the Postgres import path.
+  - Added Postgres hard delete and JSON batch rollback operations. Review rows are removed through existing database cascade semantics when vocabulary items are deleted.
+  - Added Postgres reset-today and one-word rollback operations that delete selected review events, delete affected review states, and rebuild states by replaying remaining events through the Stage 8 scheduler.
+  - Connected the new operations through `/api/storage/data` mutations.
+  - Removed Postgres runtime UI blocks for Library hard delete, JSON batch rollback, Review reset-today, and Review `回退1词`.
+  - Updated Review session bookkeeping so rollback uses the persisted event id from the current runtime snapshot instead of a local temporary event id.
+  - Added mapper, route mock, and repository static tests without opening a database connection.
+- Validation:
+  - Passed: `npm run test -- src/lib/storage/postgres/mappers.test.ts src/lib/storage/postgres/repository-parity.test.ts src/app/api/storage/data/route.test.ts` with 3 files and 14 tests.
+  - Passed: `npm run lint`.
+  - Passed: `npm run typecheck`.
+  - Passed: `npm run test` with 19 files and 103 tests.
+  - Passed: `npm run backup:dry-run:fixture`, reporting fixture plan counts `people=1`, `importBatches=1`, `vocabularyItems=1`, `reviewStates=1`, `reviewEvents=1`, `reviewSettings=1`, `backupImports=1`, and `backupImportMappings=6`.
+  - Passed: `npm run build`.
+  - Passed: `git diff --check`.
+- Safety notes: local code, route mocks, static tests, and documentation only. No database command was run, no migration was applied, no remote database was inspected, no `.env` file was opened or changed, no credential value was printed, no Vercel command, no Neon command, no database mutation, no Production（生产环境）deployment, no Production migration, no Production import, no formal user backup import, no AI API（人工智能接口）, no dictation engine（听写引擎）, no spelling checker（拼写检查器）, no writing feedback model, no external vocabulary source, no authentication（认证）, no analytics（分析追踪）, no notification, no email, and no 付费/扣款 feature was performed. The standard Next.js build reported `.env.local` presence but did not print credential values.
+
 ## 2026-07-09 00:11 AEST
 
 - Task: execute Stage 6B-P1-C runtime / API contract after the user asked to start the next stage.

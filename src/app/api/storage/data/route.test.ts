@@ -7,6 +7,12 @@ const repositoryMocks = vi.hoisted(() => ({
   createPostgresRepository: vi.fn(),
   getPostgresVocabularyDataSnapshot: vi.fn(),
 }));
+const repositoryMethodMocks = vi.hoisted(() => ({
+  deleteItem: vi.fn(),
+  rollbackImportBatch: vi.fn(),
+  resetToday: vi.fn(),
+  rollbackEvent: vi.fn(),
+}));
 
 vi.mock("@/lib/storage/postgres/repository", () => repositoryMocks);
 
@@ -72,9 +78,21 @@ describe("/api/storage/data runtime contract", () => {
     repositoryMocks.createPostgresPerson.mockReset();
     repositoryMocks.createPostgresRepository.mockReset();
     repositoryMocks.getPostgresVocabularyDataSnapshot.mockReset();
+    repositoryMethodMocks.deleteItem.mockReset();
+    repositoryMethodMocks.rollbackImportBatch.mockReset();
+    repositoryMethodMocks.resetToday.mockReset();
+    repositoryMethodMocks.rollbackEvent.mockReset();
     repositoryMocks.createPostgresRepository.mockReturnValue({
       people: {
         listPeople: vi.fn(),
+      },
+      vocabulary: {
+        deleteItem: repositoryMethodMocks.deleteItem,
+        rollbackImportBatch: repositoryMethodMocks.rollbackImportBatch,
+      },
+      review: {
+        resetToday: repositoryMethodMocks.resetToday,
+        rollbackEvent: repositoryMethodMocks.rollbackEvent,
       },
     });
     repositoryMocks.getPostgresVocabularyDataSnapshot.mockResolvedValue(fakeData);
@@ -204,7 +222,7 @@ describe("/api/storage/data runtime contract", () => {
     });
   });
 
-  it("continues to reject destructive mutations until Postgres parity is implemented", async () => {
+  it("routes hard delete mutations through the Postgres repository parity method", async () => {
     setRuntimeEnv({
       MIMI_STORAGE_RUNTIME: "postgres-production",
       VERCEL_ENV: "production",
@@ -222,14 +240,85 @@ describe("/api/storage/data runtime contract", () => {
     }));
     const payload = await response.json();
 
-    expect(response.status).toBe(400);
+    expect(response.status).toBe(200);
     expect(payload).toMatchObject({
-      ok: false,
-      status: "error",
+      ok: true,
+      status: "ready",
       runtime: {
         mode: "postgres-production",
       },
-      error: "Unsupported storage mutation: vocabulary.delete",
+      data: fakeData,
     });
+    expect(repositoryMethodMocks.deleteItem).toHaveBeenCalledWith(
+      {
+        personId,
+        now: "2026-07-09T00:00:00.000Z",
+        timezone: "Australia/Melbourne",
+      },
+      "22222222-2222-4222-8222-222222222222",
+    );
+  });
+
+  it("routes rollback and review repair mutations through repository parity methods", async () => {
+    setRuntimeEnv({
+      MIMI_STORAGE_RUNTIME: "postgres-production",
+      VERCEL_ENV: "production",
+      NODE_ENV: "production",
+    });
+    const { POST } = await import("./route");
+    const common = {
+      selectedPersonId: personId,
+    };
+    const now = "2026-07-09T00:00:00.000Z";
+    const timezone = "Australia/Melbourne";
+
+    await POST(dataPostRequest({
+      ...common,
+      mutation: {
+        type: "import.rollbackBatch",
+        importBatchId: "33333333-3333-4333-8333-333333333333",
+        now,
+        timezone,
+      },
+    }));
+    await POST(dataPostRequest({
+      ...common,
+      mutation: {
+        type: "review.resetToday",
+        now,
+        timezone,
+      },
+    }));
+    await POST(dataPostRequest({
+      ...common,
+      mutation: {
+        type: "review.rollbackEvent",
+        reviewEventId: "44444444-4444-4444-8444-444444444444",
+        now,
+        timezone,
+      },
+    }));
+
+    expect(repositoryMethodMocks.rollbackImportBatch).toHaveBeenCalledWith(
+      {
+        personId,
+        now,
+        timezone,
+      },
+      "33333333-3333-4333-8333-333333333333",
+    );
+    expect(repositoryMethodMocks.resetToday).toHaveBeenCalledWith({
+      personId,
+      now,
+      timezone,
+    });
+    expect(repositoryMethodMocks.rollbackEvent).toHaveBeenCalledWith(
+      {
+        personId,
+        now,
+        timezone,
+      },
+      "44444444-4444-4444-8444-444444444444",
+    );
   });
 });

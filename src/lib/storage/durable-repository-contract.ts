@@ -46,6 +46,27 @@ export type ReviewWriteResult = Readonly<{
   state: ReviewState;
 }>;
 
+export type VocabularyDeleteResult = Readonly<{
+  item: VocabularyItem;
+}>;
+
+export type ImportBatchRollbackResult = Readonly<{
+  batch: ImportBatch;
+  deletedItemsCount: number;
+  deletedReviewStatesCount: number;
+  deletedReviewEventsCount: number;
+}>;
+
+export type ResetTodayReviewResult = Readonly<{
+  resetEventsCount: number;
+  resetItemsCount: number;
+}>;
+
+export type RollbackReviewEventResult = Readonly<{
+  event: ReviewEvent;
+  state: ReviewState | null;
+}>;
+
 export type BackupImportMapping = Readonly<{
   entityType:
     | "person"
@@ -97,12 +118,20 @@ export type VocabularyRepositoryPort = Readonly<{
   ): Promise<VocabularyItem>;
   archiveItem(context: TimestampedPersonContext, vocabularyItemId: string): Promise<VocabularyItem>;
   restoreItem(context: TimestampedPersonContext, vocabularyItemId: string): Promise<VocabularyItem>;
+  deleteItem(
+    context: TimestampedPersonContext,
+    vocabularyItemId: string,
+  ): Promise<VocabularyDeleteResult>;
   commitImportCandidates(
     context: TimestampedPersonContext,
     batchInput: ImportBatchInput,
     candidates: ImportCandidate[],
     acceptedTempIds: Iterable<string>,
   ): Promise<ImportCommitResult>;
+  rollbackImportBatch(
+    context: TimestampedPersonContext,
+    importBatchId: string,
+  ): Promise<ImportBatchRollbackResult>;
   listImportBatches(context: PersonScopedContext): Promise<ImportBatch[]>;
 }>;
 
@@ -113,6 +142,11 @@ export type ReviewRepositoryPort = Readonly<{
   ): Promise<ReviewState | null>;
   getReviewQueue(context: ReviewQueueQuery): Promise<VocabularyItem[]>;
   recordReview(command: RecordReviewCommand): Promise<ReviewWriteResult>;
+  resetToday(context: TimestampedPersonContext): Promise<ResetTodayReviewResult>;
+  rollbackEvent(
+    context: TimestampedPersonContext,
+    reviewEventId: string,
+  ): Promise<RollbackReviewEventResult>;
   listReviewEvents(context: PersonScopedContext): Promise<ReviewEvent[]>;
 }>;
 

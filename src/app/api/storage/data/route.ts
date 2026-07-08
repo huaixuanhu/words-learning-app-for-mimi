@@ -65,10 +65,22 @@ type StorageUiMutation =
       timezone: string;
     }
   | {
+      type: "vocabulary.delete";
+      vocabularyItemId: string;
+      now: string;
+      timezone: string;
+    }
+  | {
       type: "import.commitCandidates";
       batchInput: ImportBatchInput;
       candidates: ImportCandidate[];
       acceptedTempIds: string[];
+      now: string;
+      timezone: string;
+    }
+  | {
+      type: "import.rollbackBatch";
+      importBatchId: string;
       now: string;
       timezone: string;
     }
@@ -80,6 +92,17 @@ type StorageUiMutation =
         elapsedMs?: number | null;
       };
       now: string;
+    }
+  | {
+      type: "review.resetToday";
+      now: string;
+      timezone: string;
+    }
+  | {
+      type: "review.rollbackEvent";
+      reviewEventId: string;
+      now: string;
+      timezone: string;
     }
   | {
       type: "reviewSettings.update";
@@ -150,8 +173,12 @@ function parseMutation(value: unknown): StorageUiMutation {
     case "vocabulary.update":
     case "vocabulary.archive":
     case "vocabulary.restore":
+    case "vocabulary.delete":
     case "import.commitCandidates":
+    case "import.rollbackBatch":
     case "review.record":
+    case "review.resetToday":
+    case "review.rollbackEvent":
     case "reviewSettings.update":
       return value as StorageUiMutation;
     default:
@@ -358,6 +385,19 @@ export async function POST(request: NextRequest) {
           nextSelectedPersonId = context.personId;
         }
         break;
+      case "vocabulary.delete":
+        {
+          const context = await mutationContext(
+            repository,
+            selectedPersonId,
+            mutation.now,
+            mutation.timezone,
+          );
+
+          await repository.vocabulary.deleteItem(context, mutation.vocabularyItemId);
+          nextSelectedPersonId = context.personId;
+        }
+        break;
       case "import.commitCandidates":
         {
           const context = await mutationContext(
@@ -376,6 +416,19 @@ export async function POST(request: NextRequest) {
           nextSelectedPersonId = context.personId;
         }
         break;
+      case "import.rollbackBatch":
+        {
+          const context = await mutationContext(
+            repository,
+            selectedPersonId,
+            mutation.now,
+            mutation.timezone,
+          );
+
+          await repository.vocabulary.rollbackImportBatch(context, mutation.importBatchId);
+          nextSelectedPersonId = context.personId;
+        }
+        break;
       case "review.record":
         {
           const personId = await resolveWritablePersonId(repository, selectedPersonId);
@@ -388,6 +441,32 @@ export async function POST(request: NextRequest) {
             reviewedAt: mutation.now,
           });
           nextSelectedPersonId = personId;
+        }
+        break;
+      case "review.resetToday":
+        {
+          const context = await mutationContext(
+            repository,
+            selectedPersonId,
+            mutation.now,
+            mutation.timezone,
+          );
+
+          await repository.review.resetToday(context);
+          nextSelectedPersonId = context.personId;
+        }
+        break;
+      case "review.rollbackEvent":
+        {
+          const context = await mutationContext(
+            repository,
+            selectedPersonId,
+            mutation.now,
+            mutation.timezone,
+          );
+
+          await repository.review.rollbackEvent(context, mutation.reviewEventId);
+          nextSelectedPersonId = context.personId;
         }
         break;
       case "reviewSettings.update":

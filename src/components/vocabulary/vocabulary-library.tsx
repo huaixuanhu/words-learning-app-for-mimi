@@ -25,7 +25,7 @@ import {
   normalizeTextList,
   normalizeVocabularyTags,
 } from "@/lib/vocabulary/normalize";
-import { isPostgresClientStorageRuntime, useVocabularyData } from "./use-vocabulary-data";
+import { useVocabularyData } from "./use-vocabulary-data";
 import { PressableButton } from "@/components/ui/motion-primitives";
 
 type LibraryFilter = "all" | "recognition" | "activeVocabulary" | "weak" | "archived";
@@ -132,7 +132,7 @@ function getBatchLabel(batch: ImportBatch) {
 }
 
 export function VocabularyLibrary() {
-  const { data, isLoaded, storageRuntime, commit } = useVocabularyData();
+  const { data, isLoaded, commit } = useVocabularyData();
   const reduceMotion = useReducedMotion();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<LibraryFilter>("all");
@@ -142,7 +142,6 @@ export function VocabularyLibrary() {
   const [message, setMessage] = useState("");
 
   const selectedPersonId = getSelectedPersonId(data);
-  const isPostgresRuntime = isPostgresClientStorageRuntime(storageRuntime);
   const allItems = getVocabularyItemsForSelectedPerson(data);
   const activeItems = getActiveVocabularyItems(data);
   const recognitionItems = getRecognitionVocabularyItems(data);
@@ -280,11 +279,6 @@ export function VocabularyLibrary() {
   };
 
   const deleteItem = async (id: string) => {
-    if (isPostgresRuntime) {
-      setMessage("Postgres runtime 暂不支持硬删除词条。请切回本地数据后操作。");
-      return;
-    }
-
     const now = new Date().toISOString();
 
     try {
@@ -305,11 +299,6 @@ export function VocabularyLibrary() {
   };
 
   const rollbackBatch = async (batchId: string) => {
-    if (isPostgresRuntime) {
-      setMessage("Postgres runtime 暂不支持 batch rollback。请切回本地数据后操作。");
-      return;
-    }
-
     const now = new Date().toISOString();
 
     try {

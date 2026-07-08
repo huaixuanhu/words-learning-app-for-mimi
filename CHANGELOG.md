@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## 2026-07-09 00:37 AEST
+
+- Executed Stage 6B-P1-D repository parity locally after explicit approval.
+- Updated Postgres mappers and repository SQL for schema version 5 vocabulary arrays, `learning_track`, nullable `tags`, JSON import source types, and separate Recognition / Active daily limits.
+- Added Postgres repository and `/api/storage/data` parity operations for hard delete, JSON batch rollback, reset-today Review rebuild, and one-word Review rollback rebuild.
+- Removed the UI blocks that previously disabled those Library / Review controls for Postgres runtimes.
+- Updated Review session bookkeeping so Postgres `回退1词` uses the persisted review event id from the returned runtime snapshot.
+- Added local mapper, route mock, and static repository parity tests without connecting to a database.
+- Kept backup import version 5, remote database migration, non-production Neon verification, Production import, and Production deployment out of scope.
+- Reason: make the Postgres repository behavior match the accepted V1 browser-local Library / Review controls before backup import and real database verification.
+
 ## 2026-07-09 00:11 AEST
 
 - Executed Stage 6B-P1-C runtime / API contract locally after explicit approval.

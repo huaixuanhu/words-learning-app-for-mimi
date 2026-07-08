@@ -24,7 +24,9 @@ export type VocabularyItemRow = {
   surface_text: string;
   normalized_text: string;
   meaning_zh: string;
+  meanings_zh?: unknown;
   example: string;
+  examples?: unknown;
   notes: string;
   rarity_score: number | null;
   learning_track?: unknown;
@@ -82,6 +84,7 @@ export type ReviewEventRow = {
 export type ReviewSettingsRow = {
   person_id: string;
   session_limit: number;
+  recognition_session_limit?: number | null;
   active_session_limit?: number | null;
   timezone: string;
   updated_at: DatabaseTimestamp;
@@ -117,15 +120,20 @@ export function mapPersonRow(row: PersonRow): Person {
 }
 
 export function mapVocabularyItemRow(row: VocabularyItemRow): VocabularyItem {
+  const meaningsZh = normalizeTextList(row.meanings_zh);
+  const examples = normalizeTextList(row.examples);
+  const legacyMeaningsZh = normalizeTextList(row.meaning_zh);
+  const legacyExamples = normalizeTextList(row.example);
+
   return {
     id: row.id,
     personId: row.person_id,
     surfaceText: row.surface_text,
     normalizedText: row.normalized_text,
     meaningZh: row.meaning_zh,
-    meaningsZh: normalizeTextList(row.meaning_zh),
+    meaningsZh: meaningsZh.length ? meaningsZh : legacyMeaningsZh,
     example: row.example,
-    examples: normalizeTextList(row.example),
+    examples: examples.length ? examples : legacyExamples,
     notes: row.notes,
     rarityScore: row.rarity_score,
     learningTrack: normalizeLearningTrack(row.learning_track),
@@ -188,10 +196,12 @@ export function mapReviewEventRow(row: ReviewEventRow): ReviewEvent {
 }
 
 export function mapReviewSettingsRow(row: ReviewSettingsRow): PersonReviewSettings {
+  const recognitionSessionLimit = row.recognition_session_limit ?? row.session_limit;
+
   return {
     personId: row.person_id,
-    sessionLimit: row.session_limit,
-    recognitionSessionLimit: row.session_limit,
+    sessionLimit: recognitionSessionLimit,
+    recognitionSessionLimit,
     activeSessionLimit: row.active_session_limit ?? DEFAULT_ACTIVE_SESSION_LIMIT,
     timezone: row.timezone,
     updatedAt: toIsoString(row.updated_at),

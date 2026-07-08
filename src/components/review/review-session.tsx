@@ -5,10 +5,7 @@ import { CheckCircle2, Eye, EyeOff, RotateCcw, Undo2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SimplePanel } from "@/components/simple-panel";
 import { useMimiSound } from "@/components/sound-provider";
-import {
-  isPostgresClientStorageRuntime,
-  useVocabularyData,
-} from "@/components/vocabulary/use-vocabulary-data";
+import { useVocabularyData } from "@/components/vocabulary/use-vocabulary-data";
 import { getSelectedPersonId } from "@/lib/people/repository";
 import { recordReview, resetTodayReviewTask, rollbackReviewEvent } from "@/lib/review/repository";
 import { selectReviewQueue } from "@/lib/review/scheduler";
@@ -35,7 +32,7 @@ type CompletedReview = {
 };
 
 export function ReviewSession() {
-  const { data, isLoaded, storageRuntime, commit } = useVocabularyData();
+  const { data, isLoaded, commit } = useVocabularyData();
   const { settings: soundSettings } = useMimiSound();
   const reduceMotion = useReducedMotion();
   const [sessionIds, setSessionIds] = useState<string[] | null>(null);
@@ -50,7 +47,6 @@ export function ReviewSession() {
   const submittedItemIdRef = useRef<string | null>(null);
   const [message, setMessage] = useState("");
   const selectedPersonId = getSelectedPersonId(data);
-  const isPostgresRuntime = isPostgresClientStorageRuntime(storageRuntime);
   const recognitionItems = useMemo(() => getRecognitionVocabularyItems(data), [data]);
   const settings = getSelectedReviewSettings(data);
   const queueSourceSignature = useMemo(
@@ -99,7 +95,7 @@ export function ReviewSession() {
   const remainingCount = sessionIds?.length ?? 0;
   const progressPercent = sessionTotal ? Math.round((completedCount / sessionTotal) * 100) : 0;
   const ratingDisabled = !currentItem || !showBack || submittedItemId === currentItem.id;
-  const canRollbackPrevious = !isPostgresRuntime && Boolean(currentItem) && completedReviews.length > 0;
+  const canRollbackPrevious = Boolean(currentItem) && completedReviews.length > 0;
 
   useEffect(() => {
     if (
@@ -154,12 +150,6 @@ export function ReviewSession() {
   };
 
   const resetTodayReview = async () => {
-    if (isPostgresRuntime) {
-      setShowResetConfirm(false);
-      setMessage("Postgres runtime 暂不支持重置今日复习任务。请切回本地数据后操作。");
-      return;
-    }
-
     try {
       const now = new Date().toISOString();
       const result = resetTodayReviewTask(data, now);
@@ -194,11 +184,6 @@ export function ReviewSession() {
   };
 
   const rollbackPreviousReview = async () => {
-    if (isPostgresRuntime) {
-      setMessage("Postgres runtime 暂不支持回退1词。请切回本地数据后操作。");
-      return;
-    }
-
     const previousReview = completedReviews.at(-1);
 
     if (!previousReview || !sessionIds) {
@@ -249,7 +234,7 @@ export function ReviewSession() {
         elapsedMs,
       }, now);
 
-      await commit(result.data, {
+      const nextData = await commit(result.data, {
         type: "review.record",
         input: {
           vocabularyItemId: currentItem.id,
@@ -260,13 +245,19 @@ export function ReviewSession() {
       });
       const nextSession = getNextSessionIdsAfterRating(sessionIds ?? [], currentItem.id, rating);
       const completedSession = nextSession.passedSession && nextSession.sessionIds.length === 0 && sessionTotal > 0;
+      const persistedEvent = nextData.reviewEvents.find(
+        (event) =>
+          event.personId === selectedPersonId &&
+          event.vocabularyItemId === currentItem.id &&
+          event.reviewedAt === now,
+      );
 
-      if (!isPostgresRuntime) {
+      if (persistedEvent) {
         setCompletedReviews((current) => [
           ...current,
           {
             vocabularyItemId: currentItem.id,
-            eventId: result.event.id,
+            eventId: persistedEvent.id,
             surfaceText: currentItem.surfaceText,
             passedSession: nextSession.passedSession,
           },

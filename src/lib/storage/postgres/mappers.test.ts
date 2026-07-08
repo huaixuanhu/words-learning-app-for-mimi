@@ -34,12 +34,16 @@ describe("Postgres row mappers", () => {
       mapReviewSettingsRow({
         person_id: personId,
         session_limit: 24,
+        recognition_session_limit: 18,
+        active_session_limit: 6,
         timezone: "Australia/Melbourne",
         updated_at: "2026-07-05T00:02:00.000Z",
       }),
     ).toMatchObject({
       personId,
-      sessionLimit: 24,
+      sessionLimit: 18,
+      recognitionSessionLimit: 18,
+      activeSessionLimit: 6,
       timezone: "Australia/Melbourne",
     });
   });
@@ -52,9 +56,13 @@ describe("Postgres row mappers", () => {
         surface_text: "Allocate",
         normalized_text: "allocate",
         meaning_zh: "分配",
+        meanings_zh: ["分配", "划拨"],
         example: "Allocate time wisely.",
+        examples: ["Allocate time wisely.", "They allocate resources."],
         notes: "",
         rarity_score: 3,
+        learning_track: "active",
+        tags: ["PTE", "Writing"],
         source: "manual",
         import_batch_id: null,
         status: "new",
@@ -70,9 +78,11 @@ describe("Postgres row mappers", () => {
       surfaceText: "Allocate",
       normalizedText: "allocate",
       meaningZh: "分配",
-      meaningsZh: ["分配"],
+      meaningsZh: ["分配", "划拨"],
       example: "Allocate time wisely.",
-      examples: ["Allocate time wisely."],
+      examples: ["Allocate time wisely.", "They allocate resources."],
+      learningTrack: "active",
+      tags: ["PTE", "Writing"],
       archivedAt: null,
     });
     expect(

@@ -1,10 +1,14 @@
 import { randomUUID } from "node:crypto";
 import type {
   DurableRepositoryPort,
+  ImportBatchRollbackResult,
   PersonScopedContext,
   RecordReviewCommand,
   ReviewQueueQuery,
+  ResetTodayReviewResult,
+  RollbackReviewEventResult,
   TimestampedPersonContext,
+  VocabularyDeleteResult,
 } from "@/lib/storage/durable-repository-contract";
 import { getPostgresPool, type PostgresQueryable, withPostgresTransaction } from "./client";
 import {
@@ -22,8 +26,12 @@ import {
   type VocabularyItemRow,
 } from "./mappers";
 import { createDefaultReviewSettings, normalizeReviewSettings } from "@/lib/review/settings";
-import { scheduleNextReview, selectReviewQueue } from "@/lib/review/scheduler";
-import type { PersonReviewSettings, ReviewState } from "@/lib/review/types";
+import {
+  getLocalDateKey,
+  scheduleNextReview,
+  selectReviewQueue,
+} from "@/lib/review/scheduler";
+import type { PersonReviewSettings, ReviewEvent, ReviewState } from "@/lib/review/types";
 import {
   cleanSurfaceText,
   normalizeLearningTrack,
@@ -126,9 +134,13 @@ async function listVocabularyItems(
         surface_text,
         normalized_text,
         meaning_zh,
+        meanings_zh,
         example,
+        examples,
         notes,
         rarity_score,
+        learning_track,
+        tags,
         source,
         import_batch_id,
         status,
@@ -164,9 +176,13 @@ async function selectVocabularyItem(
         surface_text,
         normalized_text,
         meaning_zh,
+        meanings_zh,
         example,
+        examples,
         notes,
         rarity_score,
+        learning_track,
+        tags,
         source,
         import_batch_id,
         status,
@@ -302,7 +318,13 @@ async function getReviewSettings(queryable: PostgresQueryable, context: PersonSc
 
   const result = await queryable.query<ReviewSettingsRow>(
     `
-      select person_id, session_limit, timezone, updated_at
+      select
+        person_id,
+        session_limit,
+        recognition_session_limit,
+        active_session_limit,
+        timezone,
+        updated_at
       from review_settings
       where person_id = $1
       limit 1
@@ -424,10 +446,24 @@ export async function createPostgresPerson(
 
     await client.query(
       `
-        insert into review_settings (person_id, session_limit, timezone, updated_at)
-        values ($1, $2, $3, $4)
+        insert into review_settings (
+          person_id,
+          session_limit,
+          recognition_session_limit,
+          active_session_limit,
+          timezone,
+          updated_at
+        )
+        values ($1, $2, $3, $4, $5, $6)
       `,
-      [person.id, settings.sessionLimit, settings.timezone, settings.updatedAt],
+      [
+        person.id,
+        settings.sessionLimit,
+        settings.recognitionSessionLimit,
+        settings.activeSessionLimit,
+        settings.timezone,
+        settings.updatedAt,
+      ],
     );
 
     return mapPersonRow(result.rows[0]);
@@ -446,9 +482,13 @@ async function insertVocabularyItem(
         surface_text,
         normalized_text,
         meaning_zh,
+        meanings_zh,
         example,
+        examples,
         notes,
         rarity_score,
+        learning_track,
+        tags,
         source,
         import_batch_id,
         status,
@@ -458,16 +498,23 @@ async function insertVocabularyItem(
         timezone,
         archived_at
       )
-      values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+      values (
+        $1, $2, $3, $4, $5, $6::jsonb, $7, $8::jsonb,
+        $9, $10, $11, $12::jsonb, $13, $14, $15, $16, $17, $18, $19, $20
+      )
       returning
         id,
         person_id,
         surface_text,
         normalized_text,
         meaning_zh,
+        meanings_zh,
         example,
+        examples,
         notes,
         rarity_score,
+        learning_track,
+        tags,
         source,
         import_batch_id,
         status,
@@ -483,9 +530,13 @@ async function insertVocabularyItem(
       item.surfaceText,
       item.normalizedText,
       item.meaningZh,
+      JSON.stringify(item.meaningsZh),
       item.example,
+      JSON.stringify(item.examples),
       item.notes,
       item.rarityScore,
+      item.learningTrack,
+      item.tags ? JSON.stringify(item.tags) : null,
       item.source,
       item.importBatchId,
       item.status,
@@ -581,12 +632,16 @@ async function updateVocabularyItem(
         surface_text = $3,
         normalized_text = $4,
         meaning_zh = $5,
-        example = $6,
-        notes = $7,
-        rarity_score = $8,
-        created_at = $9,
-        updated_at = $10,
-        timezone = $11
+        meanings_zh = $6::jsonb,
+        example = $7,
+        examples = $8::jsonb,
+        notes = $9,
+        rarity_score = $10,
+        learning_track = $11,
+        tags = $12::jsonb,
+        created_at = $13,
+        updated_at = $14,
+        timezone = $15
       where person_id = $1 and id = $2
       returning
         id,
@@ -594,9 +649,13 @@ async function updateVocabularyItem(
         surface_text,
         normalized_text,
         meaning_zh,
+        meanings_zh,
         example,
+        examples,
         notes,
         rarity_score,
+        learning_track,
+        tags,
         source,
         import_batch_id,
         status,
@@ -612,9 +671,13 @@ async function updateVocabularyItem(
       item.surfaceText,
       item.normalizedText,
       item.meaningZh,
+      JSON.stringify(item.meaningsZh),
       item.example,
+      JSON.stringify(item.examples),
       item.notes,
       item.rarityScore,
+      item.learningTrack,
+      item.tags ? JSON.stringify(item.tags) : null,
       item.createdAt,
       item.updatedAt,
       item.timezone,
@@ -651,9 +714,13 @@ async function setVocabularyArchiveState(
         surface_text,
         normalized_text,
         meaning_zh,
+        meanings_zh,
         example,
+        examples,
         notes,
         rarity_score,
+        learning_track,
+        tags,
         source,
         import_batch_id,
         status,
@@ -679,6 +746,385 @@ async function setVocabularyArchiveState(
   return mapVocabularyItemRow(result.rows[0]);
 }
 
+async function deleteVocabularyItem(
+  context: TimestampedPersonContext,
+  vocabularyItemId: string,
+): Promise<VocabularyDeleteResult> {
+  assertPersonContext(context);
+  assertDatabaseUuid(vocabularyItemId, "vocabularyItemId");
+
+  return withPostgresTransaction(async (client) => {
+    const item = await selectVocabularyItem(client, context, vocabularyItemId);
+
+    if (!item) {
+      throw new Error(`Vocabulary item not found: ${vocabularyItemId}`);
+    }
+
+    await client.query(
+      `
+        delete from vocabulary_items
+        where person_id = $1 and id = $2
+      `,
+      [context.personId, vocabularyItemId],
+    );
+
+    return { item };
+  });
+}
+
+async function rollbackImportBatch(
+  context: TimestampedPersonContext,
+  importBatchId: string,
+): Promise<ImportBatchRollbackResult> {
+  assertPersonContext(context);
+  assertDatabaseUuid(importBatchId, "importBatchId");
+
+  return withPostgresTransaction(async (client) => {
+    const batchResult = await client.query<ImportBatchRow>(
+      `
+        select
+          id,
+          person_id,
+          source_type,
+          file_name,
+          created_at,
+          total_rows,
+          accepted_rows,
+          duplicate_rows,
+          invalid_rows
+        from import_batches
+        where person_id = $1 and id = $2
+        limit 1
+      `,
+      [context.personId, importBatchId],
+    );
+    const batchRow = batchResult.rows[0];
+
+    if (!batchRow) {
+      throw new Error(`Import batch not found: ${importBatchId}`);
+    }
+
+    const itemResult = await client.query<{ id: string }>(
+      `
+        select id
+        from vocabulary_items
+        where person_id = $1 and import_batch_id = $2
+      `,
+      [context.personId, importBatchId],
+    );
+    const itemIds = itemResult.rows.map((row) => row.id);
+    const reviewStateCountResult = await client.query<{ count: number }>(
+      `
+        select count(*)::int as count
+        from review_states
+        where person_id = $1 and vocabulary_item_id = any($2::uuid[])
+      `,
+      [context.personId, itemIds],
+    );
+    const reviewEventCountResult = await client.query<{ count: number }>(
+      `
+        select count(*)::int as count
+        from review_events
+        where person_id = $1 and vocabulary_item_id = any($2::uuid[])
+      `,
+      [context.personId, itemIds],
+    );
+
+    await client.query(
+      `
+        delete from vocabulary_items
+        where person_id = $1 and import_batch_id = $2
+      `,
+      [context.personId, importBatchId],
+    );
+    await client.query(
+      `
+        delete from import_batches
+        where person_id = $1 and id = $2
+      `,
+      [context.personId, importBatchId],
+    );
+
+    return {
+      batch: mapImportBatchRow(batchRow),
+      deletedItemsCount: itemIds.length,
+      deletedReviewStatesCount: reviewStateCountResult.rows[0]?.count ?? 0,
+      deletedReviewEventsCount: reviewEventCountResult.rows[0]?.count ?? 0,
+    };
+  });
+}
+
+function sortReviewEventsByReviewedAt(a: ReviewEvent, b: ReviewEvent) {
+  const reviewedAtCompare = a.reviewedAt.localeCompare(b.reviewedAt);
+
+  if (reviewedAtCompare !== 0) {
+    return reviewedAtCompare;
+  }
+
+  return a.id.localeCompare(b.id);
+}
+
+function rebuildReviewStateFromEvents(
+  personId: string,
+  vocabularyItemId: string,
+  events: ReviewEvent[],
+  previousState: ReviewState | null,
+) {
+  return events.reduce<ReviewState | null>((state, event) => {
+    const scheduled = scheduleNextReview(state ?? undefined, event.rating, event.reviewedAt);
+
+    return {
+      id: state?.id ?? previousState?.id ?? randomUUID(),
+      personId,
+      vocabularyItemId,
+      status: scheduled.status,
+      dueAt: scheduled.dueAt,
+      lastReviewedAt: event.reviewedAt,
+      reviewCount: scheduled.reviewCount,
+      lapseCount: scheduled.lapseCount,
+      intervalMinutes: scheduled.intervalMinutes,
+      difficulty: scheduled.difficulty,
+      stability: scheduled.stability,
+      updatedAt: event.reviewedAt,
+    };
+  }, null);
+}
+
+async function upsertReviewState(queryable: PostgresQueryable, state: ReviewState) {
+  const stateResult = await queryable.query<ReviewStateRow>(
+    `
+      insert into review_states (
+        id,
+        person_id,
+        vocabulary_item_id,
+        status,
+        due_at,
+        last_reviewed_at,
+        review_count,
+        lapse_count,
+        interval_minutes,
+        difficulty,
+        stability,
+        updated_at
+      )
+      values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+      on conflict (person_id, vocabulary_item_id)
+      do update set
+        status = excluded.status,
+        due_at = excluded.due_at,
+        last_reviewed_at = excluded.last_reviewed_at,
+        review_count = excluded.review_count,
+        lapse_count = excluded.lapse_count,
+        interval_minutes = excluded.interval_minutes,
+        difficulty = excluded.difficulty,
+        stability = excluded.stability,
+        updated_at = excluded.updated_at
+      returning
+        id,
+        person_id,
+        vocabulary_item_id,
+        status,
+        due_at,
+        last_reviewed_at,
+        review_count,
+        lapse_count,
+        interval_minutes,
+        difficulty,
+        stability,
+        updated_at
+    `,
+    [
+      state.id,
+      state.personId,
+      state.vocabularyItemId,
+      state.status,
+      state.dueAt,
+      state.lastReviewedAt,
+      state.reviewCount,
+      state.lapseCount,
+      state.intervalMinutes,
+      state.difficulty,
+      state.stability,
+      state.updatedAt,
+    ],
+  );
+
+  return mapReviewStateRow(stateResult.rows[0]);
+}
+
+async function listReviewEventsForVocabularyItem(
+  queryable: PostgresQueryable,
+  context: PersonScopedContext,
+  vocabularyItemId: string,
+) {
+  assertPersonContext(context);
+  assertDatabaseUuid(vocabularyItemId, "vocabularyItemId");
+
+  const result = await queryable.query<ReviewEventRow>(
+    `
+      select
+        id,
+        person_id,
+        vocabulary_item_id,
+        reviewed_at,
+        rating,
+        previous_due_at,
+        next_due_at,
+        previous_interval_minutes,
+        next_interval_minutes,
+        elapsed_ms
+      from review_events
+      where person_id = $1 and vocabulary_item_id = $2
+      order by reviewed_at asc, id asc
+    `,
+    [context.personId, vocabularyItemId],
+  );
+
+  return result.rows.map(mapReviewEventRow);
+}
+
+async function resetTodayReview(
+  context: TimestampedPersonContext,
+): Promise<ResetTodayReviewResult> {
+  assertPersonContext(context);
+
+  return withPostgresTransaction(async (client) => {
+    const settings = await getReviewSettings(client, context);
+    const todayKey = getLocalDateKey(context.now, settings.timezone);
+    const events = await listReviewEvents(client, context);
+    const todayEvents = events.filter(
+      (event) => getLocalDateKey(event.reviewedAt, settings.timezone) === todayKey,
+    );
+    const affectedItemIds = Array.from(new Set(todayEvents.map((event) => event.vocabularyItemId)));
+
+    if (!todayEvents.length) {
+      return {
+        resetEventsCount: 0,
+        resetItemsCount: 0,
+      };
+    }
+
+    const previousStateByItemId = new Map(
+      await Promise.all(
+        affectedItemIds.map(async (vocabularyItemId) => [
+          vocabularyItemId,
+          await getReviewState(client, context, vocabularyItemId),
+        ] as const),
+      ),
+    );
+
+    await client.query(
+      `
+        delete from review_events
+        where person_id = $1 and id = any($2::uuid[])
+      `,
+      [context.personId, todayEvents.map((event) => event.id)],
+    );
+    await client.query(
+      `
+        delete from review_states
+        where person_id = $1 and vocabulary_item_id = any($2::uuid[])
+      `,
+      [context.personId, affectedItemIds],
+    );
+
+    for (const vocabularyItemId of affectedItemIds) {
+      const earlierEvents = events
+        .filter(
+          (event) =>
+            event.vocabularyItemId === vocabularyItemId &&
+            getLocalDateKey(event.reviewedAt, settings.timezone) !== todayKey,
+        )
+        .sort(sortReviewEventsByReviewedAt);
+      const rebuiltState = rebuildReviewStateFromEvents(
+        context.personId,
+        vocabularyItemId,
+        earlierEvents,
+        previousStateByItemId.get(vocabularyItemId) ?? null,
+      );
+
+      if (rebuiltState) {
+        await upsertReviewState(client, rebuiltState);
+      }
+    }
+
+    return {
+      resetEventsCount: todayEvents.length,
+      resetItemsCount: affectedItemIds.length,
+    };
+  });
+}
+
+async function rollbackReviewEvent(
+  context: TimestampedPersonContext,
+  reviewEventId: string,
+): Promise<RollbackReviewEventResult> {
+  assertPersonContext(context);
+  assertDatabaseUuid(reviewEventId, "reviewEventId");
+
+  return withPostgresTransaction(async (client) => {
+    const eventResult = await client.query<ReviewEventRow>(
+      `
+        select
+          id,
+          person_id,
+          vocabulary_item_id,
+          reviewed_at,
+          rating,
+          previous_due_at,
+          next_due_at,
+          previous_interval_minutes,
+          next_interval_minutes,
+          elapsed_ms
+        from review_events
+        where person_id = $1 and id = $2
+        limit 1
+      `,
+      [context.personId, reviewEventId],
+    );
+    const eventRow = eventResult.rows[0];
+
+    if (!eventRow) {
+      throw new Error(`Review event not found: ${reviewEventId}`);
+    }
+
+    const event = mapReviewEventRow(eventRow);
+    const previousState = await getReviewState(client, context, event.vocabularyItemId);
+    const remainingEvents = (await listReviewEventsForVocabularyItem(
+      client,
+      context,
+      event.vocabularyItemId,
+    )).filter((candidate) => candidate.id !== reviewEventId);
+
+    await client.query(
+      `
+        delete from review_events
+        where person_id = $1 and id = $2
+      `,
+      [context.personId, reviewEventId],
+    );
+    await client.query(
+      `
+        delete from review_states
+        where person_id = $1 and vocabulary_item_id = $2
+      `,
+      [context.personId, event.vocabularyItemId],
+    );
+
+    const rebuiltState = rebuildReviewStateFromEvents(
+      context.personId,
+      event.vocabularyItemId,
+      remainingEvents.sort(sortReviewEventsByReviewedAt),
+      previousState,
+    );
+
+    return {
+      event,
+      state: rebuiltState ? await upsertReviewState(client, rebuiltState) : null,
+    };
+  });
+}
+
 async function updateReviewSettings(
   queryable: PostgresQueryable,
   context: TimestampedPersonContext,
@@ -700,16 +1146,38 @@ async function updateReviewSettings(
   );
   const result = await queryable.query<ReviewSettingsRow>(
     `
-      insert into review_settings (person_id, session_limit, timezone, updated_at)
-      values ($1, $2, $3, $4)
+      insert into review_settings (
+        person_id,
+        session_limit,
+        recognition_session_limit,
+        active_session_limit,
+        timezone,
+        updated_at
+      )
+      values ($1, $2, $3, $4, $5, $6)
       on conflict (person_id)
       do update set
         session_limit = excluded.session_limit,
+        recognition_session_limit = excluded.recognition_session_limit,
+        active_session_limit = excluded.active_session_limit,
         timezone = excluded.timezone,
         updated_at = excluded.updated_at
-      returning person_id, session_limit, timezone, updated_at
+      returning
+        person_id,
+        session_limit,
+        recognition_session_limit,
+        active_session_limit,
+        timezone,
+        updated_at
     `,
-    [context.personId, settings.sessionLimit, settings.timezone, settings.updatedAt],
+    [
+      context.personId,
+      settings.sessionLimit,
+      settings.recognitionSessionLimit,
+      settings.activeSessionLimit,
+      settings.timezone,
+      settings.updatedAt,
+    ],
   );
 
   return mapReviewSettingsRow(result.rows[0]);
@@ -733,12 +1201,31 @@ export async function ensurePostgresSmokePerson(now = new Date().toISOString()) 
 
   await queryable.query(
     `
-      insert into review_settings (person_id, session_limit, timezone, updated_at)
-      values ($1, $2, $3, $4)
+      insert into review_settings (
+        person_id,
+        session_limit,
+        recognition_session_limit,
+        active_session_limit,
+        timezone,
+        updated_at
+      )
+      values ($1, $2, $3, $4, $5, $6)
       on conflict (person_id)
-      do update set updated_at = excluded.updated_at
+      do update set
+        session_limit = excluded.session_limit,
+        recognition_session_limit = excluded.recognition_session_limit,
+        active_session_limit = excluded.active_session_limit,
+        timezone = excluded.timezone,
+        updated_at = excluded.updated_at
     `,
-    [POSTGRES_SMOKE_PERSON_ID, settings.sessionLimit, settings.timezone, settings.updatedAt],
+    [
+      POSTGRES_SMOKE_PERSON_ID,
+      settings.sessionLimit,
+      settings.recognitionSessionLimit,
+      settings.activeSessionLimit,
+      settings.timezone,
+      settings.updatedAt,
+    ],
   );
 
   return mapPersonRow(personResult.rows[0]);
@@ -778,6 +1265,8 @@ export function createPostgresRepository(): DurableRepositoryPort {
         setVocabularyArchiveState(queryable, context, vocabularyItemId, true),
       restoreItem: (context, vocabularyItemId) =>
         setVocabularyArchiveState(queryable, context, vocabularyItemId, false),
+      deleteItem: (context, vocabularyItemId) =>
+        deleteVocabularyItem(context, vocabularyItemId),
       commitImportCandidates: async (
         context,
         batchInput: ImportBatchInput,
@@ -790,7 +1279,6 @@ export function createPostgresRepository(): DurableRepositoryPort {
           (candidate) => acceptedIds.has(candidate.tempId) && candidate.status !== "invalid",
         );
         const batchId = databaseUuid(batchInput.id, "importBatch.id");
-        const persistedSourceType = batchInput.sourceType === "txt_file" ? "txt_file" : "pasted_text";
         const transactionResult = await withPostgresTransaction(async (client) => {
           const batchResult = await client.query<ImportBatchRow>(
             `
@@ -820,7 +1308,7 @@ export function createPostgresRepository(): DurableRepositoryPort {
             [
               batchId,
               context.personId,
-              persistedSourceType,
+              batchInput.sourceType,
               batchInput.fileName ?? null,
               context.now,
               candidates.length,
@@ -844,7 +1332,7 @@ export function createPostgresRepository(): DurableRepositoryPort {
               notes: candidate.notes,
               learningTrack: candidate.learningTrack,
               tags: candidate.tags,
-              source: batch.sourceType === "txt_file" ? "txt_file" : "pasted_text",
+              source: batch.sourceType,
               importBatchId: batch.id,
               timezone: context.timezone,
             });
@@ -862,6 +1350,8 @@ export function createPostgresRepository(): DurableRepositoryPort {
           items: transactionResult.items,
         };
       },
+      rollbackImportBatch: (context, importBatchId) =>
+        rollbackImportBatch(context, importBatchId),
       listImportBatches: (context) => listImportBatches(queryable, context),
     },
     review: {
@@ -1028,6 +1518,8 @@ export function createPostgresRepository(): DurableRepositoryPort {
           };
         });
       },
+      resetToday: (context) => resetTodayReview(context),
+      rollbackEvent: (context, reviewEventId) => rollbackReviewEvent(context, reviewEventId),
       listReviewEvents: (context) => listReviewEvents(queryable, context),
     },
     reviewSettings: {
