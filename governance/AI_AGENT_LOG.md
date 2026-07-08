@@ -1,5 +1,84 @@
 # AI Agent Log
 
+## 2026-07-08 12:45 AEST
+
+- Task: document the user's decision to create a separate Stage 8 Review Memory Algorithm before completing shared Postgres Production launch work.
+- Plan agreed: yes. The user confirmed the Stage 8 plan and added the Active Vocabulary boundary that V1 must explicitly not schedule Active words.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE6B_PRODUCTION_EXECUTION.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md`
+  - `plan_docs/PLAN_V1_STAGE8_REVIEW_MEMORY_ALGORITHM.md`
+- Reason: prevent the placeholder Stage 4 fixed interval scheduler and any accidental Active Vocabulary（输出词汇）review state from becoming durable Production（生产环境）data.
+- Implementation notes:
+  - Added the Stage 8 child plan with required `Source plan`, `Derived from`, `Scope`, `Non-Scope`, and `Exit criteria` markers.
+  - Documented that V1 FSRS-6（Free Spaced Repetition Scheduler 6，自由间隔重复调度器第 6 版）applies only to `learningTrack === "recognition"` words.
+  - Documented same-session repeat behavior for Recognition words rated `完全忘记了` or `有点忘记了`.
+  - Documented that Active words remain stored, exportable, and importable, but do not enter review queue（复习队列）, review state（复习状态）, or review event（复习事件）creation in V1.
+  - Documented V2 compatibility guidance: future Active scheduling should use separate dimensions such as `review_profile`, `skill_type`, or `activity_type`.
+  - Updated Stage 6B and Stage 6B-P1 so shared Postgres Production remains blocked until Stage 8 review state design is accepted.
+  - Re-checked Open Spaced Repetition / `ts-fsrs` documentation on 2026-07-08 for FSRS, TypeScript（类型脚本）library fit, Node.js（运行时）requirements, and supported scheduler APIs.
+- Validation:
+  - Passed: `git diff --check`.
+  - Passed: `npm run governance:preflight`.
+- Safety notes: local documentation and release-planning only. No code implementation, package installation, GitHub push, pull request, merge to `main`, Vercel command, Neon command, `.env` read/change, credential access, database command, database mutation, Production deployment, Production migration, Production import, formal user backup import, AI API（人工智能接口）, dictation engine（听写引擎）, spelling checker（拼写检查器）, writing feedback model, external vocabulary source, authentication（认证）, analytics（分析追踪）, notification, email, or 付费/扣款 feature was performed.
+
+## 2026-07-08 00:25 AEST
+
+- Task: document the user's decision to make V1's formal launch shared Postgres Production rather than browser-local Production.
+- Plan agreed: yes. The user confirmed to do documentation first.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE6B_PRODUCTION_EXECUTION.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md`
+- Reason: make Stage 6B-P1 the required bridge to a fully cloud-backed V1 release while preserving explicit approval gates for credentials, remote databases, env vars（环境变量）, migration（迁移）, import, and deployment.
+- Implementation notes:
+  - Added Stage 6B-P1 child plan with required `Source plan`, `Derived from`, `Scope`, `Non-Scope`, and `Exit criteria` markers.
+  - Updated Stage 6B plan so browser-local Production is a fallback and shared Postgres Production is the selected path.
+  - Documented schema version 5 Production persistence requirements for `learningTrack`, `tags`, `meaningsZh`, `examples`, JSON source types, Recognition / Active limits, and backup schema version 5.
+  - Documented `postgres-production` runtime rules, API behavior, repository parity requirements, backup import requirements, non-production Neon branch verification, and access-boundary decision.
+  - Re-checked official Vercel / Neon docs on 2026-07-08 for environment, env var, integration, and branching semantics.
+- Validation:
+  - Passed: `git diff --check`.
+  - Passed: `npm run governance:preflight`.
+  - Not run: full app validation because this was a documentation-only planning change with no code, package, migration, or runtime behavior changes.
+- Safety notes: local documentation and release-planning only. No code implementation, GitHub push, pull request, merge to `main`, Vercel command, Neon command, `.env` read/change, credential access, database command, database mutation, Production deployment, Production migration, Production import, formal user backup import, AI API（人工智能接口）, dictation engine（听写引擎）, spelling checker（拼写检查器）, writing feedback model, external vocabulary source, authentication（认证）, analytics（分析追踪）, notification, email, or 付费/扣款 feature was performed.
+
+## 2026-07-07 23:53 AEST
+
+- Task: create the Stage 6B formal Production execution plan after the user confirmed that Stage 7 interaction and logic are locally accepted.
+- Plan agreed: yes. The user confirmed the Stage 7 closeout recommendation to draft `PLAN_V1_STAGE6B_PRODUCTION_EXECUTION.md` as a plan-only step with no remote execution.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE6B_PRODUCTION_EXECUTION.md`
+- Reason: make the next Production（生产环境）step explicit after Stage 7 acceptance while keeping all merge（合并）, Vercel, Neon, env var（环境变量）, database migration（数据库迁移）, and import actions behind later explicit approval.
+- Implementation notes:
+  - Added the Stage 6B child plan with required `Source plan`, `Derived from`, `Scope`, `Non-Scope`, and `Exit criteria` markers.
+  - Re-checked official Vercel / Neon release-planning docs on 2026-07-07 for environment, Git deployment, env var, deployment management, rollback, integration, and branching semantics.
+  - Documented browser-local Production as the recommended first formal V1 route.
+  - Documented shared Postgres Production as requiring a separate `postgres-production` runtime implementation before durable shared writes.
+  - Recorded the exact stop conditions and human decisions required before execution.
+- Validation:
+  - Passed: `git diff --check`.
+  - Passed: `npm run governance:preflight`.
+  - Not run: full app validation because this was a documentation-only planning change; the same-session Stage 7 closeout already passed `npm run lint`, `npm run typecheck`, `npm run test`, `npm run backup:dry-run:fixture`, and `npm run build`.
+- Safety notes: local documentation and release-planning only. No GitHub push, pull request, merge to `main`, Vercel command, Neon command, `.env` read/change, credential access, database command, database mutation, Production deployment, Production migration, Production import, formal user backup import, AI API（人工智能接口）, dictation engine（听写引擎）, spelling checker（拼写检查器）, writing feedback model, external vocabulary source, authentication（认证）, analytics（分析追踪）, notification, email, or 付费/扣款 feature was performed.
+
 ## 2026-07-07 23:12 AEST
 
 - Task: document and implement the user's requested Review refinement: remove confusing regenerate/new-session buttons, add automatic queue refresh, and add `回退1词` to undo the previous completed card when a rating is tapped by mistake.

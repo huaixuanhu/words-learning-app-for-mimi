@@ -1,5 +1,33 @@
 # CHANGELOG
 
+## 2026-07-08 12:45 AEST
+
+- Added `plan_docs/PLAN_V1_STAGE8_REVIEW_MEMORY_ALGORITHM.md` as the required review memory algorithm stage before formal V1 Production（生产环境）launch.
+- Documented the accepted Recognition Vocabulary（阅读词汇）behavior: `完全忘记了` and `有点忘记了` repeat inside the same session until the learner selects `模糊记得` or `完全记得`.
+- Documented the FSRS-6（Free Spaced Repetition Scheduler 6，自由间隔重复调度器第 6 版）direction for cross-day Recognition scheduling, with `ts-fsrs` as the planned TypeScript（类型脚本）library to validate before implementation.
+- Added the Active Vocabulary（输出词汇）boundary: V1 stores, exports, and imports Active words, but Active words do not enter review queue（复习队列）, do not create review state（复习状态）, and do not create review event（复习事件）.
+- Documented V2 compatibility guidance: keep `difficulty` / `stability` as neutral state fields and use separate future dimensions such as `review_profile`, `skill_type`, or `activity_type` for Active scheduling.
+- Synced `AGENTS.md`, `ARCHITECTURE.md`, `README.md`, `plan_docs/PLAN_V1_MASTER.md`, `plan_docs/PLAN_V1_STAGE6B_PRODUCTION_EXECUTION.md`, `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md`, and `governance/AI_AGENT_LOG.md`.
+- Reason: prevent the placeholder Recognition scheduler and any accidental Active scheduling state from being frozen into shared Postgres Production data before V1 launch.
+
+## 2026-07-08 00:25 AEST
+
+- Added `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md` after the user chose shared Postgres Production for formal V1.
+- Updated `plan_docs/PLAN_V1_STAGE6B_PRODUCTION_EXECUTION.md` so browser-local Production is now a fallback, and Stage 6B-P1 is the required next stage.
+- Documented schema version 5 Production persistence needs, `postgres-production` runtime rules, API/repository parity, backup import version 5, non-production Neon branch verification, access-boundary decision, stop conditions, and validation plan.
+- Synced `AGENTS.md`, `ARCHITECTURE.md`, `README.md`, `plan_docs/PLAN_V1_MASTER.md`, and `governance/AI_AGENT_LOG.md`.
+- Verified documentation validation: `git diff --check` and `npm run governance:preflight`.
+- Reason: align the release plan with the user's preference that V1 formally launch fully cloud-backed rather than browser-local, without executing code changes, reading credentials, mutating databases, or deploying Production（生产环境）.
+
+## 2026-07-07 23:53 AEST
+
+- Added `plan_docs/PLAN_V1_STAGE6B_PRODUCTION_EXECUTION.md` as a plan-only Stage 6B formal Production execution route.
+- Documented the two runtime choices: browser-local Production as the recommended first formal V1 path, and shared Postgres Production only after a separate `postgres-production` implementation stage.
+- Re-checked current Vercel / Neon release-planning references from official docs and kept all live actions behind explicit approval.
+- Synced `AGENTS.md`, `ARCHITECTURE.md`, `README.md`, `plan_docs/PLAN_V1_MASTER.md`, and `governance/AI_AGENT_LOG.md`.
+- Verified documentation validation: `git diff --check` and `npm run governance:preflight`.
+- Reason: move from locally accepted Stage 7 into a clear Stage 6B execution plan without merging to `main`, touching credentials, mutating a database, importing backup data, or deploying Production（生产环境）.
+
 ## 2026-07-07 23:12 AEST
 
 - Executed Stage 7.11 Review rollback / auto-refresh controls locally.

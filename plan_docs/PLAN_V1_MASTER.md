@@ -1,7 +1,7 @@
 # Words Learning App For Mimi PLAN V1 Master
 
 Created: 2026-07-02 23:30 AEST
-Last updated: 2026-07-07 23:12 AEST
+Last updated: 2026-07-08 12:45 AEST
 
 Source plan:
 
@@ -35,7 +35,7 @@ This is the parent product and implementation plan. Child plans must cite this f
 - Support manual entry and batch import. The current Stage 7.11 user-facing import shape is Single input plus Batch JSON import; older `.txt` parser behavior remains compatibility code.
 - Record creation time and review history.
 - Let the user input self-rated rarity, while keeping it separate from proficiency.
-- Use Spaced Repetition（间隔重复）and a practical Forgetting Curve（遗忘曲线）model to schedule review.
+- Use Spaced Repetition（间隔重复）and a practical Forgetting Curve（遗忘曲线）model to schedule Recognition Vocabulary（阅读词汇）review.
 - Prepare for GitHub and Vercel deployment after local validation.
 - Keep personal study data private, exportable, and separated by learner when multiple private people use the app.
 
@@ -122,7 +122,7 @@ Exit criteria:
 
 ### Stage 5: Persistence, Export, And Backup
 
-Status: Stage 5A local export and backup implemented locally on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5A_LOCAL_EXPORT_BACKUP.md`. Stage 5B storage provider decision and multi-person data model documented on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5B_STORAGE_PROVIDER_DECISION.md`. Stage 5C local person adapter implemented on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5C_LOCAL_PERSON_ADAPTER.md`. Stage 5D durable storage readiness implemented on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5D_DURABLE_STORAGE_READINESS.md`. Stage 5E Neon execution gate documented on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5E_NEON_EXECUTION_GATE.md`. Stage 5F development / preview Vercel and Neon bootstrap executed on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5F_DEV_PREVIEW_NEON_BOOTSTRAP.md`. Stage 5G preview deployment boundary is documented in `plan_docs/PLAN_V1_STAGE5G_PREVIEW_DEPLOYMENT_BOUNDARY.md`. Stage 5H runtime Postgres adapter design is documented in `plan_docs/PLAN_V1_STAGE5H_RUNTIME_POSTGRES_ADAPTER_DESIGN.md`. Stage 5I runtime Postgres adapter implementation is documented in `plan_docs/PLAN_V1_STAGE5I_RUNTIME_POSTGRES_ADAPTER_IMPLEMENTATION.md`. Stage 5J Postgres adapter read-only verification is documented in `plan_docs/PLAN_V1_STAGE5J_POSTGRES_ADAPTER_READ_ONLY_VERIFICATION.md`. Stage 5K controlled write smoke is documented in `plan_docs/PLAN_V1_STAGE5K_CONTROLLED_WRITE_SMOKE.md`. Stage 5L backup import harness and smoke cleanup is documented in `plan_docs/PLAN_V1_STAGE5L_BACKUP_IMPORT_HARNESS_AND_SMOKE_CLEANUP.md`. Stage 5M user backup import and UI runtime cutover is documented in `plan_docs/PLAN_V1_STAGE5M_USER_BACKUP_IMPORT_AND_UI_RUNTIME_CUTOVER.md`. Stage 5N Preview UI runtime verification is documented in `plan_docs/PLAN_V1_STAGE5N_PREVIEW_UI_RUNTIME_VERIFICATION.md`. Stage 6A Production release gate design is documented in `plan_docs/PLAN_V1_STAGE6A_PRODUCTION_RELEASE_GATE.md`. Stage 7 UI visual design is documented in `plan_docs/PLAN_V1_STAGE7_UI_VISUAL_DESIGN.md`, with Stage 7.2 refinement documented in `plan_docs/PLAN_V1_STAGE7_2_UI_REFINEMENT.md`, Stage 7.3 ChillRound font trial documented in `plan_docs/PLAN_V1_STAGE7_3_CHILLROUND_FONT_TRIAL.md`, Stage 7.4 theme toggle documented in `plan_docs/PLAN_V1_STAGE7_4_THEME_TOGGLE.md`, Stage 7.5 soft click sound trial documented in `plan_docs/PLAN_V1_STAGE7_5_SOFT_CLICK_SOUND_TRIAL.md`, Stage 7.6 sound design documented in `plan_docs/PLAN_V1_STAGE7_6_SOUND_DESIGN.md`, Stage 7.7 final acceptance documented in `plan_docs/PLAN_V1_STAGE7_7_FINAL_ACCEPTANCE.md`, Stage 7.8 dual-track UI refinement documented in `plan_docs/PLAN_V1_STAGE7_8_DUAL_TRACK_UI_REFINEMENT.md`, Stage 7.9 dual-track data/import refinement documented in `plan_docs/PLAN_V1_STAGE7_9_DUAL_TRACK_DATA_IMPORT.md`, Stage 7.10 Library / Review controls documented in `plan_docs/PLAN_V1_STAGE7_10_LIBRARY_REVIEW_CONTROLS.md`, and Stage 7.11 Review rollback / auto-refresh documented in `plan_docs/PLAN_V1_STAGE7_11_REVIEW_ROLLBACK_AUTO_REFRESH.md`.
+Status: Stage 5A local export and backup implemented locally on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5A_LOCAL_EXPORT_BACKUP.md`. Stage 5B storage provider decision and multi-person data model documented on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5B_STORAGE_PROVIDER_DECISION.md`. Stage 5C local person adapter implemented on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5C_LOCAL_PERSON_ADAPTER.md`. Stage 5D durable storage readiness implemented on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5D_DURABLE_STORAGE_READINESS.md`. Stage 5E Neon execution gate documented on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5E_NEON_EXECUTION_GATE.md`. Stage 5F development / preview Vercel and Neon bootstrap executed on 2026-07-05 in `plan_docs/PLAN_V1_STAGE5F_DEV_PREVIEW_NEON_BOOTSTRAP.md`. Stage 5G preview deployment boundary is documented in `plan_docs/PLAN_V1_STAGE5G_PREVIEW_DEPLOYMENT_BOUNDARY.md`. Stage 5H runtime Postgres adapter design is documented in `plan_docs/PLAN_V1_STAGE5H_RUNTIME_POSTGRES_ADAPTER_DESIGN.md`. Stage 5I runtime Postgres adapter implementation is documented in `plan_docs/PLAN_V1_STAGE5I_RUNTIME_POSTGRES_ADAPTER_IMPLEMENTATION.md`. Stage 5J Postgres adapter read-only verification is documented in `plan_docs/PLAN_V1_STAGE5J_POSTGRES_ADAPTER_READ_ONLY_VERIFICATION.md`. Stage 5K controlled write smoke is documented in `plan_docs/PLAN_V1_STAGE5K_CONTROLLED_WRITE_SMOKE.md`. Stage 5L backup import harness and smoke cleanup is documented in `plan_docs/PLAN_V1_STAGE5L_BACKUP_IMPORT_HARNESS_AND_SMOKE_CLEANUP.md`. Stage 5M user backup import and UI runtime cutover is documented in `plan_docs/PLAN_V1_STAGE5M_USER_BACKUP_IMPORT_AND_UI_RUNTIME_CUTOVER.md`. Stage 5N Preview UI runtime verification is documented in `plan_docs/PLAN_V1_STAGE5N_PREVIEW_UI_RUNTIME_VERIFICATION.md`. Stage 6A Production release gate design is documented in `plan_docs/PLAN_V1_STAGE6A_PRODUCTION_RELEASE_GATE.md`. Stage 7 UI visual design is documented in `plan_docs/PLAN_V1_STAGE7_UI_VISUAL_DESIGN.md`, with Stage 7.2 refinement documented in `plan_docs/PLAN_V1_STAGE7_2_UI_REFINEMENT.md`, Stage 7.3 ChillRound font trial documented in `plan_docs/PLAN_V1_STAGE7_3_CHILLROUND_FONT_TRIAL.md`, Stage 7.4 theme toggle documented in `plan_docs/PLAN_V1_STAGE7_4_THEME_TOGGLE.md`, Stage 7.5 soft click sound trial documented in `plan_docs/PLAN_V1_STAGE7_5_SOFT_CLICK_SOUND_TRIAL.md`, Stage 7.6 sound design documented in `plan_docs/PLAN_V1_STAGE7_6_SOUND_DESIGN.md`, Stage 7.7 final acceptance documented in `plan_docs/PLAN_V1_STAGE7_7_FINAL_ACCEPTANCE.md`, Stage 7.8 dual-track UI refinement documented in `plan_docs/PLAN_V1_STAGE7_8_DUAL_TRACK_UI_REFINEMENT.md`, Stage 7.9 dual-track data/import refinement documented in `plan_docs/PLAN_V1_STAGE7_9_DUAL_TRACK_DATA_IMPORT.md`, Stage 7.10 Library / Review controls documented in `plan_docs/PLAN_V1_STAGE7_10_LIBRARY_REVIEW_CONTROLS.md`, Stage 7.11 Review rollback / auto-refresh documented in `plan_docs/PLAN_V1_STAGE7_11_REVIEW_ROLLBACK_AUTO_REFRESH.md`, Stage 6B formal Production execution planning documented in `plan_docs/PLAN_V1_STAGE6B_PRODUCTION_EXECUTION.md`, Stage 6B-P1 Postgres Production runtime planning documented in `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md`, and Stage 8 Review Memory Algorithm planning documented in `plan_docs/PLAN_V1_STAGE8_REVIEW_MEMORY_ALGORITHM.md`.
 
 Exit criteria:
 
@@ -269,13 +269,15 @@ Stage 5N Preview UI runtime verification:
 
 ### Stage 6: GitHub And Vercel Deployment
 
-Confirmed release sequence as of 2026-07-06:
+Confirmed release sequence as of 2026-07-08:
 
 - Stage 6A is Production（生产环境）release gate design only. It may define the final deployment checklist, access boundary, environment variable（环境变量）matrix, database migration（数据库迁移）plan, backup/import/rollback path, and smoke test（冒烟测试）criteria, but it must not merge to `main`, mutate Production data, add Production env vars, or create/promote a formal Production deployment.
 - Stage 7 must complete UI（用户界面）/ visual design, mobile interaction polish, review-flow comfort, accessibility（可访问性）review, and optional PWA（Progressive Web App，渐进式 Web 应用）evaluation before formal Production.
-- Stage 6B is the later formal execution step. Only after Stage 7 is accepted should `V1` be merged to `main`, Vercel's production branch remain `main`, Production env vars be configured, Production database work run, and the final Production smoke test be performed.
+- Stage 8 must complete the Recognition Vocabulary（阅读词汇）review memory algorithm before formal Production. It replaces the placeholder fixed scheduler with a V1 Recognition-only FSRS-6（Free Spaced Repetition Scheduler 6，自由间隔重复调度器第 6 版）plan, adds same-session repeat for failed Recognition ratings, and explicitly keeps Active Vocabulary（输出词汇）out of review queue（复习队列）, review state（复习状态）, and review event（复习事件）creation.
+- Stage 6B is the later formal execution step. Only after Stage 7, Stage 8, and Stage 6B-P1 are accepted should `V1` be merged to `main`, Vercel's production branch remain `main`, Production env vars be configured, Production database work run, and the final Production smoke test be performed.
 - The current active Production deployment from branch `V1` remains a documented non-official artifact, not the formal V1 production release.
 - Stage 6A is documented in `plan_docs/PLAN_V1_STAGE6A_PRODUCTION_RELEASE_GATE.md`; it confirms that `person_id` is data separation, not security isolation, and that durable Production writes need either explicit no-credential private-URL risk acceptance or a separate access gate.
+- Stage 6B execution planning is documented in `plan_docs/PLAN_V1_STAGE6B_PRODUCTION_EXECUTION.md`; on 2026-07-08 the user chose shared Postgres Production for formal V1, so `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md` is the required runtime bridge before merge, Production migration/import, and deployment. Stage 8 now blocks Stage 6B-P1 implementation until the scheduler state shape is accepted.
 
 Exit criteria:
 
@@ -297,6 +299,21 @@ Exit criteria:
 - Review session performance is checked.
 - Remaining accessibility issues are documented.
 
+### Stage 8: Review Memory Algorithm
+
+Status: Stage 8 Review Memory Algorithm planning is documented in `plan_docs/PLAN_V1_STAGE8_REVIEW_MEMORY_ALGORITHM.md`.
+
+Exit criteria:
+
+- Recognition Vocabulary uses an accepted same-session repeat design for `完全忘记了` and `有点忘记了`.
+- Cross-day Recognition scheduling uses an accepted FSRS-6 design or explicitly documented equivalent after library fit validation.
+- Active Vocabulary remains stored, exportable, importable, and visible as future Practice Lab scope, but does not enter review queue, does not generate review state, and does not generate review event in V1.
+- `review_states.difficulty` and `review_states.stability` remain neutral state field names, with documentation that V1 uses them only for Recognition.
+- Future Active scheduling must use separate dimensions such as `review_profile`, `skill_type`, or `activity_type` so Recognition and Active state do not share one row.
+- Stage 6B-P1 incorporates the accepted Stage 8 state shape before any Postgres Production migration.
+
+The fixed Stage 4 scheduler is no longer a launch-ready assumption. Stage 8 is the required learning-behavior bridge before the cloud-backed V1 Production path continues.
+
 ## Scheduling Strategy
 
 MVP scheduler should prioritize clarity:
@@ -309,7 +326,7 @@ MVP scheduler should prioritize clarity:
 - Self-rated rarity may help sorting or backlog priority, but it must not pretend to know proficiency.
 - Actual review feedback drives scheduling over time.
 
-The fixed Stage 4 scheduler is only an MVP bootstrap. A later stage should evaluate embedding（向量嵌入）support for semantic similarity（语义相似度）, confusing pairs, and review queue ordering. FSRS（Free Spaced Repetition Scheduler，自由间隔重复调度算法）is also a candidate later, but should be introduced only after reviewing library fit, data requirements, migration impact, privacy, and explainability.
+The fixed Stage 4 scheduler is only an MVP bootstrap. Stage 8 now owns FSRS-6 evaluation and the V1 Recognition-only scheduler replacement before formal Production. Embedding（向量嵌入）support for semantic similarity（语义相似度）, confusing pairs, and review queue ordering remains a later optional direction.
 
 ## Data And Privacy Assumptions
 
