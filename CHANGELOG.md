@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## 2026-07-08 18:03 AEST
+
+- Executed Stage 8-C Recognition same-session repeat locally.
+- Added `src/lib/review/session-queue.ts` and unit tests for pass / repeat / duplicate / rollback queue behavior.
+- Updated Review so `完全忘记了` and `有点忘记了` record the attempt, do not increment the session passed count, and requeue the word later in the same session.
+- Kept `模糊记得` and `完全记得` as the only ratings that count a word as passed in the current session.
+- Updated `回退1词` so rolling back a repeated attempt moves that word to the front without duplicating an already queued repeat.
+- Documented the Stage 8-D natural-day bucket（自然日分桶）boundary: FSRS computes `scheduled_days`, while Review queue due checks should use Mimi's local timezone（时区）date bucket rather than exact clock time.
+- Kept the Stage 4 cross-day scheduler unchanged in this substage.
+- Reason: make a single Recognition review session behave like active relearning while keeping cross-day scheduler replacement separate.
+
 ## 2026-07-08 17:51 AEST
 
 - Executed Stage 8-B package fit and calibration locally.

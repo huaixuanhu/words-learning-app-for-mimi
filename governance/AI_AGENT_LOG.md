@@ -1,5 +1,39 @@
 # AI Agent Log
 
+## 2026-07-08 18:03 AEST
+
+- Task: execute Stage 8-C same-session Recognition repeat, and document the Stage 8-D local natural-day bucket due boundary before implementation.
+- Plan agreed: yes. The user asked to execute the next stage and first add the Stage 8-D natural-day bucket（自然日分桶）decision.
+- Changed files:
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE8_REVIEW_MEMORY_ALGORITHM.md`
+  - `src/components/review/review-session.tsx`
+  - `src/lib/review/session-queue.test.ts`
+  - `src/lib/review/session-queue.ts`
+- Reason: make failed Recognition ratings repeat inside the current session while keeping cross-day FSRS replacement separate and documenting the due-date boundary before Stage 8-D.
+- Implementation notes:
+  - Added pure session queue helpers for pass / repeat classification, failed-card requeue placement, and rollback movement.
+  - Requeued `forgot` / `hard` after up to two other pending cards, or at the end when fewer cards remain.
+  - Kept `vague` / `remembered` as session-pass ratings.
+  - Prevented duplicate queued copies when a failed item is already waiting to repeat.
+  - Updated Review rollback to account for attempts that did not increment the passed count.
+  - Reset successful submission guards after commit so a one-card failed session can show the same card again.
+  - Documented Stage 8-D's future rule: FSRS should compute `scheduled_days`, and Review queue due checks should compare local date buckets in Mimi's timezone rather than exact clock time.
+- Validation:
+  - Passed: `npm run test -- --run src/lib/review/session-queue.test.ts src/lib/review/repository.test.ts src/lib/review/fsrs-recognition.test.ts`.
+  - Passed: `npm run typecheck`.
+  - Passed: `npm run lint`.
+  - Passed: `npm run test` with 16 files and 74 tests.
+  - Passed: `npm run backup:dry-run:fixture`.
+  - Passed: `npm run build`.
+  - Passed: `git diff --check`.
+  - Passed: `npm run governance:preflight`.
+- Safety notes: local Review UI behavior, local pure helper tests, and documentation only. No Postgres schema change, Vercel command, Neon command, `.env` read/change, credential access, database command, database mutation, Production（生产环境）deployment, Production migration, Production import, formal user backup import, AI API（人工智能接口）, dictation engine（听写引擎）, spelling checker（拼写检查器）, writing feedback model, external vocabulary source, authentication（认证）, analytics（分析追踪）, notification, email, or 付费/扣款 feature was performed.
+
 ## 2026-07-08 17:51 AEST
 
 - Task: execute Stage 8-B package fit and calibration after the user confirmed implementation.

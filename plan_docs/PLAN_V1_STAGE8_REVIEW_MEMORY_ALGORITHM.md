@@ -1,7 +1,7 @@
 # Words Learning App For Mimi Stage 8: Review Memory Algorithm
 
 Created: 2026-07-08 12:45 AEST
-Last updated: 2026-07-08 17:51 AEST
+Last updated: 2026-07-08 18:03 AEST
 
 Source plan: `plan_docs/PLAN_V1_MASTER.md`
 Derived from: `plan_docs/PLAN_V1_STAGE4_REVIEW_SCHEDULER_FLASHCARDS.md`, `plan_docs/PLAN_V1_STAGE7_9_DUAL_TRACK_DATA_IMPORT.md`, `plan_docs/PLAN_V1_STAGE7_10_LIBRARY_REVIEW_CONTROLS.md`, `plan_docs/PLAN_V1_STAGE7_11_REVIEW_ROLLBACK_AUTO_REFRESH.md`, `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md`, `ARCHITECTURE.md`, `src/lib/review/scheduler.ts`, `src/lib/review/repository.ts`, `src/components/review/review-session.tsx`, and the 2026-07-08 user decision to replace the placeholder review algorithm before formal V1 Production（生产环境）launch.
@@ -257,17 +257,43 @@ Boundary:
 
 ### Stage 8-C Recognition Session Loop
 
-- Update Review session queue state so failed Recognition items repeat within the same session.
-- Keep `回退1词` and `重置今日复习任务` behavior coherent with repeated attempts.
-- Add unit tests or component-level tests for requeue behavior.
+Status: implemented locally on 2026-07-08.
+
+Completed:
+
+- Added `src/lib/review/session-queue.ts` as a pure queue helper.
+- Added `src/lib/review/session-queue.test.ts` for pass / repeat / duplicate / rollback queue behavior.
+- Updated Review session UI behavior so `forgot` and `hard` record the attempt but requeue the word later in the same session.
+- Kept `vague` and `remembered` as the only ratings that count the word as passed for the current session.
+- Kept `回退1词` coherent with repeated attempts by moving the rolled-back word to the front and removing any queued duplicate.
+- Kept `重置今日复习任务` behavior unchanged.
+
+Boundary:
+
+- This substage changes same-session queue behavior only.
+- It does not replace the cross-day Stage 4 scheduler.
+- It does not change local storage schema or Postgres schema.
+- It does not add Active Vocabulary scheduling.
 
 ### Stage 8-D FSRS Scheduler Replacement
+
+Status: not implemented. The natural-day due boundary below is documented before implementation.
 
 - Replace the fixed Stage 4 interval table with an FSRS-backed scheduler for Recognition.
 - Map V1 ratings to FSRS ratings.
 - Rebuild Recognition state from events.
 - Preserve person scoping and Recognition-only filtering.
+- Use local natural-day bucket（本地自然日分桶）due semantics for the Review queue.
 - Add deterministic tests for new, learning, review, lapse, rollback, reset, and missed-day behavior.
+
+Due-date boundary:
+
+- FSRS is responsible for `scheduled_days`.
+- The Review queue decides whether a card is due by comparing local date buckets in the selected person's timezone（时区）.
+- Example: if Mimi reviews a word at 23:50 and FSRS returns `scheduled_days = 3`, the word becomes due once the local calendar reaches the third day, even in the morning.
+- Do not make V1 daily review depend on the exact clock time of the previous review.
+- Keep exact `reviewedAt` timestamps for audit（审计）and future analysis, but the daily queue should use local date keys for due checks.
+- If `dueAt` remains stored as an exact timestamp for compatibility, Stage 8-D must ensure queue selection does not hide a due word until the same clock time arrives.
 
 ### Stage 8-E Data Migration And Backup Compatibility
 

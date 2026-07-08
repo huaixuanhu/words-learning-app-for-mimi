@@ -301,7 +301,7 @@ Exit criteria:
 
 ### Stage 8: Review Memory Algorithm
 
-Status: Stage 8 Review Memory Algorithm planning is documented in `plan_docs/PLAN_V1_STAGE8_REVIEW_MEMORY_ALGORITHM.md`. Stage 8-B package fit and calibration executed locally on 2026-07-08 with `ts-fsrs@5.4.1`, an isolated Recognition FSRS adapter, deterministic calibration tests, and an Active Vocabulary no-review-state regression test.
+Status: Stage 8 Review Memory Algorithm planning is documented in `plan_docs/PLAN_V1_STAGE8_REVIEW_MEMORY_ALGORITHM.md`. Stage 8-B package fit and calibration executed locally on 2026-07-08 with `ts-fsrs@5.4.1`, an isolated Recognition FSRS adapter, deterministic calibration tests, and an Active Vocabulary no-review-state regression test. Stage 8-C implemented same-session repeat for failed Recognition ratings without replacing the cross-day scheduler.
 
 Exit criteria:
 

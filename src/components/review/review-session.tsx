@@ -9,6 +9,7 @@ import { useVocabularyData } from "@/components/vocabulary/use-vocabulary-data";
 import { getSelectedPersonId } from "@/lib/people/repository";
 import { recordReview, resetTodayReviewTask, rollbackReviewEvent } from "@/lib/review/repository";
 import { selectReviewQueue } from "@/lib/review/scheduler";
+import { getNextSessionIdsAfterRating, moveReviewAttemptBackToFront } from "@/lib/review/session-queue";
 import { getSelectedReviewSettings } from "@/lib/review/settings";
 import { reviewRatings } from "@/lib/stage-two-data";
 import { playReviewCompleteSound } from "@/lib/ui/sound-player";
@@ -27,6 +28,7 @@ type CompletedReview = {
   vocabularyItemId: string;
   eventId: string;
   surfaceText: string;
+  passedSession: boolean;
 };
 
 export function ReviewSession() {
@@ -212,8 +214,10 @@ export function ReviewSession() {
       });
 
       submittedItemIdRef.current = null;
-      setSessionIds([previousReview.vocabularyItemId, ...sessionIds]);
-      setCompletedCount((current) => Math.max(0, current - 1));
+      setSessionIds(moveReviewAttemptBackToFront(sessionIds, previousReview.vocabularyItemId));
+      setCompletedCount((current) =>
+        previousReview.passedSession ? Math.max(0, current - 1) : current,
+      );
       setCompletedReviews((current) => current.slice(0, -1));
       setShowBack(false);
       setShowCompletionModal(false);
@@ -251,8 +255,8 @@ export function ReviewSession() {
         },
         now,
       });
-      const nextSessionIds = sessionIds ? sessionIds.slice(1) : [];
-      const completedSession = nextSessionIds.length === 0 && sessionTotal > 0;
+      const nextSession = getNextSessionIdsAfterRating(sessionIds ?? [], currentItem.id, rating);
+      const completedSession = nextSession.passedSession && nextSession.sessionIds.length === 0 && sessionTotal > 0;
 
       if (storageRuntime !== "postgres-preview") {
         setCompletedReviews((current) => [
@@ -261,14 +265,21 @@ export function ReviewSession() {
             vocabularyItemId: currentItem.id,
             eventId: result.event.id,
             surfaceText: currentItem.surfaceText,
+            passedSession: nextSession.passedSession,
           },
         ]);
       }
-      setSessionIds(nextSessionIds);
-      setCompletedCount((current) => current + 1);
+      submittedItemIdRef.current = null;
+      setSubmittedItemId(null);
+      setSessionIds(nextSession.sessionIds);
+      setCompletedCount((current) => current + (nextSession.passedSession ? 1 : 0));
       setShowBack(false);
       setCardStartedAt(0);
-      setMessage(`已记录，下次复习 ${new Date(result.state.dueAt).toLocaleString()}`);
+      setMessage(
+        nextSession.repeatedSession
+          ? `已记录，${currentItem.surfaceText} 会在本局稍后再出现。`
+          : `已记录，下次复习 ${new Date(result.state.dueAt).toLocaleString()}`,
+      );
 
       if (completedSession) {
         setShowCompletionModal(true);
