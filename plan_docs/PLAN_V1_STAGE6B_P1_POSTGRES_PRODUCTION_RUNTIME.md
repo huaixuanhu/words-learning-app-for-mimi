@@ -1,11 +1,11 @@
 # Words Learning App For Mimi Stage 6B-P1: Postgres Production Runtime
 
 Created: 2026-07-08 00:25 AEST
-Last updated: 2026-07-09 00:37 AEST
+Last updated: 2026-07-09 00:54 AEST
 
 Source plan: `plan_docs/PLAN_V1_STAGE6B_PRODUCTION_EXECUTION.md`
 Derived from: `plan_docs/PLAN_V1_STAGE6A_PRODUCTION_RELEASE_GATE.md`, `plan_docs/PLAN_V1_STAGE7_9_DUAL_TRACK_DATA_IMPORT.md`, `plan_docs/PLAN_V1_STAGE7_10_LIBRARY_REVIEW_CONTROLS.md`, `plan_docs/PLAN_V1_STAGE7_11_REVIEW_ROLLBACK_AUTO_REFRESH.md`, `plan_docs/PLAN_V1_STAGE8_REVIEW_MEMORY_ALGORITHM.md`, `ARCHITECTURE.md`, `db/migrations/0001_initial.sql`, `src/lib/storage/runtime-mode.ts`, `src/app/api/storage/data/route.ts`, `src/lib/storage/postgres/repository.ts`, and the 2026-07-08 user decision to make V1's formal release fully cloud-backed instead of browser-local.
-Scope: plan and track the implementation of a real `postgres-production` runtime（运行模式）for V1 after Stage 8 is accepted, including schema version 5 or later database migration（数据库迁移）, server-only Production（生产环境）runtime gating, API（应用程序接口）read/write behavior, repository parity with browser-local features, backup import（备份导入）, non-production Neon branch（分支）verification, Production migration/import/deploy sequence, rollback（回滚）, and validation. Stage 6B-P1-B has implemented the local schema migration draft and static tests. Stage 6B-P1-C has implemented the local runtime / API contract. Stage 6B-P1-D has implemented local repository parity code and tests.
+Scope: plan and track the implementation of a real `postgres-production` runtime（运行模式）for V1 after Stage 8 is accepted, including schema version 5 or later database migration（数据库迁移）, server-only Production（生产环境）runtime gating, API（应用程序接口）read/write behavior, repository parity with browser-local features, backup import（备份导入）, non-production Neon branch（分支）verification, Production migration/import/deploy sequence, rollback（回滚）, and validation. Stage 6B-P1-B has implemented the local schema migration draft and static tests. Stage 6B-P1-C has implemented the local runtime / API contract. Stage 6B-P1-D has implemented local repository parity code and tests. Stage 6B-P1-E has implemented local backup import version 5 planning, fixture, script, and tests.
 Non-Scope: no GitHub push, no pull request, no merge（合并）to `main`, no Vercel command, no Neon command, no `.env` or credential read/change, no Production env var change, no database mutation, no backup import, no Production deployment, no authentication（认证）implementation, no AI API（人工智能接口）, no dictation engine（听写引擎）, no spelling checker（拼写检查器）, no writing feedback model, no external vocabulary source, no analytics（分析追踪）, no notification, no email, and no 付费/扣款 feature.
 Exit criteria: Stage 6B-P1 implementation plan exists, parent docs and logs link to it, the required schema/runtime/API/backup validation sequence is explicit, and every future remote / credential / Production action remains behind explicit human approval.
 
@@ -92,7 +92,7 @@ Repository / API behavior:
 - Stage 6B-P1-D added local repository/API operations for hard delete, JSON batch rollback, reset-today Review rebuild, and one-word Review rollback rebuild.
 - Stage 6B-P1-D removed the UI blocks for these now-supported Postgres parity mutations.
 - The P1-D code has not been validated against a migrated database. It still requires P1-F non-production database verification after explicit approval.
-- Backup import version 5 remains P1-E.
+- Stage 6B-P1-E updated local backup import planning and scripts to accept schema version 5, preserve dual-track fields, and reject impossible Active review rows before any database write.
 
 Access boundary:
 
@@ -301,14 +301,28 @@ Boundary:
 
 - P1-D did not execute a database command, inspect a remote database, read or change `.env`, run Vercel / Neon commands, import a backup, deploy Production, or validate the repository code against a migrated database.
 - P1-D depends on `0002_schema5_production_runtime.sql` being applied before real Postgres runtime verification because the repository now reads/writes schema version 5 columns.
-- Backup import version 5 remains P1-E.
+- Backup import version 5 is implemented locally in P1-E, but no real database import has run.
 - Real database verification remains P1-F after explicit approval and a confirmed non-production target.
 
 ### P1-E Backup Import Version 5
 
-- Update backup import planning and Postgres commit scripts for schema version 5.
-- Add schema version 5 fixtures with multiple meanings/examples, JSON import batch, Active item, Recognition review events, and dual limits.
-- Verify dry run and rollback trial locally where no secrets are required.
+Status: implemented locally on 2026-07-09 after explicit approval.
+
+Completed:
+
+- Updated `scripts/backup-import-plan.mjs` to accept schema version 3, 4, and 5 workspace backups, while preserving compatibility with the existing schema version 3 fixture.
+- Added schema version 5 validation for `learningTrack`, nullable `tags`, `meaningsZh`, `examples`, JSON import source types, and separate `recognitionSessionLimit` / `activeSessionLimit`.
+- Added an explicit V1 guard so schema version 4 / 5 backup import plans reject `reviewStates` or `reviewEvents` that target Active Vocabulary.
+- Updated Postgres insert planning for `vocabulary_items.learning_track`, `vocabulary_items.tags`, `vocabulary_items.meanings_zh`, `vocabulary_items.examples`, and dual review settings columns.
+- Kept legacy `session_limit` synchronized to the Recognition daily limit for compatibility.
+- Added `test_fixtures/stage6b-p1e-schema5-backup.json` with a JSON import batch, one Recognition item with review state / event history, one Active item with no review rows, multiple meanings/examples, nullable rarity support, tags, and dual limits.
+- Added `npm run backup:dry-run:schema5-fixture` for local no-database dry-run validation.
+- Updated backup import plan tests for schema version 5 mapping, v3 fallback defaults, and Active review row rejection.
+
+Boundary:
+
+- P1-E did not execute a database command, inspect a remote database, read or change `.env`, run Vercel / Neon commands, import a real backup, mutate any database, deploy Production, or run a rollback trial against a database.
+- The `--trial-rollback` and `--commit` paths now have schema version 5 SQL shape, but they still require P1-F non-production database verification after explicit approval and after `0002_schema5_production_runtime.sql` is applied to the confirmed target.
 
 ### P1-F Non-Production Neon Branch Verification
 
@@ -349,6 +363,7 @@ npm run lint
 npm run typecheck
 npm run test
 npm run backup:dry-run:fixture
+npm run backup:dry-run:schema5-fixture
 npm run build
 git diff --check
 ```
@@ -389,6 +404,6 @@ Before code implementation:
 
 ## P1 Result
 
-Stage 6B-P1 is the required database/runtime bridge between the accepted local V1 app and the desired fully cloud-backed V1 launch. Stage 8-G accepted the final V1 Recognition review memory behavior and handoff shape. P1-B added the local schema version 5 migration draft plus static tests. P1-C added the local `postgres-production` runtime / API contract and safety tests. P1-D added local Postgres repository parity code and tests. P1 must still implement backup import version 5 and non-production database validation before any Production execution.
+Stage 6B-P1 is the required database/runtime bridge between the accepted local V1 app and the desired fully cloud-backed V1 launch. Stage 8-G accepted the final V1 Recognition review memory behavior and handoff shape. P1-B added the local schema version 5 migration draft plus static tests. P1-C added the local `postgres-production` runtime / API contract and safety tests. P1-D added local Postgres repository parity code and tests. P1-E added local backup import version 5 script support, fixture coverage, and no-database dry-run validation. P1 must still complete non-production database validation before any Production execution.
 
 No Production release should proceed until P1 has passed local validation, non-production database verification, and explicit human acceptance.

@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## 2026-07-09 00:59 AEST
+
+- Executed Stage 6B-P1-E backup import version 5 locally after explicit approval.
+- Updated backup import planning to accept schema version 3 / 4 / 5 workspace backups while preserving the existing schema version 3 fixture path.
+- Added schema version 5 import support for `learningTrack`, nullable `tags`, multiple `meaningsZh`, multiple `examples`, JSON import sources, and separate Recognition / Active daily limits.
+- Added an explicit guard so schema version 4 / 5 backup import plans reject review states or review events that target Active Vocabulary（输出词汇）.
+- Updated the Postgres import script SQL shape for schema version 5 columns and added `npm run backup:dry-run:schema5-fixture`.
+- Added a schema version 5 fixture with a JSON import batch, one Recognition Vocabulary（阅读词汇）item with review history, one Active Vocabulary item without review rows, multiple meanings/examples, tags, and dual limits.
+- Updated docs for the backup-to-Postgres mapping and Stage 6B-P1 handoff so P1-F non-production database verification is the next gated step.
+- Kept remote database migration, database inspection, trial rollback against a database, formal backup import, Vercel / Neon commands, `.env` changes, Production import, and Production deployment out of scope.
+- Reason: make the backup import bridge match the accepted schema version 5 / Recognition-only V1 data model before any real database verification.
+
 ## 2026-07-09 00:37 AEST
 
 - Executed Stage 6B-P1-D repository parity locally after explicit approval.

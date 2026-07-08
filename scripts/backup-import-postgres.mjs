@@ -7,7 +7,9 @@ import {
   buildBackupImportPlan,
   buildBackupImportPlanFromText,
   createStage5LFixtureBackup,
+  createStage6BP1ESchema5FixtureBackup,
   STAGE5L_FIXTURE_FILE_NAME,
+  STAGE6B_P1E_SCHEMA5_FIXTURE_FILE_NAME,
 } from "./backup-import-plan.mjs";
 
 const SMOKE_PERSON_ID = "00000000-0000-4000-8000-0000000005f1";
@@ -19,9 +21,12 @@ function usage() {
   return [
     "Usage:",
     "  node scripts/backup-import-postgres.mjs --fixture --dry-run",
+    "  node scripts/backup-import-postgres.mjs --schema5-fixture --dry-run",
     "  node scripts/backup-import-postgres.mjs --cleanup-smoke",
     "  node scripts/backup-import-postgres.mjs --fixture --trial-rollback",
+    "  node scripts/backup-import-postgres.mjs --schema5-fixture --trial-rollback",
     "  node scripts/backup-import-postgres.mjs --fixture --commit --i-confirm-development-import",
+    "  node scripts/backup-import-postgres.mjs --schema5-fixture --commit --i-confirm-development-import",
     "  node scripts/backup-import-postgres.mjs --cleanup-fixture",
     "  node scripts/backup-import-postgres.mjs --cleanup-stage5n-ui-smoke",
     "  node scripts/backup-import-postgres.mjs --file <backup.json> --dry-run",
@@ -59,6 +64,12 @@ async function readBackupInput() {
     return {
       sourceFileName: STAGE5L_FIXTURE_FILE_NAME,
       backup: createStage5LFixtureBackup(),
+    };
+  }
+  if (hasArg("--schema5-fixture")) {
+    return {
+      sourceFileName: STAGE6B_P1E_SCHEMA5_FIXTURE_FILE_NAME,
+      backup: createStage6BP1ESchema5FixtureBackup(),
     };
   }
 
@@ -383,9 +394,13 @@ async function insertPlanRows(client, rows) {
           surface_text,
           normalized_text,
           meaning_zh,
+          meanings_zh,
           example,
+          examples,
           notes,
           rarity_score,
+          learning_track,
+          tags,
           source,
           import_batch_id,
           status,
@@ -395,7 +410,10 @@ async function insertPlanRows(client, rows) {
           timezone,
           archived_at
         )
-        values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+        values (
+          $1, $2, $3, $4, $5, $6::jsonb, $7, $8::jsonb,
+          $9, $10, $11, $12::jsonb, $13, $14, $15, $16, $17, $18, $19, $20
+        )
       `,
       [
         item.id,
@@ -403,9 +421,13 @@ async function insertPlanRows(client, rows) {
         item.surfaceText,
         item.normalizedText,
         item.meaningZh,
+        JSON.stringify(item.meaningsZh),
         item.example,
+        JSON.stringify(item.examples),
         item.notes,
         item.rarityScore,
+        item.learningTrack,
+        item.tags ? JSON.stringify(item.tags) : null,
         item.source,
         item.importBatchId,
         item.status,
@@ -489,12 +511,21 @@ async function insertPlanRows(client, rows) {
   for (const settings of rows.reviewSettings) {
     await client.query(
       `
-        insert into review_settings (person_id, session_limit, timezone, updated_at)
-        values ($1, $2, $3, $4)
+        insert into review_settings (
+          person_id,
+          session_limit,
+          recognition_session_limit,
+          active_session_limit,
+          timezone,
+          updated_at
+        )
+        values ($1, $2, $3, $4, $5, $6)
       `,
       [
         settings.personId,
         settings.sessionLimit,
+        settings.recognitionSessionLimit,
+        settings.activeSessionLimit,
         settings.timezone,
         settings.updatedAt,
       ],
@@ -721,7 +752,7 @@ const backupInput = await readBackupInput();
 const plan = backupInput?.backup
   ? buildBackupImportPlan(backupInput.backup, {
       sourceFileName: backupInput.sourceFileName,
-      notes: hasArg("--fixture")
+      notes: hasArg("--fixture") || hasArg("--schema5-fixture")
         ? "Stage fixture import for development verification."
         : "User backup import for development verification.",
     })
@@ -769,6 +800,10 @@ if (wantsCleanupSmoke || wantsTrialRollback || wantsCommit || wantsCleanupFixtur
       actions.push({
         action: "cleanup-stage5m-fixture",
         result: await cleanupRowsForPersonSlug(client, "stage5m-fixture"),
+      });
+      actions.push({
+        action: "cleanup-stage6b-p1e-schema5-fixture",
+        result: await cleanupRowsForPersonSlug(client, "stage6b-p1e-schema5-fixture"),
       });
     }
 

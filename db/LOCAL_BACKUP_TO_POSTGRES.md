@@ -1,7 +1,7 @@
 # Local Backup To Postgres Migration Mapping
 
 Created: 2026-07-05 01:08 AEST
-Last updated: 2026-07-05 15:45 AEST
+Last updated: 2026-07-09 00:54 AEST
 
 Source plan:
 
@@ -16,7 +16,7 @@ Derived from:
 
 Scope:
 
-- Map schema version 3 JSON backup（JSON 备份）data into the future Neon Postgres（关系型数据库）schema.
+- Map schema version 3 through 5 JSON backup（JSON 备份）data into the future Neon Postgres（关系型数据库）schema.
 - Preserve person separation through `person_id`.
 - Define validation and rollback expectations before a remote migration（迁移）is executed.
 - Document the Stage 5L dry-run and rollback-trial harness.
@@ -28,15 +28,23 @@ Non-Scope:
 - No `.env`, credential, or remote database value exposure.
 - No deletion of browser `localStorage`（本地浏览器存储）after migration.
 
-## Stage 5L Harness Status
+## Harness Status
 
 Stage 5L added a guarded import harness without opening formal user-data import:
 
-- `scripts/backup-import-plan.mjs` validates schema version 3 backup shape, metadata counts, person-scoped references, and target UUID mapping.
+- `scripts/backup-import-plan.mjs` validates schema version 3 / 4 / 5 backup shape, metadata counts, person-scoped references, and target UUID mapping.
 - `scripts/backup-import-postgres.mjs` can run fixture dry run, development smoke cleanup, and a fixture transaction rollback trial.
 - `npm run backup:dry-run:fixture` runs without database access.
 - `npm run db:import-fixture-trial:dev` writes a fixture-shaped dataset inside a development database transaction and rolls it back.
 - Formal import of a real user backup remains pending a separate plan and confirmation.
+
+Stage 6B-P1-E extends the harness for schema version 5:
+
+- `npm run backup:dry-run:schema5-fixture` runs without database access.
+- `test_fixtures/stage6b-p1e-schema5-backup.json` covers a JSON import batch, multiple meanings/examples, nullable rarity, tags, dual Recognition / Active daily limits, one Recognition item with review history, and one Active item without review rows.
+- Import planning now preserves `learningTrack`, `tags`, `meaningsZh`, `examples`, `json_file` / `json_paste` sources, and `recognitionSessionLimit` / `activeSessionLimit`.
+- Import planning rejects schema version 4 / 5 review states or review events that target Active Vocabulary because V1 scheduling is Recognition-only.
+- Real `--trial-rollback` or `--commit` execution for schema version 5 still requires a confirmed non-production database target with `db/migrations/0002_schema5_production_runtime.sql` applied first.
 
 ## Migration Principle
 
@@ -77,6 +85,7 @@ Current JSON backup is a workspace-level backup and can contain multiple people.
   - `id` -> generated UUID, stored in `backup_import_mappings`
   - `personId` -> mapped `people.id`
   - `sourceType` -> `source_type`
+  - schema version 5 preserves `json_file` and `json_paste` source types
   - `fileName` -> `file_name`
   - count fields map directly after non-negative validation
 
@@ -89,8 +98,14 @@ Current JSON backup is a workspace-level backup and can contain multiple people.
   - `personId` -> mapped `people.id`
   - `importBatchId` -> mapped `import_batches.id`, or null
   - camelCase fields map to snake_case columns
+  - `learningTrack` -> `learning_track`; schema version 3 defaults to `recognition`
+  - `tags` -> `tags` JSONB（JSON 二进制存储）array or null
+  - `meaningsZh` -> `meanings_zh`; schema version 3 falls back from `meaningZh`
+  - `examples` -> `examples`; schema version 3 falls back from `example`
   - `rarityScore` must be null or between 1 and 5
   - `archivedAt` must agree with `status`
+
+V1 backup import must not create review state or review event rows for Active Vocabulary. Active rows can be stored in `vocabulary_items` and mapped in `backup_import_mappings`, but their future scheduling state must be separate V2 data.
 
 ### review_states
 
@@ -101,6 +116,7 @@ Current JSON backup is a workspace-level backup and can contain multiple people.
   - `personId` -> mapped `people.id`
   - `vocabularyItemId` -> mapped `vocabulary_items.id` for the same person
   - uniqueness is enforced by `(person_id, vocabulary_item_id)`
+  - schema version 4 / 5 imports reject rows whose mapped item has `learningTrack: "active"`
 
 ### review_events
 
@@ -111,6 +127,7 @@ Current JSON backup is a workspace-level backup and can contain multiple people.
   - `personId` -> mapped `people.id`
   - `vocabularyItemId` -> mapped `vocabulary_items.id` for the same person
   - rating and interval values must pass database checks
+  - schema version 4 / 5 imports reject rows whose mapped item has `learningTrack: "active"`
 
 ### review_settings
 
@@ -118,7 +135,9 @@ Current JSON backup is a workspace-level backup and can contain multiple people.
 - Target: `review_settings`
 - Mapping:
   - `personId` -> mapped `people.id`
-  - `sessionLimit` -> `session_limit`
+  - `recognitionSessionLimit` -> `recognition_session_limit`
+  - `activeSessionLimit` -> `active_session_limit`
+  - `sessionLimit` -> `session_limit`, synchronized to the Recognition daily limit
   - `timezone` -> `timezone`
   - `updatedAt` -> `updated_at`
 

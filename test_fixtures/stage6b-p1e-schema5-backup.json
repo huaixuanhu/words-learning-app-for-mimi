@@ -1,0 +1,139 @@
+{
+  "format": "mimi-pte-vocabulary-backup",
+  "backupVersion": 1,
+  "metadata": {
+    "appName": "words-learning-app-for-mimi",
+    "exportedAt": "2026-07-09T01:20:00.000Z",
+    "timezone": "Australia/Melbourne",
+    "schemaVersion": 5,
+    "counts": {
+      "people": 1,
+      "items": 2,
+      "activeItems": 2,
+      "archivedItems": 0,
+      "importBatches": 1,
+      "reviewStates": 1,
+      "reviewEvents": 1
+    }
+  },
+  "data": {
+    "schemaVersion": 5,
+    "people": [
+      {
+        "id": "person_stage6b_p1e_schema5_fixture",
+        "displayName": "Stage 6B P1-E Schema 5 Fixture",
+        "slug": "stage6b-p1e-schema5-fixture",
+        "isActive": true,
+        "createdAt": "2026-07-09T01:10:00.000Z",
+        "updatedAt": "2026-07-09T01:10:00.000Z"
+      }
+    ],
+    "selectedPersonId": "person_stage6b_p1e_schema5_fixture",
+    "items": [
+      {
+        "id": "vocab_stage6b_p1e_schema5_recognition",
+        "personId": "person_stage6b_p1e_schema5_fixture",
+        "surfaceText": "allocate",
+        "normalizedText": "allocate",
+        "meaningZh": "分配",
+        "meaningsZh": ["分配", "划拨"],
+        "example": "Allocate time wisely.",
+        "examples": [
+          "Allocate time wisely.",
+          "The manager allocated extra resources to the project."
+        ],
+        "notes": "Recognition item with multiple meanings and examples.",
+        "rarityScore": 3,
+        "learningTrack": "recognition",
+        "tags": ["PTE", "Writing"],
+        "source": "json_paste",
+        "importBatchId": "batch_stage6b_p1e_schema5_fixture",
+        "status": "new",
+        "createdAt": "2026-07-09T01:10:00.000Z",
+        "systemCreatedAt": "2026-07-09T01:10:00.000Z",
+        "updatedAt": "2026-07-09T01:10:00.000Z",
+        "timezone": "Australia/Melbourne",
+        "archivedAt": null
+      },
+      {
+        "id": "vocab_stage6b_p1e_schema5_active",
+        "personId": "person_stage6b_p1e_schema5_fixture",
+        "surfaceText": "coherent",
+        "normalizedText": "coherent",
+        "meaningZh": "连贯的",
+        "meaningsZh": ["连贯的", "条理清楚的"],
+        "example": "Write a coherent paragraph.",
+        "examples": [
+          "Write a coherent paragraph.",
+          "A coherent response is easier to follow."
+        ],
+        "notes": "Active item is stored and mapped but has no V1 review rows.",
+        "rarityScore": null,
+        "learningTrack": "active",
+        "tags": ["PTE", "Writing"],
+        "source": "json_paste",
+        "importBatchId": "batch_stage6b_p1e_schema5_fixture",
+        "status": "new",
+        "createdAt": "2026-07-09T01:10:00.000Z",
+        "systemCreatedAt": "2026-07-09T01:10:00.000Z",
+        "updatedAt": "2026-07-09T01:10:00.000Z",
+        "timezone": "Australia/Melbourne",
+        "archivedAt": null
+      }
+    ],
+    "importBatches": [
+      {
+        "id": "batch_stage6b_p1e_schema5_fixture",
+        "personId": "person_stage6b_p1e_schema5_fixture",
+        "sourceType": "json_paste",
+        "fileName": null,
+        "createdAt": "2026-07-09T01:10:00.000Z",
+        "totalRows": 2,
+        "acceptedRows": 2,
+        "duplicateRows": 0,
+        "invalidRows": 0
+      }
+    ],
+    "reviewStates": [
+      {
+        "id": "review_state_stage6b_p1e_schema5_recognition",
+        "personId": "person_stage6b_p1e_schema5_fixture",
+        "vocabularyItemId": "vocab_stage6b_p1e_schema5_recognition",
+        "status": "review",
+        "dueAt": "2026-07-10T00:00:00.000Z",
+        "lastReviewedAt": "2026-07-09T01:20:00.000Z",
+        "reviewCount": 2,
+        "lapseCount": 0,
+        "intervalMinutes": 1440,
+        "difficulty": 4.2,
+        "stability": 1.35,
+        "updatedAt": "2026-07-09T01:20:00.000Z"
+      }
+    ],
+    "reviewEvents": [
+      {
+        "id": "review_event_stage6b_p1e_schema5_recognition",
+        "personId": "person_stage6b_p1e_schema5_fixture",
+        "vocabularyItemId": "vocab_stage6b_p1e_schema5_recognition",
+        "reviewedAt": "2026-07-09T01:20:00.000Z",
+        "rating": "remembered",
+        "previousDueAt": "2026-07-09T00:00:00.000Z",
+        "nextDueAt": "2026-07-10T00:00:00.000Z",
+        "previousIntervalMinutes": 720,
+        "nextIntervalMinutes": 1440,
+        "elapsedMs": 6200
+      }
+    ],
+    "settingsByPerson": [
+      {
+        "personId": "person_stage6b_p1e_schema5_fixture",
+        "sessionLimit": 18,
+        "recognitionSessionLimit": 18,
+        "activeSessionLimit": 6,
+        "timezone": "Australia/Melbourne",
+        "updatedAt": "2026-07-09T01:10:00.000Z"
+      }
+    ],
+    "updatedAt": "2026-07-09T01:20:00.000Z"
+  }
+}

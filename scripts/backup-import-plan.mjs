@@ -4,11 +4,16 @@ export const BACKUP_FORMAT = "mimi-pte-vocabulary-backup";
 export const BACKUP_VERSION = 1;
 export const BACKUP_APP_NAME = "words-learning-app-for-mimi";
 export const STAGE5L_FIXTURE_FILE_NAME = "stage5l-fixture-backup.json";
+export const STAGE6B_P1E_SCHEMA5_FIXTURE_FILE_NAME = "stage6b-p1e-schema5-backup.json";
 
-const SUPPORTED_SCHEMA_VERSION = 3;
-const VOCABULARY_SOURCES = new Set(["manual", "txt_file", "pasted_text"]);
+const SUPPORTED_SCHEMA_VERSIONS = new Set([3, 4, 5]);
+const SUPPORTED_SCHEMA_VERSION_LABEL = "3, 4, or 5";
+const DEFAULT_ACTIVE_SESSION_LIMIT = 8;
+const VOCABULARY_SOURCES = new Set(["manual", "txt_file", "pasted_text", "json_file", "json_paste"]);
 const VOCABULARY_STATUSES = new Set(["new", "archived"]);
-const IMPORT_SOURCE_TYPES = new Set(["txt_file", "pasted_text"]);
+const IMPORT_SOURCE_TYPES = new Set(["txt_file", "pasted_text", "json_file", "json_paste"]);
+const LEARNING_TRACKS = new Set(["recognition", "active"]);
+const VOCABULARY_TAGS = new Set(["PTE", "IELTS", "Listening", "Writing", "Spelling Risk"]);
 const REVIEW_STATUSES = new Set(["learning", "review"]);
 const REVIEW_RATINGS = new Set(["forgot", "hard", "vague", "remembered"]);
 
@@ -32,6 +37,14 @@ function isStringOrNull(value) {
   return value === null || typeof value === "string";
 }
 
+function isStringArray(value) {
+  return Array.isArray(value) && value.every((entry) => typeof entry === "string");
+}
+
+function isStringArrayOrNull(value) {
+  return value === null || isStringArray(value);
+}
+
 function isFiniteNumber(value) {
   return typeof value === "number" && Number.isFinite(value);
 }
@@ -48,6 +61,10 @@ function isPositiveInteger(value) {
   return Number.isInteger(value) && value > 0;
 }
 
+function isSupportedSchemaVersion(value) {
+  return SUPPORTED_SCHEMA_VERSIONS.has(value);
+}
+
 function isValidDateString(value) {
   return isString(value) && Number.isFinite(Date.parse(value));
 }
@@ -61,6 +78,12 @@ function requireString(record, key, label, errors) {
 function requireDateString(record, key, label, errors) {
   if (!isValidDateString(record[key])) {
     errors.push(`${label}.${key} must be a valid date string`);
+  }
+}
+
+function requireSessionLimit(record, key, label, errors) {
+  if (!isInteger(record[key]) || record[key] < 1 || record[key] > 80) {
+    errors.push(`${label}.${key} must be an integer from 1 to 80`);
   }
 }
 
@@ -148,12 +171,14 @@ function validateImportBatch(batch, index, people, errors) {
   }
 }
 
-function validateVocabularyItem(item, index, people, importBatches, errors) {
+function validateVocabularyItem(item, index, people, importBatches, schemaVersion, errors) {
   const label = `items[${index}]`;
   if (!isRecord(item)) {
     errors.push(`${label} must be an object`);
     return;
   }
+  const requiresTrackFields = schemaVersion >= 4;
+  const requiresTextListFields = schemaVersion >= 5;
 
   for (const key of [
     "id",
@@ -186,6 +211,28 @@ function validateVocabularyItem(item, index, people, importBatches, errors) {
   if (!VOCABULARY_STATUSES.has(String(item.status))) {
     errors.push(`${label}.status is unsupported`);
   }
+  if (requiresTrackFields) {
+    if (!LEARNING_TRACKS.has(String(item.learningTrack))) {
+      errors.push(`${label}.learningTrack is unsupported`);
+    }
+    if (!isStringArrayOrNull(item.tags)) {
+      errors.push(`${label}.tags must be an array or null`);
+    } else if (Array.isArray(item.tags)) {
+      for (const tag of item.tags) {
+        if (!VOCABULARY_TAGS.has(tag)) {
+          errors.push(`${label}.tags contains unsupported tag`);
+        }
+      }
+    }
+  }
+  if (requiresTextListFields) {
+    if (!isStringArray(item.meaningsZh)) {
+      errors.push(`${label}.meaningsZh must be an array`);
+    }
+    if (!isStringArray(item.examples)) {
+      errors.push(`${label}.examples must be an array`);
+    }
+  }
   if (!isStringOrNull(item.importBatchId)) {
     errors.push(`${label}.importBatchId must be a string or null`);
   } else if (item.importBatchId) {
@@ -211,7 +258,16 @@ function validateVocabularyItem(item, index, people, importBatches, errors) {
   }
 }
 
-function validateReviewState(state, index, people, vocabularyItems, reviewStateItems, errors) {
+function validateReviewState(
+  state,
+  index,
+  people,
+  vocabularyItems,
+  reviewStateItems,
+  vocabularyItemTracks,
+  blockActiveReviewRows,
+  errors,
+) {
   const label = `reviewStates[${index}]`;
   if (!isRecord(state)) {
     errors.push(`${label} must be an object`);
@@ -231,6 +287,9 @@ function validateReviewState(state, index, people, vocabularyItems, reviewStateI
   const itemKey = `${state.personId}:${state.vocabularyItemId}`;
   if (!vocabularyItems.has(itemKey)) {
     errors.push(`${label}.vocabularyItemId does not match an item for the same person`);
+  }
+  if (blockActiveReviewRows && vocabularyItemTracks.get(itemKey) === "active") {
+    errors.push(`${label}.vocabularyItemId references an Active item`);
   }
   if (reviewStateItems.has(itemKey)) {
     errors.push(`${label}.vocabularyItemId must be unique per person`);
@@ -260,7 +319,15 @@ function validateReviewState(state, index, people, vocabularyItems, reviewStateI
   }
 }
 
-function validateReviewEvent(event, index, people, vocabularyItems, errors) {
+function validateReviewEvent(
+  event,
+  index,
+  people,
+  vocabularyItems,
+  vocabularyItemTracks,
+  blockActiveReviewRows,
+  errors,
+) {
   const label = `reviewEvents[${index}]`;
   if (!isRecord(event)) {
     errors.push(`${label} must be an object`);
@@ -280,6 +347,9 @@ function validateReviewEvent(event, index, people, vocabularyItems, errors) {
   const itemKey = `${event.personId}:${event.vocabularyItemId}`;
   if (!vocabularyItems.has(itemKey)) {
     errors.push(`${label}.vocabularyItemId does not match an item for the same person`);
+  }
+  if (blockActiveReviewRows && vocabularyItemTracks.get(itemKey) === "active") {
+    errors.push(`${label}.vocabularyItemId references an Active item`);
   }
   if (!REVIEW_RATINGS.has(String(event.rating))) {
     errors.push(`${label}.rating is unsupported`);
@@ -301,7 +371,7 @@ function validateReviewEvent(event, index, people, vocabularyItems, errors) {
   }
 }
 
-function validateReviewSettings(settings, index, people, errors) {
+function validateReviewSettings(settings, index, people, requiresDualLimits, errors) {
   const label = `settingsByPerson[${index}]`;
   if (!isRecord(settings)) {
     errors.push(`${label} must be an object`);
@@ -315,8 +385,10 @@ function validateReviewSettings(settings, index, people, errors) {
   if (!people.has(settings.personId)) {
     errors.push(`${label}.personId does not match a person`);
   }
-  if (!isInteger(settings.sessionLimit) || settings.sessionLimit < 1 || settings.sessionLimit > 80) {
-    errors.push(`${label}.sessionLimit must be an integer from 1 to 80`);
+  requireSessionLimit(settings, "sessionLimit", label, errors);
+  if (requiresDualLimits) {
+    requireSessionLimit(settings, "recognitionSessionLimit", label, errors);
+    requireSessionLimit(settings, "activeSessionLimit", label, errors);
   }
   if (isString(settings.timezone) && settings.timezone.trim() === "") {
     errors.push(`${label}.timezone must not be blank`);
@@ -356,15 +428,22 @@ function validateBackup(backup) {
   if (!isString(metadata.timezone) || metadata.timezone.trim() === "") {
     errors.push("metadata.timezone must be a non-blank string");
   }
-  if (metadata.schemaVersion !== SUPPORTED_SCHEMA_VERSION) {
-    errors.push(`metadata.schemaVersion must be ${SUPPORTED_SCHEMA_VERSION}`);
+  if (!isSupportedSchemaVersion(metadata.schemaVersion)) {
+    errors.push(`metadata.schemaVersion must be ${SUPPORTED_SCHEMA_VERSION_LABEL}`);
   }
   if (!isRecord(metadata.counts)) {
     errors.push("metadata.counts must be an object");
   }
 
-  if (data.schemaVersion !== SUPPORTED_SCHEMA_VERSION) {
-    errors.push(`data.schemaVersion must be ${SUPPORTED_SCHEMA_VERSION}`);
+  if (!isSupportedSchemaVersion(data.schemaVersion)) {
+    errors.push(`data.schemaVersion must be ${SUPPORTED_SCHEMA_VERSION_LABEL}`);
+  }
+  if (
+    isSupportedSchemaVersion(metadata.schemaVersion) &&
+    isSupportedSchemaVersion(data.schemaVersion) &&
+    metadata.schemaVersion !== data.schemaVersion
+  ) {
+    errors.push("metadata.schemaVersion must match data.schemaVersion");
   }
   if (!Array.isArray(data.people)) {
     errors.push("data.people must be an array");
@@ -412,7 +491,7 @@ function validateBackup(backup) {
   requireUnique([...importBatches], "importBatches person/id pair", errors);
 
   data.items.forEach((item, index) =>
-    validateVocabularyItem(item, index, people, importBatches, errors),
+    validateVocabularyItem(item, index, people, importBatches, data.schemaVersion, errors),
   );
   const vocabularyItems = new Set(
     data.items
@@ -420,10 +499,27 @@ function validateBackup(backup) {
       .map((item) => `${item.personId}:${item.id}`),
   );
   requireUnique([...vocabularyItems], "items person/id pair", errors);
+  const vocabularyItemTracks = new Map(
+    data.items
+      .filter(isRecord)
+      .map((item) => [
+        `${item.personId}:${item.id}`,
+        data.schemaVersion >= 4 && item.learningTrack === "active" ? "active" : "recognition",
+      ]),
+  );
 
   const reviewStateItems = new Set();
   data.reviewStates.forEach((state, index) =>
-    validateReviewState(state, index, people, vocabularyItems, reviewStateItems, errors),
+    validateReviewState(
+      state,
+      index,
+      people,
+      vocabularyItems,
+      reviewStateItems,
+      vocabularyItemTracks,
+      data.schemaVersion >= 4,
+      errors,
+    ),
   );
   requireUnique(
     data.reviewStates.filter(isRecord).map((state) => `${state.personId}:${state.id}`),
@@ -432,7 +528,15 @@ function validateBackup(backup) {
   );
 
   data.reviewEvents.forEach((event, index) =>
-    validateReviewEvent(event, index, people, vocabularyItems, errors),
+    validateReviewEvent(
+      event,
+      index,
+      people,
+      vocabularyItems,
+      vocabularyItemTracks,
+      data.schemaVersion >= 4,
+      errors,
+    ),
   );
   requireUnique(
     data.reviewEvents.filter(isRecord).map((event) => `${event.personId}:${event.id}`),
@@ -441,7 +545,7 @@ function validateBackup(backup) {
   );
 
   data.settingsByPerson.forEach((settings, index) =>
-    validateReviewSettings(settings, index, people, errors),
+    validateReviewSettings(settings, index, people, data.schemaVersion >= 4, errors),
   );
   const settingsPeople = data.settingsByPerson
     .filter(isRecord)
@@ -506,6 +610,51 @@ function createMappingRow({
   };
 }
 
+function normalizeTextList(value) {
+  const source = Array.isArray(value) ? value : [value];
+
+  return source
+    .filter(isString)
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+}
+
+function textListOrLegacy(value, legacyValue) {
+  const list = normalizeTextList(value);
+
+  return list.length ? list : normalizeTextList(legacyValue);
+}
+
+function normalizeLearningTrackForImport(item, sourceSchemaVersion) {
+  if (sourceSchemaVersion >= 4 && item.learningTrack === "active") {
+    return "active";
+  }
+
+  return "recognition";
+}
+
+function normalizeTagsForImport(item, sourceSchemaVersion) {
+  if (sourceSchemaVersion < 4 || !Array.isArray(item.tags)) {
+    return null;
+  }
+
+  return item.tags;
+}
+
+function normalizeReviewSettingsForImport(settings) {
+  const recognitionSessionLimit = settings.recognitionSessionLimit ?? settings.sessionLimit;
+  const activeSessionLimit = settings.activeSessionLimit ?? DEFAULT_ACTIVE_SESSION_LIMIT;
+
+  return {
+    personId: settings.personId,
+    sessionLimit: recognitionSessionLimit,
+    recognitionSessionLimit,
+    activeSessionLimit,
+    timezone: settings.timezone,
+    updatedAt: settings.updatedAt,
+  };
+}
+
 export function buildBackupImportPlan(backup, options = {}) {
   validateBackup(backup);
 
@@ -559,9 +708,13 @@ export function buildBackupImportPlan(backup, options = {}) {
         surfaceText: item.surfaceText,
         normalizedText: item.normalizedText,
         meaningZh: item.meaningZh,
+        meaningsZh: textListOrLegacy(item.meaningsZh, item.meaningZh),
         example: item.example,
+        examples: textListOrLegacy(item.examples, item.example),
         notes: item.notes,
         rarityScore: item.rarityScore,
+        learningTrack: normalizeLearningTrackForImport(item, data.schemaVersion),
+        tags: normalizeTagsForImport(item, data.schemaVersion),
         source: item.source,
         importBatchId: importBatch?.targetId ?? null,
         status: item.status,
@@ -608,12 +761,18 @@ export function buildBackupImportPlan(backup, options = {}) {
         elapsedMs: event.elapsedMs,
       };
     }),
-    reviewSettings: data.settingsByPerson.map((settings) => ({
-      personId: lookup(personMap, settings.personId, "review settings person"),
-      sessionLimit: settings.sessionLimit,
-      timezone: settings.timezone,
-      updatedAt: settings.updatedAt,
-    })),
+    reviewSettings: data.settingsByPerson.map((settings) => {
+      const normalizedSettings = normalizeReviewSettingsForImport(settings);
+
+      return {
+        personId: lookup(personMap, settings.personId, "review settings person"),
+        sessionLimit: normalizedSettings.sessionLimit,
+        recognitionSessionLimit: normalizedSettings.recognitionSessionLimit,
+        activeSessionLimit: normalizedSettings.activeSessionLimit,
+        timezone: normalizedSettings.timezone,
+        updatedAt: normalizedSettings.updatedAt,
+      };
+    }),
     backupImports: data.people.map((person) => {
       const personId = lookup(personMap, person.id, "backup import person");
 
@@ -854,6 +1013,151 @@ export function createStage5LFixtureBackup() {
       {
         personId,
         sessionLimit: 12,
+        timezone: "Australia/Melbourne",
+        updatedAt: createdAt,
+      },
+    ],
+    updatedAt: reviewedAt,
+  };
+
+  return {
+    format: BACKUP_FORMAT,
+    backupVersion: BACKUP_VERSION,
+    metadata: {
+      appName: BACKUP_APP_NAME,
+      exportedAt: reviewedAt,
+      timezone: "Australia/Melbourne",
+      schemaVersion: data.schemaVersion,
+      counts: actualCounts(data),
+    },
+    data,
+  };
+}
+
+export function createStage6BP1ESchema5FixtureBackup() {
+  const createdAt = "2026-07-09T01:10:00.000Z";
+  const reviewedAt = "2026-07-09T01:20:00.000Z";
+  const dueAt = "2026-07-10T00:00:00.000Z";
+  const personId = "person_stage6b_p1e_schema5_fixture";
+  const recognitionItemId = "vocab_stage6b_p1e_schema5_recognition";
+  const activeItemId = "vocab_stage6b_p1e_schema5_active";
+  const batchId = "batch_stage6b_p1e_schema5_fixture";
+  const stateId = "review_state_stage6b_p1e_schema5_recognition";
+  const eventId = "review_event_stage6b_p1e_schema5_recognition";
+  const data = {
+    schemaVersion: 5,
+    people: [
+      {
+        id: personId,
+        displayName: "Stage 6B P1-E Schema 5 Fixture",
+        slug: "stage6b-p1e-schema5-fixture",
+        isActive: true,
+        createdAt,
+        updatedAt: createdAt,
+      },
+    ],
+    selectedPersonId: personId,
+    items: [
+      {
+        id: recognitionItemId,
+        personId,
+        surfaceText: "allocate",
+        normalizedText: "allocate",
+        meaningZh: "分配",
+        meaningsZh: ["分配", "划拨"],
+        example: "Allocate time wisely.",
+        examples: [
+          "Allocate time wisely.",
+          "The manager allocated extra resources to the project.",
+        ],
+        notes: "Recognition item with multiple meanings and examples.",
+        rarityScore: 3,
+        learningTrack: "recognition",
+        tags: ["PTE", "Writing"],
+        source: "json_paste",
+        importBatchId: batchId,
+        status: "new",
+        createdAt,
+        systemCreatedAt: createdAt,
+        updatedAt: createdAt,
+        timezone: "Australia/Melbourne",
+        archivedAt: null,
+      },
+      {
+        id: activeItemId,
+        personId,
+        surfaceText: "coherent",
+        normalizedText: "coherent",
+        meaningZh: "连贯的",
+        meaningsZh: ["连贯的", "条理清楚的"],
+        example: "Write a coherent paragraph.",
+        examples: [
+          "Write a coherent paragraph.",
+          "A coherent response is easier to follow.",
+        ],
+        notes: "Active item is stored and mapped but has no V1 review rows.",
+        rarityScore: null,
+        learningTrack: "active",
+        tags: ["PTE", "Writing"],
+        source: "json_paste",
+        importBatchId: batchId,
+        status: "new",
+        createdAt,
+        systemCreatedAt: createdAt,
+        updatedAt: createdAt,
+        timezone: "Australia/Melbourne",
+        archivedAt: null,
+      },
+    ],
+    importBatches: [
+      {
+        id: batchId,
+        personId,
+        sourceType: "json_paste",
+        fileName: null,
+        createdAt,
+        totalRows: 2,
+        acceptedRows: 2,
+        duplicateRows: 0,
+        invalidRows: 0,
+      },
+    ],
+    reviewStates: [
+      {
+        id: stateId,
+        personId,
+        vocabularyItemId: recognitionItemId,
+        status: "review",
+        dueAt,
+        lastReviewedAt: reviewedAt,
+        reviewCount: 2,
+        lapseCount: 0,
+        intervalMinutes: 1440,
+        difficulty: 4.2,
+        stability: 1.35,
+        updatedAt: reviewedAt,
+      },
+    ],
+    reviewEvents: [
+      {
+        id: eventId,
+        personId,
+        vocabularyItemId: recognitionItemId,
+        reviewedAt,
+        rating: "remembered",
+        previousDueAt: "2026-07-09T00:00:00.000Z",
+        nextDueAt: dueAt,
+        previousIntervalMinutes: 720,
+        nextIntervalMinutes: 1440,
+        elapsedMs: 6200,
+      },
+    ],
+    settingsByPerson: [
+      {
+        personId,
+        sessionLimit: 18,
+        recognitionSessionLimit: 18,
+        activeSessionLimit: 6,
         timezone: "Australia/Melbourne",
         updatedAt: createdAt,
       },

@@ -5,7 +5,9 @@ import {
   buildBackupImportPlan,
   buildBackupImportPlanFromText,
   createStage5LFixtureBackup,
+  createStage6BP1ESchema5FixtureBackup,
   STAGE5L_FIXTURE_FILE_NAME,
+  STAGE6B_P1E_SCHEMA5_FIXTURE_FILE_NAME,
 } from "./backup-import-plan.mjs";
 
 function createUuidFactory() {
@@ -71,6 +73,10 @@ describe("Stage 5L backup import plan", () => {
     expect(plan.rows.vocabularyItems[0]).toMatchObject({
       personId: "00000000-0000-4000-8000-000000000001",
       importBatchId: "00000000-0000-4000-8000-000000000002",
+      meaningsZh: ["Stage 5L import fixture"],
+      examples: ["This fixture proves backup import mapping without persisting trial rows."],
+      learningTrack: "recognition",
+      tags: null,
     });
     expect(plan.rows.reviewEvents[0]).toMatchObject({
       personId: "00000000-0000-4000-8000-000000000001",
@@ -85,6 +91,68 @@ describe("Stage 5L backup import plan", () => {
         reviewEventCount: 1,
       },
     ]);
+    expect(plan.rows.reviewSettings[0]).toMatchObject({
+      sessionLimit: 12,
+      recognitionSessionLimit: 12,
+      activeSessionLimit: 8,
+    });
+  });
+
+  it("builds a schema version 5 import plan with dual-track fields", async () => {
+    const text = await readFile(
+      new URL("../test_fixtures/stage6b-p1e-schema5-backup.json", import.meta.url),
+      "utf8",
+    );
+    const plan = buildBackupImportPlanFromText(text, {
+      sourceFileName: STAGE6B_P1E_SCHEMA5_FIXTURE_FILE_NAME,
+      importedAt: "2026-07-09T02:00:00.000Z",
+      uuidFactory: createUuidFactory(),
+    });
+
+    expect(plan.sourceSchemaVersion).toBe(5);
+    expect(plan.counts).toEqual({
+      people: 1,
+      importBatches: 1,
+      vocabularyItems: 2,
+      reviewStates: 1,
+      reviewEvents: 1,
+      reviewSettings: 1,
+      backupImports: 1,
+      backupImportMappings: 7,
+    });
+    expect(plan.rows.importBatches[0]).toMatchObject({
+      sourceType: "json_paste",
+      fileName: null,
+    });
+    expect(plan.rows.vocabularyItems).toEqual([
+      expect.objectContaining({
+        surfaceText: "allocate",
+        meaningsZh: ["分配", "划拨"],
+        examples: [
+          "Allocate time wisely.",
+          "The manager allocated extra resources to the project.",
+        ],
+        learningTrack: "recognition",
+        tags: ["PTE", "Writing"],
+      }),
+      expect.objectContaining({
+        surfaceText: "coherent",
+        meaningsZh: ["连贯的", "条理清楚的"],
+        examples: [
+          "Write a coherent paragraph.",
+          "A coherent response is easier to follow.",
+        ],
+        learningTrack: "active",
+        tags: ["PTE", "Writing"],
+      }),
+    ]);
+    expect(plan.rows.reviewStates[0].vocabularyItemId).toBe(plan.rows.vocabularyItems[0].id);
+    expect(plan.rows.reviewEvents[0].vocabularyItemId).toBe(plan.rows.vocabularyItems[0].id);
+    expect(plan.rows.reviewSettings[0]).toMatchObject({
+      sessionLimit: 18,
+      recognitionSessionLimit: 18,
+      activeSessionLimit: 6,
+    });
   });
 
   it("rejects metadata count mismatches", () => {
@@ -126,6 +194,26 @@ describe("Stage 5L backup import plan", () => {
     } catch (error) {
       expect(error.errors).toContain(
         "reviewEvents[0].vocabularyItemId does not match an item for the same person",
+      );
+    }
+  });
+
+  it("rejects schema version 5 review records that target Active vocabulary", () => {
+    const backup = createStage6BP1ESchema5FixtureBackup();
+    const activeItemId = "vocab_stage6b_p1e_schema5_active";
+    backup.data.reviewStates[0].vocabularyItemId = activeItemId;
+    backup.data.reviewEvents[0].vocabularyItemId = activeItemId;
+
+    expect(() => buildBackupImportPlan(backup, { uuidFactory: createUuidFactory() }))
+      .toThrow(BackupImportPlanError);
+    try {
+      buildBackupImportPlan(backup, { uuidFactory: createUuidFactory() });
+    } catch (error) {
+      expect(error.errors).toContain(
+        "reviewStates[0].vocabularyItemId references an Active item",
+      );
+      expect(error.errors).toContain(
+        "reviewEvents[0].vocabularyItemId references an Active item",
       );
     }
   });

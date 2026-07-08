@@ -140,6 +140,7 @@ npm run lint
 npm run typecheck
 npm run test
 npm run backup:dry-run:fixture
+npm run backup:dry-run:schema5-fixture
 npm run build
 git diff --check
 ```

@@ -84,7 +84,7 @@ export type BackupImportMode = "workspace" | "selected_person";
 export type BackupImportPlan = Readonly<{
   mode: BackupImportMode;
   targetPersonId?: string;
-  sourceSchemaVersion: 2 | 3 | 4;
+  sourceSchemaVersion: 2 | 3 | 4 | 5;
   backupData: unknown;
 }>;
 
