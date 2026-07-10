@@ -1,7 +1,7 @@
 # Words Learning App For Mimi Stage 6B: Production Execution Plan
 
 Created: 2026-07-07 23:53 AEST
-Last updated: 2026-07-08 12:45 AEST
+Last updated: 2026-07-09 23:26 AEST
 
 Source plan: `plan_docs/PLAN_V1_MASTER.md`
 Derived from: `plan_docs/PLAN_V1_STAGE6A_PRODUCTION_RELEASE_GATE.md`, `plan_docs/PLAN_V1_STAGE7_7_FINAL_ACCEPTANCE.md`, `plan_docs/PLAN_V1_STAGE7_8_DUAL_TRACK_UI_REFINEMENT.md`, `plan_docs/PLAN_V1_STAGE7_9_DUAL_TRACK_DATA_IMPORT.md`, `plan_docs/PLAN_V1_STAGE7_10_LIBRARY_REVIEW_CONTROLS.md`, `plan_docs/PLAN_V1_STAGE7_11_REVIEW_ROLLBACK_AUTO_REFRESH.md`, `plan_docs/PLAN_V1_STAGE8_REVIEW_MEMORY_ALGORITHM.md`, and the 2026-07-07 user confirmation that Stage 7 interaction and logic are locally accepted.
@@ -34,11 +34,10 @@ The user chose shared Postgres Production for the formal V1 release.
 
 This supersedes the earlier recommendation to use browser-local Production as the lowest-risk first release path. Browser-local Production remains a fallback option only. The active path is now:
 
-1. Complete Stage 8 Review Memory Algorithm in `plan_docs/PLAN_V1_STAGE8_REVIEW_MEMORY_ALGORITHM.md`.
-2. Complete Stage 6B-P1 Postgres Production runtime in `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md`, incorporating the accepted Stage 8 review state shape.
-3. Validate schema version 5 or later, runtime guards, API behavior, backup import, scheduler state rebuild, and repository parity locally.
-4. Verify against a non-production Neon branch after explicit approval.
-5. Return to this Stage 6B execution plan for final merge, Production env, Production migration/import, deployment, and smoke tests.
+1. Stage 8 Review Memory Algorithm in `plan_docs/PLAN_V1_STAGE8_REVIEW_MEMORY_ALGORITHM.md` is accepted.
+2. Stage 6B-P1 Postgres Production runtime in `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md` has reached P1-F: schema version 5 migration, backup import, Active review guards, and repository parity were validated against the approved non-production development database.
+3. Return through Stage 6B-P1-G handoff to confirm the exact Production target, env var scopes, access boundary, backup/import choice, merge path, and deployment approval.
+4. Only after explicit approval, run final merge, Production env setup, Production migration/import if needed, deployment, and smoke tests.
 
 ## Current Local Facts To Re-Check Before Execution
 
@@ -48,12 +47,12 @@ Current local facts from Stage 7 closeout:
 - Working tree: clean at the closeout check.
 - Local app default runtime: browser `localStorage`（本地浏览器存储）.
 - Browser-local app data schema: version 5 with `learningTrack`, nullable `tags`, `meaningsZh`, `examples`, Recognition / Active daily limits, Library hard delete, JSON batch rollback, reset-today review, and one-word review rollback.
-- Current review scheduler: fixed Stage 4 placeholder interval table, not launch-ready for the user's desired V1 memory behavior.
+- Current review scheduler: accepted Stage 8 Recognition-only FSRS-6 scheduler with same-session repeat for failed Recognition ratings and local natural-day due checks.
 - Stage 8 boundary: V1 scheduling applies only to `learningTrack === "recognition"`; Active Vocabulary must not enter review queue, review state, or review event creation.
-- Current code accepts `local` and `postgres-preview` only.
+- Current code accepts `local`, `postgres-preview`, and `postgres-production`.
 - `postgres-preview` is development / preview only and is rejected in Vercel Production.
 - Stage 5F SQL migration has been applied only to the non-production development database.
-- Postgres Preview mapping still uses the already-applied Stage 5F schema and does not persist all schema version 5 arrays / tags as first-class database columns.
+- The non-production development database has `0001_initial.sql` plus `0002_schema5_production_runtime.sql` applied. Production has not been migrated.
 - Existing active Production deployment from branch `V1` is documented as a non-official artifact and must not be treated as the formal V1 release.
 
 Stage 6B execution must re-check all drift-prone facts before any live action:
@@ -99,22 +98,22 @@ Acceptance tradeoff:
 
 Required if the first formal Production release must share vocabulary / review data across the private group.
 
-Selected by the user on 2026-07-08. This route is not ready as a direct deploy-only execution. It first needs `Stage 6B-P1 Postgres Production Runtime`, because current code has only `postgres-preview`.
+Selected by the user on 2026-07-08. This route is not a direct deploy-only execution. `Stage 6B-P1 Postgres Production Runtime` has now validated the required local and non-production database bridge through P1-F, but formal Production still needs a P1-G handoff and explicit Stage 6B execution approval.
 
-Required work before any shared durable Production writes:
+Status before any shared durable Production writes:
 
 - Upgrade the working gate to Tier 3.
-- Design and implement a `postgres-production` runtime mode.
-- Reconcile browser-local schema version 5 with the Production Postgres schema, including `learningTrack`, nullable `tags`, and multiple meanings / examples.
-- Incorporate Stage 8's accepted Recognition review memory state shape before any Production migration.
-- Keep Active Vocabulary stored/exported/imported without scheduling state or events in V1.
-- Add server-only Production write gates that are different from Preview smoke flags.
+- Done locally / non-production: design and implement a `postgres-production` runtime mode.
+- Done locally / non-production: reconcile browser-local schema version 5 with the Postgres schema, including `learningTrack`, nullable `tags`, and multiple meanings / examples.
+- Done locally / non-production: incorporate Stage 8's accepted Recognition review memory state shape before any Production migration.
+- Done locally / non-production: keep Active Vocabulary stored/exported/imported without scheduling state or events in V1.
+- Done locally: add server-only Production write gates that are different from Preview smoke flags.
 - Decide whether to accept no-credential private-URL risk or add an access gate.
-- Add tests for Production runtime rejection / acceptance, person-scoped reads/writes, destructive controls, backup import, rollback behavior, and secret safety.
-- Verify on a non-production Neon branch first.
-- Run a fresh backup dry run and rollback trial before any real import.
+- Done locally / non-production: add tests for Production runtime rejection / acceptance, person-scoped reads/writes, destructive controls, backup import, rollback behavior, and secret safety.
+- Done against the approved non-production development database: apply schema version 5 migration, verify schema, run fixture dry run / rollback / guarded commit / cleanup, and exercise repository integration.
+- Still required before Production: confirm exact Production target, env var scopes, access boundary, backup/import choice, merge path, deployment mechanism, and smoke-test scope.
 
-Stage 6B is now paused on Stage 8 first, then Stage 6B-P1. It should resume only after both `plan_docs/PLAN_V1_STAGE8_REVIEW_MEMORY_ALGORITHM.md` and `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md` are complete and accepted.
+Stage 6B should resume only after the P1-F result in `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md` is accepted and the P1-G handoff records the remaining Production choices.
 
 ## Deferred Stage 6B-A Path
 
@@ -271,4 +270,4 @@ Before execution, the user must still choose:
 
 This document is a plan only. It does not execute Stage 6B.
 
-The next safe implementation step is Stage 6B-P1 Postgres Production runtime. No formal Production release should proceed before that stage passes.
+The next safe implementation step is the Stage 6B-P1-G Production execution handoff. No formal Production release should proceed before that handoff records the Production target, env var scopes, access-boundary decision, backup/import choice, merge path, and deployment approval.

@@ -1,12 +1,12 @@
 # Words Learning App For Mimi Stage 6B-P1: Postgres Production Runtime
 
 Created: 2026-07-08 00:25 AEST
-Last updated: 2026-07-09 00:54 AEST
+Last updated: 2026-07-09 23:26 AEST
 
 Source plan: `plan_docs/PLAN_V1_STAGE6B_PRODUCTION_EXECUTION.md`
 Derived from: `plan_docs/PLAN_V1_STAGE6A_PRODUCTION_RELEASE_GATE.md`, `plan_docs/PLAN_V1_STAGE7_9_DUAL_TRACK_DATA_IMPORT.md`, `plan_docs/PLAN_V1_STAGE7_10_LIBRARY_REVIEW_CONTROLS.md`, `plan_docs/PLAN_V1_STAGE7_11_REVIEW_ROLLBACK_AUTO_REFRESH.md`, `plan_docs/PLAN_V1_STAGE8_REVIEW_MEMORY_ALGORITHM.md`, `ARCHITECTURE.md`, `db/migrations/0001_initial.sql`, `src/lib/storage/runtime-mode.ts`, `src/app/api/storage/data/route.ts`, `src/lib/storage/postgres/repository.ts`, and the 2026-07-08 user decision to make V1's formal release fully cloud-backed instead of browser-local.
-Scope: plan and track the implementation of a real `postgres-production` runtime（运行模式）for V1 after Stage 8 is accepted, including schema version 5 or later database migration（数据库迁移）, server-only Production（生产环境）runtime gating, API（应用程序接口）read/write behavior, repository parity with browser-local features, backup import（备份导入）, non-production Neon branch（分支）verification, Production migration/import/deploy sequence, rollback（回滚）, and validation. Stage 6B-P1-B has implemented the local schema migration draft and static tests. Stage 6B-P1-C has implemented the local runtime / API contract. Stage 6B-P1-D has implemented local repository parity code and tests. Stage 6B-P1-E has implemented local backup import version 5 planning, fixture, script, and tests.
-Non-Scope: no GitHub push, no pull request, no merge（合并）to `main`, no Vercel command, no Neon command, no `.env` or credential read/change, no Production env var change, no database mutation, no backup import, no Production deployment, no authentication（认证）implementation, no AI API（人工智能接口）, no dictation engine（听写引擎）, no spelling checker（拼写检查器）, no writing feedback model, no external vocabulary source, no analytics（分析追踪）, no notification, no email, and no 付费/扣款 feature.
+Scope: plan and track the implementation of a real `postgres-production` runtime（运行模式）for V1 after Stage 8 is accepted, including schema version 5 or later database migration（数据库迁移）, server-only Production（生产环境）runtime gating, API（应用程序接口）read/write behavior, repository parity with browser-local features, backup import（备份导入）, non-production Neon branch（分支）verification, Production migration/import/deploy sequence, rollback（回滚）, and validation. Stage 6B-P1-B has implemented the local schema migration draft and static tests. Stage 6B-P1-C has implemented the local runtime / API contract. Stage 6B-P1-D has implemented local repository parity code and tests. Stage 6B-P1-E has implemented local backup import version 5 planning, fixture, script, and tests. Stage 6B-P1-F has applied and validated the schema version 5 migration on the approved non-production development database.
+Non-Scope: no GitHub push, no pull request, no merge（合并）to `main`, no Vercel command, no Neon management command, no credential value printing, no Production env var change, no Production database mutation, no formal user backup import, no Production deployment, no authentication（认证）implementation, no AI API（人工智能接口）, no dictation engine（听写引擎）, no spelling checker（拼写检查器）, no writing feedback model, no external vocabulary source, no analytics（分析追踪）, no notification, no email, and no 付费/扣款 feature. P1-F did read ignored `.env.local` and mutate only the approved non-production development database after explicit human confirmation.
 Exit criteria: Stage 6B-P1 implementation plan exists, parent docs and logs link to it, the required schema/runtime/API/backup validation sequence is explicit, and every future remote / credential / Production action remains behind explicit human approval.
 
 ## Decision Record
@@ -84,14 +84,16 @@ Database schema:
 - `import_batches.source_type` and `vocabulary_items.source` currently allow the older text sources only.
 - `backup_imports.schema_version` currently supports older backup versions, not the current schema version 5 backup path.
 - The Stage 8 scheduler state shape is now defined locally, but `0001_initial.sql` is still the historical development / Preview schema and has not been promoted or migrated for Production schema version 5.
-- Stage 6B-P1-B added `db/migrations/0002_schema5_production_runtime.sql` as a local static migration draft for schema version 5. It has not been applied to any local, Preview, non-production Neon branch, or Production database.
+- Stage 6B-P1-B added `db/migrations/0002_schema5_production_runtime.sql` as a local static migration draft for schema version 5.
+- Stage 6B-P1-F applied `0002_schema5_production_runtime.sql` only to the approved non-production development database and verified the schema version 5 columns, constraints, index, triggers, fixture import paths, repository integration behavior, and final zero business-row cleanup.
+- `0002_schema5_production_runtime.sql` has not been applied to Production.
 
 Repository / API behavior:
 
 - Stage 6B-P1-D updated the local Postgres repository code to read/write schema version 5 `meanings_zh`, `examples`, `learning_track`, `tags`, JSON import source types, and separate Recognition / Active daily limits.
 - Stage 6B-P1-D added local repository/API operations for hard delete, JSON batch rollback, reset-today Review rebuild, and one-word Review rollback rebuild.
 - Stage 6B-P1-D removed the UI blocks for these now-supported Postgres parity mutations.
-- The P1-D code has not been validated against a migrated database. It still requires P1-F non-production database verification after explicit approval.
+- The P1-D code has now been validated against the migrated non-production development database in P1-F.
 - Stage 6B-P1-E updated local backup import planning and scripts to accept schema version 5, preserve dual-track fields, and reject impossible Active review rows before any database write.
 
 Access boundary:
@@ -302,7 +304,7 @@ Boundary:
 - P1-D did not execute a database command, inspect a remote database, read or change `.env`, run Vercel / Neon commands, import a backup, deploy Production, or validate the repository code against a migrated database.
 - P1-D depends on `0002_schema5_production_runtime.sql` being applied before real Postgres runtime verification because the repository now reads/writes schema version 5 columns.
 - Backup import version 5 is implemented locally in P1-E, but no real database import has run.
-- Real database verification remains P1-F after explicit approval and a confirmed non-production target.
+- Real database verification completed in P1-F against the approved non-production development database.
 
 ### P1-E Backup Import Version 5
 
@@ -326,14 +328,27 @@ Boundary:
 
 ### P1-F Non-Production Neon Branch Verification
 
-Only after explicit approval:
+Status: implemented on 2026-07-09 after explicit approval.
 
-- identify or create a non-production Neon branch;
-- apply migrations there;
-- inspect schema and counts;
-- run fixture import dry run / rollback / guarded commit;
-- deploy or use Preview with `postgres-production` test behavior only if the guard design allows it safely, or verify via dedicated scripts;
-- clean all fixture rows after testing.
+Completed:
+
+- Used the already configured non-production development database target guarded by `STAGE5F_DATABASE_TARGET=development`.
+- Confirmed the database started from the Stage 5F `0001` schema with zero business rows.
+- Added `scripts/inspect-database-schema5.mjs` and `npm run db:inspect:schema5:dev` to verify schema version 5 columns, constraints, index, triggers, and row counts without printing credentials.
+- Added `npm run db:migrate:schema5:dev` and applied `db/migrations/0002_schema5_production_runtime.sql` to the non-production development database.
+- Verified schema version 5 database shape: 6 schema version 5 columns, 9 constraints, 1 index, and 2 Active-review guard triggers.
+- Added `scripts/verify-schema5-active-review-guard.mjs` and `npm run db:verify:schema5-active-guard:dev`; verified direct Active Vocabulary review state and review event writes are rejected by the database triggers and rolled back.
+- Ran both schema version 3 and schema version 5 fixture transaction rollback trials; both inserted expected rows inside a transaction and returned to zero rows after rollback.
+- Ran guarded schema version 5 fixture commit, inspected the committed row counts, and then cleaned the fixture rows with `npm run db:cleanup-fixture:dev`.
+- Added `src/lib/storage/postgres/repository.integration.test.ts` and `npm run db:test:repository:dev`; verified actual Postgres repository behavior against the migrated development database for schema version 5 vocabulary fields, dual limits, Active review rejection, review record / rollback / reset, JSON import / rollback, hard delete, and snapshot export.
+- Confirmed final development database counts returned to zero for core learning tables and backup import tables.
+
+Boundary:
+
+- P1-F did not run a Vercel command, Neon management command, Production migration, Production import, Production deployment, formal user backup import, or Production env var change.
+- P1-F did read ignored `.env.local` through explicit `dotenv -e .env.local` commands and connected only to the approved non-production development database.
+- P1-F did mutate the non-production development database by applying `0002_schema5_production_runtime.sql` and temporarily writing fixture / integration rows that were cleaned before handoff.
+- P1-F did not create a new Neon branch; it reused the already approved development / preview database resource documented from Stage 5F.
 
 ### P1-G Production Execution Handoff
 
@@ -372,9 +387,17 @@ Database validation, after explicit approval only:
 
 ```bash
 npm run db:inspect:dev
+npm run db:migrate:schema5:dev
+npm run db:inspect:schema5:dev
+npm run db:verify:schema5-active-guard:dev
+npm run db:import-fixture-trial:dev
+npm run db:import-schema5-fixture-trial:dev
+npm run db:import-schema5-fixture-commit:dev
+npm run db:cleanup-fixture:dev
+npm run db:test:repository:dev
 ```
 
-Additional Stage 6B-P1 commands should be added only after implementation creates the matching scripts and confirmation flags.
+These database commands require explicit approval because they read ignored `.env.local` values and connect to the non-production database.
 
 ## Stop Conditions
 
@@ -404,6 +427,6 @@ Before code implementation:
 
 ## P1 Result
 
-Stage 6B-P1 is the required database/runtime bridge between the accepted local V1 app and the desired fully cloud-backed V1 launch. Stage 8-G accepted the final V1 Recognition review memory behavior and handoff shape. P1-B added the local schema version 5 migration draft plus static tests. P1-C added the local `postgres-production` runtime / API contract and safety tests. P1-D added local Postgres repository parity code and tests. P1-E added local backup import version 5 script support, fixture coverage, and no-database dry-run validation. P1 must still complete non-production database validation before any Production execution.
+Stage 6B-P1 is the required database/runtime bridge between the accepted local V1 app and the desired fully cloud-backed V1 launch. Stage 8-G accepted the final V1 Recognition review memory behavior and handoff shape. P1-B added the local schema version 5 migration draft plus static tests. P1-C added the local `postgres-production` runtime / API contract and safety tests. P1-D added local Postgres repository parity code and tests. P1-E added local backup import version 5 script support, fixture coverage, and no-database dry-run validation. P1-F applied and validated the schema version 5 migration on the approved non-production development database and cleaned all fixture rows afterward.
 
-No Production release should proceed until P1 has passed local validation, non-production database verification, and explicit human acceptance.
+No Production release should proceed until the P1 result is explicitly accepted and Stage 6B formal execution records the Production target, env var scopes, access-boundary decision, backup/import choice, and deployment approval.

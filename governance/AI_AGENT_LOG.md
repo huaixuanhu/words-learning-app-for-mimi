@@ -1,5 +1,52 @@
 # AI Agent Log
 
+## 2026-07-09 23:26 AEST
+
+- Task: execute Stage 6B-P1-F non-production database verification after the user confirmed the remote database boundary.
+- Plan agreed: yes. Scope was the approved non-production development database only: schema version 5 migration（数据库迁移）, schema inspection, trigger verification, fixture rollback/commit/cleanup, actual Postgres repository integration testing, and documentation/log sync.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `db/LOCAL_BACKUP_TO_POSTGRES.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `package.json`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md`
+  - `scripts/inspect-database-schema5.mjs`
+  - `scripts/verify-schema5-active-review-guard.mjs`
+  - `src/lib/storage/postgres/repository.integration.test.ts`
+- Reason: verify that schema version 5 Postgres persistence, backup import, database-level Active Vocabulary（输出词汇）guards, and repository parity actually work against the migrated non-production database before any Production（生产环境）handoff.
+- Implementation notes:
+  - Added `scripts/inspect-database-schema5.mjs` and `npm run db:inspect:schema5:dev` to verify schema version 5 columns, constraints, index, triggers, and counts without printing credentials.
+  - Added `npm run db:migrate:schema5:dev` for the `0002_schema5_production_runtime.sql` migration.
+  - Added `scripts/verify-schema5-active-review-guard.mjs` and `npm run db:verify:schema5-active-guard:dev` to verify direct Active review state/event writes are rejected inside a rolled-back transaction.
+  - Added schema5 fixture trial/commit npm commands.
+  - Added `src/lib/storage/postgres/repository.integration.test.ts`, skipped by default unless `MIMI_POSTGRES_INTEGRATION=1`.
+  - Added `npm run db:test:repository:dev` to run the repository integration test with `MIMI_STORAGE_RUNTIME=postgres-preview`.
+- Database execution:
+  - Passed initial `npm run db:inspect:dev`: Stage 5F schema present, counts all zero.
+  - Expected pre-migration `npm run db:inspect:schema5:dev` failure: v5 columns were missing before migration.
+  - Passed `npm run db:migrate:schema5:dev`: applied `db/migrations/0002_schema5_production_runtime.sql` to the development database.
+  - Passed post-migration `npm run db:inspect:schema5:dev`: 6 schema v5 columns, 9 constraints, 1 index, 2 triggers, and all counts zero.
+  - Passed `npm run db:verify:schema5-active-guard:dev`: review state and review event writes for an Active item were both rejected and rolled back.
+  - Passed `npm run db:import-fixture-trial:dev`: schema v3 fixture inserted expected rows inside a transaction and rolled back to zero rows.
+  - Passed `npm run db:import-schema5-fixture-trial:dev`: schema v5 fixture inserted expected rows inside a transaction and rolled back to zero rows.
+  - Passed `npm run db:import-schema5-fixture-commit:dev`: inserted 1 person, 1 import batch, 2 vocabulary items, 1 review state, 1 review event, 1 review settings row, 1 backup import row, and 7 backup import mappings.
+  - Passed `npm run db:cleanup-fixture:dev`: removed all schema v5 fixture rows.
+  - Passed final `npm run db:inspect:schema5:dev`: schema v5 still present and all core learning / backup import counts returned to zero.
+  - Passed `npm run db:test:repository:dev`: repository integration test verified dual limits, schema v5 vocabulary fields, Active review rejection, review rollback/reset, JSON import rollback, hard delete, and schema v5 snapshot export against the migrated database.
+- Local validation:
+  - Passed: `node --check scripts/inspect-database-schema5.mjs`.
+  - Passed: `node --check scripts/verify-schema5-active-review-guard.mjs`.
+  - Passed: `npm run lint`.
+  - Passed: `npm run typecheck`.
+  - Passed: `npm run test` with 20 files, 105 passed tests, and 1 skipped integration test.
+  - Passed: `npm run backup:dry-run:fixture`.
+  - Passed: `npm run backup:dry-run:schema5-fixture`.
+- Safety notes: `.env.local` was read only through explicit `dotenv -e .env.local` database commands after human confirmation. No credential value was printed. Database mutation was limited to the approved non-production development database. Temporary fixture/integration rows were cleaned, and final counts returned to zero. No Vercel command, Neon management command, Production migration, Production import, Production deployment, Production env var change, formal user backup import, AI API（人工智能接口）, dictation engine（听写引擎）, spelling checker（拼写检查器）, writing feedback model, external vocabulary source, authentication（认证）, analytics（分析追踪）, notification, email, or 付费/扣款 feature was performed.
+
 ## 2026-07-09 00:59 AEST
 
 - Task: execute Stage 6B-P1-E backup import version 5 after the user asked to start the next stage.

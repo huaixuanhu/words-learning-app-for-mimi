@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## 2026-07-09 23:26 AEST
+
+- Executed Stage 6B-P1-F non-production database verification after explicit approval.
+- Added schema version 5 database inspect and Active-review guard verification scripts.
+- Added npm commands for schema version 5 migration, schema inspection, Active guard verification, schema5 fixture trial/commit, and Postgres repository integration testing.
+- Applied `db/migrations/0002_schema5_production_runtime.sql` only to the approved non-production development database.
+- Verified schema version 5 database shape: 6 columns, 9 constraints, 1 index, and 2 Active-review guard triggers.
+- Verified direct database writes to Active Vocabulary（输出词汇）review states/events are rejected by trigger guards and rolled back.
+- Ran schema version 3 and schema version 5 fixture transaction rollback trials, then ran guarded schema version 5 fixture commit and cleanup.
+- Added a skipped-by-default Postgres repository integration test and verified actual migrated development database behavior for schema version 5 vocabulary fields, dual limits, Active review rejection, review rollback/reset, JSON import rollback, hard delete, and schema version 5 snapshot export.
+- Confirmed final development database counts returned to zero for core learning and backup import tables.
+- Kept Vercel commands, Neon management commands, Production（生产环境）migration, Production import, Production deployment, Production env var changes, and formal user backup import out of scope.
+- Reason: close the non-production database verification bridge before any Production execution handoff.
+
 ## 2026-07-09 00:59 AEST
 
 - Executed Stage 6B-P1-E backup import version 5 locally after explicit approval.

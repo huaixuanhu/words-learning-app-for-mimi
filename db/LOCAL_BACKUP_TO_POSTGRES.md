@@ -44,7 +44,8 @@ Stage 6B-P1-E extends the harness for schema version 5:
 - `test_fixtures/stage6b-p1e-schema5-backup.json` covers a JSON import batch, multiple meanings/examples, nullable rarity, tags, dual Recognition / Active daily limits, one Recognition item with review history, and one Active item without review rows.
 - Import planning now preserves `learningTrack`, `tags`, `meaningsZh`, `examples`, `json_file` / `json_paste` sources, and `recognitionSessionLimit` / `activeSessionLimit`.
 - Import planning rejects schema version 4 / 5 review states or review events that target Active Vocabulary because V1 scheduling is Recognition-only.
-- Real `--trial-rollback` or `--commit` execution for schema version 5 still requires a confirmed non-production database target with `db/migrations/0002_schema5_production_runtime.sql` applied first.
+- Stage 6B-P1-F has executed schema version 5 `--trial-rollback`, guarded fixture `--commit`, and cleanup against the approved non-production development database after applying `db/migrations/0002_schema5_production_runtime.sql`.
+- Formal user backup import or Production import still requires a separately confirmed target, fresh backup file, expected counts, rollback plan, and explicit human approval.
 
 ## Migration Principle
 

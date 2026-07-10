@@ -277,7 +277,7 @@ Confirmed release sequence as of 2026-07-08:
 - Stage 6B is the later formal execution step. Only after Stage 7, Stage 8, and Stage 6B-P1 are accepted should `V1` be merged to `main`, Vercel's production branch remain `main`, Production env vars be configured, Production database work run, and the final Production smoke test be performed.
 - The current active Production deployment from branch `V1` remains a documented non-official artifact, not the formal V1 production release.
 - Stage 6A is documented in `plan_docs/PLAN_V1_STAGE6A_PRODUCTION_RELEASE_GATE.md`; it confirms that `person_id` is data separation, not security isolation, and that durable Production writes need either explicit no-credential private-URL risk acceptance or a separate access gate.
-- Stage 6B execution planning is documented in `plan_docs/PLAN_V1_STAGE6B_PRODUCTION_EXECUTION.md`; on 2026-07-08 the user chose shared Postgres Production for formal V1, so `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md` is the required runtime bridge before merge, Production migration/import, and deployment. Stage 8 is accepted, Stage 6B-P1-B has added the local schema version 5 migration draft, Stage 6B-P1-C has added the local `postgres-production` runtime / API contract, Stage 6B-P1-D has added local repository parity, and Stage 6B-P1-E has added local backup import version 5 support. Stage 6B-P1-F non-production database verification is the next separate stage after explicit approval.
+- Stage 6B execution planning is documented in `plan_docs/PLAN_V1_STAGE6B_PRODUCTION_EXECUTION.md`; on 2026-07-08 the user chose shared Postgres Production for formal V1, so `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md` is the required runtime bridge before merge, Production migration/import, and deployment. Stage 8 is accepted, Stage 6B-P1-B has added the local schema version 5 migration draft, Stage 6B-P1-C has added the local `postgres-production` runtime / API contract, Stage 6B-P1-D has added local repository parity, Stage 6B-P1-E has added local backup import version 5 support, and Stage 6B-P1-F has validated the migrated non-production development database. Stage 6B-P1-G Production execution handoff is the next separate step after explicit approval.
 
 Exit criteria:
 
@@ -312,9 +312,9 @@ Exit criteria:
 - `review_states.difficulty` and `review_states.stability` remain neutral state field names, with documentation that V1 uses them only for Recognition.
 - Future Active scheduling must use separate dimensions such as `review_profile`, `skill_type`, or `activity_type` so Recognition and Active state do not share one row.
 - Stage 6B-P1 incorporates the accepted Stage 8 state shape before any Postgres Production migration.
-- Stage 6B-P1-B created `0002_schema5_production_runtime.sql` locally, Stage 6B-P1-C added `postgres-production` runtime / API guards locally, Stage 6B-P1-D added repository parity locally, and Stage 6B-P1-E added backup import version 5 support locally; running the migration, importing a backup, or validating the runtime against any database still requires a later explicit approval and a confirmed non-production target first.
+- Stage 6B-P1-B created `0002_schema5_production_runtime.sql` locally, Stage 6B-P1-C added `postgres-production` runtime / API guards locally, Stage 6B-P1-D added repository parity locally, Stage 6B-P1-E added backup import version 5 support locally, and Stage 6B-P1-F applied / validated the migration only on the approved non-production development database.
 
-The fixed Stage 4 scheduler is no longer the active Recognition scheduler. Stage 8 has completed the learning-behavior bridge; the cloud-backed V1 Production path now continues through the separately approved Stage 6B-P1 non-production database verification work.
+The fixed Stage 4 scheduler is no longer the active Recognition scheduler. Stage 8 has completed the learning-behavior bridge; the cloud-backed V1 Production path now continues through the separately approved Stage 6B-P1 Production execution handoff and Stage 6B formal release work.
 
 ## Scheduling Strategy
 
