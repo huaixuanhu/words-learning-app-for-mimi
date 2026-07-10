@@ -1,7 +1,7 @@
 # Words Learning App For Mimi Stage 6B-P1-G-C: Human Decision Closure
 
 Created: 2026-07-10 18:40 AEST
-Last updated: 2026-07-10 19:44 AEST
+Last updated: 2026-07-10 20:55 AEST
 
 Source plan:
 - `plan_docs/PLAN_V1_STAGE6B_P1_G_PRODUCTION_EXECUTION_HANDOFF.md`
@@ -38,7 +38,7 @@ Exit criteria:
 
 ## Current State
 
-P1-G-A, P1-G-B, P1-G-C-0, P1-G-C-1, and P1-G-C-2 are complete.
+P1-G-A, P1-G-B, P1-G-C-0, P1-G-C-1, P1-G-C-2, and P1-G-C-3 are complete.
 
 Known current facts:
 
@@ -54,10 +54,11 @@ Known current facts:
 - Email activation is not an established prerequisite for using the existing resource.
 - P1-G-C-1 confirmed through Vercel CLI 55.0.0 that the Vercel-managed Neon resource is owned, available, on the `free_v3` Free plan, and connected to this project only for Development / Preview environments.
 - P1-G-C-2 recommends human dashboard evidence as the next safest evidence route and defines the required redaction rules.
+- P1-G-C-3 captured the approved read-only Neon dashboard evidence: the current project has only one `main` Default branch, database / role labels `neondb` / `neondb_owner`, Sydney region, Postgres 17, and a 6-hour restore window. No separate empty Production branch / database is visible.
 
 Open blocker:
 
-P1-G-C cannot close until a provider-management path or equivalent evidence identifies the actual Neon branch / database / recovery capability. P1-G-C-1 did not expose branch names, database labels, role labels, restore window, or an exact empty Production target. Production migration and runtime cutover remain unauthorized.
+P1-G-C cannot close until the user chooses the exact Production target strategy, access boundary, merge path, deployment mechanism, first-write acceptance method, and historical deployment treatment. P1-G-C-3 materially closes the branch / database / restore evidence gap for the current resource, but it also confirms that no distinct empty Production target currently exists. Production migration and runtime cutover remain unauthorized.
 
 ## Reference Check
 
@@ -249,7 +250,7 @@ If the user wants the lowest-friction cloud-backed V1 path while preserving safe
 
 This is a recommendation, not an approval.
 
-## Next Approved Slice
+## Evidence Slices Completed
 
 `P1-G-C-1 Provider Supplement` is complete in `plan_docs/PLAN_V1_STAGE6B_P1_G_C_1_PROVIDER_SUPPLEMENT.md`.
 
@@ -260,7 +261,7 @@ It confirmed:
 - Production still has no database environment variables;
 - Vercel Marketplace metadata can show plan and resource scope but not Neon branch / database / restore details.
 
-The next gate is no longer generic provider discovery. It is a human evidence-route decision for the missing Neon branch / database / restore metadata.
+The next gate is no longer generic provider discovery or dashboard evidence collection. It is a Production target strategy decision based on the P1-G-C-3 dashboard evidence.
 
 Accepted next evidence routes:
 
@@ -274,6 +275,23 @@ P1-G-C remains open until that evidence supports exact target selection and reco
 `P1-G-C-2 Evidence Route Decision` is complete in `plan_docs/PLAN_V1_STAGE6B_P1_G_C_2_EVIDENCE_ROUTE_DECISION.md`.
 
 It recommends Option A, human-provided dashboard evidence, before trying browser SSO or Neon CLI / API secret-handling paths. The human evidence packet must provide branch / database / restore metadata while redacting connection strings, hostnames, passwords, tokens, and environment variable values.
+
+`P1-G-C-3 Dashboard Evidence Capture` is complete in `plan_docs/PLAN_V1_STAGE6B_P1_G_C_3_DASHBOARD_EVIDENCE.md`.
+
+It confirms:
+
+- Neon project display name: `words-learning-app-for-mimi-neon`;
+- branch list: only `main`, marked `Default`;
+- child branches: none;
+- database / role labels: `neondb` / `neondb_owner`;
+- region: `AWS Asia Pacific 2 (Sydney)`;
+- Postgres version: `17`;
+- restore window: 6 hours;
+- no separate empty Production branch / database is visible.
+
+Recommended next slice:
+
+- `P1-G-C-4 Production Target Decision`, documentation first. It should choose between creating a distinct Production branch / database in the existing Neon project, creating a separate Production Neon resource, or explicitly reusing the current `main` target despite its Development / Preview history.
 
 ## Stop Conditions
 
@@ -298,3 +316,7 @@ P1-G-C-1 is documented in `plan_docs/PLAN_V1_STAGE6B_P1_G_C_1_PROVIDER_SUPPLEMEN
 ## P1-G-C-2 Result
 
 P1-G-C-2 is documented in `plan_docs/PLAN_V1_STAGE6B_P1_G_C_2_EVIDENCE_ROUTE_DECISION.md`. It is complete as a documentation-only evidence route decision. It does not provide the missing Neon metadata itself; it defines the safest next route for collecting it.
+
+## P1-G-C-3 Result
+
+P1-G-C-3 is documented in `plan_docs/PLAN_V1_STAGE6B_P1_G_C_3_DASHBOARD_EVIDENCE.md`. It is complete as a browser-assisted, read-only Neon dashboard evidence capture. It confirms the current visible resource has only one `main` Default branch, `neondb` / `neondb_owner`, no child branches, no visible distinct Production target, and a 6-hour restore window. P1-G-C remains open for target strategy, access, merge, deployment, first-write, and historical deployment decisions.

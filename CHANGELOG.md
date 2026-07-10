@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## 2026-07-10 20:55 AEST
+
+- Executed Stage 6B-P1-G-C-3 dashboard evidence capture after the user opened the Neon dashboard and approved direct read-only inspection.
+- Added `plan_docs/PLAN_V1_STAGE6B_P1_G_C_3_DASHBOARD_EVIDENCE.md` as the derived child evidence document.
+- Confirmed Neon project `words-learning-app-for-mimi-neon` is visible in Neon Console with Free plan surface, Sydney region, default `.25 CU` compute, Postgres 17, and a 6-hour history / restore window.
+- Confirmed the visible branch list contains only `main`, marked `Default`, with no child branches and no visible distinct empty Production branch.
+- Confirmed visible database / role labels `neondb` / `neondb_owner`.
+- Confirmed the dashboard integration page does not expose Production environment scope; prior Vercel CLI evidence remains the source for Development / Preview-only connection scope and absent Production env vars.
+- Kept connection strings, endpoint hostnames, passwords, tokens, `.env` exports, internal provider ids, SQL, database connections, branch creation/deletion, restore, snapshot creation, env var changes, merge, deployment, and Production writes out of scope.
+- Reason: close the Neon dashboard evidence gap and move P1-G-C from evidence collection to Production target strategy selection.
+
 ## 2026-07-10 19:44 AEST
 
 - Executed Stage 6B-P1-G-C-2 evidence route decision documentation after the user confirmed the next stage.

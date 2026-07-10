@@ -1,5 +1,43 @@
 # AI Agent Log
 
+## 2026-07-10 20:55 AEST
+
+- Task: execute Stage 6B-P1-G-C-3 dashboard evidence capture after the user opened the Neon dashboard and approved direct read-only dashboard inspection.
+- Plan agreed: yes. The approved scope was browser-assisted read-only Neon dashboard evidence plus documentation sync. No Vercel / Neon mutation, `.env` read, credential output, connection string reveal/copy, SQL, database connection, branch creation/deletion, restore, snapshot creation, env var change, merge, deployment, or Production write was included.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_G_C_3_DASHBOARD_EVIDENCE.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_G_C_HUMAN_DECISION_CLOSURE.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_G_PRODUCTION_EXECUTION_HANDOFF.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md`
+  - `plan_docs/PLAN_V1_STAGE6B_PRODUCTION_EXECUTION.md`
+- Evidence captured:
+  - Neon dashboard project name: `words-learning-app-for-mimi-neon`.
+  - Branch list: only `main`, marked `Default`.
+  - Child branches: none.
+  - Database / role labels: `neondb` / `neondb_owner`.
+  - Region: `AWS Asia Pacific 2 (Sydney)`.
+  - Postgres version: `17`.
+  - Restore window: 6 hours.
+  - No visible distinct empty Production branch / database.
+- Safety notes:
+  - Did not click `Connect`, copy secrets, open connection-string exports, inspect passwords, or record full internal Neon branch / endpoint ids.
+  - Did not click `Preview data`, `Restore`, `Create snapshot`, `Create child branch`, `Add role`, `Add database`, `Edit`, `Manage Neon subscription`, or any mutating provider control.
+  - Did not run SQL, connect to a database, read `.env`, change Vercel env vars, merge, deploy, or write Production data.
+- Result:
+  - P1-G-C-3 materially closes the dashboard evidence gap for the current Neon resource.
+  - P1-G-C remains open because the exact Production target strategy, access boundary, merge path, deployment mechanism, first-write acceptance, and historical deployment treatment are still pending.
+- Validation:
+  - Passed: `git diff --check`.
+  - Passed: secret-hygiene scan found no Postgres connection URL, raw Neon endpoint hostname, JWT-shaped token, full Neon branch id, or full Neon endpoint id in the changed documentation.
+  - Passed: P1-G-C-3 status scan found the dashboard evidence linked from parent docs, README, architecture notes, AGENTS, changelog, and AI log.
+  - Passed: `npm run governance:preflight`.
+
 ## 2026-07-10 19:44 AEST
 
 - Task: execute Stage 6B-P1-G-C-2 Evidence Route Decision after the user confirmed the next stage.
