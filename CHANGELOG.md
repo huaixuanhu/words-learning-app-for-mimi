@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## 2026-07-10 13:24 AEST
+
+- Executed Stage 6B-P1-G-A Production execution handoff documentation after explicit approval.
+- Added `plan_docs/PLAN_V1_STAGE6B_P1_G_PRODUCTION_EXECUTION_HANDOFF.md` as a derived child plan with source, scope, non-scope, safety, exit criteria, decision register, execution slices, rollback direction, and stop conditions.
+- Recorded the user's decision that the current development database contains no valuable data, formal V1 Production should start from empty schema-version-5 tables, no development data should be copied, and no formal backup import is required for first launch.
+- Recorded that formal vocabulary and review data begin only after the fully cloud-backed V1 starts running.
+- Verified from local source that an empty Postgres snapshot can present the default Mimi workspace and the first valid cloud mutation can create the first durable learner row; added empty-read, first-real-write, refresh-persistence, and `person_id` separation to the future Production acceptance boundary.
+- Split P1-G into P1-G-A documentation, P1-G-B read-only Vercel / Neon inventory, and P1-G-C human decision closure, with separate approval required before account inspection or live Production actions.
+- Required a Production-specific exact-target migration guard instead of repointing development-only commands.
+- Kept Vercel / Neon commands, `.env` access, Production migration, Production data writes, formal import, merge, push, deployment, authentication, and access-gate implementation out of scope.
+- Reason: turn the completed non-production Postgres proof into an explicit, resumable Production handoff while preserving an empty first-launch data boundary.
+
 ## 2026-07-09 23:26 AEST
 
 - Executed Stage 6B-P1-F non-production database verification after explicit approval.

@@ -1,7 +1,7 @@
 # Words Learning App For Mimi Stage 6B: Production Execution Plan
 
 Created: 2026-07-07 23:53 AEST
-Last updated: 2026-07-09 23:26 AEST
+Last updated: 2026-07-10 13:24 AEST
 
 Source plan: `plan_docs/PLAN_V1_MASTER.md`
 Derived from: `plan_docs/PLAN_V1_STAGE6A_PRODUCTION_RELEASE_GATE.md`, `plan_docs/PLAN_V1_STAGE7_7_FINAL_ACCEPTANCE.md`, `plan_docs/PLAN_V1_STAGE7_8_DUAL_TRACK_UI_REFINEMENT.md`, `plan_docs/PLAN_V1_STAGE7_9_DUAL_TRACK_DATA_IMPORT.md`, `plan_docs/PLAN_V1_STAGE7_10_LIBRARY_REVIEW_CONTROLS.md`, `plan_docs/PLAN_V1_STAGE7_11_REVIEW_ROLLBACK_AUTO_REFRESH.md`, `plan_docs/PLAN_V1_STAGE8_REVIEW_MEMORY_ALGORITHM.md`, and the 2026-07-07 user confirmation that Stage 7 interaction and logic are locally accepted.
@@ -35,9 +35,9 @@ The user chose shared Postgres Production for the formal V1 release.
 This supersedes the earlier recommendation to use browser-local Production as the lowest-risk first release path. Browser-local Production remains a fallback option only. The active path is now:
 
 1. Stage 8 Review Memory Algorithm in `plan_docs/PLAN_V1_STAGE8_REVIEW_MEMORY_ALGORITHM.md` is accepted.
-2. Stage 6B-P1 Postgres Production runtime in `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md` has reached P1-F: schema version 5 migration, backup import, Active review guards, and repository parity were validated against the approved non-production development database.
-3. Return through Stage 6B-P1-G handoff to confirm the exact Production target, env var scopes, access boundary, backup/import choice, merge path, and deployment approval.
-4. Only after explicit approval, run final merge, Production env setup, Production migration/import if needed, deployment, and smoke tests.
+2. Stage 6B-P1 Postgres Production runtime in `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md` has reached P1-G-A: schema version 5 migration, backup import capability, Active review guards, and repository parity were validated against the approved non-production development database; the Production handoff is documented in `plan_docs/PLAN_V1_STAGE6B_P1_G_PRODUCTION_EXECUTION_HANDOFF.md`.
+3. Complete P1-G-B read-only inventory and P1-G-C human decision closure to confirm the exact Production target, environment variable scopes, access boundary, merge path, deployment mechanism, and first-write acceptance method. Initial backup import is already closed as `skip` because Production will start empty.
+4. Only after explicit approval, run final merge, Production env setup, Production migration, deployment, and smoke tests. First-launch import remains skipped unless the user explicitly reopens that decision.
 
 ## Current Local Facts To Re-Check Before Execution
 
@@ -98,7 +98,7 @@ Acceptance tradeoff:
 
 Required if the first formal Production release must share vocabulary / review data across the private group.
 
-Selected by the user on 2026-07-08. This route is not a direct deploy-only execution. `Stage 6B-P1 Postgres Production Runtime` has now validated the required local and non-production database bridge through P1-F, but formal Production still needs a P1-G handoff and explicit Stage 6B execution approval.
+Selected by the user on 2026-07-08. This route is not a direct deploy-only execution. `Stage 6B-P1 Postgres Production Runtime` has now validated the required local and non-production database bridge through P1-F, and P1-G-A has documented the Production handoff. Formal Production still needs P1-G-B read-only account inventory, P1-G-C human decision closure, and explicit Stage 6B execution approval.
 
 Status before any shared durable Production writes:
 
@@ -111,9 +111,10 @@ Status before any shared durable Production writes:
 - Decide whether to accept no-credential private-URL risk or add an access gate.
 - Done locally / non-production: add tests for Production runtime rejection / acceptance, person-scoped reads/writes, destructive controls, backup import, rollback behavior, and secret safety.
 - Done against the approved non-production development database: apply schema version 5 migration, verify schema, run fixture dry run / rollback / guarded commit / cleanup, and exercise repository integration.
-- Still required before Production: confirm exact Production target, env var scopes, access boundary, backup/import choice, merge path, deployment mechanism, and smoke-test scope.
+- Done in P1-G-A: record the user's empty Production start and skip formal backup import for first launch because the current development state contains no valuable data.
+- Still required before Production: confirm exact Production target, environment variable scopes, access boundary, merge path, deployment mechanism, and first-write acceptance scope.
 
-Stage 6B should resume only after the P1-F result in `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md` is accepted and the P1-G handoff records the remaining Production choices.
+Stage 6B should resume only after the P1-F result is accepted, the P1-G-A handoff in `plan_docs/PLAN_V1_STAGE6B_P1_G_PRODUCTION_EXECUTION_HANDOFF.md` is synchronized, and P1-G-B / P1-G-C record the remaining Production choices.
 
 ## Deferred Stage 6B-A Path
 
@@ -212,11 +213,11 @@ Option A:
 
 Option B:
 
-- Require fresh JSON backup from `/export`.
-- Validate backup metadata and counts.
-- Dry run first.
-- Rollback trial before commit.
-- Commit only after confirming exact backup file, target database, environment, person mapping, and expected counts.
+- First launch uses no formal backup import. The user confirmed on 2026-07-10 that the current development database contains no valuable data and formal data should begin only after cloud-backed V1 launch.
+- Apply the schema to an explicitly confirmed empty Production target and verify all learning / backup-import counts are `0` before runtime cutover.
+- Do not copy, clone, or promote development data into Production.
+- Keep the schema version 5 import tooling available for future recovery or a separately approved later migration.
+- If import is reopened later, require a fresh JSON backup, metadata/count validation, dry run, rollback trial, exact target/person mapping, and explicit commit approval.
 
 ## Rollback Direction
 
@@ -229,7 +230,7 @@ Deployment rollback:
 Database rollback:
 
 - For Option A, there is no Production database mutation.
-- For Option B, migration/import must have a transaction, backup import mapping, and documented rollback procedure before execution.
+- For Option B initial launch, migration must have an exact-target guard and documented rollback procedure. Import rollback is not part of the first-launch path because no formal import will run.
 
 User-data rollback:
 
@@ -263,11 +264,14 @@ Before execution, the user must still choose:
 - Merge path: direct merge to `main` or pull request review first.
 - Production deployment mechanism: Vercel Git integration after merge or explicit CLI deployment.
 - Whether the existing non-official Production deployment should remain as history or be replaced/archived after formal release.
-- Whether formal user backup import is required before first Production use.
 - Whether to run only read-only Production smoke checks or approve a smallest-possible write smoke.
+
+Closed on 2026-07-10:
+
+- Formal user backup import is skipped for first launch; Production begins with empty schema-version-5 tables and formal data starts after cloud-backed V1 launch.
 
 ## Stage 6B Planning Result
 
 This document is a plan only. It does not execute Stage 6B.
 
-The next safe implementation step is the Stage 6B-P1-G Production execution handoff. No formal Production release should proceed before that handoff records the Production target, env var scopes, access-boundary decision, backup/import choice, merge path, and deployment approval.
+Stage 6B-P1-G-A Production execution handoff documentation is complete. The next gated step is P1-G-B read-only Production inventory after separate explicit approval. No formal Production release should proceed before P1-G-B and P1-G-C record the Production target, environment variable scopes, access-boundary decision, merge path, deployment mechanism, and first-write acceptance method.

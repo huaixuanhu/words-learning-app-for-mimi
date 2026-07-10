@@ -1,11 +1,11 @@
 # Words Learning App For Mimi Architecture
 
 Created: 2026-07-02 23:30 AEST
-Last updated: 2026-07-09 23:26 AEST
+Last updated: 2026-07-10 13:24 AEST
 
 ## Current State
 
-This repository has accepted Stage 8 Review Memory Algorithm（复习记忆算法）after the user chose to replace the placeholder scheduler before formal V1 Production（生产环境）launch. It contains collaboration rules, architecture notes, master and stage plans, changelog, AI agent log, a lightweight Tier 1 governance preflight, and a Next.js App Router application with browser-local vocabulary, review mutations, export, restore preview, selected-person switching, local SQL storage, repository adapter contract, approved development / preview Vercel and Neon setup, a server-only development / preview Postgres runtime adapter, guarded backup import dry-run / rollback / commit tooling, a development / preview-only Postgres UI runtime cutover path, verified Preview UI runtime checks, a local Stage 7 darker sage visual system with Motion for React interaction animation, Stage 7.2 brand refinement, Stage 7.3 ChillRoundF font trial, Stage 7.4 light / dark theme toggle, Stage 7.5 soft click sound audition, Stage 7.6 UI-only sound settings with review-completion feedback, Stage 7.7 final acceptance coverage, Stage 7.8 Today Hub / dual-track information architecture, Stage 7.9 local Recognition Vocabulary（阅读词汇）/ Active Vocabulary（输出词汇）data semantics, Stage 7.10 local hard-delete, batch rollback, and review reset controls, Stage 7.11 one-word Review rollback plus conservative queue auto-refresh, Stage 8-B / 8-C / 8-D / 8-E / 8-F / 8-G Recognition-only FSRS-6（Free Spaced Repetition Scheduler 6，自由间隔重复调度器第 6 版）review memory behavior, backup compatibility, Postgres Production handoff, and final local acceptance, a Stage 6B plan for formal Production execution, Stage 6B-P1-B local schema version 5 migration/static tests, Stage 6B-P1-C local `postgres-production` runtime / API contract tests, Stage 6B-P1-D local Postgres repository parity, Stage 6B-P1-E local backup import version 5 support, and Stage 6B-P1-F non-production database verification for the future cloud-backed runtime path.
+This repository has accepted Stage 8 Review Memory Algorithm（复习记忆算法）after the user chose to replace the placeholder scheduler before formal V1 Production（生产环境）launch. It contains collaboration rules, architecture notes, master and stage plans, changelog, AI agent log, a lightweight Tier 1 governance preflight, and a Next.js App Router application with browser-local vocabulary, review mutations, export, restore preview, selected-person switching, local SQL storage, repository adapter contract, approved development / preview Vercel and Neon setup, a server-only development / preview Postgres runtime adapter, guarded backup import dry-run / rollback / commit tooling, a development / preview-only Postgres UI runtime cutover path, verified Preview UI runtime checks, a local Stage 7 darker sage visual system with Motion for React interaction animation, Stage 7.2 brand refinement, Stage 7.3 ChillRoundF font trial, Stage 7.4 light / dark theme toggle, Stage 7.5 soft click sound audition, Stage 7.6 UI-only sound settings with review-completion feedback, Stage 7.7 final acceptance coverage, Stage 7.8 Today Hub / dual-track information architecture, Stage 7.9 local Recognition Vocabulary（阅读词汇）/ Active Vocabulary（输出词汇）data semantics, Stage 7.10 local hard-delete, batch rollback, and review reset controls, Stage 7.11 one-word Review rollback plus conservative queue auto-refresh, Stage 8-B / 8-C / 8-D / 8-E / 8-F / 8-G Recognition-only FSRS-6（Free Spaced Repetition Scheduler 6，自由间隔重复调度器第 6 版）review memory behavior, backup compatibility, Postgres Production handoff, and final local acceptance, a Stage 6B plan for formal Production execution, Stage 6B-P1-B local schema version 5 migration/static tests, Stage 6B-P1-C local `postgres-production` runtime / API contract tests, Stage 6B-P1-D local Postgres repository parity, Stage 6B-P1-E local backup import version 5 support, Stage 6B-P1-F non-production database verification, and Stage 6B-P1-G-A Production execution handoff documentation for the future cloud-backed runtime path.
 
 Current local stack:
 
@@ -219,7 +219,7 @@ Stage 6B-P1-B local schema draft:
 
 - `db/migrations/0002_schema5_production_runtime.sql` is the current schema version 5 Production runtime migration draft.
 - It adds `learning_track`, nullable `tags`, `meanings_zh`, `examples`, separate Recognition / Active review limits, JSON import source types, backup schema version 5 support, and database-level Active review row guards.
-- It has not been applied to any database. Remote execution still requires explicit approval, a confirmed non-production target first, and the later Stage 6B-P1 validation ladder.
+- It has been applied and validated only on the approved non-production development database. Production execution still requires explicit approval, an exact Production target, a Production-specific command guard, and the Stage 6B handoff ladder.
 
 Stage 6B-P1-C local runtime / API contract:
 
@@ -229,7 +229,7 @@ Stage 6B-P1-C local runtime / API contract:
 - `/api/storage/health` can run a Production readiness probe without returning public table counts when `postgres-production` is configured.
 - `/api/storage/data` can read/write through the guarded `postgres-production` runtime, while Preview writes still require the development / preview-only write flag and confirmation header.
 - Browser runtime state now distinguishes `postgres-production` from `postgres-preview`.
-- This contract has only been validated with local unit tests and route mocks. It has not been validated against any real database.
+- The runtime/environment contract has been validated with local unit tests and route mocks. Shared repository behavior has been validated against the migrated non-production development database, but the `postgres-production` route itself has not been exercised in Vercel Production.
 
 Stage 6B-P1-D local repository parity:
 
@@ -258,6 +258,14 @@ Stage 6B-P1-F non-production database verification:
 - Final development database counts are zero for core learning tables and backup import tables.
 - No Production database migration, Production import, Production env var change, Vercel command, Neon management command, or Production deployment has been performed.
 
+Stage 6B-P1-G-A Production execution handoff:
+
+- `plan_docs/PLAN_V1_STAGE6B_P1_G_PRODUCTION_EXECUTION_HANDOFF.md` records the accepted P1-F evidence and separates documentation, read-only account inventory, human decisions, and live Production actions.
+- The 2026-07-10 initial-data decision uses an explicitly confirmed empty Production target, copies no development data, skips formal first-launch backup import, and begins formal data creation only after cloud-backed V1 launch.
+- A database with zero `people` rows returns the empty/default Mimi workspace shape; the first valid Postgres mutation can create the first durable learner row. Production acceptance must verify empty-state read, first real write, refresh persistence, and `person_id` separation without silently falling back to browser-local runtime.
+- Development-only database commands must not be repointed at Production. Formal execution needs a Production-specific exact-target guard and independent approval.
+- P1-G-B read-only Vercel / Neon inventory and P1-G-C access/merge/deployment/write-acceptance decisions remain pending.
+
 Stage 5E execution gate:
 
 - Future remote work must start by switching the active working gate to Tier 3.
@@ -277,7 +285,7 @@ Stage 5F development / preview bootstrap:
   - `npm run db:migrate:dev`
   - `npm run db:inspect:dev`
 - Deployment status: Vercel currently has an active non-official Production deployment from branch `V1`, a manual verified Preview deployment, and a clean Git integration Preview deployment. Standard `vercel deploy` without `--prod` produced `target=preview`.
-- Production migration, production import, production deployment, runtime storage cutover, backup import, and authentication remain out of scope until a later accepted plan.
+- Production migration, production deployment, runtime storage cutover, and authentication remain out of scope until later explicit approvals. First-launch Production import is intentionally skipped under the P1-G-A empty-start decision.
 
 Stage 5H runtime Postgres adapter design:
 

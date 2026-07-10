@@ -1,5 +1,34 @@
 # AI Agent Log
 
+## 2026-07-10 13:24 AEST
+
+- Task: execute Stage 6B-P1-G-A documentation first, then follow the documented execution path; record the user's clarification that the current development database contains no valuable data and formal data should begin only after fully cloud-backed V1 launch.
+- Plan agreed: yes. The accepted current slice was P1-G-A local documentation only. Read-only Vercel / Neon account inventory, credential access, Production migration, environment changes, merge, deployment, and data writes remain separately approved later slices.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_G_PRODUCTION_EXECUTION_HANDOFF.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md`
+  - `plan_docs/PLAN_V1_STAGE6B_PRODUCTION_EXECUTION.md`
+- Reason: convert the completed P1-F non-production proof into a bounded Production handoff and close the first-launch import question without treating documentation approval as authorization for live account or Production actions.
+- Implementation notes:
+  - Added a derived P1-G child plan with source plan, derived-from evidence, scope, non-scope, safety, exit criteria, execution slices, decision register, ordered future Production execution, rollback direction, and stop conditions.
+  - Recorded shared `postgres-production` as the formal runtime and an explicitly empty Production start as the initial data path.
+  - Closed formal first-launch backup import as `skip`; development data must not be copied, cloned, promoted, or treated as seed data.
+  - Recorded that all learning and backup-import counts must be zero after Production migration and before runtime cutover.
+  - Inspected the local empty-database bootstrap path: an empty Postgres snapshot returns the default Mimi workspace shape, and the first valid Postgres mutation can create the first durable learner row.
+  - Added future acceptance checks for empty-state read, no silent local fallback, first real durable write, persistence after refresh, and `person_id` separation.
+  - Split later work into P1-G-B read-only account inventory and P1-G-C human decision closure before Stage 6B formal execution.
+  - Required a Production-specific exact-target migration guard; development-only commands must not be repointed at Production.
+- Validation:
+  - Passed: `git diff --check`.
+  - Passed: `npm run governance:preflight`.
+- Safety notes: local documentation and read-only local source inspection only. No `.env` file or credential was read or changed. No Vercel command, Neon command, remote account inspection, database connection, database mutation, Production migration, Production import, Production env var change, GitHub push, pull request, merge, deployment, promotion, alias change, rollback, authentication implementation, access-gate implementation, AI API（人工智能接口）, external vocabulary source, analytics（分析追踪）, notification, email, or 付费/扣款 feature was performed.
+
 ## 2026-07-09 23:26 AEST
 
 - Task: execute Stage 6B-P1-F non-production database verification after the user confirmed the remote database boundary.

@@ -1,11 +1,11 @@
 # Words Learning App For Mimi Stage 6B-P1: Postgres Production Runtime
 
 Created: 2026-07-08 00:25 AEST
-Last updated: 2026-07-09 23:26 AEST
+Last updated: 2026-07-10 13:24 AEST
 
 Source plan: `plan_docs/PLAN_V1_STAGE6B_PRODUCTION_EXECUTION.md`
 Derived from: `plan_docs/PLAN_V1_STAGE6A_PRODUCTION_RELEASE_GATE.md`, `plan_docs/PLAN_V1_STAGE7_9_DUAL_TRACK_DATA_IMPORT.md`, `plan_docs/PLAN_V1_STAGE7_10_LIBRARY_REVIEW_CONTROLS.md`, `plan_docs/PLAN_V1_STAGE7_11_REVIEW_ROLLBACK_AUTO_REFRESH.md`, `plan_docs/PLAN_V1_STAGE8_REVIEW_MEMORY_ALGORITHM.md`, `ARCHITECTURE.md`, `db/migrations/0001_initial.sql`, `src/lib/storage/runtime-mode.ts`, `src/app/api/storage/data/route.ts`, `src/lib/storage/postgres/repository.ts`, and the 2026-07-08 user decision to make V1's formal release fully cloud-backed instead of browser-local.
-Scope: plan and track the implementation of a real `postgres-production` runtime（运行模式）for V1 after Stage 8 is accepted, including schema version 5 or later database migration（数据库迁移）, server-only Production（生产环境）runtime gating, API（应用程序接口）read/write behavior, repository parity with browser-local features, backup import（备份导入）, non-production Neon branch（分支）verification, Production migration/import/deploy sequence, rollback（回滚）, and validation. Stage 6B-P1-B has implemented the local schema migration draft and static tests. Stage 6B-P1-C has implemented the local runtime / API contract. Stage 6B-P1-D has implemented local repository parity code and tests. Stage 6B-P1-E has implemented local backup import version 5 planning, fixture, script, and tests. Stage 6B-P1-F has applied and validated the schema version 5 migration on the approved non-production development database.
+Scope: plan and track the implementation of a real `postgres-production` runtime（运行模式）for V1 after Stage 8 is accepted, including schema version 5 or later database migration（数据库迁移）, server-only Production（生产环境）runtime gating, API（应用程序接口）read/write behavior, repository parity with browser-local features, backup import（备份导入）, non-production Neon branch（分支）verification, Production migration/import/deploy sequence, rollback（回滚）, and validation. Stage 6B-P1-B has implemented the local schema migration draft and static tests. Stage 6B-P1-C has implemented the local runtime / API contract. Stage 6B-P1-D has implemented local repository parity code and tests. Stage 6B-P1-E has implemented local backup import version 5 planning, fixture, script, and tests. Stage 6B-P1-F has applied and validated the schema version 5 migration on the approved non-production development database. Stage 6B-P1-G-A has documented the Production execution handoff and the confirmed empty-Production-start decision.
 Non-Scope: no GitHub push, no pull request, no merge（合并）to `main`, no Vercel command, no Neon management command, no credential value printing, no Production env var change, no Production database mutation, no formal user backup import, no Production deployment, no authentication（认证）implementation, no AI API（人工智能接口）, no dictation engine（听写引擎）, no spelling checker（拼写检查器）, no writing feedback model, no external vocabulary source, no analytics（分析追踪）, no notification, no email, and no 付费/扣款 feature. P1-F did read ignored `.env.local` and mutate only the approved non-production development database after explicit human confirmation.
 Exit criteria: Stage 6B-P1 implementation plan exists, parent docs and logs link to it, the required schema/runtime/API/backup validation sequence is explicit, and every future remote / credential / Production action remains behind explicit human approval.
 
@@ -216,7 +216,7 @@ Stage 6B-P1 must update backup import tooling for schema version 5:
 - guarded commit with explicit confirmation flags;
 - record backup import mappings for rollback and audit.
 
-Formal user backup import remains a later Stage 6B action after the implementation passes non-production validation.
+The 2026-07-10 initial-launch decision skips formal user backup import because the current development state contains no valuable data and formal data should begin only after cloud-backed V1 launch. The import tooling remains available for future recovery or a later explicitly approved migration.
 
 ## Access Boundary Decision
 
@@ -352,13 +352,26 @@ Boundary:
 
 ### P1-G Production Execution Handoff
 
-After P1 passes:
+Status: P1-G-A documentation completed on 2026-07-10 after explicit approval. P1-G-B read-only Production inventory and P1-G-C human decision closure remain pending separate approval.
 
-- return to Stage 6B formal execution;
+Detailed handoff: `plan_docs/PLAN_V1_STAGE6B_P1_G_PRODUCTION_EXECUTION_HANDOFF.md`.
+
+P1-G-A completed:
+
+- accepted the P1-F non-production evidence;
+- recorded that the development database contains no valuable data;
+- selected an empty Production database start with no development data copy and no formal backup import for first launch;
+- defined the empty-database bootstrap acceptance checks;
+- split read-only account inventory, human decisions, and live Production actions into separately approved slices;
+- defined Production-specific migration guard, rollback, and stop-condition requirements.
+
+Remaining before formal Stage 6B execution:
+
 - confirm exact Production database target;
-- confirm env var scopes;
+- confirm environment variable names and scopes without exposing values;
 - confirm access boundary;
-- confirm backup file and expected counts if importing;
+- confirm merge path, deployment mechanism, and first Production write acceptance method;
+- confirm all Production business and backup-import counts are zero after migration;
 - merge / deploy only after explicit approval.
 
 ## Validation Plan
@@ -421,12 +434,16 @@ Stop immediately if:
 Before code implementation:
 
 - whether Production writes will launch with no-credential private-URL risk acceptance or a separate access gate;
-- whether formal user backup import is required before first Production use, given the user has deleted test words;
 - whether `main` merge should happen by direct merge or pull request after P1 passes;
+- whether the first real user write should serve as Production write acceptance or a separate smallest-possible smoke write should be approved;
 - whether to keep or archive the existing non-official Production deployment after formal release.
+
+Closed on 2026-07-10:
+
+- Formal user backup import is not required for first launch. Production starts with schema-only empty tables, and formal data begins after cloud-backed V1 launch.
 
 ## P1 Result
 
-Stage 6B-P1 is the required database/runtime bridge between the accepted local V1 app and the desired fully cloud-backed V1 launch. Stage 8-G accepted the final V1 Recognition review memory behavior and handoff shape. P1-B added the local schema version 5 migration draft plus static tests. P1-C added the local `postgres-production` runtime / API contract and safety tests. P1-D added local Postgres repository parity code and tests. P1-E added local backup import version 5 script support, fixture coverage, and no-database dry-run validation. P1-F applied and validated the schema version 5 migration on the approved non-production development database and cleaned all fixture rows afterward.
+Stage 6B-P1 is the required database/runtime bridge between the accepted local V1 app and the desired fully cloud-backed V1 launch. Stage 8-G accepted the final V1 Recognition review memory behavior and handoff shape. P1-B added the local schema version 5 migration draft plus static tests. P1-C added the local `postgres-production` runtime / API contract and safety tests. P1-D added local Postgres repository parity code and tests. P1-E added local backup import version 5 script support, fixture coverage, and no-database dry-run validation. P1-F applied and validated the schema version 5 migration on the approved non-production development database and cleaned all fixture rows afterward. P1-G-A now records the empty Production launch, no-import decision, first durable data boundary, and separately approved Production execution slices.
 
-No Production release should proceed until the P1 result is explicitly accepted and Stage 6B formal execution records the Production target, env var scopes, access-boundary decision, backup/import choice, and deployment approval.
+No Production release should proceed until P1-G-B and P1-G-C record the Production target, environment variable scopes, access-boundary decision, merge/deployment mechanism, and first-write acceptance method. The first-launch backup/import choice is closed as `skip`.
