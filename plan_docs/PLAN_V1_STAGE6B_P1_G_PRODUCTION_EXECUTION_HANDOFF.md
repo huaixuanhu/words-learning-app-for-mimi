@@ -1,7 +1,7 @@
 # Words Learning App For Mimi Stage 6B-P1-G: Production Execution Handoff
 
 Created: 2026-07-10 13:24 AEST
-Last updated: 2026-07-10 17:43 AEST
+Last updated: 2026-07-10 18:40 AEST
 
 Source plan:
 - `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md`
@@ -25,8 +25,11 @@ Input evidence:
 Consumer / next stage:
 - `plan_docs/PLAN_V1_STAGE6B_PRODUCTION_EXECUTION.md`
 
+Child decision packet:
+- `plan_docs/PLAN_V1_STAGE6B_P1_G_C_HUMAN_DECISION_CLOSURE.md`
+
 Document nature:
-This is a derived Production execution handoff（生产执行交接）for Stage 6B-P1. It is not an independent peer plan. P1-G-B account inspection was separately approved and completed read-only; this document still does not authorize database mutation, environment changes, import, merge（合并）, or deployment.
+This is a derived Production execution handoff（生产执行交接）for Stage 6B-P1. It is not an independent peer plan. P1-G-B account inspection was separately approved and completed read-only. P1-G-C-0 has created a child decision packet for the remaining human choices; this document still does not authorize database mutation, environment changes, import, merge（合并）, or deployment.
 
 ## Scope
 
@@ -71,7 +74,8 @@ P1-G is complete only when:
 
 - `P1-G-A Documentation`: accepted for execution on 2026-07-10 and completed in this change set.
 - `P1-G-B Read-Only Production Inventory`: completed on 2026-07-10 after separate explicit approval, with no Production target configured. The existing Development / Preview Neon resource is proven operational, while the Vercel SSO management route did not expose branch / recovery details.
-- `P1-G-C Human Decision Closure`: blocked until the exact Production branch / database / recovery capability is established through an approved provider-management path or equivalent evidence; the remaining user choices are also pending. Email activation is not an established prerequisite.
+- `P1-G-C-0 Decision Packet`: completed as documentation only in `plan_docs/PLAN_V1_STAGE6B_P1_G_C_HUMAN_DECISION_CLOSURE.md`; it lists recommended defaults, accepted alternatives, evidence requirements, and stop conditions.
+- `P1-G-C Human Decision Closure`: still open until the exact Production branch / database / recovery capability is established through an approved provider-management path or equivalent evidence; the remaining target, access, merge, deployment, first-write, and historical-deployment choices are also pending. Email activation is not an established prerequisite.
 - `Stage 6B Formal Production Execution`: blocked until P1-G-C completes.
 
 ## Confirmed Decisions
@@ -140,8 +144,10 @@ Re-checked on 2026-07-10:
 - Vercel environment variables: `https://vercel.com/docs/environment-variables`
 - Vercel Production promotion: `https://vercel.com/docs/deployments/promoting-a-deployment`
 - Vercel Instant Rollback: `https://vercel.com/docs/instant-rollback`
-- Neon Vercel connection guide: `https://neon.com/docs/guides/vercel-manual`
-- Neon branching / restore references: `https://neon.com/docs/introduction/branching` and `https://neon.com/docs/changelog/2024-02-23`
+- Neon Vercel integration overview: `https://neon.com/docs/guides/vercel-overview`
+- Neon Vercel-managed integration: `https://neon.com/docs/guides/vercel-managed-integration`
+- Neon manual Vercel setup: `https://neon.com/docs/guides/vercel-manual`
+- Neon branching and backup / restore: `https://neon.com/docs/introduction/branching` and `https://neon.com/docs/manage/backups`
 
 Execution implications:
 
@@ -334,6 +340,10 @@ Result:
 
 ### P1-G-C Human Decision Closure
 
+Detailed decision packet: `plan_docs/PLAN_V1_STAGE6B_P1_G_C_HUMAN_DECISION_CLOSURE.md`.
+
+P1-G-C-0 has been completed as documentation only. It does not close P1-G-C and does not approve provider account inspection, environment changes, database work, merge, deployment, or Production write acceptance.
+
 After P1-G-B, the user must explicitly decide:
 
 - establish an approved management path or equivalent evidence for the existing Neon resource, then rerun read-only branch / recovery inventory before choosing the exact empty Production target;
@@ -351,7 +361,7 @@ Each numbered group requires its own explicit approval when it changes remote st
 
 1. Run the complete local validation gate and verify a clean final `V1` commit.
 2. Verify a clean Preview deployment from the final code and keep Preview-only write flags disabled after any approved Preview smoke.
-3. Establish an approved provider-management path or equivalent evidence for the existing Neon resource, then repeat read-only inventory for branch names, account plan, history retention, and recovery capability.
+3. Follow the P1-G-C decision packet, establish an approved provider-management path or equivalent evidence for the existing Neon resource, then repeat read-only inventory for branch names, account plan, history retention, and recovery capability.
 4. Confirm the exact empty Production database target and an account-supported recovery checkpoint or restore direction.
 5. Use a Production-specific guarded command path to apply `0001_initial.sql`, inspect, apply `0002_schema5_production_runtime.sql`, inspect again, and verify Active-review triggers.
 6. Confirm all Production learning and backup-import counts are `0`; skip formal backup import.
@@ -409,3 +419,7 @@ P1-G-A turns the P1-F result into an explicit Production handoff and records an 
 ## P1-G-B Result
 
 P1-G-B completed the approved read-only inventory without remote mutation. Vercel is fully identified, Production remains on the historical non-official deployment, Production environment variables are empty, the canonical domain is publicly reachable, and no Production database target is configured. Earlier Stage 5F / 5J / 5K / 5L / 5N and P1-F evidence proves the existing Development / Preview Neon resource is operational. P1-G-C cannot close until branch / recovery capability is established through an approved provider-management path or equivalent evidence; Production migration, env setup, merge, and deployment remain unauthorized.
+
+## P1-G-C-0 Result
+
+P1-G-C-0 created `plan_docs/PLAN_V1_STAGE6B_P1_G_C_HUMAN_DECISION_CLOSURE.md` as a documentation-only decision packet. It records the required provider-management evidence, recommended default package, accepted alternatives, and stop conditions for Production target, access boundary, merge path, deployment mechanism, Production write acceptance, and the historical non-official Production deployment. P1-G-C remains open; the next separately approved slice is `P1-G-C-1 Provider Supplement`, read-only evidence gathering only.

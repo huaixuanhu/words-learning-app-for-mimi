@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## 2026-07-10 18:40 AEST
+
+- Executed Stage 6B-P1-G-C-0 human decision closure documentation after the user confirmed the next stage.
+- Added `plan_docs/PLAN_V1_STAGE6B_P1_G_C_HUMAN_DECISION_CLOSURE.md` as the derived child decision packet for P1-G-C.
+- Recorded recommended defaults and accepted alternatives for provider-management evidence, exact Production target, access boundary, merge path, deployment mechanism, Production write acceptance, and the historical non-official Production deployment.
+- Re-checked official Vercel and Neon docs for Git deployment, environment variable scoping, promotion / rollback, Vercel-managed Neon, manual Neon setup, branching, and backup / restore implications.
+- Synchronized parent Stage 6B / P1 plans, README, architecture notes, AGENTS project context, changelog, and AI log so the next gate is provider-management evidence plus P1-G-C decisions, not a presumed Neon email activation prerequisite.
+- Kept Vercel / Neon commands, `.env` access, database connections, SQL, Production env var changes, branch creation/deletion, merge, push, deployment, promotion, rollback, alias changes, email action, secret output, Production migration, and Production data writes out of scope.
+- Reason: turn the remaining P1-G-C blockers into an explicit decision packet before any live Production action.
+
 ## 2026-07-10 17:43 AEST
 
 - Corrected the Stage 6B-P1-G-B interpretation after reviewing the pre-UI Neon history at the user's request.

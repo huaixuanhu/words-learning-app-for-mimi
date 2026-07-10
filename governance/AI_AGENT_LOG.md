@@ -1,5 +1,34 @@
 # AI Agent Log
 
+## 2026-07-10 18:40 AEST
+
+- Task: execute Stage 6B-P1-G-C-0 documentation first after the user confirmed the next stage, turning the remaining P1-G-C blockers into an explicit human decision packet.
+- Plan agreed: yes. The approved scope is documentation only: add a derived P1-G-C decision packet, synchronize parent docs/logs, and run local documentation validation. No provider inspection, `.env` read, Vercel/Neon command, database connection, migration, environment change, merge, deployment, or Production write is included.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_G_C_HUMAN_DECISION_CLOSURE.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_G_PRODUCTION_EXECUTION_HANDOFF.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md`
+  - `plan_docs/PLAN_V1_STAGE6B_PRODUCTION_EXECUTION.md`
+- Official reference check:
+  - Re-checked Vercel Git deployment, environment variable, promotion, and Instant Rollback documentation.
+  - Re-checked Neon Vercel overview, Vercel-managed integration, manual Vercel setup, branching, and backup / restore documentation.
+- Implementation notes:
+  - Added `plan_docs/PLAN_V1_STAGE6B_P1_G_C_HUMAN_DECISION_CLOSURE.md` with required child-plan header, scope, non-scope, exit criteria, current state, official reference implications, required decisions, recommended default package, next `P1-G-C-1 Provider Supplement`, stop conditions, and P1-G-C-0 result.
+  - Kept the core correction from the previous stage: email activation is not an established prerequisite for the existing operational Development / Preview Neon resource.
+  - Made the next gate explicit: obtain approved provider-management evidence or equivalent branch/recovery evidence, then close P1-G-C decisions before any Production migration, env var change, merge, deployment, or write.
+- Validation:
+  - Passed: `git diff --check`.
+  - Passed: stale-gate scan found no remaining affirmative requirement to activate Neon email before P1-G-C; remaining activation references are corrective or observed-screen context.
+  - Passed: secret-hygiene scan found no Postgres connection URL or raw Neon endpoint hostname in the changed documentation.
+  - Passed: `npm run governance:preflight`.
+- Safety notes: documentation-only scope. No `.env` read, database connection, SQL, Vercel/Neon remote command, provider-management action, environment change, branch creation/deletion, merge, push, deployment, promotion, rollback, alias change, email action, secret output, Production migration, Production data write, or Production runtime cutover was performed.
+
 ## 2026-07-10 17:43 AEST
 
 - Task: review the pre-UI Neon documentation after the user reported receiving no activation email, correct P1-G-B's activation assumption, and record the execution-process incident from the review.
