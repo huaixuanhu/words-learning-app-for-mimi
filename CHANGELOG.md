@@ -1,5 +1,28 @@
 # CHANGELOG
 
+## 2026-07-10 17:43 AEST
+
+- Corrected the Stage 6B-P1-G-B interpretation after reviewing the pre-UI Neon history at the user's request.
+- Confirmed Stage 5F created the Development / Preview Neon resource and applied `0001_initial.sql`; Stage 5J verified Preview reads; Stage 5K and Stage 5N verified controlled writes and UI persistence; Stage 5L cleaned test rows; and Stage 6B-P1-F applied schema version 5 and verified repository parity on the same approved non-production resource.
+- Removed the unsupported assumption that an email activation is a prerequisite for the existing Neon resource. The attempted Vercel SSO route displayed an activation screen, but this identifies an unresolved provider-management path rather than an absent or unusable resource.
+- Kept P1-G-C blocked on exact Production target/recovery evidence, access boundary, merge/deployment choices, and first-write acceptance.
+- Recorded an execution-process incident: a documentation search pattern used shell backticks inside double quotes and unintentionally invoked `npm run db:migrate:dev`. The guarded development-only migration failed at the first DDL statement because `people` already existed; the SQL file is transaction-wrapped and no successful mutating statement preceded the failure. No follow-up database connection was made.
+- Added the prevention rule to use single-quoted or fixed-string shell patterns when Markdown backticks appear in search text.
+- Reason: preserve the verified Neon operational history, remove an over-strong blocker, and keep the accidental database connection auditable.
+
+## 2026-07-10 13:44 AEST
+
+- Executed Stage 6B-P1-G-B read-only Production inventory after separate explicit approval.
+- Confirmed clean/pushed `V1` commit `553d91a7888f940f1b1a986455f7c718ee1530ac`, exact Vercel team/project identity, Git repository link, and `main` as the configured Production branch.
+- Confirmed the historical non-official Production deployment remains Ready while the current `V1` commit has a Ready Preview deployment.
+- Confirmed Production has no environment variables; `MIMI_STORAGE_RUNTIME` remains Preview-only, and encrypted Neon/Postgres variables remain Development / Preview-only.
+- Confirmed the canonical Production domain returns HTTP `200` without application credentials, so the durable-write access boundary remains unresolved.
+- Confirmed the Development / Preview Neon integration resource is available and recorded redacted project/endpoint fingerprints instead of secret-bearing connection values.
+- Confirmed no Production database target is configured.
+- Reached the official Neon Console through provider SSO but encountered an `Almost there` email-activation screen; branch names, Production-target separation, account retention, and restore capabilities were unavailable through that route. The later 17:43 evidence review clarifies that this did not invalidate the existing operational Development / Preview resource.
+- Kept environment changes, SQL, database connections/mutations, branch creation, email resend, deployment, promotion, alias changes, merge, push, and secret output out of scope.
+- Reason: replace assumed Production infrastructure readiness with an evidence-backed account snapshot before any target/access/deployment decision.
+
 ## 2026-07-10 13:24 AEST
 
 - Executed Stage 6B-P1-G-A Production execution handoff documentation after explicit approval.

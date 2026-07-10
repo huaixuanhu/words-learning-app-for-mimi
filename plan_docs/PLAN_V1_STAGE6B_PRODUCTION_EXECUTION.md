@@ -1,7 +1,7 @@
 # Words Learning App For Mimi Stage 6B: Production Execution Plan
 
 Created: 2026-07-07 23:53 AEST
-Last updated: 2026-07-10 13:24 AEST
+Last updated: 2026-07-10 17:43 AEST
 
 Source plan: `plan_docs/PLAN_V1_MASTER.md`
 Derived from: `plan_docs/PLAN_V1_STAGE6A_PRODUCTION_RELEASE_GATE.md`, `plan_docs/PLAN_V1_STAGE7_7_FINAL_ACCEPTANCE.md`, `plan_docs/PLAN_V1_STAGE7_8_DUAL_TRACK_UI_REFINEMENT.md`, `plan_docs/PLAN_V1_STAGE7_9_DUAL_TRACK_DATA_IMPORT.md`, `plan_docs/PLAN_V1_STAGE7_10_LIBRARY_REVIEW_CONTROLS.md`, `plan_docs/PLAN_V1_STAGE7_11_REVIEW_ROLLBACK_AUTO_REFRESH.md`, `plan_docs/PLAN_V1_STAGE8_REVIEW_MEMORY_ALGORITHM.md`, and the 2026-07-07 user confirmation that Stage 7 interaction and logic are locally accepted.
@@ -35,8 +35,8 @@ The user chose shared Postgres Production for the formal V1 release.
 This supersedes the earlier recommendation to use browser-local Production as the lowest-risk first release path. Browser-local Production remains a fallback option only. The active path is now:
 
 1. Stage 8 Review Memory Algorithm in `plan_docs/PLAN_V1_STAGE8_REVIEW_MEMORY_ALGORITHM.md` is accepted.
-2. Stage 6B-P1 Postgres Production runtime in `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md` has reached P1-G-A: schema version 5 migration, backup import capability, Active review guards, and repository parity were validated against the approved non-production development database; the Production handoff is documented in `plan_docs/PLAN_V1_STAGE6B_P1_G_PRODUCTION_EXECUTION_HANDOFF.md`.
-3. Complete P1-G-B read-only inventory and P1-G-C human decision closure to confirm the exact Production target, environment variable scopes, access boundary, merge path, deployment mechanism, and first-write acceptance method. Initial backup import is already closed as `skip` because Production will start empty.
+2. Stage 6B-P1 Postgres Production runtime in `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md` has reached P1-G-B: schema version 5 migration, backup import capability, Active review guards, and repository parity were validated against the approved non-production development database; the Production handoff and read-only inventory are documented in `plan_docs/PLAN_V1_STAGE6B_P1_G_PRODUCTION_EXECUTION_HANDOFF.md`.
+3. Establish an approved provider-management path or equivalent evidence for the existing Neon resource, repeat branch/recovery inventory, and complete P1-G-C human decision closure for the exact Production target, access boundary, merge path, deployment mechanism, and first-write acceptance method. Environment scopes are already inventoried; initial backup import is closed as `skip` because Production will start empty.
 4. Only after explicit approval, run final merge, Production env setup, Production migration, deployment, and smoke tests. First-launch import remains skipped unless the user explicitly reopens that decision.
 
 ## Current Local Facts To Re-Check Before Execution
@@ -54,6 +54,9 @@ Current local facts from Stage 7 closeout:
 - Stage 5F SQL migration has been applied only to the non-production development database.
 - The non-production development database has `0001_initial.sql` plus `0002_schema5_production_runtime.sql` applied. Production has not been migrated.
 - Existing active Production deployment from branch `V1` is documented as a non-official artifact and must not be treated as the formal V1 release.
+- P1-G-B confirmed the Vercel Production branch is `main`, Production has no environment variables, the canonical domain is publicly reachable, and no Neon Production target is configured.
+- P1-G-B confirmed the current `V1` commit has a Ready Preview deployment.
+- Prior Stage 5F / 5J / 5K / 5L / 5N and P1-F evidence confirms the Development / Preview Neon resource is operational; exact provider branch/recovery details remain unverified because the attempted Vercel SSO management route did not expose them.
 
 Stage 6B execution must re-check all drift-prone facts before any live action:
 
@@ -98,7 +101,7 @@ Acceptance tradeoff:
 
 Required if the first formal Production release must share vocabulary / review data across the private group.
 
-Selected by the user on 2026-07-08. This route is not a direct deploy-only execution. `Stage 6B-P1 Postgres Production Runtime` has now validated the required local and non-production database bridge through P1-F, and P1-G-A has documented the Production handoff. Formal Production still needs P1-G-B read-only account inventory, P1-G-C human decision closure, and explicit Stage 6B execution approval.
+Selected by the user on 2026-07-08. This route is not a direct deploy-only execution. `Stage 6B-P1 Postgres Production Runtime` has validated the required local and non-production database bridge through P1-F, P1-G-A documented the Production handoff, and P1-G-B completed the read-only Vercel / Neon inventory. Formal Production still needs an approved provider-management path or equivalent branch/recovery evidence, P1-G-C human decision closure, and explicit Stage 6B execution approval.
 
 Status before any shared durable Production writes:
 
@@ -112,9 +115,10 @@ Status before any shared durable Production writes:
 - Done locally / non-production: add tests for Production runtime rejection / acceptance, person-scoped reads/writes, destructive controls, backup import, rollback behavior, and secret safety.
 - Done against the approved non-production development database: apply schema version 5 migration, verify schema, run fixture dry run / rollback / guarded commit / cleanup, and exercise repository integration.
 - Done in P1-G-A: record the user's empty Production start and skip formal backup import for first launch because the current development state contains no valuable data.
-- Still required before Production: confirm exact Production target, environment variable scopes, access boundary, merge path, deployment mechanism, and first-write acceptance scope.
+- Done in P1-G-B: confirm exact Vercel project/team, `main` Production branch, current Production / Preview deployments and aliases, environment variable scopes, public canonical-domain behavior, and the absence of a configured Production database target.
+- Still required before Production: establish approved branch/recovery evidence for the existing Neon resource, choose the exact empty Production target, and confirm access boundary, merge path, deployment mechanism, and first-write acceptance scope.
 
-Stage 6B should resume only after the P1-F result is accepted, the P1-G-A handoff in `plan_docs/PLAN_V1_STAGE6B_P1_G_PRODUCTION_EXECUTION_HANDOFF.md` is synchronized, and P1-G-B / P1-G-C record the remaining Production choices.
+Stage 6B should resume only after the P1-F result is accepted, P1-G-A / P1-G-B in `plan_docs/PLAN_V1_STAGE6B_P1_G_PRODUCTION_EXECUTION_HANDOFF.md` are synchronized, and P1-G-C records the remaining Production choices.
 
 ## Deferred Stage 6B-A Path
 
@@ -260,6 +264,7 @@ Stop immediately if:
 
 Before execution, the user must still choose:
 
+- Establish an approved provider-management path or equivalent evidence, rerun read-only branch/recovery inventory, and choose the exact empty Production target plus recovery path.
 - Access boundary: no-credential private-URL risk acceptance, or a separate access gate before Production database writes.
 - Merge path: direct merge to `main` or pull request review first.
 - Production deployment mechanism: Vercel Git integration after merge or explicit CLI deployment.
@@ -274,4 +279,4 @@ Closed on 2026-07-10:
 
 This document is a plan only. It does not execute Stage 6B.
 
-Stage 6B-P1-G-A Production execution handoff documentation is complete. The next gated step is P1-G-B read-only Production inventory after separate explicit approval. No formal Production release should proceed before P1-G-B and P1-G-C record the Production target, environment variable scopes, access-boundary decision, merge path, deployment mechanism, and first-write acceptance method.
+Stage 6B-P1-G-A documentation and P1-G-B read-only inventory are complete. P1-G-B found no Production env vars or database target and confirmed the canonical domain is publicly reachable. Earlier stages prove the existing Development / Preview Neon resource is operational, while the attempted provider SSO management route did not expose branch/recovery details. The next gated step is an approved provider-management evidence path followed by the provider supplement and P1-G-C decisions. No formal Production release should proceed before those decisions close.

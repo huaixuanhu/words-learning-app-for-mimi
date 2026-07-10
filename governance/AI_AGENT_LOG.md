@@ -1,5 +1,79 @@
 # AI Agent Log
 
+## 2026-07-10 17:43 AEST
+
+- Task: review the pre-UI Neon documentation after the user reported receiving no activation email, correct P1-G-B's activation assumption, and record the execution-process incident from the review.
+- Plan agreed: yes. The approved scope is documentation correction only across the existing nine P1-G-B files, with no further database connection, Vercel/Neon remote command, environment change, deployment, merge, or push.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_G_PRODUCTION_EXECUTION_HANDOFF.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md`
+  - `plan_docs/PLAN_V1_STAGE6B_PRODUCTION_EXECUTION.md`
+- Evidence reviewed:
+  - Stage 5F created and linked the Vercel Marketplace Neon resource for Development / Preview, applied `0001_initial.sql`, and inspected 8 tables with zero core business rows.
+  - Stage 5J verified local and Vercel Preview `postgres-preview` health reads against the resource.
+  - Stage 5K performed a controlled Preview write, Stage 5L cleaned smoke rows and returned counts to zero, and Stage 5N verified Preview UI persistence.
+  - Stage 6B-P1-F reused the same approved resource, applied `0002_schema5_production_runtime.sql`, verified schema version 5 and Active-review guards, exercised repository integration, and returned final business counts to zero.
+  - No pre-P1-G-B project document recorded Neon email activation as a requirement.
+- Correction:
+  - The `Almost there` screen seen through the attempted Vercel SSO management route is retained as observed evidence.
+  - It no longer supports a claim that the existing resource is absent, unusable, or globally blocked on email activation.
+  - P1-G-C is now blocked on an approved provider-management path or equivalent branch/recovery evidence, exact Production target selection, access boundary, merge/deployment choices, and first-write acceptance.
+- Execution-process incident:
+  - During read-only document searching, an `rg` regular expression was placed inside shell double quotes while containing Markdown backticks.
+  - Shell command substitution unintentionally invoked `npm run db:migrate:dev`, which used the existing `STAGE5F_DATABASE_TARGET=development` guard and connected to the approved non-production development database.
+  - `scripts/run-sql-migration.mjs` submitted `0001_initial.sql`; that file starts with `begin;`, and its first DDL statement is `create table people`.
+  - PostgreSQL returned error `42P07` because relation `people` already existed. No successful mutating SQL statement preceded the failure, and the transaction did not reach `commit;`.
+  - This database connection exceeded the approved read-only documentation scope. No follow-up database inspection or other remote command was run. Remote state was not re-inspected, so the precise claim is limited to: the observed execution path contains no evidence of a committed mutation.
+  - Prevention: use single-quoted or fixed-string shell search patterns when the searched text contains Markdown backticks; do not embed backticks in shell double-quoted search expressions.
+- Validation:
+  - Passed: stale-state scan found no affirmative requirement to activate Neon email before P1-G-C; remaining activation references are observed-screen evidence or explicit corrections.
+  - Passed: secret-hygiene scan found no Postgres connection URL, raw endpoint hostname, or unredacted Neon-style project identifier in the nine changed documents.
+  - Passed: `git diff --check`.
+  - Passed: `npm run governance:preflight`.
+- Safety notes: documentation edits only after the incident. No additional `.env` read, database connection, SQL, Vercel/Neon remote command, environment change, branch creation/deletion, deployment, promotion, alias change, merge, push, email action, secret output, Production migration, Production data write, or Production runtime cutover was performed.
+
+## 2026-07-10 13:44 AEST
+
+- Task: execute Stage 6B-P1-G-B read-only Production inventory after the user committed P1-G-A and explicitly requested the next stage.
+- Plan agreed: yes. Scope was read-only local Git/Vercel-link inspection, private Vercel/Neon account inventory, minimum redacted local target identification, documentation sync, and no live mutation.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_G_PRODUCTION_EXECUTION_HANDOFF.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md`
+  - `plan_docs/PLAN_V1_STAGE6B_PRODUCTION_EXECUTION.md`
+- Reason: establish the exact current Production infrastructure state before P1-G-C chooses a target, access boundary, merge route, deployment mechanism, or first-write acceptance method.
+- Read-only execution notes:
+  - Confirmed `V1` was clean, tracked `origin/V1`, was ahead/behind `0/0`, and pointed to commit `553d91a7888f940f1b1a986455f7c718ee1530ac`.
+  - Confirmed linked Vercel team `anorias-projects`, project `words-learning-app-for-mimi`, Git repository `huaixuanhu/words-learning-app-for-mimi`, and Production branch `main`.
+  - The connected Vercel app lacked the required team scope and returned `403`; used the existing authenticated cached Vercel CLI `54.20.1` without re-authentication or token output.
+  - Confirmed the team is on the Hobby plan.
+  - Confirmed historical Production `dpl_2nvALJ1CutPjeFteXKMCHWKa4UsD` remains Ready from branch `V1` / commit `d01719a6bb372c75873d042c657feb7f93d80b3a`.
+  - Confirmed current-commit Preview `dpl_9a9jharXJof6UUxitFTFHjoFGYht` is Ready from branch `V1` / commit `553d91a7888f940f1b1a986455f7c718ee1530ac`.
+  - Confirmed the canonical Production domain points to the historical deployment and returned HTTP `200`; `/api/storage/health` returned `404` on that historical artifact.
+  - Confirmed Production has zero project env vars. `MIMI_STORAGE_RUNTIME` is Preview-only; 16 encrypted Neon/Postgres keys are Development / Preview-only; Preview UI/smoke write flags are absent.
+  - Confirmed Vercel SSO deployment protection is configured for `all_except_custom_domains`, but the canonical Production project domain remains publicly reachable.
+  - Confirmed Neon integration resource `words-learning-app-for-mimi-neon` is available. Read minimum `.env.local` metadata to verify the Development / Preview target, then committed only redacted project/endpoint fingerprints plus non-secret region/database/role labels.
+  - Opened the provider resource through Vercel Neon SSO and reached official Neon Console. Encountered an `Almost there` email-activation screen, did not resend activation email or interact with any provider control, and could not inspect branch/recovery details through that route. The later 17:43 evidence review clarifies that this did not invalidate the existing operational Development / Preview resource.
+  - Confirmed no Production database env connection or exact Production target is configured; Neon branch/recovery capability remains unverified.
+  - Confirmed no Vercel rollback is currently in progress. Because the account is Hobby and only one Production deployment is listed, arbitrary specific-deployment rollback must not be assumed.
+- Validation:
+  - Passed: current-state scan found no document that still marks P1-G-B as pending.
+  - Passed: secret-hygiene scan found no raw Neon project id, endpoint hostname, or Postgres connection URL in the changed documentation.
+  - Passed: `git diff --check`.
+  - Passed: `npm run governance:preflight`.
+- Safety notes: read-only account access and local documentation only. `.env.local` was read after explicit approval only to derive non-secret target identity/fingerprints; no password, token, full database URL, or connection string was printed or committed. No SQL, database connection, database inspection, database mutation, env change, integration change, branch creation/deletion, email resend, GitHub push, pull request, merge, Vercel deployment/promotion/alias change/rollback, Neon restore, authentication implementation, access-gate implementation, AI API（人工智能接口）, external vocabulary source, analytics（分析追踪）, notification, email send, or 付费/扣款 feature was performed.
+
 ## 2026-07-10 13:24 AEST
 
 - Task: execute Stage 6B-P1-G-A documentation first, then follow the documented execution path; record the user's clarification that the current development database contains no valuable data and formal data should begin only after fully cloud-backed V1 launch.

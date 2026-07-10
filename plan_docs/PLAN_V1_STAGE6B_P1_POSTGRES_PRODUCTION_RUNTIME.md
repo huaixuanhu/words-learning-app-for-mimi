@@ -1,11 +1,11 @@
 # Words Learning App For Mimi Stage 6B-P1: Postgres Production Runtime
 
 Created: 2026-07-08 00:25 AEST
-Last updated: 2026-07-10 13:24 AEST
+Last updated: 2026-07-10 17:43 AEST
 
 Source plan: `plan_docs/PLAN_V1_STAGE6B_PRODUCTION_EXECUTION.md`
 Derived from: `plan_docs/PLAN_V1_STAGE6A_PRODUCTION_RELEASE_GATE.md`, `plan_docs/PLAN_V1_STAGE7_9_DUAL_TRACK_DATA_IMPORT.md`, `plan_docs/PLAN_V1_STAGE7_10_LIBRARY_REVIEW_CONTROLS.md`, `plan_docs/PLAN_V1_STAGE7_11_REVIEW_ROLLBACK_AUTO_REFRESH.md`, `plan_docs/PLAN_V1_STAGE8_REVIEW_MEMORY_ALGORITHM.md`, `ARCHITECTURE.md`, `db/migrations/0001_initial.sql`, `src/lib/storage/runtime-mode.ts`, `src/app/api/storage/data/route.ts`, `src/lib/storage/postgres/repository.ts`, and the 2026-07-08 user decision to make V1's formal release fully cloud-backed instead of browser-local.
-Scope: plan and track the implementation of a real `postgres-production` runtime（运行模式）for V1 after Stage 8 is accepted, including schema version 5 or later database migration（数据库迁移）, server-only Production（生产环境）runtime gating, API（应用程序接口）read/write behavior, repository parity with browser-local features, backup import（备份导入）, non-production Neon branch（分支）verification, Production migration/import/deploy sequence, rollback（回滚）, and validation. Stage 6B-P1-B has implemented the local schema migration draft and static tests. Stage 6B-P1-C has implemented the local runtime / API contract. Stage 6B-P1-D has implemented local repository parity code and tests. Stage 6B-P1-E has implemented local backup import version 5 planning, fixture, script, and tests. Stage 6B-P1-F has applied and validated the schema version 5 migration on the approved non-production development database. Stage 6B-P1-G-A has documented the Production execution handoff and the confirmed empty-Production-start decision.
+Scope: plan and track the implementation of a real `postgres-production` runtime（运行模式）for V1 after Stage 8 is accepted, including schema version 5 or later database migration（数据库迁移）, server-only Production（生产环境）runtime gating, API（应用程序接口）read/write behavior, repository parity with browser-local features, backup import（备份导入）, non-production Neon branch（分支）verification, Production migration/import/deploy sequence, rollback（回滚）, and validation. Stage 6B-P1-B has implemented the local schema migration draft and static tests. Stage 6B-P1-C has implemented the local runtime / API contract. Stage 6B-P1-D has implemented local repository parity code and tests. Stage 6B-P1-E has implemented local backup import version 5 planning, fixture, script, and tests. Stage 6B-P1-F has applied and validated the schema version 5 migration on the approved non-production development database. Stage 6B-P1-G-A has documented the Production execution handoff and the confirmed empty-Production-start decision. Stage 6B-P1-G-B has completed the approved read-only Vercel / Neon inventory and found that no Production database target is configured.
 Non-Scope: no GitHub push, no pull request, no merge（合并）to `main`, no Vercel command, no Neon management command, no credential value printing, no Production env var change, no Production database mutation, no formal user backup import, no Production deployment, no authentication（认证）implementation, no AI API（人工智能接口）, no dictation engine（听写引擎）, no spelling checker（拼写检查器）, no writing feedback model, no external vocabulary source, no analytics（分析追踪）, no notification, no email, and no 付费/扣款 feature. P1-F did read ignored `.env.local` and mutate only the approved non-production development database after explicit human confirmation.
 Exit criteria: Stage 6B-P1 implementation plan exists, parent docs and logs link to it, the required schema/runtime/API/backup validation sequence is explicit, and every future remote / credential / Production action remains behind explicit human approval.
 
@@ -352,7 +352,7 @@ Boundary:
 
 ### P1-G Production Execution Handoff
 
-Status: P1-G-A documentation completed on 2026-07-10 after explicit approval. P1-G-B read-only Production inventory and P1-G-C human decision closure remain pending separate approval.
+Status: P1-G-A documentation and P1-G-B read-only Production inventory completed on 2026-07-10 after separate explicit approvals. Existing Stage 5F / 5J / 5K / 5L / 5N and P1-F evidence confirms the Development / Preview Neon resource is operational. P1-G-C remains blocked by exact Production target/recovery evidence and the remaining human decisions, not by a confirmed email-activation prerequisite.
 
 Detailed handoff: `plan_docs/PLAN_V1_STAGE6B_P1_G_PRODUCTION_EXECUTION_HANDOFF.md`.
 
@@ -365,10 +365,22 @@ P1-G-A completed:
 - split read-only account inventory, human decisions, and live Production actions into separately approved slices;
 - defined Production-specific migration guard, rollback, and stop-condition requirements.
 
+P1-G-B completed:
+
+- confirmed `V1` is clean, pushed, and at commit `553d91a7888f940f1b1a986455f7c718ee1530ac`;
+- confirmed Vercel team/project identity and `main` as the configured Production branch;
+- confirmed the current Ready Production deployment remains the historical non-official `V1` artifact, while the current commit has a Ready Preview deployment;
+- confirmed Production has no environment variables and Development / Preview alone hold the encrypted Neon/Postgres keys;
+- confirmed the canonical Production domain is publicly reachable, so the access boundary remains unresolved;
+- confirmed no Production database target is configured;
+- confirmed prior Stage 5F / 5J / 5K / 5L / 5N and P1-F evidence that the Development / Preview Neon resource has supported migration, read, write, cleanup, Preview UI persistence, and schema version 5 repository verification;
+- reached Neon Console through provider SSO but encountered an `Almost there` email-activation screen, leaving that management route and branch/recovery capability unresolved without invalidating the existing resource evidence;
+- performed no SQL, database connection, remote mutation, env change, deployment, alias change, merge, or secret output.
+
 Remaining before formal Stage 6B execution:
 
-- confirm exact Production database target;
-- confirm environment variable names and scopes without exposing values;
+- establish an approved provider-management path or equivalent evidence for the existing Neon resource and repeat read-only branch/recovery inspection;
+- confirm exact empty Production database target and recovery capability;
 - confirm access boundary;
 - confirm merge path, deployment mechanism, and first Production write acceptance method;
 - confirm all Production business and backup-import counts are zero after migration;
@@ -433,6 +445,7 @@ Stop immediately if:
 
 Before code implementation:
 
+- establish an approved provider-management path or equivalent evidence and inspect exact branch / database / recovery capability before target selection;
 - whether Production writes will launch with no-credential private-URL risk acceptance or a separate access gate;
 - whether `main` merge should happen by direct merge or pull request after P1 passes;
 - whether the first real user write should serve as Production write acceptance or a separate smallest-possible smoke write should be approved;
@@ -444,6 +457,6 @@ Closed on 2026-07-10:
 
 ## P1 Result
 
-Stage 6B-P1 is the required database/runtime bridge between the accepted local V1 app and the desired fully cloud-backed V1 launch. Stage 8-G accepted the final V1 Recognition review memory behavior and handoff shape. P1-B added the local schema version 5 migration draft plus static tests. P1-C added the local `postgres-production` runtime / API contract and safety tests. P1-D added local Postgres repository parity code and tests. P1-E added local backup import version 5 script support, fixture coverage, and no-database dry-run validation. P1-F applied and validated the schema version 5 migration on the approved non-production development database and cleaned all fixture rows afterward. P1-G-A now records the empty Production launch, no-import decision, first durable data boundary, and separately approved Production execution slices.
+Stage 6B-P1 is the required database/runtime bridge between the accepted local V1 app and the desired fully cloud-backed V1 launch. Stage 8-G accepted the final V1 Recognition review memory behavior and handoff shape. P1-B added the local schema version 5 migration draft plus static tests. P1-C added the local `postgres-production` runtime / API contract and safety tests. P1-D added local Postgres repository parity code and tests. P1-E added local backup import version 5 script support, fixture coverage, and no-database dry-run validation. P1-F applied and validated the schema version 5 migration on the approved non-production development database and cleaned all fixture rows afterward. P1-G-A records the empty Production launch, no-import decision, first durable data boundary, and separately approved Production execution slices. P1-G-B records the live read-only Vercel / Neon inventory, including the absence of Production env vars/target, the operational Development / Preview resource baseline, and the unresolved provider-management route for branch/recovery evidence.
 
-No Production release should proceed until P1-G-B and P1-G-C record the Production target, environment variable scopes, access-boundary decision, merge/deployment mechanism, and first-write acceptance method. The first-launch backup/import choice is closed as `skip`.
+No Production release should proceed until P1-G-C records the exact Production target/recovery path through approved evidence, the access-boundary decision, merge/deployment mechanism, and first-write acceptance method. The environment scopes are inventoried, the Development / Preview resource is proven operational, and the first-launch backup/import choice is closed as `skip`.
