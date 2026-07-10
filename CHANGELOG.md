@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## 2026-07-10 18:57 AEST
+
+- Executed Stage 6B-P1-G-C-1 read-only provider supplement after the user confirmed the next stage.
+- Added `plan_docs/PLAN_V1_STAGE6B_P1_G_C_1_PROVIDER_SUPPLEMENT.md` as the derived child result document.
+- Used Vercel CLI 55.0.0 through `npm exec` for read-only project, env, integration, resource, installation, and deployment-list metadata. The CLI was temporarily fetched into npm's execution cache because `vercel` / `vc` were not on `PATH`; no project dependency file changed.
+- Confirmed the Vercel-managed Neon resource is owned, available, Free-plan, and connected to `words-learning-app-for-mimi` only for Development / Preview.
+- Confirmed Production still has no database environment variables and no exact database target.
+- Confirmed the Vercel Marketplace metadata path does not expose Neon branch names, primary/root status, database labels, role labels, restore window, or an exact empty Production target.
+- Kept `.env` access, database connection, SQL, branch creation/deletion, restore, env var changes, merge, push, deployment, promotion, rollback, alias changes, browser SSO action, email action, secret output, Production migration, and Production data writes out of scope.
+- Reason: strengthen the provider evidence without crossing into secret handling or Production mutation.
+
 ## 2026-07-10 18:40 AEST
 
 - Executed Stage 6B-P1-G-C-0 human decision closure documentation after the user confirmed the next stage.

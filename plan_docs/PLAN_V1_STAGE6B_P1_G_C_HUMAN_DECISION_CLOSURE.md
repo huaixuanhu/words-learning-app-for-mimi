@@ -1,7 +1,7 @@
 # Words Learning App For Mimi Stage 6B-P1-G-C: Human Decision Closure
 
 Created: 2026-07-10 18:40 AEST
-Last updated: 2026-07-10 18:40 AEST
+Last updated: 2026-07-10 18:57 AEST
 
 Source plan:
 - `plan_docs/PLAN_V1_STAGE6B_P1_G_PRODUCTION_EXECUTION_HANDOFF.md`
@@ -38,7 +38,7 @@ Exit criteria:
 
 ## Current State
 
-P1-G-A and P1-G-B are complete.
+P1-G-A, P1-G-B, P1-G-C-0, and P1-G-C-1 are complete.
 
 Known current facts:
 
@@ -52,10 +52,11 @@ Known current facts:
 - The existing Development / Preview Neon resource is operational.
 - The attempted Vercel SSO route did not expose Neon branch / recovery details.
 - Email activation is not an established prerequisite for using the existing resource.
+- P1-G-C-1 confirmed through Vercel CLI 55.0.0 that the Vercel-managed Neon resource is owned, available, on the `free_v3` Free plan, and connected to this project only for Development / Preview environments.
 
 Open blocker:
 
-P1-G-C cannot close until a provider-management path or equivalent evidence identifies the actual Neon branch / database / recovery capability. Production migration and runtime cutover remain unauthorized.
+P1-G-C cannot close until a provider-management path or equivalent evidence identifies the actual Neon branch / database / recovery capability. P1-G-C-1 did not expose branch names, database labels, role labels, restore window, or an exact empty Production target. Production migration and runtime cutover remain unauthorized.
 
 ## Reference Check
 
@@ -249,23 +250,25 @@ This is a recommendation, not an approval.
 
 ## Next Approved Slice
 
-The next slice should be `P1-G-C-1 Provider Supplement`.
+`P1-G-C-1 Provider Supplement` is complete in `plan_docs/PLAN_V1_STAGE6B_P1_G_C_1_PROVIDER_SUPPLEMENT.md`.
 
-Allowed only after separate approval:
+It confirmed:
 
-- read-only Vercel / Neon provider management inspection;
-- no secret value output;
-- no `.env` read unless explicitly included;
-- no SQL, database connection, migration, write, branch creation/deletion, restore, env var change, merge, deploy, promote, rollback, or email action;
-- record only non-secret branch / database / plan / restore / environment-scope evidence.
+- the Vercel-managed Neon resource exists, is owned, and is available;
+- the resource is connected to `words-learning-app-for-mimi` for Development / Preview only;
+- Production still has no database environment variables;
+- Vercel Marketplace metadata can show plan and resource scope but not Neon branch / database / restore details.
 
-Exit evidence for `P1-G-C-1`:
+The next gate is no longer generic provider discovery. It is a human evidence-route decision for the missing Neon branch / database / restore metadata.
 
-- provider path used;
-- exact non-secret target candidates;
-- exact recovery / restore capability;
-- whether a distinct empty Production target exists or must be created;
-- updated decision register with the still-pending human choices.
+Accepted next evidence routes:
+
+- human-provided non-secret Neon dashboard metadata;
+- a callable Neon Marketplace MCP read-only tool if it becomes available;
+- a separately approved browser SSO read-only inspection with a hard stop at `Almost there` or any account-changing prompt;
+- a separately approved Neon CLI / API path only if secret handling is explicitly included.
+
+P1-G-C remains open until that evidence supports exact target selection and recovery direction.
 
 ## Stop Conditions
 
@@ -282,3 +285,7 @@ Stop immediately if:
 ## P1-G-C-0 Result
 
 This document is a decision packet only. It does not close P1-G-C and does not authorize live Production work. P1-G-C remains open until the provider supplement and human decisions are completed.
+
+## P1-G-C-1 Result
+
+P1-G-C-1 is documented in `plan_docs/PLAN_V1_STAGE6B_P1_G_C_1_PROVIDER_SUPPLEMENT.md`. It is complete as a read-only provider supplement. It strengthened the Vercel-managed Neon resource evidence but did not expose exact Neon branch, database, role, restore, or empty Production target details. P1-G-C remains open.

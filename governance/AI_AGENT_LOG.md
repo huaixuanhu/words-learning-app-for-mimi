@@ -1,5 +1,41 @@
 # AI Agent Log
 
+## 2026-07-10 18:57 AEST
+
+- Task: execute Stage 6B-P1-G-C-1 Provider Supplement after the user confirmed the next stage.
+- Plan agreed: yes. The approved scope is read-only provider metadata and documentation sync. No `.env` read, credential output, database connection, SQL, branch creation/deletion, restore, env var change, merge, deployment, browser SSO action, email action, or Production write is included.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_G_C_1_PROVIDER_SUPPLEMENT.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_G_C_HUMAN_DECISION_CLOSURE.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_G_PRODUCTION_EXECUTION_HANDOFF.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md`
+  - `plan_docs/PLAN_V1_STAGE6B_PRODUCTION_EXECUTION.md`
+- Execution notes:
+  - Verified the working tree was clean at start.
+  - Vercel connector `_list_projects` returned `Failed to list projects`, so no project evidence was taken from that connector.
+  - `vercel` and `vc` were not available on `PATH`; `npm exec -- vercel --version` temporarily fetched Vercel CLI 55.0.0 into npm's execution cache and did not modify repository dependency files.
+  - `vercel project inspect` confirmed the Vercel project identity, Next.js preset, root directory, and Node.js `24.x` setting.
+  - `vercel env ls --format json` confirmed Production has no project environment variables; `MIMI_STORAGE_RUNTIME` is Preview-only; Neon/Postgres variable names remain Development / Preview-only; no env values were printed.
+  - `vercel integration list` and `vercel integration resource inspect` confirmed resource `words-learning-app-for-mimi-neon` is owned, available, Neon-backed, on the Free `free_v3` plan, and connected to `words-learning-app-for-mimi` only for Development / Preview.
+  - `vercel integration installations --format json` confirmed the Neon Marketplace installation and showed capabilities including SSO and `mcpReadonly`; the filtered `--integration neon` form returned an empty list, so the filtered result is treated as inconclusive.
+  - `vercel list` showed recent deployments on the first page as Preview and no new Production action was performed.
+- Result:
+  - P1-G-C-1 strengthens evidence that the existing Vercel-managed Neon resource is operational and not Production-scoped.
+  - P1-G-C-1 does not expose Neon branch names, primary/root status, database labels, role labels, restore window, or an exact empty Production target.
+  - P1-G-C remains open pending human dashboard evidence, callable read-only Neon MCP evidence, separately approved browser SSO evidence, or separately approved Neon CLI / API evidence.
+- Validation:
+  - Passed: `git diff --check`.
+  - Passed: secret-hygiene scan found no Postgres connection URL, raw Neon endpoint hostname, Vercel token string, or JWT-shaped token in the changed documentation.
+  - Passed: P1-G-C-1 status scan found the provider supplement linked from parent docs, README, architecture notes, AGENTS, changelog, and AI log.
+  - Passed: `npm run governance:preflight`.
+- Safety notes: read-only provider metadata and local documentation only. No `.env` read, database connection, SQL, Vercel/Neon resource mutation, branch creation/deletion, restore, env var change, provider dashboard click, browser SSO action, email action, merge, push, deployment, promotion, rollback, alias change, secret output, Production migration, Production data write, or Production runtime cutover was performed.
+
 ## 2026-07-10 18:40 AEST
 
 - Task: execute Stage 6B-P1-G-C-0 documentation first after the user confirmed the next stage, turning the remaining P1-G-C blockers into an explicit human decision packet.
