@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## 2026-07-10 19:44 AEST
+
+- Executed Stage 6B-P1-G-C-2 evidence route decision documentation after the user confirmed the next stage.
+- Added `plan_docs/PLAN_V1_STAGE6B_P1_G_C_2_EVIDENCE_ROUTE_DECISION.md` as the derived child route-decision document.
+- Recommended human dashboard evidence as the next safest route for missing Neon branch / database / restore metadata.
+- Defined the required non-secret evidence packet: project/resource display name, branch list, primary/root marker, database label, role label, empty Production target status, restore / retention window, visible branch create / restore / reset controls, and Vercel Production connection availability.
+- Defined redaction rules for connection strings, endpoint hostnames, passwords, tokens, `.env` exports, QR codes, and database env var values.
+- Kept provider dashboard navigation, browser SSO, Neon CLI / API secret handling, `.env` access, database connection, SQL, branch creation/deletion, restore, env var changes, merge, deployment, promotion, rollback, alias changes, Production migration, and Production writes out of scope.
+- Reason: choose the safest evidence route before any account-sensitive or Production-impacting action.
+
 ## 2026-07-10 18:57 AEST
 
 - Executed Stage 6B-P1-G-C-1 read-only provider supplement after the user confirmed the next stage.

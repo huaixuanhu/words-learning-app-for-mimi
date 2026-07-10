@@ -1,7 +1,7 @@
 # Words Learning App For Mimi Stage 6B-P1-G-C: Human Decision Closure
 
 Created: 2026-07-10 18:40 AEST
-Last updated: 2026-07-10 18:57 AEST
+Last updated: 2026-07-10 19:44 AEST
 
 Source plan:
 - `plan_docs/PLAN_V1_STAGE6B_P1_G_PRODUCTION_EXECUTION_HANDOFF.md`
@@ -38,7 +38,7 @@ Exit criteria:
 
 ## Current State
 
-P1-G-A, P1-G-B, P1-G-C-0, and P1-G-C-1 are complete.
+P1-G-A, P1-G-B, P1-G-C-0, P1-G-C-1, and P1-G-C-2 are complete.
 
 Known current facts:
 
@@ -53,6 +53,7 @@ Known current facts:
 - The attempted Vercel SSO route did not expose Neon branch / recovery details.
 - Email activation is not an established prerequisite for using the existing resource.
 - P1-G-C-1 confirmed through Vercel CLI 55.0.0 that the Vercel-managed Neon resource is owned, available, on the `free_v3` Free plan, and connected to this project only for Development / Preview environments.
+- P1-G-C-2 recommends human dashboard evidence as the next safest evidence route and defines the required redaction rules.
 
 Open blocker:
 
@@ -270,6 +271,10 @@ Accepted next evidence routes:
 
 P1-G-C remains open until that evidence supports exact target selection and recovery direction.
 
+`P1-G-C-2 Evidence Route Decision` is complete in `plan_docs/PLAN_V1_STAGE6B_P1_G_C_2_EVIDENCE_ROUTE_DECISION.md`.
+
+It recommends Option A, human-provided dashboard evidence, before trying browser SSO or Neon CLI / API secret-handling paths. The human evidence packet must provide branch / database / restore metadata while redacting connection strings, hostnames, passwords, tokens, and environment variable values.
+
 ## Stop Conditions
 
 Stop immediately if:
@@ -289,3 +294,7 @@ This document is a decision packet only. It does not close P1-G-C and does not a
 ## P1-G-C-1 Result
 
 P1-G-C-1 is documented in `plan_docs/PLAN_V1_STAGE6B_P1_G_C_1_PROVIDER_SUPPLEMENT.md`. It is complete as a read-only provider supplement. It strengthened the Vercel-managed Neon resource evidence but did not expose exact Neon branch, database, role, restore, or empty Production target details. P1-G-C remains open.
+
+## P1-G-C-2 Result
+
+P1-G-C-2 is documented in `plan_docs/PLAN_V1_STAGE6B_P1_G_C_2_EVIDENCE_ROUTE_DECISION.md`. It is complete as a documentation-only evidence route decision. It does not provide the missing Neon metadata itself; it defines the safest next route for collecting it.

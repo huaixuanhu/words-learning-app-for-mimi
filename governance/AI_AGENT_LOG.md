@@ -1,5 +1,33 @@
 # AI Agent Log
 
+## 2026-07-10 19:44 AEST
+
+- Task: execute Stage 6B-P1-G-C-2 Evidence Route Decision after the user confirmed the next stage.
+- Plan agreed: yes. The approved scope is documentation only: define the safest next evidence route and synchronize parent docs/logs. No provider dashboard navigation, browser SSO, Neon CLI / API secret handling, `.env` read, database connection, SQL, branch creation/deletion, restore, env var change, merge, deployment, or Production write is included.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_G_C_2_EVIDENCE_ROUTE_DECISION.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_G_C_HUMAN_DECISION_CLOSURE.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_G_PRODUCTION_EXECUTION_HANDOFF.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md`
+  - `plan_docs/PLAN_V1_STAGE6B_PRODUCTION_EXECUTION.md`
+- Implementation notes:
+  - Added `plan_docs/PLAN_V1_STAGE6B_P1_G_C_2_EVIDENCE_ROUTE_DECISION.md` with source plan, derived-from list, scope, non-scope, exit criteria, current evidence state, evidence route options, recommended decision, and result.
+  - Recommended human dashboard evidence as the lowest-risk next route because it can provide branch / database / restore metadata without token handling or database connection.
+  - Defined redaction requirements for full Postgres URLs, endpoint hostnames, passwords, tokens, secret values, QR codes, `.env` export blocks, and database env var values.
+  - Kept browser SSO and Neon CLI / API routes behind separate explicit approvals.
+- Validation:
+  - Passed: `git diff --check`.
+  - Passed: secret-hygiene scan found no Postgres connection URL, raw Neon endpoint hostname, Vercel token string, or JWT-shaped token in the changed documentation.
+  - Passed: P1-G-C-2 status scan found the evidence route decision linked from parent docs, README, architecture notes, AGENTS, changelog, and AI log.
+  - Passed: `npm run governance:preflight`.
+- Safety notes: documentation-only scope. No `.env` read, database connection, SQL, Vercel/Neon command, provider dashboard navigation, browser SSO action, email action, branch creation/deletion, restore, environment variable change, merge, push, deployment, promotion, rollback, alias change, secret output, Production migration, Production data write, or Production runtime cutover was performed.
+
 ## 2026-07-10 18:57 AEST
 
 - Task: execute Stage 6B-P1-G-C-1 Provider Supplement after the user confirmed the next stage.

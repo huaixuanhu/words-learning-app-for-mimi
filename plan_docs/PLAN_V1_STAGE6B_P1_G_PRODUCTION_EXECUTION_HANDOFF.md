@@ -1,7 +1,7 @@
 # Words Learning App For Mimi Stage 6B-P1-G: Production Execution Handoff
 
 Created: 2026-07-10 13:24 AEST
-Last updated: 2026-07-10 18:57 AEST
+Last updated: 2026-07-10 19:44 AEST
 
 Source plan:
 - `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md`
@@ -28,6 +28,7 @@ Consumer / next stage:
 Child decision packet:
 - `plan_docs/PLAN_V1_STAGE6B_P1_G_C_HUMAN_DECISION_CLOSURE.md`
 - `plan_docs/PLAN_V1_STAGE6B_P1_G_C_1_PROVIDER_SUPPLEMENT.md`
+- `plan_docs/PLAN_V1_STAGE6B_P1_G_C_2_EVIDENCE_ROUTE_DECISION.md`
 
 Document nature:
 This is a derived Production execution handoff（生产执行交接）for Stage 6B-P1. It is not an independent peer plan. P1-G-B account inspection was separately approved and completed read-only. P1-G-C-0 has created a child decision packet for the remaining human choices; this document still does not authorize database mutation, environment changes, import, merge（合并）, or deployment.
@@ -77,6 +78,7 @@ P1-G is complete only when:
 - `P1-G-B Read-Only Production Inventory`: completed on 2026-07-10 after separate explicit approval, with no Production target configured. The existing Development / Preview Neon resource is proven operational, while the Vercel SSO management route did not expose branch / recovery details.
 - `P1-G-C-0 Decision Packet`: completed as documentation only in `plan_docs/PLAN_V1_STAGE6B_P1_G_C_HUMAN_DECISION_CLOSURE.md`; it lists recommended defaults, accepted alternatives, evidence requirements, and stop conditions.
 - `P1-G-C-1 Provider Supplement`: completed read-only in `plan_docs/PLAN_V1_STAGE6B_P1_G_C_1_PROVIDER_SUPPLEMENT.md`; it confirmed the Vercel-managed Neon resource is available, owned, Free-plan, and connected only to Development / Preview for this project, but it did not expose branch / database / recovery details.
+- `P1-G-C-2 Evidence Route Decision`: completed as documentation only in `plan_docs/PLAN_V1_STAGE6B_P1_G_C_2_EVIDENCE_ROUTE_DECISION.md`; it recommends human dashboard evidence as the next safest route and defines redaction requirements.
 - `P1-G-C Human Decision Closure`: still open until the exact Production branch / database / recovery capability is established through human-provided dashboard evidence, callable read-only Neon MCP evidence, separately approved browser SSO inspection, or separately approved Neon CLI / API evidence; the remaining target, access, merge, deployment, first-write, and historical-deployment choices are also pending. Email activation is not an established prerequisite.
 - `Stage 6B Formal Production Execution`: blocked until P1-G-C completes.
 
@@ -344,8 +346,9 @@ Result:
 
 Detailed decision packet: `plan_docs/PLAN_V1_STAGE6B_P1_G_C_HUMAN_DECISION_CLOSURE.md`.
 Provider supplement: `plan_docs/PLAN_V1_STAGE6B_P1_G_C_1_PROVIDER_SUPPLEMENT.md`.
+Evidence route decision: `plan_docs/PLAN_V1_STAGE6B_P1_G_C_2_EVIDENCE_ROUTE_DECISION.md`.
 
-P1-G-C-0 has been completed as documentation only. P1-G-C-1 has completed a read-only Vercel CLI provider supplement. Neither closes P1-G-C or approves environment changes, database work, merge, deployment, or Production write acceptance.
+P1-G-C-0 has been completed as documentation only. P1-G-C-1 has completed a read-only Vercel CLI provider supplement. P1-G-C-2 has selected the next safest evidence route at the documentation level. None of these closes P1-G-C or approves environment changes, database work, merge, deployment, or Production write acceptance.
 
 After P1-G-B, the user must explicitly decide:
 
@@ -430,3 +433,7 @@ P1-G-C-0 created `plan_docs/PLAN_V1_STAGE6B_P1_G_C_HUMAN_DECISION_CLOSURE.md` as
 ## P1-G-C-1 Result
 
 P1-G-C-1 created `plan_docs/PLAN_V1_STAGE6B_P1_G_C_1_PROVIDER_SUPPLEMENT.md` and completed the read-only Vercel CLI supplement. Vercel Marketplace metadata confirms the existing Neon resource is owned, available, on the Free `free_v3` plan, and connected to `words-learning-app-for-mimi` only for Development / Preview. Production still has no database env vars. Branch names, primary/root status, database and role labels, restore window, and exact empty Production target remain unavailable through this path. P1-G-C remains open.
+
+## P1-G-C-2 Result
+
+P1-G-C-2 created `plan_docs/PLAN_V1_STAGE6B_P1_G_C_2_EVIDENCE_ROUTE_DECISION.md`. It recommends human dashboard evidence as the next safest route for the missing Neon branch / database / restore metadata, with explicit redaction requirements for connection strings, hostnames, passwords, tokens, and environment variable values. It did not inspect the provider dashboard or close target selection.
