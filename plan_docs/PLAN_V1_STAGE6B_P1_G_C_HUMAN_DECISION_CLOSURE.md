@@ -1,7 +1,7 @@
 # Words Learning App For Mimi Stage 6B-P1-G-C: Human Decision Closure
 
 Created: 2026-07-10 18:40 AEST
-Last updated: 2026-07-10 20:55 AEST
+Last updated: 2026-07-10 23:56 AEST
 
 Source plan:
 - `plan_docs/PLAN_V1_STAGE6B_P1_G_PRODUCTION_EXECUTION_HANDOFF.md`
@@ -10,6 +10,7 @@ Derived from:
 - `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md`
 - `plan_docs/PLAN_V1_STAGE6B_PRODUCTION_EXECUTION.md`
 - `plan_docs/PLAN_V1_STAGE6A_PRODUCTION_RELEASE_GATE.md`
+- `plan_docs/PLAN_V1_STAGE8_5_DATA_LIFECYCLE_ENVIRONMENT_STRATEGY.md`
 - `ARCHITECTURE.md`
 - P1-G-B read-only Production inventory completed on 2026-07-10
 - the 2026-07-10 correction that Neon email activation is not an established prerequisite for the existing operational Development / Preview resource
@@ -18,7 +19,7 @@ Scope:
 - Turn the remaining P1-G-C choices into an explicit decision packet before any live Production（生产环境）action.
 - Define acceptable provider-management path（供应商管理路径）or equivalent evidence for Neon branch / database / recovery capability.
 - Define the decision options for Production target（生产目标）, access boundary（访问边界）, merge path（合并路径）, deployment mechanism（部署机制）, Production write acceptance, and the existing non-official Production deployment.
-- Define the next separately approved read-only provider supplement and the stop conditions before migration（迁移）, environment variable（环境变量）changes, or deployment.
+- Define the next documentation-first P1-G-C-4 branch/environment execution decision and the stop conditions before migration（迁移）, environment variable（环境变量）changes, or deployment.
 
 Non-Scope:
 - No Vercel or Neon command.
@@ -31,8 +32,8 @@ Non-Scope:
 
 Exit criteria:
 - The remaining P1-G-C decisions are listed with recommended defaults and accepted alternatives.
-- The exact evidence required before choosing a Neon Production target is explicit.
-- The next live/read-only provider supplement has a bounded scope and requires separate approval.
+- The provider evidence and accepted Stage 8.5 target topology are explicit.
+- The next P1-G-C-4 branch/environment execution decision has a bounded documentation-first scope and leaves live actions separately approved.
 - Parent Stage 6B / P1 documents, README, architecture notes, changelog, and AI log point to this decision packet.
 - Local documentation validation passes.
 
@@ -55,10 +56,11 @@ Known current facts:
 - P1-G-C-1 confirmed through Vercel CLI 55.0.0 that the Vercel-managed Neon resource is owned, available, on the `free_v3` Free plan, and connected to this project only for Development / Preview environments.
 - P1-G-C-2 recommends human dashboard evidence as the next safest evidence route and defines the required redaction rules.
 - P1-G-C-3 captured the approved read-only Neon dashboard evidence: the current project has only one `main` Default branch, database / role labels `neondb` / `neondb_owner`, Sydney region, Postgres 17, and a 6-hour restore window. No separate empty Production branch / database is visible.
+- Stage 8.5 accepted the existing Neon project with `main` as future Production, `staging` as the long-lived non-production baseline, and temporary logical `preview/*` branches derived from `staging`.
 
 Open blocker:
 
-P1-G-C cannot close until the user chooses the exact Production target strategy, access boundary, merge path, deployment mechanism, first-write acceptance method, and historical deployment treatment. P1-G-C-3 materially closes the branch / database / restore evidence gap for the current resource, but it also confirms that no distinct empty Production target currently exists. Production migration and runtime cutover remain unauthorized.
+P1-G-C cannot close until P1-G-C-4 defines the separately approved single-project branch/environment execution sequence and the user chooses the access boundary, merge path, deployment mechanism, first-write acceptance method, and historical deployment treatment. The policy-level Production target strategy is no longer open. Production branch creation/reclassification, environment-variable changes, migration, and runtime cutover remain unauthorized.
 
 ## Reference Check
 
@@ -97,9 +99,9 @@ Accepted alternatives:
 - Use a separately approved Vercel / Neon CLI or API read-only inventory if the account scope is clear and output is redacted.
 - Use manual Neon connection only if managed integration access remains blocked and the user explicitly approves direct secret handling.
 
-Decision status: pending.
+Decision status: completed through P1-G-C-1 / P1-G-C-2 / P1-G-C-3 read-only evidence.
 
-Minimum evidence before target selection:
+Evidence required before target execution:
 
 - exact provider path used;
 - Neon project / resource identity without secret-bearing URLs;
@@ -119,16 +121,20 @@ Stop if:
 
 ### 2. Production Target
 
-Recommended default:
+Accepted Stage 8.5 decision:
 
-Prefer a distinct empty Production branch / database target that belongs to the existing operational Neon resource only after provider evidence proves it is separable from Development / Preview and has an acceptable recovery path.
+- Keep the existing Neon project `words-learning-app-for-mimi-neon` for the current private small-app phase.
+- Use verified clean `main` as the future Production data branch.
+- Create one long-lived `staging` branch before `main` receives valuable Production data.
+- Move Development / Preview away from `main` and point their stable non-production path to `staging`.
+- Derive temporary logical `preview/*` branches from `staging`, not from Production `main`.
+- Keep Production empty at first launch and do not promote non-production business rows.
 
-Accepted alternatives:
+Future upgrade option:
 
-- Create a separate Vercel-managed Neon database / project for Production if that is cleaner than branch-level separation. This requires explicit approval because it creates cloud infrastructure and may affect billing / plan settings.
-- Use a manually connected Neon Production target if managed integration access remains unresolved. This requires direct connection-string handling and explicit secret-safety approval.
+- Reconsider a separate Production Neon project when unfamiliar users, authentication/roles, multiple maintainers, higher-sensitivity AI/user content, stricter recovery objectives, or unacceptable project-level blast radius appear.
 
-Decision status: pending.
+Decision status: accepted at policy level on 2026-07-10; live branch/environment execution remains pending P1-G-C-4 and explicit approval.
 
 Target acceptance must record:
 
@@ -140,6 +146,7 @@ Target acceptance must record:
 - non-secret fingerprint only if needed;
 - confirmation that all learning and backup-import tables are empty after migration and before runtime cutover;
 - recovery direction before first formal write.
+- confirmation that `staging` exists and Development / Preview no longer use `main` before durable Production writes begin.
 
 ### 3. Access Boundary
 
@@ -240,11 +247,11 @@ Do not delete, promote, rollback, or alias-change this deployment without separa
 
 If the user wants the lowest-friction cloud-backed V1 path while preserving safety, the recommended package is:
 
-1. Approved read-only provider supplement for the existing Vercel-managed Neon resource.
-2. Distinct empty Production target in that resource if branch / recovery evidence supports it.
+1. Follow the accepted Stage 8.5 single-project lifecycle policy.
+2. Document P1-G-C-4 creation of `staging`, Development / Preview retargeting, Preview parent selection, and Production-only `main` scope.
 3. `accept-private-url-risk` only if the user explicitly accepts trusted-group public-URL risk; otherwise stop for an access-gate child stage.
 4. Pull request from `V1` to `main`.
-5. Vercel Git integration deployment after Production env vars and database migration are complete.
+5. Vercel Git integration deployment after branch/environment separation, Production env vars, and database verification are complete.
 6. First real user write as write acceptance.
 7. Keep the historical non-official Production deployment untouched until formal release is verified.
 
@@ -261,7 +268,7 @@ It confirmed:
 - Production still has no database environment variables;
 - Vercel Marketplace metadata can show plan and resource scope but not Neon branch / database / restore details.
 
-The next gate is no longer generic provider discovery or dashboard evidence collection. It is a Production target strategy decision based on the P1-G-C-3 dashboard evidence.
+The next gate is no longer generic provider discovery, dashboard evidence collection, or target-strategy selection. It is P1-G-C-4 branch/environment execution design under the accepted Stage 8.5 topology.
 
 Accepted next evidence routes:
 
@@ -270,7 +277,7 @@ Accepted next evidence routes:
 - a separately approved browser SSO read-only inspection with a hard stop at `Almost there` or any account-changing prompt;
 - a separately approved Neon CLI / API path only if secret handling is explicitly included.
 
-P1-G-C remains open until that evidence supports exact target selection and recovery direction.
+P1-G-C remains open until P1-G-C-4 records exact branch/environment actions and recovery direction, followed by the remaining access / merge / deployment / first-write decisions.
 
 `P1-G-C-2 Evidence Route Decision` is complete in `plan_docs/PLAN_V1_STAGE6B_P1_G_C_2_EVIDENCE_ROUTE_DECISION.md`.
 
@@ -291,14 +298,14 @@ It confirms:
 
 Recommended next slice:
 
-- `P1-G-C-4 Production Target Decision`, documentation first. It should choose between creating a distinct Production branch / database in the existing Neon project, creating a separate Production Neon resource, or explicitly reusing the current `main` target despite its Development / Preview history.
+- `P1-G-C-4 Single-Project Branch Topology Execution Decision`, documentation first. It should specify how `staging` is created from verified clean `main`, how Development / Preview move to `staging`, how temporary Preview branches derive from `staging`, how Production variables later connect to `main`, and which read-only checks prove separation before any formal write.
 
 ## Stop Conditions
 
 Stop immediately if:
 
-- provider access still lands only on the `Almost there` screen and no equivalent evidence is available;
-- the only available connection appears to be Development / Preview;
+- current branch/environment evidence cannot be re-verified;
+- `staging` cannot be created or distinguished from Production `main` under a separately approved path;
 - any action would reveal a password, token, full Postgres URL, or endpoint hostname in docs/logs;
 - any action would create or mutate a database target;
 - any action would alter Vercel environment variables or trigger a deployment;
@@ -319,4 +326,4 @@ P1-G-C-2 is documented in `plan_docs/PLAN_V1_STAGE6B_P1_G_C_2_EVIDENCE_ROUTE_DEC
 
 ## P1-G-C-3 Result
 
-P1-G-C-3 is documented in `plan_docs/PLAN_V1_STAGE6B_P1_G_C_3_DASHBOARD_EVIDENCE.md`. It is complete as a browser-assisted, read-only Neon dashboard evidence capture. It confirms the current visible resource has only one `main` Default branch, `neondb` / `neondb_owner`, no child branches, no visible distinct Production target, and a 6-hour restore window. P1-G-C remains open for target strategy, access, merge, deployment, first-write, and historical deployment decisions.
+P1-G-C-3 is documented in `plan_docs/PLAN_V1_STAGE6B_P1_G_C_3_DASHBOARD_EVIDENCE.md`. It is complete as a browser-assisted, read-only Neon dashboard evidence capture. It confirms the current visible resource has only one `main` Default branch, `neondb` / `neondb_owner`, no child branches, no visible distinct Production target, and a 6-hour restore window. Stage 8.5 uses that evidence to close the target topology at policy level. P1-G-C remains open for P1-G-C-4 execution details plus access, merge, deployment, first-write, and historical deployment decisions. Stage 8.5 did not create a branch, change environment variables, connect to a database, migrate, or deploy.

@@ -1,7 +1,7 @@
 # Words Learning App For Mimi Stage 6B-P1-G-C-3: Dashboard Evidence Capture
 
 Created: 2026-07-10 20:55 AEST
-Last updated: 2026-07-10 20:55 AEST
+Last updated: 2026-07-10 23:56 AEST
 
 Source plan:
 - `plan_docs/PLAN_V1_STAGE6B_P1_G_C_2_EVIDENCE_ROUTE_DECISION.md`
@@ -174,3 +174,15 @@ Recommended default for that slice:
 ## P1-G-C-3 Result
 
 P1-G-C-3 is complete as a browser-assisted, read-only Neon dashboard evidence capture. It did not reveal, copy, print, or store secret values and did not mutate Neon, Vercel, GitHub, or any database. It shows that no separate empty Production target currently exists; P1-G-C must next choose the exact target strategy before any Production migration, environment-variable configuration, merge, deployment, or write.
+
+## Subsequent Stage 8.5 Decision
+
+The recommendation above records the decision state at the end of the evidence capture. Later on 2026-07-10, `plan_docs/PLAN_V1_STAGE8_5_DATA_LIFECYCLE_ENVIRONMENT_STRATEGY.md` accepted the policy-level topology:
+
+- keep the existing Neon project;
+- reclassify verified clean `main` as future Production after environment separation;
+- create long-lived non-production `staging`;
+- derive temporary logical `preview/*` branches from `staging`;
+- defer a separate Production project until an architecture-upgrade trigger appears.
+
+The evidence in this file remains unchanged. The next decision slice is now `P1-G-C-4 Single-Project Branch Topology Execution Decision`, documentation first; no branch or environment change is authorized by this note.

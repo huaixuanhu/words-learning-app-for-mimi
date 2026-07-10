@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## 2026-07-11 00:12 AEST
+
+- Accepted Stage 8.5 Data Lifecycle（数据生命周期）and Environment Strategy after the user confirmed the documentation-first scope and refined the architecture for the current private trusted-group app.
+- Added `plan_docs/PLAN_V1_STAGE8_5_DATA_LIFECYCLE_ENVIRONMENT_STRATEGY.md` as the canonical cross-stage policy derived from the master plan, Stage 6A, Stage 8, Stage 6B-P1, P1-G-C, architecture, and P1-G-C-3 dashboard evidence.
+- Selected one Neon project topology for the current phase: verified clean `main` as future Production, a long-lived `staging` non-production baseline, and temporary logical `preview/*` branches derived from `staging`.
+- Fixed the data-movement rule: code and versioned migrations move across environments; synthetic / fixture business rows remain non-production, and Production starts empty with real data created after launch.
+- Lowered the independent logical-backup target from daily to weekly, retained the most recent eight weekly backups, required an additional backup before high-risk Production data changes, and added explicit triggers for later daily backup or separate-project isolation.
+- Defined Preview/Recovery branch lifecycle, migration ordering, Recovery Point Objective（恢复点目标）/ Recovery Time Objective（恢复时间目标）, deletion-resurrection risk, and future AI run / assessment / prompt / embedding lineage boundaries.
+- Corrected the future execution path for current `main`: because `0001_initial.sql` and `0002_schema5_production_runtime.sql` were already applied while it was the approved non-production target, P1-G-C-4 must inspect migration history and must not rerun already-applied migrations after reclassification.
+- Synchronized AGENTS, architecture, README, master/release/P1/P1-G/P1-G-C plans, P1-G-C-3 follow-up evidence, and backup-import mapping to the accepted policy and the next documentation-first `P1-G-C-4 Single-Project Branch Topology Execution Decision`.
+- During the final stale-wording scan, one double-quoted `rg` pattern contained Markdown backticks and caused the shell to attempt `0001_initial.sql` and `0002_schema5_production_runtime.sql` as command names. Both returned `command not found`; no script, database connection, network call, or mutation occurred. The scan was rerun safely with a single-quoted pattern.
+- Kept Neon/Vercel mutation, `.env`/credential access, database connection, SQL, branch creation, environment-variable changes, merge, deployment, backup automation, and Production writes out of scope.
+- Reason: establish a reusable lifecycle baseline while keeping infrastructure proportionate to a small private app and preserving explicit upgrade paths for future users, AI data, recovery needs, and stronger isolation.
+
 ## 2026-07-10 20:55 AEST
 
 - Executed Stage 6B-P1-G-C-3 dashboard evidence capture after the user opened the Neon dashboard and approved direct read-only inspection.

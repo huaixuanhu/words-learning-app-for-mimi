@@ -1,5 +1,41 @@
 # AI Agent Log
 
+## 2026-07-11 00:12 AEST
+
+- Task: create and synchronize Stage 8.5 Data Lifecycle（数据生命周期）and Environment Strategy after the user confirmed the prior plan, lowered the logical-backup frequency, and selected a proportionate single-Neon-project topology for the current private trusted-group app.
+- Plan agreed: yes. The accepted scope was local documentation only. The user selected existing-project `main` for future Production, long-lived non-production `staging`, temporary logical `preview/*` branches derived from `staging`, and a lower-frequency backup baseline. No cloud or persistent-data action was approved.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `db/LOCAL_BACKUP_TO_POSTGRES.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE6A_PRODUCTION_RELEASE_GATE.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_G_C_3_DASHBOARD_EVIDENCE.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_G_C_HUMAN_DECISION_CLOSURE.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_G_PRODUCTION_EXECUTION_HANDOFF.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md`
+  - `plan_docs/PLAN_V1_STAGE6B_PRODUCTION_EXECUTION.md`
+  - `plan_docs/PLAN_V1_STAGE8_5_DATA_LIFECYCLE_ENVIRONMENT_STRATEGY.md`
+- Decisions recorded:
+  - Existing Neon project `words-learning-app-for-mimi-neon` remains the sole project for the current V1 phase.
+  - Verified clean `main` is the future Production branch only after `staging` exists and Development / Preview no longer use `main`.
+  - `staging` is the long-lived non-production baseline; temporary logical `preview/*` branches derive from `staging` and use test data only.
+  - Production starts empty; non-production business rows do not promote into Production.
+  - After formal data begins, target one encrypted logical backup per week, retain the most recent eight weekly backups, and create an additional backup before high-risk Production data changes.
+  - Daily backups and a separate Production Neon project become upgrade options when the trusted-group, AI-data, access, blast-radius, or recovery profile changes.
+  - P1-G-C-4 is now a documentation-first single-project branch-topology execution decision, not another generic target-selection round.
+  - Because `main` already received `0001_initial.sql` and `0002_schema5_production_runtime.sql` while it was non-production, later reclassification must inspect migration history and must not rerun already-applied migrations.
+- Validation:
+  - Passed: `git diff --check` before final log sync.
+  - Passed: `git diff --check` after log sync.
+  - Passed: `npm run governance:preflight`.
+  - Not run: application lint/typecheck/test/build because this slice changes documentation only and no source, schema, migration, package, or runtime behavior.
+- Safety notes: no `.env` read, credential/connection-string handling, SQL, database connection, Neon/Vercel mutation, branch creation, snapshot/restore, environment-variable change, GitHub push/merge, deployment, backup automation, or Production data write was performed.
+- Execution note: one final `rg` stale-wording scan used a double-quoted pattern containing Markdown backticks, so zsh attempted `0001_initial.sql` and `0002_schema5_production_runtime.sql` as command names. Both returned `command not found`; no project script, database connection, network call, or mutation ran. The scan was immediately rerun with a single-quoted pattern.
+
 ## 2026-07-10 20:55 AEST
 
 - Task: execute Stage 6B-P1-G-C-3 dashboard evidence capture after the user opened the Neon dashboard and approved direct read-only dashboard inspection.

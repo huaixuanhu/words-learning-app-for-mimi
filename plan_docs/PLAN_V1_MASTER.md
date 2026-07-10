@@ -1,7 +1,7 @@
 # Words Learning App For Mimi PLAN V1 Master
 
 Created: 2026-07-02 23:30 AEST
-Last updated: 2026-07-10 20:55 AEST
+Last updated: 2026-07-10 23:56 AEST
 
 Source plan:
 
@@ -274,10 +274,11 @@ Confirmed release sequence as of 2026-07-08:
 - Stage 6A is Production（生产环境）release gate design only. It may define the final deployment checklist, access boundary, environment variable（环境变量）matrix, database migration（数据库迁移）plan, backup/import/rollback path, and smoke test（冒烟测试）criteria, but it must not merge to `main`, mutate Production data, add Production env vars, or create/promote a formal Production deployment.
 - Stage 7 must complete UI（用户界面）/ visual design, mobile interaction polish, review-flow comfort, accessibility（可访问性）review, and optional PWA（Progressive Web App，渐进式 Web 应用）evaluation before formal Production.
 - Stage 8 has accepted the Recognition Vocabulary（阅读词汇）review memory algorithm before formal Production. It replaces the placeholder fixed scheduler with V1 Recognition-only FSRS-6（Free Spaced Repetition Scheduler 6，自由间隔重复调度器第 6 版）scheduling, adds same-session repeat for failed Recognition ratings, uses local natural-day bucket（本地自然日分桶）due checks, and explicitly keeps Active Vocabulary（输出词汇）out of review queue（复习队列）, review state（复习状态）, and review event（复习事件）creation.
-- Stage 6B is the later formal execution step. Only after Stage 7, Stage 8, and Stage 6B-P1 are accepted should `V1` be merged to `main`, Vercel's production branch remain `main`, Production env vars be configured, Production database work run, and the final Production smoke test be performed.
+- Stage 8.5 has accepted the cross-stage Data Lifecycle（数据生命周期）and environment strategy in `plan_docs/PLAN_V1_STAGE8_5_DATA_LIFECYCLE_ENVIRONMENT_STRATEGY.md`. For the current private small-app phase it uses one Neon project with `main` as future Production, one long-lived `staging` non-production baseline, and temporary logical `preview/*` branches derived from `staging`; Production starts empty and non-production business rows do not promote into Production.
+- Stage 6B is the later formal execution step. Only after Stage 7, Stage 8, Stage 8.5, and Stage 6B-P1 are accepted should `V1` be merged to `main`, Vercel's production branch remain `main`, Production env vars be configured, Production database work run, and the final Production smoke test be performed.
 - The current active Production deployment from branch `V1` remains a documented non-official artifact, not the formal V1 production release.
 - Stage 6A is documented in `plan_docs/PLAN_V1_STAGE6A_PRODUCTION_RELEASE_GATE.md`; it confirms that `person_id` is data separation, not security isolation, and that durable Production writes need either explicit no-credential private-URL risk acceptance or a separate access gate.
-- Stage 6B execution planning is documented in `plan_docs/PLAN_V1_STAGE6B_PRODUCTION_EXECUTION.md`; on 2026-07-08 the user chose shared Postgres Production for formal V1, so `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md` is the required runtime bridge before merge, Production migration, and deployment. Stage 8 is accepted, Stage 6B-P1-B has added the local schema version 5 migration draft, Stage 6B-P1-C has added the local `postgres-production` runtime / API contract, Stage 6B-P1-D has added local repository parity, Stage 6B-P1-E has added local backup import version 5 support, Stage 6B-P1-F has validated the migrated non-production development database, Stage 6B-P1-G-A has documented the Production handoff, Stage 6B-P1-G-B has completed the read-only account inventory, Stage 6B-P1-G-C-0 has documented the human decision packet in `plan_docs/PLAN_V1_STAGE6B_P1_G_C_HUMAN_DECISION_CLOSURE.md`, Stage 6B-P1-G-C-1 has documented the provider supplement in `plan_docs/PLAN_V1_STAGE6B_P1_G_C_1_PROVIDER_SUPPLEMENT.md`, Stage 6B-P1-G-C-2 has documented the evidence route decision in `plan_docs/PLAN_V1_STAGE6B_P1_G_C_2_EVIDENCE_ROUTE_DECISION.md`, and Stage 6B-P1-G-C-3 has documented the dashboard evidence in `plan_docs/PLAN_V1_STAGE6B_P1_G_C_3_DASHBOARD_EVIDENCE.md`. The 2026-07-10 initial-data decision starts Production empty, skips development data copy/formal backup import, and begins formal data only after cloud-backed V1 launch. P1-G-C-3 confirms the current Neon project has only `main`, `neondb` / `neondb_owner`, no child branches, no visible separate Production target, and a 6-hour restore window. Email activation is not an established prerequisite.
+- Stage 6B execution planning is documented in `plan_docs/PLAN_V1_STAGE6B_PRODUCTION_EXECUTION.md`; on 2026-07-08 the user chose shared Postgres Production for formal V1, so `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md` is the required runtime bridge before merge, Production migration, and deployment. Stage 8 is accepted, Stage 6B-P1-B has added the local schema version 5 migration draft, Stage 6B-P1-C has added the local `postgres-production` runtime / API contract, Stage 6B-P1-D has added local repository parity, Stage 6B-P1-E has added local backup import version 5 support, Stage 6B-P1-F has validated the migrated non-production development database, Stage 6B-P1-G-A has documented the Production handoff, Stage 6B-P1-G-B has completed the read-only account inventory, Stage 6B-P1-G-C-0 has documented the human decision packet in `plan_docs/PLAN_V1_STAGE6B_P1_G_C_HUMAN_DECISION_CLOSURE.md`, Stage 6B-P1-G-C-1 has documented the provider supplement in `plan_docs/PLAN_V1_STAGE6B_P1_G_C_1_PROVIDER_SUPPLEMENT.md`, Stage 6B-P1-G-C-2 has documented the evidence route decision in `plan_docs/PLAN_V1_STAGE6B_P1_G_C_2_EVIDENCE_ROUTE_DECISION.md`, and Stage 6B-P1-G-C-3 has documented the dashboard evidence in `plan_docs/PLAN_V1_STAGE6B_P1_G_C_3_DASHBOARD_EVIDENCE.md`. The 2026-07-10 initial-data decision starts Production empty, skips development data copy/formal backup import, and begins formal data only after cloud-backed V1 launch. P1-G-C-3 confirms the current Neon project has only `main`, `neondb` / `neondb_owner`, no child branches, no visible separate Production target, and a 6-hour restore window. Stage 8.5 now selects the single-project topology at policy level; P1-G-C-4 must document and separately approve creation of `staging`, environment retargeting, and the final live execution sequence. Email activation is not an established prerequisite.
 
 Exit criteria:
 
@@ -316,6 +317,26 @@ Exit criteria:
 
 The fixed Stage 4 scheduler is no longer the active Recognition scheduler. Stage 8 has completed the learning-behavior bridge; the cloud-backed V1 Production path now continues through the separately approved Stage 6B-P1 Production execution handoff and Stage 6B formal release work.
 
+### Stage 8.5: Data Lifecycle And Environment Strategy
+
+Status: accepted locally on 2026-07-10 in `plan_docs/PLAN_V1_STAGE8_5_DATA_LIFECYCLE_ENVIRONMENT_STRATEGY.md`.
+
+Accepted policy:
+
+- Use the existing Neon project `words-learning-app-for-mimi-neon` for the current private small-app phase.
+- Reclassify clean `main` as the future Production data branch only after a long-lived `staging` branch exists and Development / Preview no longer point to `main`.
+- Derive temporary logical `preview/*` branches from `staging`, with synthetic / fixture data only and a seven-day cleanup backstop.
+- Promote code and versioned migrations across environments; do not promote non-production business rows into Production.
+- Keep real learning data and future real-user AI-derived data in Production only.
+- After formal data begins, target weekly encrypted logical backups plus backups before high-risk Production changes; increase frequency when the trusted-group, recoverability, or AI-data risk profile changes.
+- Keep a separate Production Neon project as a future upgrade option rather than current V1 complexity.
+
+Exit criteria:
+
+- Development, Staging, Preview, Production, and Recovery responsibilities are explicit.
+- Production backup, recovery, retention, deletion, and future AI lineage rules are explicit.
+- P1-G-C-4 consumes this policy before any branch creation, environment-variable change, migration, or deployment.
+
 ## Scheduling Strategy
 
 MVP scheduler should prioritize clarity:
@@ -343,7 +364,7 @@ The V1 Recognition scheduler now uses the Stage 8 FSRS-6 implementation. Embeddi
 - Should the MVP require login or stay single-user behind a private URL first?
 - Should definitions be manually entered only, or can a dictionary source be added later?
 - Should examples support audio or images in a later stage?
-- Should the first database be local SQLite for development, Postgres for production, or a single Postgres path from the start?
+- Stage 8.5 closes the current environment topology as one Neon project with `main` for Production and `staging` / logical `preview/*` for non-production; revisit only when its upgrade triggers are met.
 - What daily review load feels right for Mimi?
 - What `.txt` import shape does Mimi naturally produce: one word per line, comma-separated, or word plus Chinese meaning?
 

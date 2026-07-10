@@ -25,9 +25,11 @@ The release sequence is:
 
 1. Stage 6A: Production release gate design.
 2. Stage 7: UI / visual design, mobile interaction polish, review-flow comfort, accessibility（可访问性）review, and optional PWA（Progressive Web App，渐进式 Web 应用）evaluation.
-3. Stage 6B: formal merge to `main`, Production environment setup, Production database work, and Production smoke test after explicit approval.
+3. Stage 8: accepted Recognition review memory algorithm.
+4. Stage 8.5: accepted Data Lifecycle（数据生命周期）and environment strategy.
+5. Stage 6B: formal merge to `main`, Production environment setup, Production database work, and Production smoke test after explicit approval.
 
-Formal Production must not start before Stage 7 is accepted.
+Formal Production must not start before Stage 7, Stage 8, Stage 8.5, and the Stage 6B-P1 handoff gates are accepted.
 
 ## Current Release Facts
 
@@ -81,10 +83,10 @@ The second option is required if the first real Production release should share 
 | Environment | Current / Target State | Allowed In Stage 6A | Stage 6B Gate |
 | --- | --- | --- | --- |
 | Local development | Uses browser `localStorage` by default; `.env.local` is ignored by Git. | Read docs only. | Re-pull env only after explicit approval if secrets changed. |
-| Development DB scripts | Use `STAGE5F_DATABASE_TARGET=development dotenv -e .env.local -- ...`. | No script execution required. | Re-run only if Stage 6B needs a fresh non-production inspection. |
-| Vercel Preview | Has `MIMI_STORAGE_RUNTIME=postgres-preview`; UI writes disabled by default. | No Vercel command. | Verify env and deploy Preview before any Production step. |
+| Development DB scripts | Use `STAGE5F_DATABASE_TARGET=development dotenv -e .env.local -- ...` against the currently approved non-production target. | No script execution required. | After `staging` exists, keep development guards pointed only to `staging`; never repoint a development command to Production `main`. |
+| Vercel Preview | Has `MIMI_STORAGE_RUNTIME=postgres-preview`; UI writes disabled by default. | No Vercel command. | Move the stable non-production target to `staging`; derive temporary logical `preview/*` branches from `staging`. |
 | Vercel Production current | No formal V1 Production release; existing deployment is non-official. | No change. | Re-check production branch, deployment list, env vars, and aliases. |
-| Vercel Production future | Must not use preview-only runtime flags. | Design only. | Configure only after explicit approval and after Stage 7 acceptance. |
+| Vercel Production future | Uses Neon `main` under `postgres-production`; must not use preview-only runtime flags. | Design only. | Configure only after explicit approval, after `staging` separation, and after Stage 8.5 acceptance. |
 
 Secrets rules:
 
@@ -95,13 +97,15 @@ Secrets rules:
 
 ## Database Gate
 
-Stage 6B must identify the exact Production database target before any migration:
+Stage 8.5 selects the current policy-level target as the existing Neon project with `main` for Production, `staging` for long-lived non-production work, and temporary logical `preview/*` children of `staging`. Stage 6B must still identify and verify the exact live target before any migration:
 
-- Confirm whether Production uses a Neon branch, database, or separate connection string distinct from the current development / preview target.
-- Do not reuse the current development / preview database as Production unless the user explicitly accepts that decision.
-- Verify `db/migrations/0001_initial.sql` is the intended first Production migration.
-- Apply migrations first to a non-production target or branch.
-- Inspect schema and counts after migration.
+- Create `staging` from the verified clean `main` state only after explicit approval.
+- Move Development / Preview away from `main` before `main` receives formal Production writes.
+- Confirm the exact `main` branch, database, role, region, and Production-only environment-variable scope without printing secret values.
+- Re-verify all business and backup-import counts are zero before the first formal write.
+- Verify the current `main` migration history and schema shape. P1-F already applied `0001_initial.sql` and `0002_schema5_production_runtime.sql` while `main` was the approved non-production target; do not rerun an already-applied migration after reclassification.
+- Apply any future new migration first to `staging` or a temporary logical `preview/*` branch.
+- Inspect schema and counts before and after any new migration.
 - Stop on any table, index, constraint, count, or `person_id` mismatch.
 
 ## Backup And Import Gate
@@ -115,6 +119,8 @@ Before any real user data import:
 - Run a rollback trial before commit.
 - Commit to Production only after explicit confirmation of the exact backup file, target database, target environment, and expected counts.
 - For an empty local-storage project, importing real user data can remain skipped.
+
+After formal Production data begins, Stage 8.5 sets a proportionate V1 backup target of one encrypted logical backup per week, the most recent eight weekly backups retained, and an additional backup before high-risk Production data changes. Backup implementation, encryption method, storage destination, and any automation remain separately approved.
 
 ## Stage 7 Handoff Requirements
 
@@ -213,3 +219,5 @@ Stage 6A completes when:
 - Architecture, README, changelog, and AI agent log all reflect the Stage 6A gate.
 - No remote command, env mutation, database mutation, or Production deployment was performed.
 - Documentation validation passes.
+
+Follow-up accepted on 2026-07-10: `plan_docs/PLAN_V1_STAGE8_5_DATA_LIFECYCLE_ENVIRONMENT_STRATEGY.md` extends this release gate with the canonical single-project branch topology, data-movement rules, weekly logical-backup baseline, recovery strategy, future AI-data boundaries, and architecture-upgrade triggers. Where this Stage 6A design left the Production target open, Stage 8.5 is now the current policy source.

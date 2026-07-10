@@ -1,7 +1,7 @@
 # Local Backup To Postgres Migration Mapping
 
 Created: 2026-07-05 01:08 AEST
-Last updated: 2026-07-09 00:54 AEST
+Last updated: 2026-07-10 23:56 AEST
 
 Source plan:
 
@@ -13,6 +13,7 @@ Derived from:
 - `plan_docs/PLAN_V1_STAGE5B_STORAGE_PROVIDER_DECISION.md`
 - `plan_docs/PLAN_V1_STAGE5C_LOCAL_PERSON_ADAPTER.md`
 - `plan_docs/PLAN_V1_STAGE5D_DURABLE_STORAGE_READINESS.md`
+- `plan_docs/PLAN_V1_STAGE8_5_DATA_LIFECYCLE_ENVIRONMENT_STRATEGY.md`
 
 Scope:
 
@@ -27,6 +28,12 @@ Non-Scope:
 - No Production（生产）database execution.
 - No `.env`, credential, or remote database value exposure.
 - No deletion of browser `localStorage`（本地浏览器存储）after migration.
+
+Lifecycle policy note:
+
+- This file defines backup-import mapping and transaction validation. It does not define the recurring Production backup schedule.
+- Stage 8.5 is the canonical recurring-backup policy: after formal Production data begins, target one encrypted logical backup per week, retain the most recent eight weekly backups, and create an additional backup before high-risk Production data changes.
+- Backup format, encryption method, storage destination, restore drill, and automation require a separately approved implementation slice.
 
 ## Harness Status
 
