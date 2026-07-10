@@ -1,7 +1,7 @@
 # Words Learning App For Mimi Stage 6B-P1-G-C: Human Decision Closure
 
 Created: 2026-07-10 18:40 AEST
-Last updated: 2026-07-10 23:56 AEST
+Last updated: 2026-07-11 01:06 AEST
 
 Source plan:
 - `plan_docs/PLAN_V1_STAGE6B_P1_G_PRODUCTION_EXECUTION_HANDOFF.md`
@@ -19,7 +19,7 @@ Scope:
 - Turn the remaining P1-G-C choices into an explicit decision packet before any live Production（生产环境）action.
 - Define acceptable provider-management path（供应商管理路径）or equivalent evidence for Neon branch / database / recovery capability.
 - Define the decision options for Production target（生产目标）, access boundary（访问边界）, merge path（合并路径）, deployment mechanism（部署机制）, Production write acceptance, and the existing non-official Production deployment.
-- Define the next documentation-first P1-G-C-4 branch/environment execution decision and the stop conditions before migration（迁移）, environment variable（环境变量）changes, or deployment.
+- Record the completed documentation-first P1-G-C-4 branch/environment execution decision and the stop conditions before migration（迁移）, environment variable（环境变量）changes, or deployment.
 
 Non-Scope:
 - No Vercel or Neon command.
@@ -33,7 +33,7 @@ Non-Scope:
 Exit criteria:
 - The remaining P1-G-C decisions are listed with recommended defaults and accepted alternatives.
 - The provider evidence and accepted Stage 8.5 target topology are explicit.
-- The next P1-G-C-4 branch/environment execution decision has a bounded documentation-first scope and leaves live actions separately approved.
+- The P1-G-C-4 branch/environment execution decision has a bounded documentation-first scope and leaves live actions separately approved.
 - Parent Stage 6B / P1 documents, README, architecture notes, changelog, and AI log point to this decision packet.
 - Local documentation validation passes.
 
@@ -57,10 +57,11 @@ Known current facts:
 - P1-G-C-2 recommends human dashboard evidence as the next safest evidence route and defines the required redaction rules.
 - P1-G-C-3 captured the approved read-only Neon dashboard evidence: the current project has only one `main` Default branch, database / role labels `neondb` / `neondb_owner`, Sydney region, Postgres 17, and a 6-hour restore window. No separate empty Production branch / database is visible.
 - Stage 8.5 accepted the existing Neon project with `main` as future Production, `staging` as the long-lived non-production baseline, and temporary logical `preview/*` branches derived from `staging`.
+- P1-G-C-4 documented the execution sequence for creating `staging`, moving Development / Preview away from `main`, configuring Preview parentage, reserving `main` for Production, and avoiding blind reruns of already-applied migrations.
 
 Open blocker:
 
-P1-G-C cannot close until P1-G-C-4 defines the separately approved single-project branch/environment execution sequence and the user chooses the access boundary, merge path, deployment mechanism, first-write acceptance method, and historical deployment treatment. The policy-level Production target strategy is no longer open. Production branch creation/reclassification, environment-variable changes, migration, and runtime cutover remain unauthorized.
+P1-G-C cannot close until the user chooses the access boundary, merge path, deployment mechanism, first-write acceptance method, and historical deployment treatment, and until the separately approved live branch/environment actions are performed or explicitly deferred. The policy-level Production target strategy and P1-G-C-4 execution design are no longer open. Production branch creation/reclassification, environment-variable changes, migration, and runtime cutover remain unauthorized.
 
 ## Reference Check
 
@@ -134,7 +135,7 @@ Future upgrade option:
 
 - Reconsider a separate Production Neon project when unfamiliar users, authentication/roles, multiple maintainers, higher-sensitivity AI/user content, stricter recovery objectives, or unacceptable project-level blast radius appear.
 
-Decision status: accepted at policy level on 2026-07-10; live branch/environment execution remains pending P1-G-C-4 and explicit approval.
+Decision status: accepted at policy level on 2026-07-10; P1-G-C-4 documents the execution sequence, and live branch/environment execution remains pending separate explicit approval.
 
 Target acceptance must record:
 
@@ -248,7 +249,7 @@ Do not delete, promote, rollback, or alias-change this deployment without separa
 If the user wants the lowest-friction cloud-backed V1 path while preserving safety, the recommended package is:
 
 1. Follow the accepted Stage 8.5 single-project lifecycle policy.
-2. Document P1-G-C-4 creation of `staging`, Development / Preview retargeting, Preview parent selection, and Production-only `main` scope.
+2. Follow P1-G-C-4 for creation of `staging`, Development / Preview retargeting, Preview parent selection, and Production-only `main` scope.
 3. `accept-private-url-risk` only if the user explicitly accepts trusted-group public-URL risk; otherwise stop for an access-gate child stage.
 4. Pull request from `V1` to `main`.
 5. Vercel Git integration deployment after branch/environment separation, Production env vars, and database verification are complete.
@@ -268,7 +269,7 @@ It confirmed:
 - Production still has no database environment variables;
 - Vercel Marketplace metadata can show plan and resource scope but not Neon branch / database / restore details.
 
-The next gate is no longer generic provider discovery, dashboard evidence collection, or target-strategy selection. It is P1-G-C-4 branch/environment execution design under the accepted Stage 8.5 topology.
+The next gate is no longer generic provider discovery, dashboard evidence collection, target-strategy selection, or P1-G-C-4 design. It is separately approved live branch/environment setup under the accepted Stage 8.5 topology, plus the remaining human decisions.
 
 Accepted next evidence routes:
 
@@ -277,7 +278,7 @@ Accepted next evidence routes:
 - a separately approved browser SSO read-only inspection with a hard stop at `Almost there` or any account-changing prompt;
 - a separately approved Neon CLI / API path only if secret handling is explicitly included.
 
-P1-G-C remains open until P1-G-C-4 records exact branch/environment actions and recovery direction, followed by the remaining access / merge / deployment / first-write decisions.
+P1-G-C remains open until the live branch/environment setup path is separately approved or deferred, followed by the remaining access / merge / deployment / first-write decisions.
 
 `P1-G-C-2 Evidence Route Decision` is complete in `plan_docs/PLAN_V1_STAGE6B_P1_G_C_2_EVIDENCE_ROUTE_DECISION.md`.
 
@@ -296,9 +297,9 @@ It confirms:
 - restore window: 6 hours;
 - no separate empty Production branch / database is visible.
 
-Recommended next slice:
+Completed next slice:
 
-- `P1-G-C-4 Single-Project Branch Topology Execution Decision`, documentation first. It should specify how `staging` is created from verified clean `main`, how Development / Preview move to `staging`, how temporary Preview branches derive from `staging`, how Production variables later connect to `main`, and which read-only checks prove separation before any formal write.
+- `P1-G-C-4 Single-Project Branch Topology Execution Decision`, documentation first. It specifies how `staging` is created from verified clean `main`, how Development / Preview move to `staging`, how temporary Preview branches derive from `staging`, how Production variables later connect to `main`, and which read-only checks prove separation before any formal write.
 
 ## Stop Conditions
 
@@ -314,11 +315,11 @@ Stop immediately if:
 
 ## P1-G-C-0 Result
 
-This document is a decision packet only. It does not close P1-G-C and does not authorize live Production work. P1-G-C remains open until the provider supplement and human decisions are completed.
+This document is a decision packet only. It does not close P1-G-C and does not authorize live Production work. Later P1-G-C-1 / P1-G-C-2 / P1-G-C-3 evidence, Stage 8.5 policy, and P1-G-C-4 execution design narrowed the open scope to live branch/environment approval plus the remaining human decisions.
 
 ## P1-G-C-1 Result
 
-P1-G-C-1 is documented in `plan_docs/PLAN_V1_STAGE6B_P1_G_C_1_PROVIDER_SUPPLEMENT.md`. It is complete as a read-only provider supplement. It strengthened the Vercel-managed Neon resource evidence but did not expose exact Neon branch, database, role, restore, or empty Production target details. P1-G-C remains open.
+P1-G-C-1 is documented in `plan_docs/PLAN_V1_STAGE6B_P1_G_C_1_PROVIDER_SUPPLEMENT.md`. It is complete as a read-only provider supplement. It strengthened the Vercel-managed Neon resource evidence but did not expose exact Neon branch, database, role, restore, or empty Production target details. Later P1-G-C-3 and Stage 8.5 closed the evidence/topology gap at the policy level.
 
 ## P1-G-C-2 Result
 
@@ -326,4 +327,10 @@ P1-G-C-2 is documented in `plan_docs/PLAN_V1_STAGE6B_P1_G_C_2_EVIDENCE_ROUTE_DEC
 
 ## P1-G-C-3 Result
 
-P1-G-C-3 is documented in `plan_docs/PLAN_V1_STAGE6B_P1_G_C_3_DASHBOARD_EVIDENCE.md`. It is complete as a browser-assisted, read-only Neon dashboard evidence capture. It confirms the current visible resource has only one `main` Default branch, `neondb` / `neondb_owner`, no child branches, no visible distinct Production target, and a 6-hour restore window. Stage 8.5 uses that evidence to close the target topology at policy level. P1-G-C remains open for P1-G-C-4 execution details plus access, merge, deployment, first-write, and historical deployment decisions. Stage 8.5 did not create a branch, change environment variables, connect to a database, migrate, or deploy.
+P1-G-C-3 is documented in `plan_docs/PLAN_V1_STAGE6B_P1_G_C_3_DASHBOARD_EVIDENCE.md`. It is complete as a browser-assisted, read-only Neon dashboard evidence capture. It confirms the current visible resource has only one `main` Default branch, `neondb` / `neondb_owner`, no child branches, no visible distinct Production target, and a 6-hour restore window. Stage 8.5 uses that evidence to close the target topology at policy level. Stage 8.5 did not create a branch, change environment variables, connect to a database, migrate, or deploy.
+
+## P1-G-C-4 Result
+
+P1-G-C-4 is documented in `plan_docs/PLAN_V1_STAGE6B_P1_G_C_4_BRANCH_ENVIRONMENT_EXECUTION_DECISION.md`. It is complete as a documentation-only branch/environment execution decision. It records that live execution must verify clean schema-ready `main`, create `staging` from that verified state, move Development / Preview away from `main`, ensure logical `preview/*` branches derive from `staging`, reserve `main` for Production, and avoid blindly rerunning `0001_initial.sql` / `0002_schema5_production_runtime.sql` because the current migration scripts do not maintain a durable migration ledger.
+
+P1-G-C remains open for separately approved live branch/environment actions, access-boundary choice, merge path, deployment mechanism, first-write acceptance, and historical deployment treatment. P1-G-C-4 did not create a branch, change environment variables, read `.env`, connect to a database, migrate, deploy, or write Production data.

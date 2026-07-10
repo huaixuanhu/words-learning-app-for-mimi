@@ -1,7 +1,7 @@
 # Words Learning App For Mimi Stage 8.5: Data Lifecycle And Environment Strategy
 
 Created: 2026-07-10 23:56 AEST
-Last updated: 2026-07-10 23:56 AEST
+Last updated: 2026-07-11 01:06 AEST
 
 Source plan:
 
@@ -24,7 +24,7 @@ Input evidence:
 Consumer / next stage:
 
 - `plan_docs/PLAN_V1_STAGE6B_P1_G_C_HUMAN_DECISION_CLOSURE.md`
-- Future `P1-G-C-4` single-project branch-topology execution decision.
+- `plan_docs/PLAN_V1_STAGE6B_P1_G_C_4_BRANCH_ENVIRONMENT_EXECUTION_DECISION.md`
 - Future FSRS V2, Active Vocabulary, AI scoring, and multi-user plans.
 
 Document nature:
@@ -278,7 +278,7 @@ Stage 8.5 closes the Production target strategy at the policy level:
 - Temporary branch source: `staging`.
 - First Production data state: empty.
 
-P1-G-C still requires a documentation-first `P1-G-C-4` execution decision before live actions. That slice must define and separately approve:
+P1-G-C-4 is now documented in `plan_docs/PLAN_V1_STAGE6B_P1_G_C_4_BRANCH_ENVIRONMENT_EXECUTION_DECISION.md`. It defines the required live sequence and keeps every live action separately approved:
 
 - how and when `staging` is created from the verified clean `main` state;
 - how Development / Preview environment variables move from current `main` to `staging` without printing values;
@@ -286,6 +286,8 @@ P1-G-C still requires a documentation-first `P1-G-C-4` execution decision before
 - how Production-only variables connect `postgres-production` to `main`;
 - exact pre/post-change schema and zero-count checks;
 - access-boundary choice, merge path, deployment mechanism, first-write acceptance, and historical deployment treatment.
+
+P1-G-C still requires separate approval for the actual branch/environment changes and still needs access-boundary, merge, deployment, first-write, and historical-deployment decisions before formal Production.
 
 ## Stop Conditions
 

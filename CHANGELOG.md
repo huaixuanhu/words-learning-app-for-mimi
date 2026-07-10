@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## 2026-07-11 01:06 AEST
+
+- Executed Stage 6B-P1-G-C-4 as a documentation-only branch/environment execution decision after reviewing the newly updated Stage 8.5 policy documents.
+- Added `plan_docs/PLAN_V1_STAGE6B_P1_G_C_4_BRANCH_ENVIRONMENT_EXECUTION_DECISION.md` with explicit Source plan, Derived from, Scope, Non-Scope, and Exit criteria.
+- Recorded the accepted live sequence: verify clean schema-ready `main`, create long-lived `staging`, move Development / Preview away from `main`, keep logical `preview/*` derived from `staging`, reserve `main` for Production, and configure Production-only variables only after later approval.
+- Added the migration boundary that current scripts do not maintain a durable `schema_migrations` ledger, so live execution must verify schema shape / constraints / indexes / triggers / counts and must not blindly rerun already-applied `0001_initial.sql` or `0002_schema5_production_runtime.sql`.
+- Re-checked current Vercel and Neon documentation for environment variable scoping, Custom Environments plan limits, Neon branch copy-on-write behavior, managed Preview branch parentage, and schema-only branch status; recorded the implication that managed Preview automation must not derive branches from Production `main`.
+- Synchronized AGENTS, README, architecture, master, Stage 8.5, Stage 6B, Stage 6B-P1, P1-G handoff, and P1-G-C closure docs so P1-G-C-4 is no longer an open documentation blocker.
+- Kept Vercel / Neon commands, browser provider actions, `.env` access, credential handling, database connection, SQL, branch creation, environment-variable changes, merge, deployment, backup automation, and Production writes out of scope.
+- Reason: turn the accepted Stage 8.5 topology into an execution-ready decision while preserving the approval gate before any live infrastructure action.
+
 ## 2026-07-11 00:12 AEST
 
 - Accepted Stage 8.5 Data Lifecycle（数据生命周期）and Environment Strategy after the user confirmed the documentation-first scope and refined the architecture for the current private trusted-group app.

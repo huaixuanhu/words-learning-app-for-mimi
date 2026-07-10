@@ -1,5 +1,44 @@
 # AI Agent Log
 
+## 2026-07-11 01:06 AEST
+
+- Task: inspect the user's newly updated documentation, then execute the next documentation-first stage by creating and synchronizing P1-G-C-4 branch/environment execution decision.
+- Plan agreed: yes. The approved scope was local documentation only. No live Vercel / Neon, credential, database, branch, environment-variable, merge, deployment, backup, or Production data action was approved.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_G_C_4_BRANCH_ENVIRONMENT_EXECUTION_DECISION.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_G_C_HUMAN_DECISION_CLOSURE.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_G_PRODUCTION_EXECUTION_HANDOFF.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md`
+  - `plan_docs/PLAN_V1_STAGE6B_PRODUCTION_EXECUTION.md`
+  - `plan_docs/PLAN_V1_STAGE8_5_DATA_LIFECYCLE_ENVIRONMENT_STRATEGY.md`
+- Decisions recorded:
+  - P1-G-C-4 is the documentation-first execution decision for the accepted Stage 8.5 single-project topology.
+  - Live execution must re-check clean schema-ready `main`, create `staging` from verified clean `main`, move Development / Preview away from `main`, keep temporary logical `preview/*` branches derived from `staging`, and reserve `main` for Production-only variables.
+  - Neon-managed Preview automation must be verified or avoided if it would derive Preview branches from Production `main`.
+  - The current SQL migration scripts do not maintain a durable `schema_migrations` ledger; live execution must verify schema shape / constraints / indexes / triggers / counts and must not blindly rerun already-applied `0001_initial.sql` or `0002_schema5_production_runtime.sql`.
+  - P1-G-C remains open for separately approved live branch/environment actions, access-boundary choice, merge path, deployment mechanism, first-write acceptance, and historical deployment treatment.
+- Reference check:
+  - Re-checked Vercel Environment Variables, Vercel Environments, Neon Manage Branches, and Neon Schema-only Branches documentation on 2026-07-11.
+  - Recorded that Preview variables can be branch-scoped, first-class Vercel Custom Environments require Pro / Enterprise, Neon branches are copy-on-write, managed Neon Preview branches derive from the Neon default branch, and schema-only branches are Beta / independent root branches.
+- Validation before log sync:
+  - Passed: `git diff --check`.
+  - Passed: secret-hygiene scan found no Postgres connection URL, raw Neon endpoint hostname, JWT-shaped token, full Neon branch id, or full Neon endpoint id in the changed documentation.
+  - Passed: stale-blocker scan found no remaining wording that treats P1-G-C-4 as the next uncreated documentation gate.
+- Validation after log sync:
+  - Passed: `git diff --check`.
+  - Passed: secret-hygiene scan found no Postgres connection URL, raw Neon endpoint hostname, JWT-shaped token, full Neon branch id, or full Neon endpoint id in the full changed diff.
+  - Passed: separate secret-hygiene scan across all changed tracked files plus the untracked new P1-G-C-4 document found no secret-bearing patterns.
+  - Passed: trailing-whitespace scan on the new P1-G-C-4 document.
+  - Passed: P1-G-C-4 status/link scan found the new decision linked from AGENTS, README, architecture, changelog, AI log, master, Stage 8.5, Stage 6B, Stage 6B-P1, P1-G, and P1-G-C docs.
+  - Passed: `npm run governance:preflight`.
+- Safety notes: no `.env` read, credential/connection-string handling, browser provider action, SQL, database connection, Neon/Vercel mutation, branch creation, restore, snapshot, environment-variable change, GitHub push/merge, deployment, backup automation, or Production data write was performed.
+
 ## 2026-07-11 00:12 AEST
 
 - Task: create and synchronize Stage 8.5 Data Lifecycle（数据生命周期）and Environment Strategy after the user confirmed the prior plan, lowered the logical-backup frequency, and selected a proportionate single-Neon-project topology for the current private trusted-group app.
