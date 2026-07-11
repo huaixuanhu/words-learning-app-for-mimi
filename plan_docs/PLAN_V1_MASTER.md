@@ -337,6 +337,21 @@ Exit criteria:
 - Production backup, recovery, retention, deletion, and future AI lineage rules are explicit.
 - P1-G-C-4 consumed this policy in `plan_docs/PLAN_V1_STAGE6B_P1_G_C_4_BRANCH_ENVIRONMENT_EXECUTION_DECISION.md`; branch creation, environment-variable change, migration, and deployment still require separate live approval.
 
+### Stage 6B-P1-G-C-5: Live Production Execution
+
+Status: in progress under explicit user approval in `plan_docs/PLAN_V1_STAGE6B_P1_G_C_5_LIVE_PRODUCTION_EXECUTION.md`.
+
+Completed release boundaries:
+
+- clean schema-version-5 `main` remains the empty Production target;
+- long-lived `staging` exists, is the Neon Default, and backs Development / Preview;
+- Vercel Production points only to `main` with `postgres-production`, while Preview remains `postgres-preview`;
+- Production and non-production credentials are distinct;
+- an application-level Basic Auth gate protects Production page and storage API access for the current trusted group;
+- Preview passed current-code read-only runtime and empty-state verification.
+
+Remaining exit work is the pull-request merge to `main`, Ready Production deployment, authenticated canonical-domain read-only verification, and final evidence sync. First formal write remains the first real user action.
+
 ## Scheduling Strategy
 
 MVP scheduler should prioritize clarity:

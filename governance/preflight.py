@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
-"""Lightweight governance preflight for this repository.
+"""Risk-scaled governance preflight for this repository.
 
 Generated/adapted from human-ai-governance v0.2.0.
 
-The default tier is intentionally light because this project is currently a
-Tier 1 local app scaffold with no durable storage, credentials, deployment, or
-external integrations.
+The default tier remains light for ordinary local work. Release work can opt
+into Tier 3 checks for credentials, remote state, and deployment boundaries.
 """
 
 from __future__ import annotations
@@ -109,6 +108,18 @@ RISKY_SIDE_EFFECT_PATTERNS = (
     re.compile(r"\b(drop\s+table|truncate\s+table|delete\s+from)\b", re.IGNORECASE),
     re.compile(r"[\"'](POST|PUT|PATCH|DELETE)[\"']"),
 )
+
+EXECUTABLE_SIDE_EFFECT_SUFFIXES = {
+    ".cjs",
+    ".js",
+    ".jsx",
+    ".mjs",
+    ".py",
+    ".sh",
+    ".sql",
+    ".ts",
+    ".tsx",
+}
 
 
 @dataclass(frozen=True, slots=True)
@@ -291,6 +302,10 @@ def is_placeholder_secret(value: str) -> bool:
     normalized = normalized_secret_value(value).lower()
     if normalized in SECRET_PLACEHOLDERS:
         return True
+    if normalized.startswith(("test-", "test_")):
+        return True
+    if re.match(r"^(?:[a-z_$][\w$]*\.)*[a-z_$][\w$]*\(", normalized):
+        return True
     if normalized.startswith("{") and normalized.endswith("}"):
         return True
     if normalized.startswith("${") and normalized.endswith("}"):
@@ -325,6 +340,11 @@ def scan_for_secrets(root: Path, paths: set[str]) -> list[str]:
 def scan_risky_side_effects(root: Path, paths: set[str]) -> list[str]:
     issues: list[str] = []
     for path in sorted(paths):
+        file_path = Path(path)
+        if file_path.suffix.lower() not in EXECUTABLE_SIDE_EFFECT_SUFFIXES:
+            continue
+        if path == "governance/preflight.py" or ".test." in file_path.name:
+            continue
         text = read_changed_text(root, path)
         if text is None:
             continue

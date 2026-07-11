@@ -1,5 +1,21 @@
 # CHANGELOG
 
+## 2026-07-11 02:01 AEST
+
+- Started the explicitly approved Stage 6B-P1-G-C-5 live Production execution and added `plan_docs/PLAN_V1_STAGE6B_P1_G_C_5_LIVE_PRODUCTION_EXECUTION.md`.
+- Verified clean schema-version-5 `main`, created long-lived `staging`, set `staging` as Neon Default with no auto-delete, and retained `main` as the empty Production data branch.
+- Separated Vercel database scopes so Development / Preview use `staging` and Production uses `main` with `MIMI_STORAGE_RUNTIME=postgres-production`; kept Preview-only write flags absent from Production.
+- Disconnected the owned Neon Marketplace resource from this Vercel project after reconnect testing could not prove non-production branch retargeting; configured only the minimum environment-specific database variables manually and deferred per-feature Preview branch automation.
+- Rotated the Production database role credential after branching to separate Production and non-production. A first rotated value appeared in a local browser-automation inspection payload, so it was immediately invalidated through a second rotation and recorded as a credential incident without committing or documenting its value.
+- Added a Production-only application Basic Auth gate for pages and current storage API routes, with fail-closed behavior when credentials are missing, constant-time comparison, and focused route/security tests.
+- Added a shared schema version 5 inspection module and a guarded Production read-only inspection command; `main` and `staging` both passed 8-table, 6-column, 9-constraint, 1-index, 2-trigger, and zero-row checks.
+- Recorded Production database preparation as `skipped-existing-schema`; the already-present non-idempotent migrations were not rerun.
+- Verified Ready Preview deployment `dpl_EmKkV31KApZJchr7w7XV5S3F4XZF` reports `postgres-preview`, schema version 5, and empty study/review data without a write.
+- Upgraded the active governance command to Tier 3 and narrowed strict side-effect term scanning to executable non-test files while retaining repository-wide secret scanning.
+- On resumed validation, confirmed Vercel sensitive Production values are non-readable locally; rejected a mixed local-environment probe as Production evidence, recorded that the guarded inspection stopped before database connection, and regenerated the trusted-group Basic Auth credentials for post-deployment acceptance.
+- Synchronized AGENTS, README, architecture, master, Stage 8.5, Stage 6B, Stage 6B-P1, P1-G, and P1-G-C documentation to the actual in-progress release state.
+- Reason: complete the environment, credential, access, schema, and Preview gates required before merging `V1` to `main` and creating the formal cloud-backed V1 Production deployment.
+
 ## 2026-07-11 01:06 AEST
 
 - Executed Stage 6B-P1-G-C-4 as a documentation-only branch/environment execution decision after reviewing the newly updated Stage 8.5 policy documents.

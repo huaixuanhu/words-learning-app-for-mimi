@@ -1,5 +1,53 @@
 # AI Agent Log
 
+## 2026-07-11 02:01 AEST
+
+- Task: execute the remaining bounded Stage 6B-P1-G-C release work and attempt the complete cloud-backed V1 launch after the user granted explicit permission for cloud, credential, database, GitHub, merge, and deployment actions.
+- Plan agreed: yes. The accepted path is docs/code gate, isolated `main`/`staging` environments, application-level Basic Auth for the trusted group, empty Production, pull request from `V1` to `main`, Vercel Git deployment, and read-only Production acceptance. Synthetic Production data, development-data promotion, destructive cleanup, paid upgrades, public-user auth, AI APIs, analytics, and unrelated features remain excluded.
+- Changed files:
+  - `.env.example`
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `governance/preflight.py`
+  - `package.json`
+  - `scripts/db-connection.mjs`
+  - `scripts/inspect-database-schema5.mjs`
+  - `scripts/inspect-database-schema5-production.mjs`
+  - `scripts/schema5-inspection.mjs`
+  - `src/app/api/storage/data/route.ts` and its test
+  - `src/app/api/storage/health/route.ts` and its test
+  - `src/lib/security/production-basic-auth.ts` and its test
+  - `src/proxy.ts`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_G_C_5_LIVE_PRODUCTION_EXECUTION.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_G_C_HUMAN_DECISION_CLOSURE.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_G_PRODUCTION_EXECUTION_HANDOFF.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md`
+  - `plan_docs/PLAN_V1_STAGE6B_PRODUCTION_EXECUTION.md`
+  - `plan_docs/PLAN_V1_STAGE8_5_DATA_LIFECYCLE_ENVIRONMENT_STRATEGY.md`
+- Reason: close the actual Production database/environment boundary, protect the private trusted-group entry, and create a reproducible release gate before the formal `main` deployment.
+- Implementation:
+  - Created Neon `staging` from verified clean `main`, set `staging` as Neon Default with no auto-delete, and kept `main` for Production.
+  - Scoped Development / Preview database variables to `staging` and Production database variables plus `postgres-production` runtime to `main`.
+  - Disconnected the Marketplace resource from this Vercel project after retargeting did not prove branch isolation; the Neon resource itself remains owned and intact.
+  - Rotated the Production database role credential twice. The first rotated value appeared in a local browser-automation inspection payload and is treated as exposed; the second rotation invalidated it. No credential value is tracked or documented.
+  - Added Production Basic Auth page/API enforcement and fail-closed configuration handling.
+  - Added reusable schema version 5 inspection and a guarded read-only Production inspection command.
+  - Kept Production empty and did not rerun already-present migrations.
+- Validation:
+  - Passed local TypeScript typecheck, ESLint, full Vitest suite with 111 passed and 1 intentionally skipped, Next.js Production build, both backup dry-run fixtures, development `staging` schema/count inspection, and guarded Production `main` schema/count inspection.
+  - Both database branches report the expected 8 tables, 6 schema version 5 columns, 9 constraints, 1 index, 2 triggers, and zero rows in all learning/backup-import tables.
+  - Ready Preview deployment `dpl_EmKkV31KApZJchr7w7XV5S3F4XZF` returned `postgres-preview`, schema version 5, and empty state through authenticated read-only Vercel checks.
+- Resumed execution notes:
+  - Re-ran ESLint, TypeScript, the full Vitest suite, both backup dry-run fixtures, Next.js Production build, Tier 3 governance preflight, and the `staging` schema/zero-count inspection; all passed.
+  - Vercel sensitive Production values were correctly non-readable through `env pull`. A documented `vercel env run` probe mixed readable local `.env.local` values while leaving sensitive Production values absent, so it was rejected as Production evidence.
+  - The guarded Production schema command then stopped on missing database variables before creating a connection. No database read or write occurred in that failed attempt.
+  - Regenerated and updated the Production Basic Auth credentials so deployment acceptance and handoff use a known current value without printing it.
+- Safety notes: no secret value was committed or written into documentation. The credential exposed in a local automation payload was immediately invalidated by a second rotation. Production received no development data, backup import, synthetic vocabulary, or study-data write. Temporary local secret files remain restricted to the execution session and must be deleted before handoff. Formal GitHub merge and Production deployment will proceed only after the final local Tier 3 gate passes.
+
 ## 2026-07-11 01:06 AEST
 
 - Task: inspect the user's newly updated documentation, then execute the next documentation-first stage by creating and synchronizing P1-G-C-4 branch/environment execution decision.

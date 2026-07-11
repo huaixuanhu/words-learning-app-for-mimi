@@ -289,6 +289,19 @@ P1-G-C-4 is now documented in `plan_docs/PLAN_V1_STAGE6B_P1_G_C_4_BRANCH_ENVIRON
 
 P1-G-C still requires separate approval for the actual branch/environment changes and still needs access-boundary, merge, deployment, first-write, and historical-deployment decisions before formal Production.
 
+### P1-G-C-5 Live Update
+
+The user separately approved live execution on 2026-07-11. `plan_docs/PLAN_V1_STAGE6B_P1_G_C_5_LIVE_PRODUCTION_EXECUTION.md` records the resulting branch/environment boundary:
+
+- `main` remains clean, schema-ready, and reserved for Production;
+- `staging` exists as a long-lived child of `main`, is the Neon Default, and backs Development / Preview;
+- Production and non-production credentials and Vercel variable scopes are distinct;
+- managed per-feature Preview branch automation is deferred after the Marketplace retargeting path could not prove the required separation;
+- no development data was promoted and both branches remain empty;
+- a bounded Basic Auth gate closes the current private trusted-group access decision.
+
+The remaining C5 work is Git merge, formal Production deployment, and read-only post-deployment acceptance. The first real user action remains the first formal write acceptance.
+
 ## Stop Conditions
 
 Stop before any live action if:

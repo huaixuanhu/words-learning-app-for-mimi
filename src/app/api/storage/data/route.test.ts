@@ -20,10 +20,16 @@ const originalEnv = { ...process.env };
 const runtimeEnvKeys = [
   "MIMI_STORAGE_RUNTIME",
   "MIMI_ENABLE_STORAGE_UI_WRITES",
+  "MIMI_BASIC_AUTH_USER",
+  "MIMI_BASIC_AUTH_PASSWORD",
   "VERCEL_ENV",
   "NODE_ENV",
   "STAGE5F_DATABASE_TARGET",
 ] as const;
+
+const basicAuthUser = "mimi";
+const basicAuthPassphrase = "test-production-password";
+const basicAuthorization = `Basic ${Buffer.from(`${basicAuthUser}:${basicAuthPassphrase}`).toString("base64")}`;
 
 const personId = "11111111-1111-4111-8111-111111111111";
 const fakeData: VocabularyData = {
@@ -38,7 +44,10 @@ const fakeData: VocabularyData = {
   updatedAt: "2026-07-09T00:00:00.000Z",
 };
 
-function setRuntimeEnv(overrides: Record<string, string | undefined>) {
+function setRuntimeEnv(
+  overrides: Record<string, string | undefined>,
+  options: { withProductionAuth?: boolean } = {},
+) {
   const mutableEnv = process.env as Record<string, string | undefined>;
 
   for (const key of runtimeEnvKeys) {
@@ -54,15 +63,27 @@ function setRuntimeEnv(overrides: Record<string, string | undefined>) {
       mutableEnv[key] = value;
     }
   }
+
+  if (mutableEnv.VERCEL_ENV === "production" && options.withProductionAuth !== false) {
+    mutableEnv.MIMI_BASIC_AUTH_USER = basicAuthUser;
+    Reflect.set(mutableEnv, "MIMI_BASIC_AUTH_PASSWORD", basicAuthPassphrase);
+  }
 }
 
-function dataGetRequest(url = `https://mimi.example/api/storage/data?selectedPersonId=${personId}`) {
+function dataGetRequest(
+  url = `https://mimi.example/api/storage/data?selectedPersonId=${personId}`,
+  headers: Record<string, string> = { authorization: basicAuthorization },
+) {
   return {
     nextUrl: new URL(url),
+    headers: new Headers(headers),
   } as NextRequest;
 }
 
-function dataPostRequest(body: unknown, headers: Record<string, string> = {}) {
+function dataPostRequest(
+  body: unknown,
+  headers: Record<string, string> = { authorization: basicAuthorization },
+) {
   return new Request("https://mimi.example/api/storage/data", {
     method: "POST",
     headers: {
@@ -121,6 +142,23 @@ describe("/api/storage/data runtime contract", () => {
         mode: "local",
       },
     });
+    expect(repositoryMocks.getPostgresVocabularyDataSnapshot).not.toHaveBeenCalled();
+  });
+
+  it("fails closed before Production runtime inspection when Basic Auth is missing", async () => {
+    setRuntimeEnv(
+      {
+        MIMI_STORAGE_RUNTIME: "postgres-production",
+        VERCEL_ENV: "production",
+        NODE_ENV: "production",
+      },
+      { withProductionAuth: true },
+    );
+    const { GET } = await import("./route");
+    const response = await GET(dataGetRequest(undefined, {}));
+
+    expect(response.status).toBe(401);
+    expect(response.headers.get("www-authenticate")).toContain("Mimi Vocabulary");
     expect(repositoryMocks.getPostgresVocabularyDataSnapshot).not.toHaveBeenCalled();
   });
 

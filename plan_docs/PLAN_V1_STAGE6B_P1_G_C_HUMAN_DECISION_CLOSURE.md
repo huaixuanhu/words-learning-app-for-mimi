@@ -1,7 +1,7 @@
 # Words Learning App For Mimi Stage 6B-P1-G-C: Human Decision Closure
 
 Created: 2026-07-10 18:40 AEST
-Last updated: 2026-07-11 01:06 AEST
+Last updated: 2026-07-11 02:01 AEST
 
 Source plan:
 - `plan_docs/PLAN_V1_STAGE6B_P1_G_PRODUCTION_EXECUTION_HANDOFF.md`
@@ -61,7 +61,7 @@ Known current facts:
 
 Open blocker:
 
-P1-G-C cannot close until the user chooses the access boundary, merge path, deployment mechanism, first-write acceptance method, and historical deployment treatment, and until the separately approved live branch/environment actions are performed or explicitly deferred. The policy-level Production target strategy and P1-G-C-4 execution design are no longer open. Production branch creation/reclassification, environment-variable changes, migration, and runtime cutover remain unauthorized.
+The user explicitly approved the bounded live release execution on 2026-07-11. P1-G-C-5 has completed the branch/environment and credential boundary, Basic Auth implementation, schema/zero-count checks, and Preview gate. P1-G-C remains open only until the pull-request merge, formal Production deployment, authenticated read-only verification, and final evidence sync complete.
 
 ## Reference Check
 
@@ -158,7 +158,7 @@ Do not enable durable public Production writes until the user chooses one of the
 - `accept-private-url-risk`: explicitly accept that the public URL is not real authorization and `person_id` is data separation, not security isolation;
 - `add-access-gate`: create a separate access-gate stage before durable writes.
 
-Decision status: pending.
+Decision status: accepted as `add-access-gate` for V1. P1-G-C-5 implements application-level Basic Auth across Production page and current storage API access. This remains a trusted-group gate, not per-person authorization.
 
 Notes:
 
@@ -177,7 +177,7 @@ Accepted alternative:
 
 Direct merge to `main` after a clean validation gate and explicit approval.
 
-Decision status: pending.
+Decision status: accepted as pull request from `V1` to `main`.
 
 Required before merge:
 
@@ -199,7 +199,7 @@ Accepted alternatives:
 - Vercel CLI Production deployment with explicit command approval.
 - Staged Production build with manual promotion if the user wants an extra pause before assigning the Production domain.
 
-Decision status: pending.
+Decision status: accepted as Vercel Git integration from configured Production branch `main`.
 
 Required before deployment:
 
@@ -218,7 +218,7 @@ Accepted alternative:
 
 Run a smallest-possible Production write smoke with explicit approval, then verify and clean it. This creates temporary Production data and requires a documented cleanup path.
 
-Decision status: pending.
+Decision status: accepted as the first real user action after read-only Production verification. No synthetic Production write is approved.
 
 Required acceptance evidence:
 
@@ -240,7 +240,7 @@ Accepted alternatives:
 - Treat it as historical context only after formal release.
 - Use it as the immediate previous deployment candidate if Vercel rollback eligibility confirms it remains eligible.
 
-Decision status: pending.
+Decision status: keep as historical evidence and immediate previous deployment context until the formal release is verified; do not delete it during C5.
 
 Do not delete, promote, rollback, or alias-change this deployment without separate approval.
 
@@ -278,7 +278,21 @@ Accepted next evidence routes:
 - a separately approved browser SSO read-only inspection with a hard stop at `Almost there` or any account-changing prompt;
 - a separately approved Neon CLI / API path only if secret handling is explicitly included.
 
-P1-G-C remains open until the live branch/environment setup path is separately approved or deferred, followed by the remaining access / merge / deployment / first-write decisions.
+P1-G-C live execution is now approved and tracked by P1-G-C-5. It remains open only for merge, formal Production deployment, authenticated read-only verification, and final evidence sync.
+
+`P1-G-C-5 Live Production Execution` is in progress in `plan_docs/PLAN_V1_STAGE6B_P1_G_C_5_LIVE_PRODUCTION_EXECUTION.md`.
+
+It has completed:
+
+- creation of long-lived `staging` from verified clean `main`;
+- Development / Preview retargeting to `staging` and Production-only `main` scope;
+- Production/non-production credential separation;
+- Marketplace disconnect after branch retargeting could not be proven;
+- application-level Production Basic Auth;
+- schema version 5 and zero-count verification on both branches;
+- a current Ready Preview read-only runtime and empty-state check.
+
+It still needs the accepted pull-request merge, Git-integrated Production deployment, canonical-domain verification, and final record closure.
 
 `P1-G-C-2 Evidence Route Decision` is complete in `plan_docs/PLAN_V1_STAGE6B_P1_G_C_2_EVIDENCE_ROUTE_DECISION.md`.
 
@@ -334,3 +348,7 @@ P1-G-C-3 is documented in `plan_docs/PLAN_V1_STAGE6B_P1_G_C_3_DASHBOARD_EVIDENCE
 P1-G-C-4 is documented in `plan_docs/PLAN_V1_STAGE6B_P1_G_C_4_BRANCH_ENVIRONMENT_EXECUTION_DECISION.md`. It is complete as a documentation-only branch/environment execution decision. It records that live execution must verify clean schema-ready `main`, create `staging` from that verified state, move Development / Preview away from `main`, ensure logical `preview/*` branches derive from `staging`, reserve `main` for Production, and avoid blindly rerunning `0001_initial.sql` / `0002_schema5_production_runtime.sql` because the current migration scripts do not maintain a durable migration ledger.
 
 P1-G-C remains open for separately approved live branch/environment actions, access-boundary choice, merge path, deployment mechanism, first-write acceptance, and historical deployment treatment. P1-G-C-4 did not create a branch, change environment variables, read `.env`, connect to a database, migrate, deploy, or write Production data.
+
+## P1-G-C-5 Current Result
+
+P1-G-C-5 is documented in `plan_docs/PLAN_V1_STAGE6B_P1_G_C_5_LIVE_PRODUCTION_EXECUTION.md`. The user approved the live cloud/Git release scope. Branch and environment separation, distinct credentials, Production Basic Auth, schema/empty-state checks, and Preview verification are complete. No formal Production row was created. P1-G-C will close after the accepted `V1` to `main` merge, Ready Production deployment, authenticated read-only checks, and final evidence sync.

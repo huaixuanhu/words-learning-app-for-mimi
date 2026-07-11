@@ -1,4 +1,5 @@
-import { NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
+import { requireProductionBasicAuth } from "@/lib/security/production-basic-auth";
 import { getPostgresPool } from "@/lib/storage/postgres/client";
 import {
   assertPostgresRuntime,
@@ -94,7 +95,13 @@ async function previewHealthResponse() {
   });
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const authResponse = requireProductionBasicAuth(request);
+
+  if (authResponse) {
+    return authResponse;
+  }
+
   const disabled = runtimeDisabledResponse();
 
   if (disabled) {

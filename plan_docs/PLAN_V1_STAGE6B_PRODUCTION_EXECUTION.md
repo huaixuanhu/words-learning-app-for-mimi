@@ -289,3 +289,18 @@ Closed on 2026-07-10:
 This document is a plan only. It does not execute Stage 6B.
 
 Stage 6B-P1-G-A documentation, P1-G-B read-only inventory, P1-G-C-0 decision packet, P1-G-C-1 provider supplement, P1-G-C-2 evidence route decision, P1-G-C-3 dashboard evidence capture, and P1-G-C-4 branch/environment execution decision are complete. P1-G-B found no Production env vars or database target and confirmed the canonical domain is publicly reachable. P1-G-C-1 confirmed the Vercel-managed Neon resource is owned, available, Free-plan, and connected only to Development / Preview. P1-G-C-3 confirmed the current resource has only one `main` Default branch, `neondb` / `neondb_owner`, no child branches, no visible distinct Production target, and a 6-hour restore window. Stage 8.5 closes the policy-level target topology, and P1-G-C-4 translates that policy into a documented execution sequence, but both perform no remote action. No formal Production release should proceed before live branch/environment setup is separately approved or deferred and the remaining P1-G-C decisions close.
+
+## Stage 6B-P1-G-C-5 Live Update
+
+The user explicitly approved the remaining cloud, credential, database, GitHub, merge, and deployment steps on 2026-07-11. `plan_docs/PLAN_V1_STAGE6B_P1_G_C_5_LIVE_PRODUCTION_EXECUTION.md` records the execution.
+
+Completed:
+
+- clean schema-version-5 `main` retained for empty Production;
+- long-lived `staging` created and used by Development / Preview;
+- Production/non-production credentials and Vercel environment scopes separated;
+- Marketplace project connection removed after unreliable branch retargeting evidence;
+- Production Basic Auth access gate implemented;
+- both branches verified empty and current Preview verified read-only.
+
+Accepted remaining path: pull request from `V1` to `main`, Vercel Git-integrated Production deployment, authenticated read-only canonical-domain acceptance, and first real user action as the later write acceptance. No synthetic Production row will be created.

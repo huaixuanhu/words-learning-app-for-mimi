@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireProductionBasicAuth } from "@/lib/security/production-basic-auth";
 import type { ReviewRating } from "@/lib/review/types";
 import {
   createPostgresPerson,
@@ -253,6 +254,12 @@ function storageDataRuntimeDisabledResponse() {
 }
 
 export async function GET(request: NextRequest) {
+  const authResponse = requireProductionBasicAuth(request);
+
+  if (authResponse) {
+    return authResponse;
+  }
+
   const disabled = storageDataRuntimeDisabledResponse();
 
   if (disabled) {
@@ -284,6 +291,12 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const authResponse = requireProductionBasicAuth(request);
+
+  if (authResponse) {
+    return authResponse;
+  }
+
   const disabled = storageDataRuntimeDisabledResponse();
 
   if (disabled) {
