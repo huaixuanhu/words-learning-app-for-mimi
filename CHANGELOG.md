@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## 2026-07-11 20:54 AEST
+
+- Upgraded the repository governance marker and project-specific preflight from `human-ai-governance v0.2.0` to `v0.3.0` after explicit user approval.
+- Reclassified the launched private Production app with current operational tier, target capability tier, and working tier all set to Tier 3.
+- Updated the preflight to the five-tier model, required an explicit tier, kept project-tuned secret and executable-file scanning, and removed HTTP-method-only risk detection.
+- Made strict side-effect scanning explicit in the npm Tier 3 command and synchronized README, architecture, and master-plan governance wording without rewriting historical stage records.
+- Passed the Tier 3 governance preflight, ESLint, TypeScript typecheck, the full Vitest suite with 111 passed and 1 skipped, Next.js Production build, and final diff checks.
+- Reason: align durable project governance with the current Production capability and the updated proportional five-tier skill while preserving proven local safeguards.
+
 ## 2026-07-11 16:24 AEST
 
 - Rotated only the Vercel Production `MIMI_BASIC_AUTH_PASSWORD` after explicit user approval, preserving the existing shared username.

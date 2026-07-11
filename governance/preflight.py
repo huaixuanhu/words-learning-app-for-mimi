@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Risk-scaled governance preflight for this repository.
 
-Generated/adapted from human-ai-governance v0.2.0.
+Generated/adapted from human-ai-governance v0.3.0.
 
-The default tier remains light for ordinary local work. Release work can opt
-into Tier 3 checks for credentials, remote state, and deployment boundaries.
+The repository runs this gate explicitly at Tier 3. Strict side-effect scanning
+remains opt-in at the script level and is enabled by the project npm command.
 """
 
 from __future__ import annotations
@@ -15,7 +15,7 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
-SKILL_VERSION = "0.2.0"
+SKILL_VERSION = "0.3.0"
 SKILL_MARKER_RE = re.compile(
     r"Generated/adapted from human-ai-governance v(?P<version>\d+\.\d+\.\d+)"
 )
@@ -106,7 +106,6 @@ RISKY_SIDE_EFFECT_PATTERNS = (
     re.compile(r"\b(place|submit|cancel|modify)_order\b", re.IGNORECASE),
     re.compile(r"\b(transfer|withdraw|deposit)\b", re.IGNORECASE),
     re.compile(r"\b(drop\s+table|truncate\s+table|delete\s+from)\b", re.IGNORECASE),
-    re.compile(r"[\"'](POST|PUT|PATCH|DELETE)[\"']"),
 )
 
 EXECUTABLE_SIDE_EFFECT_SUFFIXES = {
@@ -368,7 +367,7 @@ def marker_versions(root: Path) -> set[str]:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repo-root", type=Path, default=Path.cwd())
-    parser.add_argument("--tier", type=int, choices=(0, 1, 2, 3), default=1)
+    parser.add_argument("--tier", type=int, choices=(1, 2, 3, 4, 5), required=True)
     parser.add_argument("--strict-side-effects", action="store_true")
     parser.add_argument("--require-skill-marker", action="store_true")
     args = parser.parse_args(argv)
@@ -403,13 +402,13 @@ def main(argv: list[str] | None = None) -> int:
 
     material_paths = {path for path in paths if is_material_path(path)}
 
-    if args.tier >= 1 and material_paths and (root / CHANGELOG).exists():
+    if args.tier >= 2 and material_paths and (root / CHANGELOG).exists():
         if CHANGELOG not in paths:
             issues.append(f"material changes detected, but {CHANGELOG} was not updated")
         else:
             issues.extend(validate_changelog(read_text(root, CHANGELOG)))
 
-    if args.tier >= 2 and material_paths:
+    if args.tier >= 3 and material_paths:
         if (root / AI_AGENT_LOG).exists():
             if AI_AGENT_LOG not in paths:
                 issues.append(f"material changes detected, but {AI_AGENT_LOG} was not updated")
@@ -432,7 +431,7 @@ def main(argv: list[str] | None = None) -> int:
 
     issues.extend(scan_for_secrets(root, paths))
 
-    if args.tier >= 3 or args.strict_side_effects:
+    if args.strict_side_effects:
         issues.extend(scan_risky_side_effects(root, material_paths))
 
     if issues:

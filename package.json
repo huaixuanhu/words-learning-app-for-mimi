@@ -25,7 +25,7 @@
     "db:cleanup-fixture:dev": "STAGE5F_DATABASE_TARGET=development dotenv -e .env.local -- node scripts/backup-import-postgres.mjs --cleanup-fixture",
     "db:cleanup-stage5n-ui-smoke:dev": "STAGE5F_DATABASE_TARGET=development dotenv -e .env.local -- node scripts/backup-import-postgres.mjs --cleanup-stage5n-ui-smoke",
     "db:inspect:schema5:prod": "STAGE6B_DATABASE_TARGET=production MIMI_PRODUCTION_DATABASE_ACTION=inspect VERCEL_ENV=production node scripts/inspect-database-schema5-production.mjs --i-confirm-production-read",
-    "governance:preflight": "python3 governance/preflight.py --tier 3 --require-skill-marker"
+    "governance:preflight": "python3 governance/preflight.py --tier 3 --strict-side-effects --require-skill-marker"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",

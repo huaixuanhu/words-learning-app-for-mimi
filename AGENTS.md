@@ -1,6 +1,6 @@
 # AGENTS.md
 
-<!-- Generated/adapted from human-ai-governance v0.2.0 -->
+<!-- Generated/adapted from human-ai-governance v0.3.0 -->
 
 ## Collaboration
 
@@ -37,11 +37,12 @@
 
 ## Governance Tier
 
-This project starts as Tier 1: durable small app.
+- Current operational tier: Tier 3. The live private web app uses Production hosting, ordinary credentials, confidential study data, and a cloud database, while lacking material economic or high-consequence account authority.
+- Target capability tier: Tier 3 for the current V1 scope.
+- Working tier: Tier 3. Use the same Tier 3 gate for ordinary local maintenance and keep explicit human approval for meaningful Production, credential, migration, deployment, or destructive-data changes.
+- Tier rationale: the credible risks are limited confidential-data exposure, credential mishandling, environment crossover, and recoverable study-data loss. The app has no live trading, transfer, payment, bulk account-action, or similarly material execution authority that would justify Tier 4 or Tier 5.
 
-Stage 6B-P1-G-C-5 used a Tier 3 working gate for credentials, remote database boundaries, GitHub merge, and Production deployment. Future Production or credential changes continue to require Tier 3.
-
-Upgrade the working gate to Tier 3 before tasks involving:
+The following tasks remain explicit-approval work under Tier 3:
 
 - credentials, secrets, OAuth, or auth provider configuration
 - production deployment

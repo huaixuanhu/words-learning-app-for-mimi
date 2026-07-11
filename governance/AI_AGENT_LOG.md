@@ -1,5 +1,29 @@
 # AI Agent Log
 
+## 2026-07-11 20:54 AEST
+
+- Task: install the updated local `human-ai-governance v0.3.0` skill conventions into this repository.
+- Plan agreed: yes. The user approved the read-only migration proposal before project files were changed.
+- Working tier: Tier 3 because the live private web app has ordinary credentials, confidential study data, Production hosting, and a cloud database without material economic or high-consequence account authority.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `governance/preflight.py`
+  - `package.json`
+  - `plan_docs/PLAN_V1_MASTER.md`
+- Reason: synchronize the durable skill marker, five-tier classification, local validation gate, and current governance documentation with the launched Production state.
+- Validation:
+  - Passed: `npm run governance:preflight` with Tier 3 and explicit strict side-effect scanning.
+  - Passed: `npm run lint`.
+  - Passed: `npm run typecheck`.
+  - Passed: `npm run test` with 111 passed and 1 skipped.
+  - Passed: `npm run build`.
+  - Passed: `git diff --check` and final diff review.
+- Safety notes: local governance, documentation, and validation scope only. Next.js loaded the ignored local environment during the approved build, but no environment or credential value was inspected, printed, or changed. No application behavior, remote database, Production data, Vercel/Neon setting, GitHub remote, or deployment was changed.
+
 ## 2026-07-11 16:24 AEST
 
 - Task: replace the unrecoverable randomly generated Production Basic Auth password with the user's explicit choice while preserving the username.
