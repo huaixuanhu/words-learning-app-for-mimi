@@ -1,7 +1,7 @@
 # Words Learning App For Mimi Stage 6B-P1-G-C-5: Live Production Execution
 
 Created: 2026-07-11 02:01 AEST
-Last updated: 2026-07-11 12:40 AEST
+Last updated: 2026-07-11 16:24 AEST
 
 Source plan:
 - `plan_docs/PLAN_V1_STAGE6B_P1_G_C_HUMAN_DECISION_CLOSURE.md`
@@ -169,6 +169,21 @@ Follow-up result:
 - Vercel returned no error-level or `5xx` logs for the final functional deployment;
 - no Production write occurred.
 
+### Access Credential Rotation Follow-up
+
+Completed on 2026-07-11 after separate explicit approval:
+
+- preserved the Production Basic Auth username and rotated only `MIMI_BASIC_AUTH_PASSWORD`;
+- accepted the user's proportionate-risk choice of a short shared passphrase for the current private trusted-group phase, after explicitly noting that it has weaker resistance to guessing;
+- kept the credential value out of tracked files and project documentation, while the user explicitly allowed it to appear in the private Codex conversation;
+- updated only the Vercel Production password variable and rebuilt current Ready Production deployment `dpl_C3GADXU3QHVuiyyog3Wdi4cCDfEF` rather than deploying the local `V1` branch directly;
+- verified replacement deployment `dpl_Af25vm8v896iAgzNbb5whyAmLF2v` is Ready and owns the canonical Production aliases;
+- verified unauthenticated root access and an incorrect password return `401`, while the user-selected credential returns `200`;
+- verified authenticated health/data reads return Ready `postgres-production` and schema version 5;
+- observed 1 `people` row and 1 per-person settings row, with zero vocabulary items, import batches, review states, and review events; this read-only observation means the earlier empty-Production statement is now historical, without proving which user action created the rows;
+- found zero error-level and zero `5xx` logs for the replacement deployment;
+- performed no Production database write and created no local credential file.
+
 ## Stop Conditions
 
 Stop before merge or deployment if:
@@ -183,4 +198,4 @@ Stop before merge or deployment if:
 
 ## Final Result
 
-P1-G-C-5 is complete. The cloud-backed V1 runtime is live behind Basic Auth at `https://words-learning-app-for-mimi.vercel.app`; Production uses Neon `main`, Development / Preview use `staging`, runtime reports `postgres-production`, schema version 5 is active, and formal data remains empty. PR `#1`, merge commit `a70b341a2af61161bb1f778ffeae69a143f03146`, and final functional deployment `dpl_ZrEHc39z4dufgq3RcPQGUV1vK4n2` are the release evidence. The first real user action remains the first formal write acceptance. Temporary secrets are cleaned after the password is placed in the user's local clipboard.
+P1-G-C-5 is complete. The cloud-backed V1 runtime is live behind Basic Auth at `https://words-learning-app-for-mimi.vercel.app`; Production uses Neon `main`, Development / Preview use `staging`, runtime reports `postgres-production`, and schema version 5 is active. PR `#1`, merge commit `a70b341a2af61161bb1f778ffeae69a143f03146`, functional deployment `dpl_ZrEHc39z4dufgq3RcPQGUV1vK4n2`, and credential-rotation replacement deployment `dpl_Af25vm8v896iAgzNbb5whyAmLF2v` are the release evidence. The latest read-only acceptance observes the first durable person/settings state while vocabulary and review data remain empty. No credential value is stored in tracked files.

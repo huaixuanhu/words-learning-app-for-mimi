@@ -1,5 +1,27 @@
 # AI Agent Log
 
+## 2026-07-11 16:24 AEST
+
+- Task: replace the unrecoverable randomly generated Production Basic Auth password with the user's explicit choice while preserving the username.
+- Plan agreed: yes. The user explicitly approved a password-only Vercel Production credential change, allowed the value to appear in the private Codex conversation, and selected a short passphrase after being warned that it has weaker resistance to guessing for this private small-app risk profile.
+- Reason: restore a known access credential without changing the username, database boundary, application code, or unrelated Production configuration.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_G_C_5_LIVE_PRODUCTION_EXECUTION.md`
+- Remote changes:
+  - Updated only Vercel Production `MIMI_BASIC_AUTH_PASSWORD`; preserved the existing username and all database/environment scopes.
+  - Rebuilt current Production deployment `dpl_C3GADXU3QHVuiyyog3Wdi4cCDfEF` as `dpl_Af25vm8v896iAgzNbb5whyAmLF2v`, which reached Ready and acquired the canonical aliases.
+- Validation:
+  - Tier 3 governance preflight passed before the remote change with a clean working tree.
+  - Unauthenticated root and incorrect-password requests returned `401`; the selected credential returned `200`.
+  - Authenticated health/data reads returned Ready `postgres-production` and schema version 5.
+  - Read-only counts were 1 person, 1 settings row, and zero vocabulary/import/review rows.
+  - Vercel returned zero error-level and zero `5xx` logs for the replacement deployment.
+- Safety notes: no database migration, Production data write, Git push, merge, branch change, Neon change, or unrelated Vercel variable change occurred. The credential value is absent from tracked files; no local credential file was created. The earlier empty-Production description is now historical because durable person/settings state exists.
+
 ## 2026-07-11 13:16 AEST
 
 - Task: carefully restructure the GitHub README after the user identified that it was difficult to scan and offered little value to a first-time reader.

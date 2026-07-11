@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## 2026-07-11 16:24 AEST
+
+- Rotated only the Vercel Production `MIMI_BASIC_AUTH_PASSWORD` after explicit user approval, preserving the existing shared username.
+- Recorded the user's proportionate-risk acceptance of a short shared passphrase for the current private trusted-group phase; kept its value out of tracked files and project documentation.
+- Rebuilt current Ready Production deployment `dpl_C3GADXU3QHVuiyyog3Wdi4cCDfEF` as `dpl_Af25vm8v896iAgzNbb5whyAmLF2v` so the new environment value became active without deploying the local `V1` branch directly.
+- Verified unauthenticated and incorrect-password access return `401`, the selected credential returns `200`, authenticated storage remains Ready `postgres-production` with schema version 5, and the new deployment has zero error/`5xx` logs.
+- Observed read-only counts of 1 person, 1 settings row, and zero vocabulary/import/review rows; performed no Production database write.
+- Reason: restore a known, user-selected access credential after the randomly generated launch password could not be recovered from local records or Vercel sensitive-value surfaces.
+
 ## 2026-07-11 13:16 AEST
 
 - Rebuilt `README.md` as a human-facing introduction for people seeing the repository for the first time.
