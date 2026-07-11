@@ -1,5 +1,29 @@
 # AI Agent Log
 
+## 2026-07-11 13:16 AEST
+
+- Task: carefully restructure the GitHub README after the user identified that it was difficult to scan and offered little value to a first-time reader.
+- Plan agreed: yes. The user approved a human-facing README and added two requirements: describe the current app as a private small vocabulary-learning app for Mimi and Anoria with customization, gentle UI interaction, and ADHD-friendly design; keep detailed engineering history in specialized repository documents and mention a possible future SSO-enabled multi-user direction.
+- Changed files:
+  - `README.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `governance/AI_AGENT_LOG.md`
+- Reason: the prior README mixed current behavior, obsolete release wording, Stage chronology, deployment ids, Preview URLs, and risky database commands, so it did not work as a useful public-facing repository introduction.
+- Implementation:
+  - Replaced the long Stage-history introduction with the current product identity, intended users, design values, private V1 status, and future direction.
+  - Summarized current V1 features and made the Recognition / Active scheduling boundary visible in a compact table.
+  - Added concise technical, environment, local-development, branch, data-boundary, documentation, and roadmap sections.
+  - Removed historical deployment evidence and advanced database commands from the README; linked to the canonical architecture, plan, lifecycle, Production execution, backup, changelog, and AI-log documents instead.
+  - Added the documentation ownership boundary to `ARCHITECTURE.md`.
+- Validation:
+  - Passed README structure scan with 11 scannable sections.
+  - Passed all 8 relative internal-link existence checks.
+  - Passed stale README scan for deployment ids, Stage implementation chronology, advanced migration/import/cleanup commands, and pre-launch wording.
+  - Passed `git diff --check`.
+  - Passed `npm run governance:preflight` at Tier 3.
+- Safety notes: documentation-only scope. No application code, package, environment variable, credential, database, Vercel/Neon setting, Production data, GitHub remote, or deployment was changed.
+
 ## 2026-07-11 12:37 AEST
 
 - Task: complete the formal V1 merge/deployment, run authenticated Production acceptance, and correct obsolete browser-local wording found during visual verification.
