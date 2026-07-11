@@ -1,5 +1,2369 @@
 # AI Agent Log
 
+## 2026-07-11 02:01 AEST
+
+- Task: execute the remaining bounded Stage 6B-P1-G-C release work and attempt the complete cloud-backed V1 launch after the user granted explicit permission for cloud, credential, database, GitHub, merge, and deployment actions.
+- Plan agreed: yes. The accepted path is docs/code gate, isolated `main`/`staging` environments, application-level Basic Auth for the trusted group, empty Production, pull request from `V1` to `main`, Vercel Git deployment, and read-only Production acceptance. Synthetic Production data, development-data promotion, destructive cleanup, paid upgrades, public-user auth, AI APIs, analytics, and unrelated features remain excluded.
+- Changed files:
+  - `.env.example`
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `governance/preflight.py`
+  - `package.json`
+  - `scripts/db-connection.mjs`
+  - `scripts/inspect-database-schema5.mjs`
+  - `scripts/inspect-database-schema5-production.mjs`
+  - `scripts/schema5-inspection.mjs`
+  - `src/app/api/storage/data/route.ts` and its test
+  - `src/app/api/storage/health/route.ts` and its test
+  - `src/lib/security/production-basic-auth.ts` and its test
+  - `src/proxy.ts`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_G_C_5_LIVE_PRODUCTION_EXECUTION.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_G_C_HUMAN_DECISION_CLOSURE.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_G_PRODUCTION_EXECUTION_HANDOFF.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md`
+  - `plan_docs/PLAN_V1_STAGE6B_PRODUCTION_EXECUTION.md`
+  - `plan_docs/PLAN_V1_STAGE8_5_DATA_LIFECYCLE_ENVIRONMENT_STRATEGY.md`
+- Reason: close the actual Production database/environment boundary, protect the private trusted-group entry, and create a reproducible release gate before the formal `main` deployment.
+- Implementation:
+  - Created Neon `staging` from verified clean `main`, set `staging` as Neon Default with no auto-delete, and kept `main` for Production.
+  - Scoped Development / Preview database variables to `staging` and Production database variables plus `postgres-production` runtime to `main`.
+  - Disconnected the Marketplace resource from this Vercel project after retargeting did not prove branch isolation; the Neon resource itself remains owned and intact.
+  - Rotated the Production database role credential twice. The first rotated value appeared in a local browser-automation inspection payload and is treated as exposed; the second rotation invalidated it. No credential value is tracked or documented.
+  - Added Production Basic Auth page/API enforcement and fail-closed configuration handling.
+  - Added reusable schema version 5 inspection and a guarded read-only Production inspection command.
+  - Kept Production empty and did not rerun already-present migrations.
+- Validation:
+  - Passed local TypeScript typecheck, ESLint, full Vitest suite with 111 passed and 1 intentionally skipped, Next.js Production build, both backup dry-run fixtures, development `staging` schema/count inspection, and guarded Production `main` schema/count inspection.
+  - Both database branches report the expected 8 tables, 6 schema version 5 columns, 9 constraints, 1 index, 2 triggers, and zero rows in all learning/backup-import tables.
+  - Ready Preview deployment `dpl_EmKkV31KApZJchr7w7XV5S3F4XZF` returned `postgres-preview`, schema version 5, and empty state through authenticated read-only Vercel checks.
+- Resumed execution notes:
+  - Re-ran ESLint, TypeScript, the full Vitest suite, both backup dry-run fixtures, Next.js Production build, Tier 3 governance preflight, and the `staging` schema/zero-count inspection; all passed.
+  - Vercel sensitive Production values were correctly non-readable through `env pull`. A documented `vercel env run` probe mixed readable local `.env.local` values while leaving sensitive Production values absent, so it was rejected as Production evidence.
+  - The guarded Production schema command then stopped on missing database variables before creating a connection. No database read or write occurred in that failed attempt.
+  - Regenerated and updated the Production Basic Auth credentials so deployment acceptance and handoff use a known current value without printing it.
+- Safety notes: no secret value was committed or written into documentation. The credential exposed in a local automation payload was immediately invalidated by a second rotation. Production received no development data, backup import, synthetic vocabulary, or study-data write. Temporary local secret files remain restricted to the execution session and must be deleted before handoff. Formal GitHub merge and Production deployment will proceed only after the final local Tier 3 gate passes.
+
+## 2026-07-11 01:06 AEST
+
+- Task: inspect the user's newly updated documentation, then execute the next documentation-first stage by creating and synchronizing P1-G-C-4 branch/environment execution decision.
+- Plan agreed: yes. The approved scope was local documentation only. No live Vercel / Neon, credential, database, branch, environment-variable, merge, deployment, backup, or Production data action was approved.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_G_C_4_BRANCH_ENVIRONMENT_EXECUTION_DECISION.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_G_C_HUMAN_DECISION_CLOSURE.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_G_PRODUCTION_EXECUTION_HANDOFF.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md`
+  - `plan_docs/PLAN_V1_STAGE6B_PRODUCTION_EXECUTION.md`
+  - `plan_docs/PLAN_V1_STAGE8_5_DATA_LIFECYCLE_ENVIRONMENT_STRATEGY.md`
+- Decisions recorded:
+  - P1-G-C-4 is the documentation-first execution decision for the accepted Stage 8.5 single-project topology.
+  - Live execution must re-check clean schema-ready `main`, create `staging` from verified clean `main`, move Development / Preview away from `main`, keep temporary logical `preview/*` branches derived from `staging`, and reserve `main` for Production-only variables.
+  - Neon-managed Preview automation must be verified or avoided if it would derive Preview branches from Production `main`.
+  - The current SQL migration scripts do not maintain a durable `schema_migrations` ledger; live execution must verify schema shape / constraints / indexes / triggers / counts and must not blindly rerun already-applied `0001_initial.sql` or `0002_schema5_production_runtime.sql`.
+  - P1-G-C remains open for separately approved live branch/environment actions, access-boundary choice, merge path, deployment mechanism, first-write acceptance, and historical deployment treatment.
+- Reference check:
+  - Re-checked Vercel Environment Variables, Vercel Environments, Neon Manage Branches, and Neon Schema-only Branches documentation on 2026-07-11.
+  - Recorded that Preview variables can be branch-scoped, first-class Vercel Custom Environments require Pro / Enterprise, Neon branches are copy-on-write, managed Neon Preview branches derive from the Neon default branch, and schema-only branches are Beta / independent root branches.
+- Validation before log sync:
+  - Passed: `git diff --check`.
+  - Passed: secret-hygiene scan found no Postgres connection URL, raw Neon endpoint hostname, JWT-shaped token, full Neon branch id, or full Neon endpoint id in the changed documentation.
+  - Passed: stale-blocker scan found no remaining wording that treats P1-G-C-4 as the next uncreated documentation gate.
+- Validation after log sync:
+  - Passed: `git diff --check`.
+  - Passed: secret-hygiene scan found no Postgres connection URL, raw Neon endpoint hostname, JWT-shaped token, full Neon branch id, or full Neon endpoint id in the full changed diff.
+  - Passed: separate secret-hygiene scan across all changed tracked files plus the untracked new P1-G-C-4 document found no secret-bearing patterns.
+  - Passed: trailing-whitespace scan on the new P1-G-C-4 document.
+  - Passed: P1-G-C-4 status/link scan found the new decision linked from AGENTS, README, architecture, changelog, AI log, master, Stage 8.5, Stage 6B, Stage 6B-P1, P1-G, and P1-G-C docs.
+  - Passed: `npm run governance:preflight`.
+- Safety notes: no `.env` read, credential/connection-string handling, browser provider action, SQL, database connection, Neon/Vercel mutation, branch creation, restore, snapshot, environment-variable change, GitHub push/merge, deployment, backup automation, or Production data write was performed.
+
+## 2026-07-11 00:12 AEST
+
+- Task: create and synchronize Stage 8.5 Data Lifecycle（数据生命周期）and Environment Strategy after the user confirmed the prior plan, lowered the logical-backup frequency, and selected a proportionate single-Neon-project topology for the current private trusted-group app.
+- Plan agreed: yes. The accepted scope was local documentation only. The user selected existing-project `main` for future Production, long-lived non-production `staging`, temporary logical `preview/*` branches derived from `staging`, and a lower-frequency backup baseline. No cloud or persistent-data action was approved.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `db/LOCAL_BACKUP_TO_POSTGRES.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE6A_PRODUCTION_RELEASE_GATE.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_G_C_3_DASHBOARD_EVIDENCE.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_G_C_HUMAN_DECISION_CLOSURE.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_G_PRODUCTION_EXECUTION_HANDOFF.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md`
+  - `plan_docs/PLAN_V1_STAGE6B_PRODUCTION_EXECUTION.md`
+  - `plan_docs/PLAN_V1_STAGE8_5_DATA_LIFECYCLE_ENVIRONMENT_STRATEGY.md`
+- Decisions recorded:
+  - Existing Neon project `words-learning-app-for-mimi-neon` remains the sole project for the current V1 phase.
+  - Verified clean `main` is the future Production branch only after `staging` exists and Development / Preview no longer use `main`.
+  - `staging` is the long-lived non-production baseline; temporary logical `preview/*` branches derive from `staging` and use test data only.
+  - Production starts empty; non-production business rows do not promote into Production.
+  - After formal data begins, target one encrypted logical backup per week, retain the most recent eight weekly backups, and create an additional backup before high-risk Production data changes.
+  - Daily backups and a separate Production Neon project become upgrade options when the trusted-group, AI-data, access, blast-radius, or recovery profile changes.
+  - P1-G-C-4 is now a documentation-first single-project branch-topology execution decision, not another generic target-selection round.
+  - Because `main` already received `0001_initial.sql` and `0002_schema5_production_runtime.sql` while it was non-production, later reclassification must inspect migration history and must not rerun already-applied migrations.
+- Validation:
+  - Passed: `git diff --check` before final log sync.
+  - Passed: `git diff --check` after log sync.
+  - Passed: `npm run governance:preflight`.
+  - Not run: application lint/typecheck/test/build because this slice changes documentation only and no source, schema, migration, package, or runtime behavior.
+- Safety notes: no `.env` read, credential/connection-string handling, SQL, database connection, Neon/Vercel mutation, branch creation, snapshot/restore, environment-variable change, GitHub push/merge, deployment, backup automation, or Production data write was performed.
+- Execution note: one final `rg` stale-wording scan used a double-quoted pattern containing Markdown backticks, so zsh attempted `0001_initial.sql` and `0002_schema5_production_runtime.sql` as command names. Both returned `command not found`; no project script, database connection, network call, or mutation ran. The scan was immediately rerun with a single-quoted pattern.
+
+## 2026-07-10 20:55 AEST
+
+- Task: execute Stage 6B-P1-G-C-3 dashboard evidence capture after the user opened the Neon dashboard and approved direct read-only dashboard inspection.
+- Plan agreed: yes. The approved scope was browser-assisted read-only Neon dashboard evidence plus documentation sync. No Vercel / Neon mutation, `.env` read, credential output, connection string reveal/copy, SQL, database connection, branch creation/deletion, restore, snapshot creation, env var change, merge, deployment, or Production write was included.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_G_C_3_DASHBOARD_EVIDENCE.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_G_C_HUMAN_DECISION_CLOSURE.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_G_PRODUCTION_EXECUTION_HANDOFF.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md`
+  - `plan_docs/PLAN_V1_STAGE6B_PRODUCTION_EXECUTION.md`
+- Evidence captured:
+  - Neon dashboard project name: `words-learning-app-for-mimi-neon`.
+  - Branch list: only `main`, marked `Default`.
+  - Child branches: none.
+  - Database / role labels: `neondb` / `neondb_owner`.
+  - Region: `AWS Asia Pacific 2 (Sydney)`.
+  - Postgres version: `17`.
+  - Restore window: 6 hours.
+  - No visible distinct empty Production branch / database.
+- Safety notes:
+  - Did not click `Connect`, copy secrets, open connection-string exports, inspect passwords, or record full internal Neon branch / endpoint ids.
+  - Did not click `Preview data`, `Restore`, `Create snapshot`, `Create child branch`, `Add role`, `Add database`, `Edit`, `Manage Neon subscription`, or any mutating provider control.
+  - Did not run SQL, connect to a database, read `.env`, change Vercel env vars, merge, deploy, or write Production data.
+- Result:
+  - P1-G-C-3 materially closes the dashboard evidence gap for the current Neon resource.
+  - P1-G-C remains open because the exact Production target strategy, access boundary, merge path, deployment mechanism, first-write acceptance, and historical deployment treatment are still pending.
+- Validation:
+  - Passed: `git diff --check`.
+  - Passed: secret-hygiene scan found no Postgres connection URL, raw Neon endpoint hostname, JWT-shaped token, full Neon branch id, or full Neon endpoint id in the changed documentation.
+  - Passed: P1-G-C-3 status scan found the dashboard evidence linked from parent docs, README, architecture notes, AGENTS, changelog, and AI log.
+  - Passed: `npm run governance:preflight`.
+
+## 2026-07-10 19:44 AEST
+
+- Task: execute Stage 6B-P1-G-C-2 Evidence Route Decision after the user confirmed the next stage.
+- Plan agreed: yes. The approved scope is documentation only: define the safest next evidence route and synchronize parent docs/logs. No provider dashboard navigation, browser SSO, Neon CLI / API secret handling, `.env` read, database connection, SQL, branch creation/deletion, restore, env var change, merge, deployment, or Production write is included.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_G_C_2_EVIDENCE_ROUTE_DECISION.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_G_C_HUMAN_DECISION_CLOSURE.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_G_PRODUCTION_EXECUTION_HANDOFF.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md`
+  - `plan_docs/PLAN_V1_STAGE6B_PRODUCTION_EXECUTION.md`
+- Implementation notes:
+  - Added `plan_docs/PLAN_V1_STAGE6B_P1_G_C_2_EVIDENCE_ROUTE_DECISION.md` with source plan, derived-from list, scope, non-scope, exit criteria, current evidence state, evidence route options, recommended decision, and result.
+  - Recommended human dashboard evidence as the lowest-risk next route because it can provide branch / database / restore metadata without token handling or database connection.
+  - Defined redaction requirements for full Postgres URLs, endpoint hostnames, passwords, tokens, secret values, QR codes, `.env` export blocks, and database env var values.
+  - Kept browser SSO and Neon CLI / API routes behind separate explicit approvals.
+- Validation:
+  - Passed: `git diff --check`.
+  - Passed: secret-hygiene scan found no Postgres connection URL, raw Neon endpoint hostname, Vercel token string, or JWT-shaped token in the changed documentation.
+  - Passed: P1-G-C-2 status scan found the evidence route decision linked from parent docs, README, architecture notes, AGENTS, changelog, and AI log.
+  - Passed: `npm run governance:preflight`.
+- Safety notes: documentation-only scope. No `.env` read, database connection, SQL, Vercel/Neon command, provider dashboard navigation, browser SSO action, email action, branch creation/deletion, restore, environment variable change, merge, push, deployment, promotion, rollback, alias change, secret output, Production migration, Production data write, or Production runtime cutover was performed.
+
+## 2026-07-10 18:57 AEST
+
+- Task: execute Stage 6B-P1-G-C-1 Provider Supplement after the user confirmed the next stage.
+- Plan agreed: yes. The approved scope is read-only provider metadata and documentation sync. No `.env` read, credential output, database connection, SQL, branch creation/deletion, restore, env var change, merge, deployment, browser SSO action, email action, or Production write is included.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_G_C_1_PROVIDER_SUPPLEMENT.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_G_C_HUMAN_DECISION_CLOSURE.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_G_PRODUCTION_EXECUTION_HANDOFF.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md`
+  - `plan_docs/PLAN_V1_STAGE6B_PRODUCTION_EXECUTION.md`
+- Execution notes:
+  - Verified the working tree was clean at start.
+  - Vercel connector `_list_projects` returned `Failed to list projects`, so no project evidence was taken from that connector.
+  - `vercel` and `vc` were not available on `PATH`; `npm exec -- vercel --version` temporarily fetched Vercel CLI 55.0.0 into npm's execution cache and did not modify repository dependency files.
+  - `vercel project inspect` confirmed the Vercel project identity, Next.js preset, root directory, and Node.js `24.x` setting.
+  - `vercel env ls --format json` confirmed Production has no project environment variables; `MIMI_STORAGE_RUNTIME` is Preview-only; Neon/Postgres variable names remain Development / Preview-only; no env values were printed.
+  - `vercel integration list` and `vercel integration resource inspect` confirmed resource `words-learning-app-for-mimi-neon` is owned, available, Neon-backed, on the Free `free_v3` plan, and connected to `words-learning-app-for-mimi` only for Development / Preview.
+  - `vercel integration installations --format json` confirmed the Neon Marketplace installation and showed capabilities including SSO and `mcpReadonly`; the filtered `--integration neon` form returned an empty list, so the filtered result is treated as inconclusive.
+  - `vercel list` showed recent deployments on the first page as Preview and no new Production action was performed.
+- Result:
+  - P1-G-C-1 strengthens evidence that the existing Vercel-managed Neon resource is operational and not Production-scoped.
+  - P1-G-C-1 does not expose Neon branch names, primary/root status, database labels, role labels, restore window, or an exact empty Production target.
+  - P1-G-C remains open pending human dashboard evidence, callable read-only Neon MCP evidence, separately approved browser SSO evidence, or separately approved Neon CLI / API evidence.
+- Validation:
+  - Passed: `git diff --check`.
+  - Passed: secret-hygiene scan found no Postgres connection URL, raw Neon endpoint hostname, Vercel token string, or JWT-shaped token in the changed documentation.
+  - Passed: P1-G-C-1 status scan found the provider supplement linked from parent docs, README, architecture notes, AGENTS, changelog, and AI log.
+  - Passed: `npm run governance:preflight`.
+- Safety notes: read-only provider metadata and local documentation only. No `.env` read, database connection, SQL, Vercel/Neon resource mutation, branch creation/deletion, restore, env var change, provider dashboard click, browser SSO action, email action, merge, push, deployment, promotion, rollback, alias change, secret output, Production migration, Production data write, or Production runtime cutover was performed.
+
+## 2026-07-10 18:40 AEST
+
+- Task: execute Stage 6B-P1-G-C-0 documentation first after the user confirmed the next stage, turning the remaining P1-G-C blockers into an explicit human decision packet.
+- Plan agreed: yes. The approved scope is documentation only: add a derived P1-G-C decision packet, synchronize parent docs/logs, and run local documentation validation. No provider inspection, `.env` read, Vercel/Neon command, database connection, migration, environment change, merge, deployment, or Production write is included.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_G_C_HUMAN_DECISION_CLOSURE.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_G_PRODUCTION_EXECUTION_HANDOFF.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md`
+  - `plan_docs/PLAN_V1_STAGE6B_PRODUCTION_EXECUTION.md`
+- Official reference check:
+  - Re-checked Vercel Git deployment, environment variable, promotion, and Instant Rollback documentation.
+  - Re-checked Neon Vercel overview, Vercel-managed integration, manual Vercel setup, branching, and backup / restore documentation.
+- Implementation notes:
+  - Added `plan_docs/PLAN_V1_STAGE6B_P1_G_C_HUMAN_DECISION_CLOSURE.md` with required child-plan header, scope, non-scope, exit criteria, current state, official reference implications, required decisions, recommended default package, next `P1-G-C-1 Provider Supplement`, stop conditions, and P1-G-C-0 result.
+  - Kept the core correction from the previous stage: email activation is not an established prerequisite for the existing operational Development / Preview Neon resource.
+  - Made the next gate explicit: obtain approved provider-management evidence or equivalent branch/recovery evidence, then close P1-G-C decisions before any Production migration, env var change, merge, deployment, or write.
+- Validation:
+  - Passed: `git diff --check`.
+  - Passed: stale-gate scan found no remaining affirmative requirement to activate Neon email before P1-G-C; remaining activation references are corrective or observed-screen context.
+  - Passed: secret-hygiene scan found no Postgres connection URL or raw Neon endpoint hostname in the changed documentation.
+  - Passed: `npm run governance:preflight`.
+- Safety notes: documentation-only scope. No `.env` read, database connection, SQL, Vercel/Neon remote command, provider-management action, environment change, branch creation/deletion, merge, push, deployment, promotion, rollback, alias change, email action, secret output, Production migration, Production data write, or Production runtime cutover was performed.
+
+## 2026-07-10 17:43 AEST
+
+- Task: review the pre-UI Neon documentation after the user reported receiving no activation email, correct P1-G-B's activation assumption, and record the execution-process incident from the review.
+- Plan agreed: yes. The approved scope is documentation correction only across the existing nine P1-G-B files, with no further database connection, Vercel/Neon remote command, environment change, deployment, merge, or push.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_G_PRODUCTION_EXECUTION_HANDOFF.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md`
+  - `plan_docs/PLAN_V1_STAGE6B_PRODUCTION_EXECUTION.md`
+- Evidence reviewed:
+  - Stage 5F created and linked the Vercel Marketplace Neon resource for Development / Preview, applied `0001_initial.sql`, and inspected 8 tables with zero core business rows.
+  - Stage 5J verified local and Vercel Preview `postgres-preview` health reads against the resource.
+  - Stage 5K performed a controlled Preview write, Stage 5L cleaned smoke rows and returned counts to zero, and Stage 5N verified Preview UI persistence.
+  - Stage 6B-P1-F reused the same approved resource, applied `0002_schema5_production_runtime.sql`, verified schema version 5 and Active-review guards, exercised repository integration, and returned final business counts to zero.
+  - No pre-P1-G-B project document recorded Neon email activation as a requirement.
+- Correction:
+  - The `Almost there` screen seen through the attempted Vercel SSO management route is retained as observed evidence.
+  - It no longer supports a claim that the existing resource is absent, unusable, or globally blocked on email activation.
+  - P1-G-C is now blocked on an approved provider-management path or equivalent branch/recovery evidence, exact Production target selection, access boundary, merge/deployment choices, and first-write acceptance.
+- Execution-process incident:
+  - During read-only document searching, an `rg` regular expression was placed inside shell double quotes while containing Markdown backticks.
+  - Shell command substitution unintentionally invoked `npm run db:migrate:dev`, which used the existing `STAGE5F_DATABASE_TARGET=development` guard and connected to the approved non-production development database.
+  - `scripts/run-sql-migration.mjs` submitted `0001_initial.sql`; that file starts with `begin;`, and its first DDL statement is `create table people`.
+  - PostgreSQL returned error `42P07` because relation `people` already existed. No successful mutating SQL statement preceded the failure, and the transaction did not reach `commit;`.
+  - This database connection exceeded the approved read-only documentation scope. No follow-up database inspection or other remote command was run. Remote state was not re-inspected, so the precise claim is limited to: the observed execution path contains no evidence of a committed mutation.
+  - Prevention: use single-quoted or fixed-string shell search patterns when the searched text contains Markdown backticks; do not embed backticks in shell double-quoted search expressions.
+- Validation:
+  - Passed: stale-state scan found no affirmative requirement to activate Neon email before P1-G-C; remaining activation references are observed-screen evidence or explicit corrections.
+  - Passed: secret-hygiene scan found no Postgres connection URL, raw endpoint hostname, or unredacted Neon-style project identifier in the nine changed documents.
+  - Passed: `git diff --check`.
+  - Passed: `npm run governance:preflight`.
+- Safety notes: documentation edits only after the incident. No additional `.env` read, database connection, SQL, Vercel/Neon remote command, environment change, branch creation/deletion, deployment, promotion, alias change, merge, push, email action, secret output, Production migration, Production data write, or Production runtime cutover was performed.
+
+## 2026-07-10 13:44 AEST
+
+- Task: execute Stage 6B-P1-G-B read-only Production inventory after the user committed P1-G-A and explicitly requested the next stage.
+- Plan agreed: yes. Scope was read-only local Git/Vercel-link inspection, private Vercel/Neon account inventory, minimum redacted local target identification, documentation sync, and no live mutation.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_G_PRODUCTION_EXECUTION_HANDOFF.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md`
+  - `plan_docs/PLAN_V1_STAGE6B_PRODUCTION_EXECUTION.md`
+- Reason: establish the exact current Production infrastructure state before P1-G-C chooses a target, access boundary, merge route, deployment mechanism, or first-write acceptance method.
+- Read-only execution notes:
+  - Confirmed `V1` was clean, tracked `origin/V1`, was ahead/behind `0/0`, and pointed to commit `553d91a7888f940f1b1a986455f7c718ee1530ac`.
+  - Confirmed linked Vercel team `anorias-projects`, project `words-learning-app-for-mimi`, Git repository `huaixuanhu/words-learning-app-for-mimi`, and Production branch `main`.
+  - The connected Vercel app lacked the required team scope and returned `403`; used the existing authenticated cached Vercel CLI `54.20.1` without re-authentication or token output.
+  - Confirmed the team is on the Hobby plan.
+  - Confirmed historical Production `dpl_2nvALJ1CutPjeFteXKMCHWKa4UsD` remains Ready from branch `V1` / commit `d01719a6bb372c75873d042c657feb7f93d80b3a`.
+  - Confirmed current-commit Preview `dpl_9a9jharXJof6UUxitFTFHjoFGYht` is Ready from branch `V1` / commit `553d91a7888f940f1b1a986455f7c718ee1530ac`.
+  - Confirmed the canonical Production domain points to the historical deployment and returned HTTP `200`; `/api/storage/health` returned `404` on that historical artifact.
+  - Confirmed Production has zero project env vars. `MIMI_STORAGE_RUNTIME` is Preview-only; 16 encrypted Neon/Postgres keys are Development / Preview-only; Preview UI/smoke write flags are absent.
+  - Confirmed Vercel SSO deployment protection is configured for `all_except_custom_domains`, but the canonical Production project domain remains publicly reachable.
+  - Confirmed Neon integration resource `words-learning-app-for-mimi-neon` is available. Read minimum `.env.local` metadata to verify the Development / Preview target, then committed only redacted project/endpoint fingerprints plus non-secret region/database/role labels.
+  - Opened the provider resource through Vercel Neon SSO and reached official Neon Console. Encountered an `Almost there` email-activation screen, did not resend activation email or interact with any provider control, and could not inspect branch/recovery details through that route. The later 17:43 evidence review clarifies that this did not invalidate the existing operational Development / Preview resource.
+  - Confirmed no Production database env connection or exact Production target is configured; Neon branch/recovery capability remains unverified.
+  - Confirmed no Vercel rollback is currently in progress. Because the account is Hobby and only one Production deployment is listed, arbitrary specific-deployment rollback must not be assumed.
+- Validation:
+  - Passed: current-state scan found no document that still marks P1-G-B as pending.
+  - Passed: secret-hygiene scan found no raw Neon project id, endpoint hostname, or Postgres connection URL in the changed documentation.
+  - Passed: `git diff --check`.
+  - Passed: `npm run governance:preflight`.
+- Safety notes: read-only account access and local documentation only. `.env.local` was read after explicit approval only to derive non-secret target identity/fingerprints; no password, token, full database URL, or connection string was printed or committed. No SQL, database connection, database inspection, database mutation, env change, integration change, branch creation/deletion, email resend, GitHub push, pull request, merge, Vercel deployment/promotion/alias change/rollback, Neon restore, authentication implementation, access-gate implementation, AI API（人工智能接口）, external vocabulary source, analytics（分析追踪）, notification, email send, or 付费/扣款 feature was performed.
+
+## 2026-07-10 13:24 AEST
+
+- Task: execute Stage 6B-P1-G-A documentation first, then follow the documented execution path; record the user's clarification that the current development database contains no valuable data and formal data should begin only after fully cloud-backed V1 launch.
+- Plan agreed: yes. The accepted current slice was P1-G-A local documentation only. Read-only Vercel / Neon account inventory, credential access, Production migration, environment changes, merge, deployment, and data writes remain separately approved later slices.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_G_PRODUCTION_EXECUTION_HANDOFF.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md`
+  - `plan_docs/PLAN_V1_STAGE6B_PRODUCTION_EXECUTION.md`
+- Reason: convert the completed P1-F non-production proof into a bounded Production handoff and close the first-launch import question without treating documentation approval as authorization for live account or Production actions.
+- Implementation notes:
+  - Added a derived P1-G child plan with source plan, derived-from evidence, scope, non-scope, safety, exit criteria, execution slices, decision register, ordered future Production execution, rollback direction, and stop conditions.
+  - Recorded shared `postgres-production` as the formal runtime and an explicitly empty Production start as the initial data path.
+  - Closed formal first-launch backup import as `skip`; development data must not be copied, cloned, promoted, or treated as seed data.
+  - Recorded that all learning and backup-import counts must be zero after Production migration and before runtime cutover.
+  - Inspected the local empty-database bootstrap path: an empty Postgres snapshot returns the default Mimi workspace shape, and the first valid Postgres mutation can create the first durable learner row.
+  - Added future acceptance checks for empty-state read, no silent local fallback, first real durable write, persistence after refresh, and `person_id` separation.
+  - Split later work into P1-G-B read-only account inventory and P1-G-C human decision closure before Stage 6B formal execution.
+  - Required a Production-specific exact-target migration guard; development-only commands must not be repointed at Production.
+- Validation:
+  - Passed: `git diff --check`.
+  - Passed: `npm run governance:preflight`.
+- Safety notes: local documentation and read-only local source inspection only. No `.env` file or credential was read or changed. No Vercel command, Neon command, remote account inspection, database connection, database mutation, Production migration, Production import, Production env var change, GitHub push, pull request, merge, deployment, promotion, alias change, rollback, authentication implementation, access-gate implementation, AI API（人工智能接口）, external vocabulary source, analytics（分析追踪）, notification, email, or 付费/扣款 feature was performed.
+
+## 2026-07-09 23:26 AEST
+
+- Task: execute Stage 6B-P1-F non-production database verification after the user confirmed the remote database boundary.
+- Plan agreed: yes. Scope was the approved non-production development database only: schema version 5 migration（数据库迁移）, schema inspection, trigger verification, fixture rollback/commit/cleanup, actual Postgres repository integration testing, and documentation/log sync.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `db/LOCAL_BACKUP_TO_POSTGRES.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `package.json`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md`
+  - `scripts/inspect-database-schema5.mjs`
+  - `scripts/verify-schema5-active-review-guard.mjs`
+  - `src/lib/storage/postgres/repository.integration.test.ts`
+- Reason: verify that schema version 5 Postgres persistence, backup import, database-level Active Vocabulary（输出词汇）guards, and repository parity actually work against the migrated non-production database before any Production（生产环境）handoff.
+- Implementation notes:
+  - Added `scripts/inspect-database-schema5.mjs` and `npm run db:inspect:schema5:dev` to verify schema version 5 columns, constraints, index, triggers, and counts without printing credentials.
+  - Added `npm run db:migrate:schema5:dev` for the `0002_schema5_production_runtime.sql` migration.
+  - Added `scripts/verify-schema5-active-review-guard.mjs` and `npm run db:verify:schema5-active-guard:dev` to verify direct Active review state/event writes are rejected inside a rolled-back transaction.
+  - Added schema5 fixture trial/commit npm commands.
+  - Added `src/lib/storage/postgres/repository.integration.test.ts`, skipped by default unless `MIMI_POSTGRES_INTEGRATION=1`.
+  - Added `npm run db:test:repository:dev` to run the repository integration test with `MIMI_STORAGE_RUNTIME=postgres-preview`.
+- Database execution:
+  - Passed initial `npm run db:inspect:dev`: Stage 5F schema present, counts all zero.
+  - Expected pre-migration `npm run db:inspect:schema5:dev` failure: v5 columns were missing before migration.
+  - Passed `npm run db:migrate:schema5:dev`: applied `db/migrations/0002_schema5_production_runtime.sql` to the development database.
+  - Passed post-migration `npm run db:inspect:schema5:dev`: 6 schema v5 columns, 9 constraints, 1 index, 2 triggers, and all counts zero.
+  - Passed `npm run db:verify:schema5-active-guard:dev`: review state and review event writes for an Active item were both rejected and rolled back.
+  - Passed `npm run db:import-fixture-trial:dev`: schema v3 fixture inserted expected rows inside a transaction and rolled back to zero rows.
+  - Passed `npm run db:import-schema5-fixture-trial:dev`: schema v5 fixture inserted expected rows inside a transaction and rolled back to zero rows.
+  - Passed `npm run db:import-schema5-fixture-commit:dev`: inserted 1 person, 1 import batch, 2 vocabulary items, 1 review state, 1 review event, 1 review settings row, 1 backup import row, and 7 backup import mappings.
+  - Passed `npm run db:cleanup-fixture:dev`: removed all schema v5 fixture rows.
+  - Passed final `npm run db:inspect:schema5:dev`: schema v5 still present and all core learning / backup import counts returned to zero.
+  - Passed `npm run db:test:repository:dev`: repository integration test verified dual limits, schema v5 vocabulary fields, Active review rejection, review rollback/reset, JSON import rollback, hard delete, and schema v5 snapshot export against the migrated database.
+- Local validation:
+  - Passed: `node --check scripts/inspect-database-schema5.mjs`.
+  - Passed: `node --check scripts/verify-schema5-active-review-guard.mjs`.
+  - Passed: `npm run lint`.
+  - Passed: `npm run typecheck`.
+  - Passed: `npm run test` with 20 files, 105 passed tests, and 1 skipped integration test.
+  - Passed: `npm run backup:dry-run:fixture`.
+  - Passed: `npm run backup:dry-run:schema5-fixture`.
+- Safety notes: `.env.local` was read only through explicit `dotenv -e .env.local` database commands after human confirmation. No credential value was printed. Database mutation was limited to the approved non-production development database. Temporary fixture/integration rows were cleaned, and final counts returned to zero. No Vercel command, Neon management command, Production migration, Production import, Production deployment, Production env var change, formal user backup import, AI API（人工智能接口）, dictation engine（听写引擎）, spelling checker（拼写检查器）, writing feedback model, external vocabulary source, authentication（认证）, analytics（分析追踪）, notification, email, or 付费/扣款 feature was performed.
+
+## 2026-07-09 00:59 AEST
+
+- Task: execute Stage 6B-P1-E backup import version 5 after the user asked to start the next stage.
+- Plan agreed: yes. Scope was local backup import（备份导入）version 5 planning, script support, fixture coverage, tests, no-database dry runs, and documentation/log sync.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `db/LOCAL_BACKUP_TO_POSTGRES.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `package.json`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md`
+  - `plan_docs/PLAN_V1_STAGE6B_PRODUCTION_EXECUTION.md`
+  - `scripts/backup-import-plan.mjs`
+  - `scripts/backup-import-plan.test.mjs`
+  - `scripts/backup-import-postgres.mjs`
+  - `src/lib/storage/durable-repository-contract.ts`
+  - `test_fixtures/stage6b-p1e-schema5-backup.json`
+- Reason: make the backup import bridge match schema version 5, JSON import data, dual-track vocabulary fields, and the V1 Recognition-only review boundary before any real database verification.
+- Implementation notes:
+  - Updated `backup-import-plan` support from schema version 3 only to schema version 3 / 4 / 5 workspace backups.
+  - Added schema version 5 validation and mapping for `learningTrack`, nullable `tags`, `meaningsZh`, `examples`, `json_file` / `json_paste` sources, and separate `recognitionSessionLimit` / `activeSessionLimit`.
+  - Kept legacy `sessionLimit` synchronized to the Recognition daily limit for Postgres compatibility.
+  - Added import-plan rejection for schema version 4 / 5 review states or review events that target Active Vocabulary.
+  - Updated `backup-import-postgres` insert SQL for `learning_track`, `tags`, `meanings_zh`, `examples`, `recognition_session_limit`, and `active_session_limit`.
+  - Added `test_fixtures/stage6b-p1e-schema5-backup.json` and `npm run backup:dry-run:schema5-fixture`.
+  - Updated the durable repository contract so backup plans can identify source schema version 5.
+- Validation:
+  - Passed: `npm run test -- scripts/backup-import-plan.test.mjs` with 1 file and 6 tests.
+  - Passed: `npm run lint`.
+  - Passed: `npm run typecheck`.
+  - Passed: `npm run test` with 19 files and 105 tests.
+  - Passed: `npm run backup:dry-run:fixture`, reporting schema version 3 fixture counts `people=1`, `importBatches=1`, `vocabularyItems=1`, `reviewStates=1`, `reviewEvents=1`, `reviewSettings=1`, `backupImports=1`, and `backupImportMappings=6`.
+  - Passed: `npm run backup:dry-run:schema5-fixture`, reporting schema version 5 fixture counts `people=1`, `importBatches=1`, `vocabularyItems=2`, `reviewStates=1`, `reviewEvents=1`, `reviewSettings=1`, `backupImports=1`, and `backupImportMappings=7`.
+  - Passed: `npm run build`.
+  - Passed: `git diff --check`.
+  - Passed after log sync: `npm run governance:preflight`.
+- Safety notes: local code, fixture, tests, and documentation only. No database command was run, no migration was applied, no remote database was inspected, no `.env` file was opened or changed, no credential value was printed, no Vercel command, no Neon command, no database mutation, no Production（生产环境）deployment, no Production migration, no Production import, no formal user backup import, no AI API（人工智能接口）, no dictation engine（听写引擎）, no spelling checker（拼写检查器）, no writing feedback model, no external vocabulary source, no authentication（认证）, no analytics（分析追踪）, no notification, no email, and no 付费/扣款 feature was performed. The standard Next.js build reported `.env.local` presence but did not print credential values.
+
+## 2026-07-09 00:37 AEST
+
+- Task: execute Stage 6B-P1-D repository parity after the user asked to start the next stage.
+- Plan agreed: yes. Scope was local Postgres repository parity（仓储层功能对齐）, API（应用程序接口）mutation wiring, UI unblock for matched parity controls, local tests, and documentation/log sync.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md`
+  - `src/app/api/storage/data/route.test.ts`
+  - `src/app/api/storage/data/route.ts`
+  - `src/components/review/review-session.tsx`
+  - `src/components/vocabulary/vocabulary-library.tsx`
+  - `src/lib/storage/durable-repository-contract.ts`
+  - `src/lib/storage/postgres/mappers.test.ts`
+  - `src/lib/storage/postgres/mappers.ts`
+  - `src/lib/storage/postgres/repository-parity.test.ts`
+  - `src/lib/storage/postgres/repository.ts`
+- Reason: make the Postgres repository path match the accepted V1 browser-local Library / Review behavior before backup import version 5 and real database verification.
+- Implementation notes:
+  - Extended the durable repository contract with hard delete, import batch rollback, reset-today review, and one-word review rollback operations.
+  - Updated Postgres mappers and repository SQL for schema version 5 `learning_track`, nullable `tags`, `meanings_zh`, `examples`, JSON import source types, and separate Recognition / Active daily limits.
+  - Removed JSON import source down-mapping in the Postgres import path.
+  - Added Postgres hard delete and JSON batch rollback operations. Review rows are removed through existing database cascade semantics when vocabulary items are deleted.
+  - Added Postgres reset-today and one-word rollback operations that delete selected review events, delete affected review states, and rebuild states by replaying remaining events through the Stage 8 scheduler.
+  - Connected the new operations through `/api/storage/data` mutations.
+  - Removed Postgres runtime UI blocks for Library hard delete, JSON batch rollback, Review reset-today, and Review `回退1词`.
+  - Updated Review session bookkeeping so rollback uses the persisted event id from the current runtime snapshot instead of a local temporary event id.
+  - Added mapper, route mock, and repository static tests without opening a database connection.
+- Validation:
+  - Passed: `npm run test -- src/lib/storage/postgres/mappers.test.ts src/lib/storage/postgres/repository-parity.test.ts src/app/api/storage/data/route.test.ts` with 3 files and 14 tests.
+  - Passed: `npm run lint`.
+  - Passed: `npm run typecheck`.
+  - Passed: `npm run test` with 19 files and 103 tests.
+  - Passed: `npm run backup:dry-run:fixture`, reporting fixture plan counts `people=1`, `importBatches=1`, `vocabularyItems=1`, `reviewStates=1`, `reviewEvents=1`, `reviewSettings=1`, `backupImports=1`, and `backupImportMappings=6`.
+  - Passed: `npm run build`.
+  - Passed: `git diff --check`.
+- Safety notes: local code, route mocks, static tests, and documentation only. No database command was run, no migration was applied, no remote database was inspected, no `.env` file was opened or changed, no credential value was printed, no Vercel command, no Neon command, no database mutation, no Production（生产环境）deployment, no Production migration, no Production import, no formal user backup import, no AI API（人工智能接口）, no dictation engine（听写引擎）, no spelling checker（拼写检查器）, no writing feedback model, no external vocabulary source, no authentication（认证）, no analytics（分析追踪）, no notification, no email, and no 付费/扣款 feature was performed. The standard Next.js build reported `.env.local` presence but did not print credential values.
+
+## 2026-07-09 00:11 AEST
+
+- Task: execute Stage 6B-P1-C runtime / API contract after the user asked to start the next stage.
+- Plan agreed: yes. Scope was local `postgres-production` runtime（运行模式）guards, `/api/storage/health` and `/api/storage/data` API（应用程序接口）contract behavior, client runtime recognition, safety tests, and documentation/log sync.
+- Changed files:
+  - `.env.example`
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md`
+  - `src/app/api/storage/data/route.test.ts`
+  - `src/app/api/storage/data/route.ts`
+  - `src/app/api/storage/health/route.test.ts`
+  - `src/app/api/storage/health/route.ts`
+  - `src/components/export/export-workspace.tsx`
+  - `src/components/review/review-session.tsx`
+  - `src/components/vocabulary/use-vocabulary-data.ts`
+  - `src/components/vocabulary/vocabulary-library.tsx`
+  - `src/lib/storage/postgres/client.ts`
+  - `src/lib/storage/runtime-mode.test.ts`
+  - `src/lib/storage/runtime-mode.ts`
+- Reason: add a guarded local `postgres-production` code path before implementing Postgres repository parity（仓储层功能对齐）and before any database or Production（生产环境）execution.
+- Implementation notes:
+  - Added `postgres-production` to the storage runtime parser.
+  - Added runtime guards so `postgres-preview` is development / Preview only and `postgres-production` is Vercel Production only.
+  - Updated the server-only Postgres client to use the shared guarded Postgres runtime assertion.
+  - Updated `/api/storage/health` so Production `postgres-production` uses a readiness probe without returning public table counts; Preview keeps development / preview counts.
+  - Updated `/api/storage/data` so Production requires `postgres-production`; non-Production rejects `postgres-production`; Preview writes still require `MIMI_ENABLE_STORAGE_UI_WRITES=true` plus `x-mimi-ui-storage-write: allow-dev-preview-ui-write`; Production does not use the Preview header as its permission model.
+  - Updated the browser data hook to preserve `postgres-production` as a distinct client runtime.
+  - Updated Library, Export, and Review UI guards so local-only destructive controls remain blocked for all Postgres runtimes until P1-D repository parity implements them.
+  - Added mocked route contract tests for health/data behavior without opening a database connection.
+- Validation:
+  - Passed: `npm run test -- src/lib/storage/runtime-mode.test.ts` with 1 file and 9 tests.
+  - Passed: `npm run test -- src/app/api/storage/health/route.test.ts src/app/api/storage/data/route.test.ts src/lib/storage/runtime-mode.test.ts` with 3 files and 19 tests.
+  - Passed: `npm run lint`.
+  - Passed: `npm run typecheck`.
+  - Passed: `npm run test` with 18 files and 98 tests.
+  - Passed: `npm run backup:dry-run:fixture`, reporting fixture plan counts `people=1`, `importBatches=1`, `vocabularyItems=1`, `reviewStates=1`, `reviewEvents=1`, `reviewSettings=1`, `backupImports=1`, and `backupImportMappings=6`.
+  - Passed: `npm run build`.
+  - Passed: `git diff --check`.
+- Safety notes: local code, route mocks, tests, and documentation only. No database command was run, no migration was applied, no remote database was inspected, no `.env` file was opened or changed, no credential value was printed, no Vercel command, no Neon command, no database mutation, no Production deployment, no Production migration, no Production import, no formal user backup import, no AI API（人工智能接口）, no dictation engine（听写引擎）, no spelling checker（拼写检查器）, no writing feedback model, no external vocabulary source, no authentication（认证）, no analytics（分析追踪）, no notification, no email, and no 付费/扣款 feature was performed. The standard Next.js build reported `.env.local` presence but did not print credential values.
+
+## 2026-07-08 23:52 AEST
+
+- Task: execute Stage 6B-P1-B local schema and static tests after the user confirmed the plan.
+- Plan agreed: yes. Scope was local schema version 5 Production runtime migration draft, static SQL tests, and documentation/log sync.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `db/migrations/0002_schema5_production_runtime.sql`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md`
+  - `src/lib/storage/durable-schema.test.ts`
+- Reason: prepare the schema version 5 Postgres（关系型数据库）shape locally before implementing `postgres-production` runtime（运行模式）and API（应用程序接口）behavior.
+- Implementation notes:
+  - Added `0002_schema5_production_runtime.sql` as an additive migration after historical `0001_initial.sql`.
+  - Added schema version 5 fields for `learning_track`, nullable `tags`, `meanings_zh`, `examples`, `recognition_session_limit`, and `active_session_limit`.
+  - Added JSON source type support for `json_file` and `json_paste`.
+  - Added backup import（备份导入）schema version 5 support.
+  - Added database-level trigger guards so V1 `review_states` and `review_events` can target only Recognition Vocabulary（阅读词汇）items.
+  - Kept Stage 8 FSRS state fields neutral; no `scheduled_days`, scheduler version, `recognition_difficulty`, `recognition_stability`, `active_difficulty`, or `active_stability` fields were added.
+  - Extended static schema tests for `0002`, while keeping `0001_initial.sql` historical.
+- Validation:
+  - Passed: `npm run test -- src/lib/storage/durable-schema.test.ts` with 1 file and 12 tests.
+  - Passed: `npm run lint`.
+  - Passed: `npm run typecheck`.
+  - Passed: `npm run test` with 16 files and 85 tests.
+  - Passed: `npm run backup:dry-run:fixture`, reporting fixture plan counts `people=1`, `importBatches=1`, `vocabularyItems=1`, `reviewStates=1`, `reviewEvents=1`, `reviewSettings=1`, `backupImports=1`, and `backupImportMappings=6`.
+  - Passed: `npm run build`.
+  - Passed: `git diff --check`.
+  - Passed: `npm run governance:preflight`.
+- Safety notes: local SQL draft, static tests, and documentation only. No database command was run, no migration was applied, no `.env` file was read or changed, no credential access occurred, no Vercel command, no Neon command, no database mutation, no Production（生产环境）deployment, no Production migration（生产迁移）, no Production import, no formal user backup import, no AI API（人工智能接口）, no dictation engine（听写引擎）, no spelling checker（拼写检查器）, no writing feedback model, no external vocabulary source, no authentication（认证）, no analytics（分析追踪）, no notification, no email, and no 付费/扣款 feature was performed.
+
+## 2026-07-08 22:05 AEST
+
+- Task: execute Stage 8-G final acceptance after the user committed Stage 8-F and asked to continue.
+- Plan agreed: yes. Scope was Stage 8 acceptance, local browser review-flow smoke check, documentation/log sync, and validation.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md`
+  - `plan_docs/PLAN_V1_STAGE8_REVIEW_MEMORY_ALGORITHM.md`
+  - `src/lib/ui/sound-player.ts`
+- Reason: close the pre-Production review memory algorithm stage before returning to the cloud-backed V1 runtime bridge.
+- Implementation notes:
+  - Marked Stage 8 Review Memory Algorithm（复习记忆算法）as accepted.
+  - Updated Stage 6B-P1 so Stage 8 is no longer a blocking unknown; Stage 6B-P1 remains a separate implementation stage requiring explicit approval.
+  - Ran local browser review-flow smoke checks against temporary origins `http://127.0.0.1:4318` and `http://127.0.0.1:4319`.
+  - Added one Recognition Vocabulary（阅读词汇）smoke item and one Active Vocabulary（输出词汇）smoke item through the visible Single input UI.
+  - Verified the Review queue showed only the Recognition smoke item, proving the Active smoke item did not enter the V1 review queue（复习队列）.
+  - Verified `完全忘记了` repeated the Recognition smoke item inside the same session.
+  - Verified `完全记得` completed the repeated item, changed the queue to `0 left`, and showed the `已完成今日复习任务` modal.
+  - The first browser smoke surfaced a decorative button-sound fallback `NotAllowedError` / unhandled rejection in the automated browser environment.
+  - Fixed the UI-only sound fallback path so blocked button-sound playback is caught quietly and does not surface as an app error.
+  - Re-ran the browser smoke check on the clean `4319` origin and verified the same Review flow passed without new audio errors for that origin.
+- Validation:
+  - Passed: browser review-flow smoke check on `http://127.0.0.1:4318`; this run exposed the decorative audio fallback issue after the Review flow passed.
+  - Passed: browser review-flow smoke check on `http://127.0.0.1:4319` after the sound fallback fix.
+  - Passed: `npm run lint`.
+  - Passed: `npm run typecheck`.
+  - Passed: `npm run test` with 16 files and 79 tests.
+  - Passed: `npm run backup:dry-run:fixture`, reporting fixture plan counts `people=1`, `importBatches=1`, `vocabularyItems=1`, `reviewStates=1`, `reviewEvents=1`, `reviewSettings=1`, `backupImports=1`, and `backupImportMappings=6`.
+  - Passed: `npm run build`.
+  - Passed: `git diff --check`.
+  - Passed: `npm run governance:preflight`.
+- Safety notes: local documentation, local browser smoke, and UI-only decorative sound handling only. No migration file was created, no local storage schema version change, no Postgres schema change, no Vercel command, no Neon command, no `.env` read/change, no credential access, no database command, no database mutation, no Production（生产环境）deployment, no Production migration（数据库迁移）, no Production import, no formal user backup（备份）import, no AI API（人工智能接口）, no dictation engine（听写引擎）, no spelling checker（拼写检查器）, no writing feedback model, no external vocabulary source, no authentication（认证）, no analytics（分析追踪）, no notification, no email, and no 付费/扣款 feature was performed.
+
+## 2026-07-08 21:31 AEST
+
+- Task: execute Stage 8-F Postgres Production handoff after the user asked to start the next stage.
+- Plan agreed: yes. Scope was Stage 6B-P1 handoff documentation, final V1 Recognition scheduler state shape, local static SQL regression, and documentation/log sync.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md`
+  - `plan_docs/PLAN_V1_STAGE8_REVIEW_MEMORY_ALGORITHM.md`
+  - `src/lib/storage/durable-schema.test.ts`
+- Reason: hand off the accepted Stage 8 Recognition memory state shape to the cloud-backed V1 Production planning path without running remote migrations.
+- Implementation notes:
+  - Updated Stage 6B-P1 with final V1 Recognition FSRS state semantics: neutral `difficulty` / `stability`, exact `due_at`, application-level natural-day queue due checks, and no V1 `scheduled_days` / scheduler-version columns.
+  - Documented that Stage 6B-P1 should reject Active Vocabulary（输出词汇）review state / event rows through repository, backup import, and preferably database-level direct write protection.
+  - Documented that `0001_initial.sql` remains historical and `0002_schema5_production_runtime.sql` is deferred to later explicit Stage 6B-P1 implementation approval.
+  - Added a static SQL regression test for the existing neutral `review_states` / `review_events` shape in `0001_initial.sql`.
+- Validation:
+  - Passed: `npm run test -- src/lib/storage/durable-schema.test.ts` with 1 file and 6 tests.
+  - Passed: `npm run lint`.
+  - Passed: `npm run typecheck`.
+  - Passed: `npm run test` with 16 files and 79 tests.
+  - Passed: `npm run backup:dry-run:fixture`, reporting fixture plan counts `people=1`, `importBatches=1`, `vocabularyItems=1`, `reviewStates=1`, `reviewEvents=1`, `reviewSettings=1`, `backupImports=1`, and `backupImportMappings=6`.
+  - Passed: `npm run build`.
+  - Passed: `git diff --check`.
+  - Passed: `npm run governance:preflight`.
+- Safety notes: local documentation and static tests only. No migration file was created, no local storage schema version change, no Postgres schema change, no Vercel command, no Neon command, no `.env` read/change, no credential access, no database command, no database mutation, no Production deployment, no Production migration, no Production import, no formal user backup import, no AI API（人工智能接口）, no dictation engine（听写引擎）, no spelling checker（拼写检查器）, no writing feedback model, no external vocabulary source, no authentication（认证）, no analytics（分析追踪）, no notification, no email, and no 付费/扣款 feature was performed.
+
+## 2026-07-08 18:44 AEST
+
+- Task: execute Stage 8-E data migration and backup compatibility after the user confirmed implementation.
+- Plan agreed: yes. Scope was local schema-version decision, JSON backup validation, Active Vocabulary（输出词汇）round-trip behavior, impossible Active review state / event rejection, tests, and documentation/log sync.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE8_REVIEW_MEMORY_ALGORITHM.md`
+  - `src/lib/backup/json-backup.test.ts`
+  - `src/lib/backup/json-backup.ts`
+  - `src/lib/vocabulary/local-storage-repository.test.ts`
+- Reason: prevent broken or future-incompatible backups from importing Active scheduling state into V1 Production（生产环境）data.
+- Implementation notes:
+  - Confirmed schema version 5 remains sufficient for Stage 8 FSRS state because `difficulty`, `stability`, `intervalMinutes`, `dueAt`, `reviewCount`, and `lapseCount` already exist.
+  - Updated JSON backup relationship validation to map item ids to `learningTrack`.
+  - Rejected `reviewStates` / `reviewEvents` that reference Active Vocabulary items when track fields are present.
+  - Updated backup fixtures so Recognition words carry review history and Active words round-trip without review history.
+  - Added a local migration regression test proving Stage 8 review algorithm fields keep schema version 5.
+- Validation:
+  - Passed: `npm run test -- src/lib/backup/json-backup.test.ts src/lib/vocabulary/local-storage-repository.test.ts` with 2 files and 11 tests.
+  - Passed: `npm run lint`.
+  - Passed: `npm run typecheck`.
+  - Passed: `npm run test` with 16 files and 78 tests.
+  - Passed: `npm run backup:dry-run:fixture`, reporting fixture plan counts `people=1`, `importBatches=1`, `vocabularyItems=1`, `reviewStates=1`, `reviewEvents=1`, `reviewSettings=1`, `backupImports=1`, and `backupImportMappings=6`.
+  - Passed: `npm run build`.
+  - Passed: `git diff --check`.
+  - Passed: `npm run governance:preflight`.
+- Safety notes: local code, tests, and documentation only. No local storage schema version change, Postgres schema change, Vercel command, Neon command, `.env` read/change, credential access, database command, database mutation, Production deployment, Production migration, Production import, formal user backup import, AI API（人工智能接口）, dictation engine（听写引擎）, spelling checker（拼写检查器）, writing feedback model, external vocabulary source, authentication（认证）, analytics（分析追踪）, notification, email, or 付费/扣款 feature was performed.
+
+## 2026-07-08 18:15 AEST
+
+- Task: execute Stage 8-D FSRS scheduler replacement after the user confirmed implementation.
+- Plan agreed: yes. Scope was Recognition-only FSRS scheduler wiring, local natural-day bucket due checks, reset / rollback rebuild parity, Postgres repository parity guard, tests, and documentation/log sync.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE8_REVIEW_MEMORY_ALGORITHM.md`
+  - `src/lib/review/fsrs-recognition.ts`
+  - `src/lib/review/repository.test.ts`
+  - `src/lib/review/repository.ts`
+  - `src/lib/review/scheduler.test.ts`
+  - `src/lib/review/scheduler.ts`
+  - `src/lib/storage/postgres/repository.ts`
+- Reason: replace the placeholder linear cross-day Recognition scheduler before formal V1 Production（生产环境）can persist durable review memory state.
+- Implementation notes:
+  - Added `createRecognitionFsrsCardFromReviewState()` so existing neutral `ReviewState` fields become FSRS card input.
+  - Preserved compatibility for older placeholder states that have review counts but no FSRS `difficulty` / `stability`.
+  - Replaced `REVIEW_INTERVAL_MINUTES` scheduling with `ts-fsrs` outcomes for Recognition ratings.
+  - Stored exact `dueAt` timestamps and FSRS `difficulty` / `stability` in local review state.
+  - Added local date-key due checks in the selected person's timezone（时区）so a card becomes due when Mimi's local due date starts.
+  - Updated reset-today and one-word rollback rebuilds to replay events through the same FSRS scheduler.
+  - Updated the Postgres repository path to write FSRS state fields and reject non-Recognition review recording.
+- Validation:
+  - Passed: `npm run test -- src/lib/review/scheduler.test.ts src/lib/review/repository.test.ts src/lib/review/fsrs-recognition.test.ts`.
+  - Passed: `npm run typecheck`.
+  - Passed: `npm run lint`.
+  - Passed: `npm run test` with 16 files and 75 tests.
+  - Passed: `npm run backup:dry-run:fixture`, reporting fixture plan counts `people=1`, `importBatches=1`, `vocabularyItems=1`, `reviewStates=1`, `reviewEvents=1`, `reviewSettings=1`, `backupImports=1`, and `backupImportMappings=6`.
+  - Passed: `npm run build`.
+  - Passed: `git diff --check`.
+  - Passed: `npm run governance:preflight`.
+- Safety notes: local code, tests, and documentation only. No local storage schema version change, Postgres schema change, Vercel command, Neon command, `.env` read/change, credential access, database command, database mutation, Production deployment, Production migration, Production import, formal user backup import, AI API（人工智能接口）, dictation engine（听写引擎）, spelling checker（拼写检查器）, writing feedback model, external vocabulary source, authentication（认证）, analytics（分析追踪）, notification, email, or 付费/扣款 feature was performed.
+
+## 2026-07-08 18:03 AEST
+
+- Task: execute Stage 8-C same-session Recognition repeat, and document the Stage 8-D local natural-day bucket due boundary before implementation.
+- Plan agreed: yes. The user asked to execute the next stage and first add the Stage 8-D natural-day bucket（自然日分桶）decision.
+- Changed files:
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE8_REVIEW_MEMORY_ALGORITHM.md`
+  - `src/components/review/review-session.tsx`
+  - `src/lib/review/session-queue.test.ts`
+  - `src/lib/review/session-queue.ts`
+- Reason: make failed Recognition ratings repeat inside the current session while keeping cross-day FSRS replacement separate and documenting the due-date boundary before Stage 8-D.
+- Implementation notes:
+  - Added pure session queue helpers for pass / repeat classification, failed-card requeue placement, and rollback movement.
+  - Requeued `forgot` / `hard` after up to two other pending cards, or at the end when fewer cards remain.
+  - Kept `vague` / `remembered` as session-pass ratings.
+  - Prevented duplicate queued copies when a failed item is already waiting to repeat.
+  - Updated Review rollback to account for attempts that did not increment the passed count.
+  - Reset successful submission guards after commit so a one-card failed session can show the same card again.
+  - Documented Stage 8-D's future rule: FSRS should compute `scheduled_days`, and Review queue due checks should compare local date buckets in Mimi's timezone rather than exact clock time.
+- Validation:
+  - Passed: `npm run test -- --run src/lib/review/session-queue.test.ts src/lib/review/repository.test.ts src/lib/review/fsrs-recognition.test.ts`.
+  - Passed: `npm run typecheck`.
+  - Passed: `npm run lint`.
+  - Passed: `npm run test` with 16 files and 74 tests.
+  - Passed: `npm run backup:dry-run:fixture`.
+  - Passed: `npm run build`.
+  - Passed: `git diff --check`.
+  - Passed: `npm run governance:preflight`.
+- Safety notes: local Review UI behavior, local pure helper tests, and documentation only. No Postgres schema change, Vercel command, Neon command, `.env` read/change, credential access, database command, database mutation, Production（生产环境）deployment, Production migration, Production import, formal user backup import, AI API（人工智能接口）, dictation engine（听写引擎）, spelling checker（拼写检查器）, writing feedback model, external vocabulary source, authentication（认证）, analytics（分析追踪）, notification, email, or 付费/扣款 feature was performed.
+
+## 2026-07-08 17:51 AEST
+
+- Task: execute Stage 8-B package fit and calibration after the user confirmed implementation.
+- Plan agreed: yes. Scope was package installation, isolated Recognition FSRS adapter, calibration tests, Active boundary regression, and documentation/log sync.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `package-lock.json`
+  - `package.json`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE8_REVIEW_MEMORY_ALGORITHM.md`
+  - `src/lib/review/fsrs-recognition.test.ts`
+  - `src/lib/review/fsrs-recognition.ts`
+  - `src/lib/review/repository.test.ts`
+- Reason: validate `ts-fsrs` package fit before replacing the app's placeholder review scheduler.
+- Implementation notes:
+  - Installed `ts-fsrs@5.4.1`.
+  - Confirmed installed package types export `Card`, `FSRSParameters`, `Rating`, `State`, `createEmptyCard`, `fsrs`, and `generatorParameters`.
+  - Added `fsrs-recognition.ts` with deterministic candidate parameters: `request_retention: 0.9`, `maximum_interval: 36500`, `enable_fuzz: false`, `enable_short_term: false`, `learning_steps: []`, and `relearning_steps: []`.
+  - Mapped V1 ratings to FSRS ratings: `forgot -> Again`, `hard -> Hard`, `vague -> Good`, and `remembered -> Easy`.
+  - Added calibration tests for package version, parameter snapshot, first-review outcomes, and deterministic fuzz-disabled behavior.
+  - Added an Active Vocabulary（输出词汇）regression test that proves Active words do not enter review queue（复习队列）or create review state（复习状态）/ review event（复习事件）through `recordReview()`.
+  - Kept the current Stage 4 scheduler and Review UI behavior unchanged.
+- Validation:
+  - Passed: `npm run test -- --run src/lib/review/fsrs-recognition.test.ts src/lib/review/repository.test.ts`.
+  - Passed: `npm run typecheck`.
+  - Passed: `npm run lint`.
+  - Passed: `npm run test` with 15 files and 66 tests.
+  - Passed: `npm run backup:dry-run:fixture`.
+  - Passed: `npm run build`.
+  - Passed: `git diff --check`.
+  - Passed: `npm run governance:preflight`.
+- Safety notes: local package installation, isolated adapter, local tests, and documentation only. No Vercel command, Neon command, `.env` read/change, credential access, database command, database mutation, Production（生产环境）deployment, Production migration, Production import, formal user backup import, AI API（人工智能接口）, dictation engine（听写引擎）, spelling checker（拼写检查器）, writing feedback model, external vocabulary source, authentication（认证）, analytics（分析追踪）, notification, email, or 付费/扣款 feature was performed.
+
+## 2026-07-08 12:45 AEST
+
+- Task: document the user's decision to create a separate Stage 8 Review Memory Algorithm before completing shared Postgres Production launch work.
+- Plan agreed: yes. The user confirmed the Stage 8 plan and added the Active Vocabulary boundary that V1 must explicitly not schedule Active words.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE6B_PRODUCTION_EXECUTION.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md`
+  - `plan_docs/PLAN_V1_STAGE8_REVIEW_MEMORY_ALGORITHM.md`
+- Reason: prevent the placeholder Stage 4 fixed interval scheduler and any accidental Active Vocabulary（输出词汇）review state from becoming durable Production（生产环境）data.
+- Implementation notes:
+  - Added the Stage 8 child plan with required `Source plan`, `Derived from`, `Scope`, `Non-Scope`, and `Exit criteria` markers.
+  - Documented that V1 FSRS-6（Free Spaced Repetition Scheduler 6，自由间隔重复调度器第 6 版）applies only to `learningTrack === "recognition"` words.
+  - Documented same-session repeat behavior for Recognition words rated `完全忘记了` or `有点忘记了`.
+  - Documented that Active words remain stored, exportable, and importable, but do not enter review queue（复习队列）, review state（复习状态）, or review event（复习事件）creation in V1.
+  - Documented V2 compatibility guidance: future Active scheduling should use separate dimensions such as `review_profile`, `skill_type`, or `activity_type`.
+  - Updated Stage 6B and Stage 6B-P1 so shared Postgres Production remains blocked until Stage 8 review state design is accepted.
+  - Re-checked Open Spaced Repetition / `ts-fsrs` documentation on 2026-07-08 for FSRS, TypeScript（类型脚本）library fit, Node.js（运行时）requirements, and supported scheduler APIs.
+- Validation:
+  - Passed: `git diff --check`.
+  - Passed: `npm run governance:preflight`.
+- Safety notes: local documentation and release-planning only. No code implementation, package installation, GitHub push, pull request, merge to `main`, Vercel command, Neon command, `.env` read/change, credential access, database command, database mutation, Production deployment, Production migration, Production import, formal user backup import, AI API（人工智能接口）, dictation engine（听写引擎）, spelling checker（拼写检查器）, writing feedback model, external vocabulary source, authentication（认证）, analytics（分析追踪）, notification, email, or 付费/扣款 feature was performed.
+
+## 2026-07-08 00:25 AEST
+
+- Task: document the user's decision to make V1's formal launch shared Postgres Production rather than browser-local Production.
+- Plan agreed: yes. The user confirmed to do documentation first.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE6B_PRODUCTION_EXECUTION.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md`
+- Reason: make Stage 6B-P1 the required bridge to a fully cloud-backed V1 release while preserving explicit approval gates for credentials, remote databases, env vars（环境变量）, migration（迁移）, import, and deployment.
+- Implementation notes:
+  - Added Stage 6B-P1 child plan with required `Source plan`, `Derived from`, `Scope`, `Non-Scope`, and `Exit criteria` markers.
+  - Updated Stage 6B plan so browser-local Production is a fallback and shared Postgres Production is the selected path.
+  - Documented schema version 5 Production persistence requirements for `learningTrack`, `tags`, `meaningsZh`, `examples`, JSON source types, Recognition / Active limits, and backup schema version 5.
+  - Documented `postgres-production` runtime rules, API behavior, repository parity requirements, backup import requirements, non-production Neon branch verification, and access-boundary decision.
+  - Re-checked official Vercel / Neon docs on 2026-07-08 for environment, env var, integration, and branching semantics.
+- Validation:
+  - Passed: `git diff --check`.
+  - Passed: `npm run governance:preflight`.
+  - Not run: full app validation because this was a documentation-only planning change with no code, package, migration, or runtime behavior changes.
+- Safety notes: local documentation and release-planning only. No code implementation, GitHub push, pull request, merge to `main`, Vercel command, Neon command, `.env` read/change, credential access, database command, database mutation, Production deployment, Production migration, Production import, formal user backup import, AI API（人工智能接口）, dictation engine（听写引擎）, spelling checker（拼写检查器）, writing feedback model, external vocabulary source, authentication（认证）, analytics（分析追踪）, notification, email, or 付费/扣款 feature was performed.
+
+## 2026-07-07 23:53 AEST
+
+- Task: create the Stage 6B formal Production execution plan after the user confirmed that Stage 7 interaction and logic are locally accepted.
+- Plan agreed: yes. The user confirmed the Stage 7 closeout recommendation to draft `PLAN_V1_STAGE6B_PRODUCTION_EXECUTION.md` as a plan-only step with no remote execution.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE6B_PRODUCTION_EXECUTION.md`
+- Reason: make the next Production（生产环境）step explicit after Stage 7 acceptance while keeping all merge（合并）, Vercel, Neon, env var（环境变量）, database migration（数据库迁移）, and import actions behind later explicit approval.
+- Implementation notes:
+  - Added the Stage 6B child plan with required `Source plan`, `Derived from`, `Scope`, `Non-Scope`, and `Exit criteria` markers.
+  - Re-checked official Vercel / Neon release-planning docs on 2026-07-07 for environment, Git deployment, env var, deployment management, rollback, integration, and branching semantics.
+  - Documented browser-local Production as the recommended first formal V1 route.
+  - Documented shared Postgres Production as requiring a separate `postgres-production` runtime implementation before durable shared writes.
+  - Recorded the exact stop conditions and human decisions required before execution.
+- Validation:
+  - Passed: `git diff --check`.
+  - Passed: `npm run governance:preflight`.
+  - Not run: full app validation because this was a documentation-only planning change; the same-session Stage 7 closeout already passed `npm run lint`, `npm run typecheck`, `npm run test`, `npm run backup:dry-run:fixture`, and `npm run build`.
+- Safety notes: local documentation and release-planning only. No GitHub push, pull request, merge to `main`, Vercel command, Neon command, `.env` read/change, credential access, database command, database mutation, Production deployment, Production migration, Production import, formal user backup import, AI API（人工智能接口）, dictation engine（听写引擎）, spelling checker（拼写检查器）, writing feedback model, external vocabulary source, authentication（认证）, analytics（分析追踪）, notification, email, or 付费/扣款 feature was performed.
+
+## 2026-07-07 23:12 AEST
+
+- Task: document and implement the user's requested Review refinement: remove confusing regenerate/new-session buttons, add automatic queue refresh, and add `回退1词` to undo the previous completed card when a rating is tapped by mistake.
+- Plan agreed: yes. The user explicitly asked to write the change into documents first, then start implementation. Scope was local Review UI（用户界面）, browser-local Review repository behavior, tests, and docs.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE7_11_REVIEW_ROLLBACK_AUTO_REFRESH.md`
+  - `plan_docs/PLAN_V1_STAGE7_UI_VISUAL_DESIGN.md`
+  - `src/components/review/review-session.tsx`
+  - `src/components/vocabulary/use-vocabulary-data.ts`
+  - `src/lib/review/repository.test.ts`
+  - `src/lib/review/repository.ts`
+- Reason: remove low-value Review queue regeneration controls and add a bounded one-step correction path for accidental rating taps while preserving Recognition Vocabulary（阅读词汇）scheduler behavior and Production（生产环境）boundaries.
+- Implementation notes:
+  - Added the Stage 7.11 child plan before implementation, with local runtime boundary and final-card rollback boundary documented.
+  - Added `rollbackReviewEvent()` to remove one selected-person review event and rebuild that vocabulary item's `ReviewState` from remaining earlier events.
+  - Added `review.rollbackEvent` local mutation metadata.
+  - Removed the left `重新生成本次复习` and right `新建本次复习` controls.
+  - Added conservative automatic queue refresh keyed to local Recognition Vocabulary data changes when the Review page has no active card.
+  - Added `回退1词` while a later card is active and at least one card has already been completed in the current local session.
+  - Kept `回退1词` hidden after final completion so the final submitted card completes the session directly.
+  - Kept the rollback control blocked in `postgres-preview` until a later approved database-control stage.
+- Validation:
+  - Passed: `npm run typecheck`.
+  - Passed: `npm run test -- --run` with 14 files and 61 tests.
+  - Passed: `npm run lint`.
+  - Passed: `npm run backup:dry-run:fixture`.
+  - Passed: `npm run build`.
+  - Passed: `git diff --check`.
+  - Passed: `npm run governance:preflight`.
+- Residual risks:
+  - Browser visual verification is still pending for the exact placement and feel of `回退1词`.
+  - Auto-refresh is intentionally conservative and data-change based; it does not poll the clock for due-time changes while the page sits idle.
+- Safety notes: local documentation, browser-local Review repository logic, local UI, local tests, and local validation only. No Vercel command, Neon command, remote database command, env var read/change, GitHub push, merge to `main`, Production deployment, Production migration, Production import, formal user backup import, AI API（人工智能接口）, dictation engine（听写引擎）, spelling checker（拼写检查器）, writing feedback model, external vocabulary source, authentication（认证）, analytics（分析追踪）, notification, background audio, email, or 付费/扣款 feature was performed.
+
+## 2026-07-07 22:39 AEST
+
+- Task: fix the Review and Library interaction issues after the user reported that right-side rating cards were not clickable, imported words could not be deleted, batch imports needed rollback, `json_paste` should display as `Batch imported`, and Review needed a confirmed reset-today action.
+- Plan agreed: yes. The user confirmed the Stage 7.10 plan to update docs first, then implement local UI and browser-local repository controls.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE7_10_LIBRARY_REVIEW_CONTROLS.md`
+  - `plan_docs/PLAN_V1_STAGE7_UI_VISUAL_DESIGN.md`
+  - `src/components/review/review-session.tsx`
+  - `src/components/vocabulary/use-vocabulary-data.ts`
+  - `src/components/vocabulary/vocabulary-library.tsx`
+  - `src/lib/review/repository.test.ts`
+  - `src/lib/review/repository.ts`
+  - `src/lib/vocabulary/repository.test.ts`
+  - `src/lib/vocabulary/repository.ts`
+- Reason: make local review and import mistakes recoverable while preserving the accepted soft sage UI（用户界面）, schema version 5, Recognition Vocabulary（阅读词汇）scheduler rules, and Stage 6B / Production（生产环境）boundary.
+- Implementation notes:
+  - Added the Stage 7.10 child plan with explicit scope, non-scope, local runtime boundary, and exit criteria.
+  - Added local `deleteVocabularyItem()` and `rollbackImportBatch()` repository operations; both are selected-person scoped and remove matching local `reviewStates` / `reviewEvents`.
+  - Added `resetTodayReviewTask()` to remove only today's selected-person review events according to saved timezone and rebuild affected review states from earlier event history.
+  - Added local mutation metadata for `vocabulary.delete`, `import.rollbackBatch`, and `review.resetToday`.
+  - Converted the Review side-panel rating cards from passive display cards into clickable `PressableButton` controls.
+  - Added a calm reset-today confirmation modal to Review.
+  - Added Library hard-delete and batch rollback confirmation modals.
+  - Renamed JSON import source chips to `Batch imported`.
+  - Blocked the new destructive controls in `postgres-preview` UI runtime until a later approved database-control stage adds matching API（应用程序接口）and adapter behavior.
+- Validation:
+  - Passed: `npm run typecheck`.
+  - Passed: `npm run test -- --run` with 14 files and 59 tests.
+  - Passed: `npm run lint`.
+  - Passed: `npm run backup:dry-run:fixture`.
+  - Passed: `npm run build`.
+  - Passed: `git diff --check`.
+  - Passed: `npm run governance:preflight`.
+- Residual risks:
+  - Browser visual verification is still pending for the new Library and Review modals.
+  - The destructive controls are intentionally local-only; Postgres Preview and future Production runtime need a separate accepted plan before gaining delete / rollback / reset mutations.
+- Safety notes: local documentation, browser-local repository logic, local UI, local tests, and local validation only. No Vercel command, Neon command, remote database command, env var read/change, GitHub push, merge to `main`, Production deployment, Production migration, Production import, formal user backup import, AI API（人工智能接口）, dictation engine（听写引擎）, spelling checker（拼写检查器）, writing feedback model, external vocabulary source, authentication（认证）, analytics（分析追踪）, notification, background audio, email, or 付费/扣款 feature was performed.
+
+## 2026-07-07 20:02 AEST
+
+- Task: refine Stage 7.9 batch JSON import after the user clarified that `meaningZh` and `example` should be at least one entry but unlimited, and asked what `rarityScore` does and whether it can be `null`.
+- Plan agreed: yes. The user confirmed updating the corresponding docs first, then implementing. Scope was local documentation, browser-local data schema, import UI, backup/export, migration, and tests.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE7_9_DUAL_TRACK_DATA_IMPORT.md`
+  - `plan_docs/PLAN_V1_STAGE7_UI_VISUAL_DESIGN.md`
+  - `src/components/add-word-form.tsx`
+  - `src/components/review/review-session.tsx`
+  - `src/components/vocabulary/home-dashboard.tsx`
+  - `src/components/vocabulary/import-workspace.tsx`
+  - `src/components/vocabulary/vocabulary-library.tsx`
+  - `src/lib/backup/csv-export.test.ts`
+  - `src/lib/backup/csv-export.ts`
+  - `src/lib/backup/json-backup.test.ts`
+  - `src/lib/backup/json-backup.ts`
+  - `src/lib/storage/postgres/mappers.test.ts`
+  - `src/lib/storage/postgres/mappers.ts`
+  - `src/lib/storage/postgres/repository.ts`
+  - `src/lib/vocabulary/import-parser.test.ts`
+  - `src/lib/vocabulary/import-parser.ts`
+  - `src/lib/vocabulary/local-storage-repository.test.ts`
+  - `src/lib/vocabulary/local-storage-repository.ts`
+  - `src/lib/vocabulary/normalize.ts`
+  - `src/lib/vocabulary/repository.test.ts`
+  - `src/lib/vocabulary/repository.ts`
+  - `src/lib/vocabulary/types.ts`
+- Reason: make multiple Chinese meanings and examples first-class V1 local data for Batch JSON import（批量 JSON 导入）while keeping Recognition Vocabulary（阅读词汇）review scheduling, Active Vocabulary（输出词汇）future readiness, and Production（生产环境）boundaries unchanged.
+- Implementation notes:
+  - Updated Stage 7.9 docs first to define schema version 5, `meaningsZh: string[]`, `examples: string[]`, legacy `meaningZh` / `example` compatibility fields, nullable `tags`, and nullable `rarityScore`.
+  - Added `normalizeTextList()` and upgraded `VocabularyData` to schema version 5.
+  - Migrated schema version 1 / 2 / 3 / 4 local data into schema version 5 by deriving `meaningsZh` / `examples` from legacy strings.
+  - Made Batch JSON import accept `meaningsZh` / `examples` arrays, reject missing or empty arrays, accept legacy single-string fields, and keep `rarityScore` nullable.
+  - Changed the `/import` sample and preview table so meanings and examples can be edited as newline-separated lists.
+  - Updated Library editing / search / display and Review answer display to use the full arrays.
+  - Updated JSON backup validation and CSV export to preserve `meaningsZh` and `examples`.
+  - Kept the Postgres preview adapter compatible with the existing Stage 5F database schema by mapping only the first meaning/example through existing columns. No database migration was executed.
+- Validation:
+  - Passed: `npm run typecheck`.
+  - Passed: `npm run test` with 14 files and 55 tests.
+  - Passed: `npm run lint`.
+  - Passed: `npm run backup:dry-run:fixture`.
+  - Passed: `git diff --check`.
+  - Passed: `npm run build`.
+  - Passed: local route smoke for `/`, `/import`, `/library`, `/review`, and `/export`.
+  - Passed: `npm run governance:preflight`.
+- Residual risks:
+  - Browser-side tab interaction was not re-run; HTTP route smoke and build verification passed.
+  - The Postgres preview database still has the Stage 5F schema and therefore cannot persist all array entries until a later explicitly approved database migration.
+- Safety notes: local documentation, local browser-storage schema, local UI, local tests, and read-only local validation only. No Vercel command, Neon command, remote database command, env var read/change, GitHub push, merge to `main`, Production deployment, Production migration, Production import, formal user backup import, AI API, dictation engine（听写引擎）, spelling checker（拼写检查器）, writing feedback model, external vocabulary source, authentication（认证）, analytics（分析追踪）, notification, background audio, email, or 付费/扣款 feature was performed.
+
+## 2026-07-07 16:17 AEST
+
+- Task: tighten the Dashboard UI（用户界面）composition after the user reported that the feature frames were still too large and not symmetrical enough.
+- Plan agreed: yes. The user confirmed a narrow local Dashboard-only polish: reduce feature-frame size, improve symmetry, preserve the soft sage calm style, and avoid data/model/routing changes.
+- Changed files:
+  - `CHANGELOG.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `src/components/vocabulary/home-dashboard.tsx`
+- Reason: make the Today Hub feel more compact and balanced without changing Recognition Vocabulary（阅读词汇）/ Active Vocabulary（输出词汇）semantics, import behavior, review scheduling, storage schema, API（应用程序接口）, or Production（生产环境）state.
+- Implementation notes:
+  - Constrained the Dashboard content to a local `max-w-5xl` composition.
+  - Reduced Today Hub panel padding, track card padding, card gap, icon size, progress bar height, and button height.
+  - Set the Recognition / Active track cards to matching minimum height and bottom-aligned primary actions.
+  - Tightened the Review schedule card spacing and metric row height.
+  - Reworked the lower area into three equal compact cards: Latest words, Practice Lab, and Quiet tools.
+- Validation:
+  - Passed: `npm run lint`.
+  - Passed: `npm run typecheck`.
+  - Passed: `npm run test` with 14 files and 52 tests.
+  - Passed: `npm run build`.
+  - Passed: local route smoke for `/`, confirming Today Hub, Practice Lab, and Quiet tools render.
+  - Passed: `git diff --check`.
+- Safety notes: local Dashboard visual composition and documentation only. No vocabulary data mutation, import parser change, review scheduler change, storage schema change, API payload change, database command, Vercel command, Neon command, env var read/change, GitHub push, merge to `main`, Production deployment, AI API（人工智能接口）, analytics（分析追踪）, notification, email, or 付费/扣款 feature was performed.
+
+## 2026-07-07 00:35 AEST
+
+- Task: execute the confirmed Stage 7.9 dual-track data/import refinement after the user accepted Stage 7.8 overall and requested three changes: separate Recognition / Active daily limits, remove Study's add-material card and route main add/import flows into `/import`, and require explicit Recognition / Active classification during single or batch import with JSON batch input and nullable tags.
+- Plan agreed: yes. The user confirmed `/import` should be the parent page with Single input（单个输入）and Batch JSON import（批量 JSON 导入）, `tags` may be `null`, and the JSON sample should tell the learner they can use conversation AI（对话式 AI）to organize vocabulary in a format the app can directly read and store.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE7_UI_VISUAL_DESIGN.md`
+  - `plan_docs/PLAN_V1_STAGE7_8_DUAL_TRACK_UI_REFINEMENT.md`
+  - `plan_docs/PLAN_V1_STAGE7_9_DUAL_TRACK_DATA_IMPORT.md`
+  - `src/app/add/page.tsx`
+  - `src/app/api/storage/data/route.ts`
+  - `src/app/api/storage/smoke/route.ts`
+  - `src/app/import/page.tsx`
+  - `src/app/study/page.tsx`
+  - `src/components/add-word-form.tsx`
+  - `src/components/review/review-session.tsx`
+  - `src/components/settings/review-settings-form.tsx`
+  - `src/components/vocabulary/home-dashboard.tsx`
+  - `src/components/vocabulary/import-workspace.tsx`
+  - `src/components/vocabulary/use-vocabulary-data.ts`
+  - `src/components/vocabulary/vocabulary-library.tsx`
+  - `src/lib/backup/csv-export.test.ts`
+  - `src/lib/backup/csv-export.ts`
+  - `src/lib/backup/json-backup.test.ts`
+  - `src/lib/backup/json-backup.ts`
+  - `src/lib/backup/types.ts`
+  - `src/lib/review/repository.ts`
+  - `src/lib/review/scheduler.ts`
+  - `src/lib/review/settings.ts`
+  - `src/lib/review/types.ts`
+  - `src/lib/stage-two-data.ts`
+  - `src/lib/storage/durable-repository-contract.ts`
+  - `src/lib/storage/postgres/mappers.ts`
+  - `src/lib/storage/postgres/repository.ts`
+  - `src/lib/vocabulary/import-parser.ts`
+  - `src/lib/vocabulary/local-storage-repository.test.ts`
+  - `src/lib/vocabulary/local-storage-repository.ts`
+  - `src/lib/vocabulary/normalize.ts`
+  - `src/lib/vocabulary/repository.ts`
+  - `src/lib/vocabulary/types.ts`
+- Reason: connect the accepted Stage 7.8 Recognition Vocabulary（阅读词汇）/ Active Vocabulary（输出词汇）information architecture（信息架构）to explicit local V1 data fields, import UX, backup/export semantics, and settings without starting AI API（人工智能接口）or Production（生产环境）work.
+- Implementation notes:
+  - Added `plan_docs/PLAN_V1_STAGE7_9_DUAL_TRACK_DATA_IMPORT.md` with required `Source plan`, `Derived from`, `Scope`, `Non-Scope`, and `Exit criteria` markers.
+  - Upgraded browser-local data to schema version 4 with required stored `learningTrack` and nullable `tags`; legacy data defaults to Recognition Vocabulary with `tags: null`.
+  - Added `Recognition` / `Active` classification to single input, batch JSON preview, Library editing, Library filters, CSV export, and JSON backup validation.
+  - Replaced user-facing batch `.txt` import with `.json` file / pasted JSON import, including a sample that can be used as a prompt for conversation AI so the returned JSON can be directly read and stored by the app.
+  - Added separate Recognition / Active daily limits in Settings while keeping legacy `sessionLimit` as compatibility data.
+  - Kept current review queue and review writes limited to Recognition Vocabulary.
+  - Removed the Study page's Add study material card and made `/add` redirect to `/import` for compatibility.
+  - Kept the Postgres preview adapter compatible with the already-applied Stage 5F database schema by defaulting track/tag fields in mapped rows and mapping JSON import source to the legacy `pasted_text` source when writing preview rows. No remote database migration was executed.
+- Validation:
+  - Passed: `npm run lint`.
+  - Passed: `npm run typecheck`.
+  - Passed: `npm run test` with 14 files and 52 tests.
+  - Passed: `npm run backup:dry-run:fixture`.
+  - Passed: `npm run build`.
+  - Passed: local dev route smoke checks for `/`, `/study`, `/import`, `/library`, `/review`, `/settings`, `/practice-lab`, and `/add`; `/add` returned HTTP 307 with `location=/import`.
+- Residual risks:
+  - Browser MCP visual verification was attempted, but both the in-app browser and Chrome extension backend returned a tab session mismatch. No browser-side form interaction was completed in this verification pass.
+  - Stage 5L file-backed backup import tooling still validates the historical schema version 3 fixture; Stage 7.9 app backup/export now produces schema version 4, while remote import/migration remains a later explicit gate.
+  - The Postgres preview adapter does not persist `learningTrack` / `tags` into new database columns because no Stage 7.9 database migration was approved or executed.
+- Safety notes: local app code, local tests, and documentation only. No Vercel command, Neon command, remote database command, env var read/change, GitHub push, merge to `main`, Production deployment, Production migration, Production import, formal user backup import, AI API, dictation engine（听写引擎）, spelling checker（拼写检查器）, writing feedback model, external vocabulary source, authentication（认证）, analytics（分析追踪）, notification, background audio, email, or 付费/扣款 feature was performed.
+
+## 2026-07-06 23:39 AEST
+
+- Task: execute the confirmed Stage 7.8 dual-track UI refinement before any V1 merge（合并）or Stage 6B Production（生产环境）execution.
+- Plan agreed: yes. The user confirmed the Stage 7.8 direction and added that the cat Home Brand Button should preserve the existing soft sage, calm, fluid interaction animation（交互动效）style while only adding perceptible hover / active / focus states.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE7_8_DUAL_TRACK_UI_REFINEMENT.md`
+  - `plan_docs/PLAN_V1_STAGE7_UI_VISUAL_DESIGN.md`
+  - `src/app/globals.css`
+  - `src/app/practice-lab/page.tsx`
+  - `src/app/study/page.tsx`
+  - `src/components/app-nav.tsx`
+  - `src/components/app-shell.tsx`
+  - `src/components/vocabulary/home-dashboard.tsx`
+  - `src/components/vocabulary/vocabulary-library.tsx`
+  - `src/lib/stage-two-data.ts`
+- Reason: make V1's UI（用户界面）and information architecture（信息架构）show the future Recognition Vocabulary（阅读词汇）/ Active Vocabulary（输出词汇）learning-track direction while keeping actual Active Vocabulary behavior, AI API（人工智能接口）, and persisted track classification out of V1.
+- Implementation notes:
+  - Added `plan_docs/PLAN_V1_STAGE7_8_DUAL_TRACK_UI_REFINEMENT.md` with required `Source plan`, `Derived from`, `Scope`, `Non-Scope`, and `Exit criteria` markers.
+  - Replaced the dashboard's single generic progress framing with a Today Hub containing Recognition and Active track cards.
+  - Recognition uses the existing reviewed-today / session-limit progress from the local review flow.
+  - Active is a presentational reserved track linking to Practice Lab; it does not write data or create a persisted category.
+  - Added `/study` and `/practice-lab` as local presentational page entries.
+  - Reordered main navigation to dashboard, study, review, library, practice lab, import, and settings; `/add` and `/export` remain available through quieter links.
+  - Updated the cat brand link accessible label to `Go to dashboard` and added pointer, hover, active, and focus-visible states without changing the avatar's approximate visual size.
+  - Updated Library filters to All Words, Recognition, Active, Weak Words, and Archived, and added soft tag / mastery labels for future track structure.
+- Validation:
+  - Passed: `npm run lint`.
+  - Passed: `npm run typecheck`.
+  - Passed: `npm run test` with 14 files and 52 tests.
+  - Passed: `npm run backup:dry-run:fixture`.
+  - Passed: `npm run build`; build output includes `/study` and `/practice-lab` as static routes.
+  - Passed: route smoke checks for `/`, `/study`, `/review`, `/library`, `/practice-lab`, `/import`, `/settings`, `/add`, and `/export`; all returned HTTP 200 with expected text snippets.
+  - Passed: focused in-app browser checks for `/`, `/library`, and `/practice-lab`; Today Hub, Recognition / Active track text, Library filters, mastery labels, Practice Lab content, and `Go to dashboard` brand label were present; no development overlay text or horizontal overflow was detected.
+  - Passed: `git diff --check`.
+  - Passed: `npm run governance:preflight`.
+- Safety notes: local UI, presentational route, and documentation changes only. No Vercel command, Neon command, database command, env var read/change, GitHub push, merge to `main`, Production deployment, Production migration, Production import, formal user backup import, vocabulary schema change, review scheduler change, import parser change, JSON backup schema change, CSV export change, Postgres table change, API payload change, authentication（认证）, analytics（分析追踪）, AI generation, AI API, dictation engine（听写引擎）, spelling checker（拼写检查器）, writing feedback model, notification, background audio, external vocabulary source, persisted PTE / IELTS toggle, PWA（Progressive Web App，渐进式 Web 应用）implementation, email, or 付费/扣款 feature was performed.
+
+## 2026-07-06 23:12 AEST
+
+- Task: execute Stage 7.7 final acceptance and regression QA after the user accepted Stage 7.6 sound behavior and confirmed the recommended Stage 7 final acceptance step.
+- Plan agreed: yes. The user confirmed the proposed Stage 7.7 acceptance pass. Scope was limited to local UI（用户界面）acceptance, validation, route / asset checks, API（应用程序接口）safety smoke checks, and documentation sync.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE7_7_FINAL_ACCEPTANCE.md`
+  - `plan_docs/PLAN_V1_STAGE7_UI_VISUAL_DESIGN.md`
+- Reason: close Stage 7 as a locally accepted UI / visual / interaction / sound pass before any separate Stage 6B merge（合并）or Production（生产环境）plan.
+- Implementation notes:
+  - Added `plan_docs/PLAN_V1_STAGE7_7_FINAL_ACCEPTANCE.md` with required `Source plan`, `Derived from`, `Scope`, `Non-Scope`, and `Exit criteria` markers.
+  - Recorded the acceptance matrix for core routes, Stage 7 feature surfaces, and functional regression surfaces.
+  - Synced current-stage status across AGENTS, architecture, README, master plan, Stage 7 plan, changelog, and this AI log.
+- Validation:
+  - Passed: `npm run lint`.
+  - Passed: `npm run typecheck`.
+  - Passed: `npm run test` with 14 files and 52 tests.
+  - Passed: `npm run build`.
+  - Passed: `npm run backup:dry-run:fixture`.
+  - Passed: route smoke checks for `/`, `/add`, `/import`, `/library`, `/review`, `/export`, and `/settings`; all returned HTTP 200 with expected route-specific text.
+  - Passed: asset checks for `/brand/mimi-cats.png`, `/fonts/chillround/ChillRoundFRegular.ttf`, `/sounds/mimi-soft-click.m4a`, `/sounds/mimi-soft-click.ogg`, and `/sounds/mimi-review-complete.m4a`.
+  - Passed: local `/api/storage/health` returned HTTP 200 with local runtime disabled.
+  - Passed: POST `/api/storage/smoke` returned HTTP 403 with `postgres-runtime-not-enabled`, confirming default local smoke writes are blocked.
+  - Passed: focused in-app browser check for `/settings`; `咪咪 Vocabulary` and sound controls were visible, no Next.js development overlay text was present, no browser error logs were returned, and no horizontal overflow was detected at the current viewport.
+- Residual risks:
+  - No formal mobile device lab was run.
+  - No new browser automation dependency was installed.
+  - The in-app browser check was focused on `/settings` after the recent sound fixes; full click-through of every route remains best verified by the user in the open local browser.
+- Safety notes: local docs and acceptance checks only. No Vercel command, Neon command, database mutation, env var read/change, GitHub push, merge to `main`, Production deployment, Production migration, Production import, formal user backup import, vocabulary schema change, review scheduler change, import parser change, JSON backup schema change, CSV export change, Postgres table change, API payload change, authentication（认证）, analytics（分析追踪）, notification, background audio, external vocabulary source, PTE / IELTS toggle implementation, PWA implementation, email, or 付费/扣款 feature was performed.
+
+## 2026-07-06 22:18 AEST
+
+- Task: fix global button sound so the accepted Stage 7.6 button sound plays on normal app buttons when enabled.
+- Plan agreed: the user reported that button sound was ON but other buttons were silent; this was treated as a narrow local hotfix to the Stage 7.6 sound layer.
+- Changed files:
+  - `CHANGELOG.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_STAGE7_6_SOUND_DESIGN.md`
+  - `src/components/sound-provider.tsx`
+  - `src/lib/ui/sound-player.ts`
+- Root cause: the global listener did call `playSoftButtonClick()`, but the generated click was scheduled after awaiting `AudioContext.resume()`. That can miss the browser's short user-gesture activation window for audio playback. The selector also did not cover every real link-button case.
+- Fix:
+  - `playSoftButtonClick()` now schedules the Web Audio API（网页音频接口）generated click synchronously during pointer / keyboard activation and starts `resume()` without awaiting it.
+  - Global button targeting now covers `button`, `[role='button']`, and `a[href]`.
+  - Existing `data-mimi-sound-skip="true"` opt-out still prevents preview and completion sounds from layering with normal button sound.
+- Validation:
+  - Passed: `npm run lint`.
+  - Passed: `npm run typecheck`.
+  - Passed: `npm run test` with 14 files and 52 tests.
+  - Passed: `npm run build`.
+  - Passed: local HTTP check for `/settings`, confirming the Settings Sound UI still renders in normal HTML.
+- Safety notes: local UI sound hotfix only. No vocabulary data mutation, review scheduler change, import parser change, JSON backup schema change, CSV export change, Postgres table change, API payload change, Vercel command, Neon command, env var read/change, Production（生产环境）deployment, Production migration, Production import, authentication（认证）, analytics（分析追踪）, notification, background audio, external vocabulary source, PTE / IELTS toggle implementation, PWA implementation, email, or 付费/扣款 feature was performed.
+
+## 2026-07-06 22:13 AEST
+
+- Task: fix the localhost refresh error reported after Stage 7.6 sound design.
+- Plan agreed: user reported the exact runtime screenshots; this was treated as a narrow local bug fix in the already approved Stage 7.6 sound layer.
+- Changed files:
+  - `CHANGELOG.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_STAGE7_6_SOUND_DESIGN.md`
+  - `src/components/sound-provider.tsx`
+- Root cause: `SoundProvider` used `useSyncExternalStore`, but `readStoredSoundSettings()` parsed the same `mimi-ui-sound-v1` localStorage（本地浏览器存储）value into a new object on every `getSnapshot` call. React requires unchanged external snapshots to keep stable identity, so the changing object reference caused the `getSnapshot should be cached` warning and then the maximum update depth loop.
+- Fix: cache the raw localStorage value and parsed `MimiSoundSettings` object. `readStoredSoundSettings()` now returns the cached object when the raw value is unchanged, and `writeStoredSoundSettings()` updates the cache before emitting.
+- Validation:
+  - Passed: `npm run lint`.
+  - Passed: `npm run typecheck`.
+  - Passed: `npm run test` with 14 files and 52 tests.
+  - Passed: `npm run build`.
+  - Passed: local HTTP check for `/settings`, returning normal HTML.
+- Safety notes: local UI sound provider hotfix only. No vocabulary data mutation, review scheduler change, import parser change, JSON backup schema change, CSV export change, Postgres table change, API payload change, Vercel command, Neon command, env var read/change, Production（生产环境）deployment, Production migration, Production import, authentication（认证）, analytics（分析追踪）, notification, background audio, external vocabulary source, PTE / IELTS toggle implementation, PWA implementation, email, or 付费/扣款 feature was performed.
+
+## 2026-07-06 21:55 AEST
+
+- Task: execute Stage 7.6 sound design after the user accepted the current soft click, requested app-wide button sound, requested two Settings sound switches, and provided a custom Mimi review-completion sound file.
+- Plan agreed: yes. The user explicitly asked to make Stage 7.6 the sound design stage, write the plan document first, then implement. Scope was limited to local UI（用户界面）sound behavior and UI-only preferences.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE7_5_SOFT_CLICK_SOUND_TRIAL.md`
+  - `plan_docs/PLAN_V1_STAGE7_6_SOUND_DESIGN.md`
+  - `plan_docs/PLAN_V1_STAGE7_UI_VISUAL_DESIGN.md`
+  - `public/sounds/mimi-review-complete.m4a`
+  - `src/app/layout.tsx`
+  - `src/app/settings/page.tsx`
+  - `src/components/review/review-session.tsx`
+  - `src/components/settings/sound-settings-form.tsx`
+  - `src/components/sound-provider.tsx`
+  - `src/lib/ui/sound-player.ts`
+  - `src/lib/ui/sound-settings.test.ts`
+  - `src/lib/ui/sound-settings.ts`
+- Related uncommitted Stage 7.5 files still present in this working tree:
+  - `public/sounds/KENNEY_INTERFACE_SOUNDS_CC0.txt`
+  - `public/sounds/mimi-soft-click.m4a`
+  - `public/sounds/mimi-soft-click.ogg`
+- Reason: promote the accepted Stage 7.5 generated soft click into normal app button feedback and add a separate, user-provided Mimi completion sound without changing study-data storage.
+- Implementation notes:
+  - Added `plan_docs/PLAN_V1_STAGE7_6_SOUND_DESIGN.md` with required `Source plan`, `Derived from`, `Scope`, `Non-Scope`, and `Exit criteria` markers.
+  - Added a pure `mimi-ui-sound-v1` settings helper and unit tests. Defaults are `button: true` and `reviewComplete: true`.
+  - Added a client `SoundProvider` mounted under `ThemeProvider`; it listens for pointer and keyboard activation on enabled app buttons and button-like links, then plays the accepted generated soft click when button sound is ON.
+  - Added skip handling through `data-mimi-sound-skip="true"` so audition buttons and the review-completion confirmation button do not layer normal click sound over their own sound.
+  - Replaced the Stage 7.5 preview-only Settings card with a `SoundSettingsForm` containing two ON / OFF segmented button controls and small audition buttons.
+  - Copied the user-provided `/Users/anoria/Desktop/LockChime.WAV` to `public/sounds/mimi-review-complete.m4a`. Local inspection showed the source has a `.WAV` extension but is actually AAC / m4af audio, about 3.67 seconds long.
+  - Added a review-completion modal that appears after the last card in the current session is successfully recorded. Its `确定` button closes the modal and plays the Mimi completion sound when review-completion sound is ON.
+- Validation:
+  - Passed: `npm run lint`.
+  - Passed: `npm run typecheck`.
+  - Passed: `npm run test` with 14 files and 52 tests.
+  - Passed: `npm run build`.
+  - Passed: `git diff --check`.
+  - Passed: local HTTP check for `/settings`; response is normal HTML and includes the new `Button sound` / `Review complete` Settings text.
+  - Passed: local HTTP `HEAD` check for `/sounds/mimi-soft-click.m4a`, returning HTTP 200 and `Content-Type: audio/mp4`.
+  - Passed: local HTTP `HEAD` check for `/sounds/mimi-review-complete.m4a`, returning HTTP 200 and `Content-Type: audio/mp4`.
+  - Passed: `npm run governance:preflight`.
+  - Partially passed: in-app browser DOM verification initially confirmed the Settings `Sound` panel, default ON states, small audition buttons, and no horizontal overflow. During deeper click automation the in-app browser automation tab began rendering a Next RSC（React Server Components，React 服务器组件）stream instead of normal HTML, while shell `curl` continued to return normal HTML. Automated browser click-through for the new controls was not completed in that browser surface.
+- Safety notes: local UI, static audio asset, and documentation changes only. No Vercel command, Neon command, database command, env var read/change, GitHub push, merge（合并）to `main`, Production（生产环境）deployment, Production migration, Production import, formal user backup import, vocabulary schema change, review scheduler change, import parser change, JSON backup schema change, CSV export change, Postgres table change, API payload change, notification, background audio, authentication（认证）, analytics（分析追踪）, AI generation, embedding（向量嵌入）, FSRS（Free Spaced Repetition Scheduler，自由间隔重复调度算法）, email, external vocabulary source, PTE / IELTS toggle implementation, PWA implementation, or 付费/扣款 feature was performed.
+
+## 2026-07-06 20:46 AEST
+
+- Task: execute Stage 7.5 soft click sound trial after the user requested one very short muted click sound and a way to hear it.
+- Plan agreed: yes. The user explicitly asked to choose and build a muted click audition after the earlier open-source audio recommendation. Scope was limited to local UI（用户界面）sound preview.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE7_5_SOFT_CLICK_SOUND_TRIAL.md`
+  - `plan_docs/PLAN_V1_STAGE7_UI_VISUAL_DESIGN.md`
+  - `public/sounds/KENNEY_INTERFACE_SOUNDS_CC0.txt`
+  - `public/sounds/mimi-soft-click.m4a`
+  - `public/sounds/mimi-soft-click.ogg`
+  - `src/app/settings/page.tsx`
+  - `src/components/settings/sound-preview-card.tsx`
+- Reason: let the user audition a quiet, dull click feedback candidate before enabling broader audio feedback.
+- Implementation notes:
+  - Verified Kenney Interface Sounds through the Kenney page and OpenGameArt mirror; both list the pack as Creative Commons CC0.
+  - Downloaded the Kenney Interface Sounds package locally and selected `click_001.ogg`.
+  - Chose `click_001.ogg` because it is about 0.10 seconds, while the other `click_002` to `click_005` candidates are about 0.01 seconds and more likely to feel sharp.
+  - Added the original OGG（Ogg Vorbis 音频格式）asset and a derived M4A（MPEG-4 音频格式）asset for better mobile browser compatibility.
+  - Added the package license note next to the local sound assets.
+  - Added `SoundPreviewCard` under Settings; it now triggers on pointer down and generates a short muted click with Web Audio API（网页音频接口）so playback does not depend on audio-file decoding.
+  - Tuned the generated click toward a softer compressed feel: duration `0.18` seconds, low-pass `320 Hz`, sine tone glide `118 Hz` to `68 Hz`, and lower noise amplitude.
+  - Kept Kenney audio-file playback only as a no-Web-Audio / error fallback, not as a normal layered sound.
+  - Added a short playback timeout so the preview button does not remain stuck if browser audio-file playback does not confirm quickly.
+  - Kept sound as audition-only. No global click sound behavior was enabled.
+- Validation:
+  - Passed: `npm run lint`.
+  - Passed: `npm run typecheck`.
+  - Passed: browser check for `/settings`: Sound panel and `试听` button render, clicking the button updates status to `Played softly.`, the button does not enter a stuck loading state, no horizontal overflow, and no new warning / error console logs.
+  - Passed: `npm run test` with 13 files and 48 tests.
+  - Passed: `npm run build`.
+  - Passed: `git diff --check`.
+  - Passed: `npm run governance:preflight`.
+- Safety notes: local UI, static audio asset, and documentation changes only. No Vercel command, Neon command, database command, env var read/change, GitHub push, merge（合并）to `main`, Production（生产环境）deployment, Production migration, Production import, formal user backup import, vocabulary schema change, review scheduler change, JSON backup schema change, API payload change, global button sound behavior, notification, background audio, authentication（认证）, analytics（分析追踪）, AI generation, embedding（向量嵌入）, FSRS（Free Spaced Repetition Scheduler，自由间隔重复调度算法）, email, external vocabulary source, PTE / IELTS toggle implementation, PWA implementation, or 付费/扣款 feature was performed.
+
+## 2026-07-06 17:26 AEST
+
+- Task: execute Stage 7.4 light / dark theme toggle after the user requested a new light version while keeping light and dark switching in Settings.
+- Plan agreed: yes. The user confirmed the Stage 7.4 plan after scope was limited to a local UI（用户界面）theme（主题）preference and explicitly excluded study-data, storage, Production（生产环境）, PTE / IELTS toggle, PWA（Progressive Web App，渐进式 Web 应用）, and external vocabulary-source changes.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE7_4_THEME_TOGGLE.md`
+  - `plan_docs/PLAN_V1_STAGE7_UI_VISUAL_DESIGN.md`
+  - `src/app/globals.css`
+  - `src/app/layout.tsx`
+  - `src/app/settings/page.tsx`
+  - `src/components/app-nav.tsx`
+  - `src/components/app-shell.tsx`
+  - `src/components/brand-identity.tsx`
+  - `src/components/settings/theme-settings-form.tsx`
+  - `src/components/simple-panel.tsx`
+  - `src/components/theme-provider.tsx`
+  - `src/components/vocabulary/home-dashboard.tsx`
+- Reason: add a softer warm sage light reading mode without losing the accepted darker sage default and without reopening V1 product or storage scope.
+- Implementation notes:
+  - Added `plan_docs/PLAN_V1_STAGE7_4_THEME_TOGGLE.md` with required `Source plan`, `Derived from`, `Scope`, `Non-Scope`, and `Exit criteria` markers.
+  - Added a client ThemeProvider（主题提供器）using `useSyncExternalStore` so theme updates stay synchronized across Settings interactions and browser storage events.
+  - Added a body-first inline boot script so a stored light theme is applied before the main UI renders.
+  - Added Settings theme cards for `Dark` and `Light` with `aria-pressed` active state.
+  - Added warm sage light CSS（层叠样式表）variables and converted major shell, navigation, panel, brand, and review-schedule colors to theme variables.
+  - Preserved `dark` as the default and stored only the UI preference under `mimi-ui-theme-v1`.
+  - Fixed a browser-caught hydration issue by moving the initial theme script out of the `<html>` child position and into the start of `<body>`.
+- Validation:
+  - Passed: `npm run lint`.
+  - Passed: `npm run typecheck`.
+  - Passed: `npm run test` with 13 files and 48 tests.
+  - Passed: `npm run build`.
+  - Passed: in-app browser verification at 1280 x 720 for `/settings` and `/`.
+  - Passed: Settings showed Dark and Light theme controls, Light changed `data-mimi-theme` to `light`, reload kept Light active, Dark changed back to `dark`, and `/` retained `咪咪 Vocabulary` without `LexiCalm`.
+  - Passed: no horizontal overflow at the verified viewport and no fresh browser warning / error logs after the boot-script fix.
+  - Limitation: the in-app Browser plugin available in this session does not expose viewport resize, and the repository does not currently have a local Playwright binary installed. Automated mobile-width re-verification was not performed in this Stage 7.4 run.
+- Safety notes: local UI and documentation changes only. No Vercel command, Neon command, database command, env var read/change, GitHub push, merge（合并）to `main`, Production deployment, Production migration, Production import, formal user backup import, vocabulary schema change, review scheduler change, JSON backup schema change, API payload change, authentication（认证）, analytics（分析追踪）, AI generation, embedding（向量嵌入）, FSRS（Free Spaced Repetition Scheduler，自由间隔重复调度算法）, email, notification, external vocabulary source, PTE / IELTS toggle implementation, PWA implementation, or 付费/扣款 feature was performed.
+
+## 2026-07-06 15:22 AEST
+
+- Task: execute Stage 7.3 ChillRound font trial after the user requested Warren2060/ChillRound 寒蝉全圆体.
+- Plan agreed: yes. The user requested trying ChillRoundF to better match a rounded Japanese-kanji print atmosphere. This was treated as a local UI（用户界面）typography refinement only.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE7_2_UI_REFINEMENT.md`
+  - `plan_docs/PLAN_V1_STAGE7_3_CHILLROUND_FONT_TRIAL.md`
+  - `plan_docs/PLAN_V1_STAGE7_UI_VISUAL_DESIGN.md`
+  - `public/fonts/chillround/ChillRoundFRegular.ttf`
+  - `public/fonts/chillround/OFL-1.1.txt`
+  - `src/app/globals.css`
+- Reason: replace the Stage 7.2 Mincho（明朝体）oriented fallback trial with a self-hosted ChillRoundF 寒蝉全圆体 trial for rounder CJK（中日韩文字）UI text, while preserving V1 product and Production（生产环境）boundaries.
+- Implementation notes:
+  - Checked the upstream repository `https://github.com/Warren2060/ChillRound`.
+  - Verified the upstream license is SIL Open Font License 1.1 and includes reserved font names `ChillRoundF` and `ChillRoundM`.
+  - Used release `v3.200` asset `ChillRoundF_v3.200.zip`, because it is the full-round ChillRoundF family rather than the semi-round ChillRoundM family.
+  - Added only `ChillRoundFRegular.ttf` to keep this trial smaller and avoid committing unused bold / otf variants before visual acceptance.
+  - Added the upstream `LICENSE.txt` as `public/fonts/chillround/OFL-1.1.txt`.
+  - Added `@font-face` for `ChillRoundF` and replaced the previous CJK variable with `--font-cjk-rounded`.
+  - Preserved Geist as the first Latin interface font, with ChillRoundF used for CJK text before system fallbacks.
+- Validation:
+  - Passed: `npm run lint`.
+  - Passed: `npm run typecheck`.
+  - Passed: `npm run test` with 13 files and 48 tests.
+  - Passed: `npm run build`.
+  - Passed: `git diff --check`.
+  - Passed: local HTTP check for `/fonts/chillround/ChillRoundFRegular.ttf`, returning HTTP 200 with `Content-Type: font/ttf` and `Content-Length: 6205268`.
+  - Passed: local HTTP check for `/fonts/chillround/OFL-1.1.txt`, returning HTTP 200 with text content type.
+  - Passed: local browser checks for desktop and mobile `/`: `咪咪 Vocabulary` computed `font-family` begins with `ChillRoundF`, `LexiCalm` is absent from body text, cat avatar renders, no horizontal overflow, mobile navigation remains visible, and browser console has no warning / error logs.
+- Safety notes: local font asset, CSS（层叠样式表）, and documentation changes only. No Vercel command, Neon command, database command, env var read/change, GitHub push, merge（合并）to `main`, Production deployment, Production migration, Production import, formal user backup import, authentication（认证）, analytics（分析追踪）, AI generation, embedding（向量嵌入）, FSRS（Free Spaced Repetition Scheduler，自由间隔重复调度算法）, email, notification, external vocabulary source, PTE / IELTS toggle implementation, PWA implementation, or 付费/扣款 feature was performed.
+
+## 2026-07-06 15:09 AEST
+
+- Task: execute Stage 7.2 UI refinement after the user approved the plan.
+- Plan agreed: yes. The user confirmed the documented Stage 7.2 refinement scope: cat avatar brand area, `咪咪 Vocabulary`, Mincho（明朝体）oriented Chinese rendering, slightly smaller desktop homepage action cards, and more fluid hover / tap interaction feedback（交互反馈）.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE7_2_UI_REFINEMENT.md`
+  - `plan_docs/PLAN_V1_STAGE7_UI_VISUAL_DESIGN.md`
+  - `public/brand/mimi-cats.png`
+  - `src/app/globals.css`
+  - `src/components/app-nav.tsx`
+  - `src/components/app-shell.tsx`
+  - `src/components/brand-identity.tsx`
+  - `src/components/ui/motion-primitives.tsx`
+  - `src/components/vocabulary/home-dashboard.tsx`
+- Reason: refine the accepted Stage 7.1 visual design without changing the V1 vocabulary import, flashcard review, local storage, PTE / IELTS toggle boundary, PWA（Progressive Web App，渐进式 Web 应用）boundary, or Production（生产环境）boundary.
+- Implementation notes:
+  - Added `plan_docs/PLAN_V1_STAGE7_2_UI_REFINEMENT.md` with required `Source plan`, `Derived from`, `Scope`, `Non-Scope`, and `Exit criteria` markers.
+  - Added the user-provided cat image as a local static asset under `public/brand/`.
+  - Added `BrandIdentity` so the desktop sidebar and mobile header share the same brand treatment.
+  - Removed visible `LexiCalm` brand text and replaced it with the cat avatar plus `咪咪 Vocabulary`.
+  - Added a Mincho-oriented CJK（中日韩文字）fallback stack without adding a remote font provider.
+  - Reduced desktop dashboard action-card width / padding / icon size while preserving mobile tap targets.
+  - Strengthened card, brand, nav, and button hover / tap feedback while retaining reduced-motion behavior.
+- Validation:
+  - Passed: `npm run lint`.
+  - Passed: `npm run typecheck`.
+  - Passed: `npm run test` with 13 files and 48 tests.
+  - Passed: `npm run build`.
+  - Passed: `git diff --check`.
+  - Passed: `npm run governance:preflight`.
+  - Passed: local browser visual checks for desktop and mobile `/`: cat image loaded, `咪咪 Vocabulary` visible, `LexiCalm` absent from body text, no horizontal overflow, mobile bottom navigation visible, and browser console had no error / warning logs.
+  - Observed: automated hover-position probing in the in-app browser did not report a bounding-box shift, likely because that probe did not trigger the React hover state in the browser automation surface. The CSS and Motion for React hover / tap code paths are present.
+- Safety notes: local UI and documentation changes only. No Vercel command, Neon command, database command, env var read/change, GitHub push, merge（合并）to `main`, Production deployment, Production migration, Production import, formal user backup import, authentication（认证）, analytics（分析追踪）, AI generation, embedding（向量嵌入）, FSRS（Free Spaced Repetition Scheduler，自由间隔重复调度算法）, email, notification, external vocabulary source, PTE / IELTS toggle implementation, PWA implementation, or 付费/扣款 feature was performed.
+
+## 2026-07-06 14:20 AEST
+
+- Task: execute Stage 7 UI visual design after the user approved a darker sage direction and approved adding Motion for React.
+- Plan agreed: yes. The user confirmed document-first execution, no PTE / IELTS toggle implementation, darker sage styling, more tactile interaction feedback, and option A to add `motion`.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `package-lock.json`
+  - `package.json`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE7_UI_VISUAL_DESIGN.md`
+  - `src/app/add/page.tsx`
+  - `src/app/export/page.tsx`
+  - `src/app/globals.css`
+  - `src/app/import/page.tsx`
+  - `src/app/layout.tsx`
+  - `src/app/library/page.tsx`
+  - `src/app/page.tsx`
+  - `src/app/review/page.tsx`
+  - `src/app/settings/page.tsx`
+  - `src/components/add-word-form.tsx`
+  - `src/components/app-nav.tsx`
+  - `src/components/app-shell.tsx`
+  - `src/components/export/export-workspace.tsx`
+  - `src/components/review/review-session.tsx`
+  - `src/components/settings/person-settings-form.tsx`
+  - `src/components/settings/review-settings-form.tsx`
+  - `src/components/simple-panel.tsx`
+  - `src/components/ui/motion-primitives.tsx`
+  - `src/components/vocabulary/home-dashboard.tsx`
+  - `src/components/vocabulary/import-workspace.tsx`
+  - `src/components/vocabulary/vocabulary-library.tsx`
+- Reason: complete the dedicated Stage 7 visual design pass before any later Stage 6B Production（生产环境）execution, while keeping V1 focused on user vocabulary import and flashcard review.
+- Implementation notes:
+  - Added a Stage 7 child plan with required `Source plan`, `Derived from`, `Scope`, `Non-Scope`, and `Exit criteria` markers.
+  - Documented that the PTE / IELTS toggle from the design prompt is out of V1 scope and should not add exam-type data fields or filtering.
+  - Added `motion` for Motion for React interaction animation（交互动效）after checking official Motion documentation and React Spring as an alternative.
+  - Added a darker soft sage visual system in `src/app/globals.css`, with reusable button, card, input, focus, progress, and reduced-motion classes.
+  - Added desktop sidebar navigation, mobile bottom navigation, and active route feedback.
+  - Redesigned the dashboard, flashcard review, add, import, library, export, and settings surfaces while preserving existing local data flow, review scheduler, import parser, backup behavior, routes, and API contracts.
+- Validation:
+  - Passed: `npm run lint`.
+  - Passed: `npm run typecheck`.
+  - Passed: `npm run test` with 13 files and 48 tests.
+  - Passed: `npm run build`.
+  - Passed: `npm run backup:dry-run:fixture`.
+  - Passed: `git diff --check`.
+  - Passed: `npm run governance:preflight`.
+  - Passed: local Playwright / Chrome visual smoke check for `/`, `/review`, `/import`, `/library`, `/export`, and `/settings` at mobile and desktop widths.
+  - Passed: mobile horizontal overflow check after fixing shared panel and input sizing.
+  - Observed: local development requests to `/api/storage/data` can return 403 under the current Preview runtime gate and then fall back to local display; pages still rendered with HTTP 200.
+- Safety notes: local frontend and documentation changes only. No Vercel command, Neon command, database command, env var read/change, GitHub push, merge（合并）to `main`, Production deployment, Production migration, Production import, authentication（认证）, analytics（分析追踪）, AI generation, embedding（向量嵌入）, FSRS（Free Spaced Repetition Scheduler，自由间隔重复调度算法）, email, notification, external vocabulary source, PTE / IELTS toggle implementation, PWA（Progressive Web App，渐进式 Web 应用）, or 付费/扣款 feature was performed.
+
+## 2026-07-06 00:22 AEST
+
+- Task: design and execute Stage 6A Production release gate after the user committed the release-sequence confirmation.
+- Plan agreed: yes. The user explicitly requested Stage 6A design and execution. This stage was limited to documentation and release-gate design.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE6A_PRODUCTION_RELEASE_GATE.md`
+- Reason: define the formal Production（生产环境）gate before Stage 7 visual design and before any future Stage 6B merge（合并）to `main`, env var change, database migration（数据库迁移）, import, or deployment.
+- Implementation notes:
+  - Added a Stage 6A child plan with required `Source plan`, `Derived from`, `Scope`, `Non-Scope`, and `Exit criteria` markers.
+  - Documented the confirmed sequence: Stage 6A release gate design, Stage 7 UI（用户界面）/ visual design, then Stage 6B formal Production execution.
+  - Documented that `person_id` is data separation, not security isolation.
+  - Documented that no-credential private-group Production writes require explicit risk acceptance or a separate access gate.
+  - Documented that `postgres-preview` must not be used as a Production runtime mode.
+  - Documented Stage 6B gates for environment variables（环境变量）, database target identification, migration, backup/import/rollback, smoke testing, and stop conditions.
+  - Checked current Vercel and Neon official documentation for deployment environments, Git deployments, env vars, storage integration, and branching concepts before writing the release gate.
+- Validation:
+  - Passed: `git diff --check`.
+  - Passed: `npm run lint`.
+  - Passed: `npm run typecheck`.
+  - Passed: `npm run test` with 13 files and 48 tests.
+  - Passed: `npm run build`.
+  - Passed: `npm run backup:dry-run:fixture`.
+  - Passed: `npm run governance:preflight`.
+- Safety notes: documentation only. No Vercel command, Neon command, database command, env var read/change, GitHub push, merge to `main`, Production deployment, Production migration, Production import, authentication（认证）, analytics（分析追踪）, AI generation, embedding（向量嵌入）, FSRS（Free Spaced Repetition Scheduler，自由间隔重复调度算法）, email, notification, or 付费/扣款 feature was performed.
+
+## 2026-07-06 00:15 AEST
+
+- Task: confirm the release sequence before formal Production work.
+- Plan agreed: yes. The user confirmed that visual design should happen before `V1` merges to `main` and before Vercel formal Production execution.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+- Reason: lock the next-stage order as Stage 6A Production（生产环境）release gate design, Stage 7 UI（用户界面）/ visual design, then Stage 6B formal Production execution.
+- Implementation notes:
+  - Documented that Stage 6A is design-only and must not merge to `main`, mutate Production data, add Production env vars, or create/promote a formal Production deployment.
+  - Documented that Stage 7 owns visual design, mobile interaction polish, review-flow comfort, accessibility（可访问性）, and optional PWA（Progressive Web App，渐进式 Web 应用）evaluation before formal Production.
+  - Documented that Stage 6B is the later execution step after Stage 7 acceptance and explicit approval.
+- Validation:
+  - Passed: `git diff --check`.
+  - Passed: `npm run governance:preflight`.
+- Safety notes: documentation only. No Vercel command, database command, env var change, GitHub push, merge（合并）to `main`, Production deployment, Production migration, Production import, authentication（认证）, analytics（分析追踪）, AI generation, embedding（向量嵌入）, FSRS（Free Spaced Repetition Scheduler，自由间隔重复调度算法）, email, notification, or 付费/扣款 feature was performed.
+
+## 2026-07-05 23:45 AEST
+
+- Task: execute Stage 5N-B controlled Preview UI write smoke after explicit user confirmation.
+- Plan agreed: yes. The accepted scope was temporarily enabling Preview UI writes, creating a Preview deployment, writing one controlled smoke row through `/api/storage/data`, cleaning that row set, removing the write flag, redeploying a disabled Preview, and removing the temporary write-enabled deployment. Production remained out of scope.
+- Changed files:
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `package.json`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE5N_PREVIEW_UI_RUNTIME_VERIFICATION.md`
+  - `scripts/backup-import-postgres.mjs`
+- Reason: prove the Stage 5M UI write path in real Vercel Preview while closing the temporary write surface and returning the development database to empty.
+- Implementation notes:
+  - Confirmed latest committed baseline was `ca1d95f` on branch `V1`, synchronized with `origin/V1`.
+  - Added a narrow cleanup command `npm run db:cleanup-stage5n-ui-smoke:dev`.
+  - The cleanup command refuses to clean unless the DB shape is exactly the Stage 5N UI smoke shape: slug `mimi`, one vocabulary item with normalized text `stage five n preview ui write`, one review settings row, and no import/review/backup rows.
+  - Verified the cleanup command is a no-op on an empty database before remote writes.
+  - Temporarily added `MIMI_ENABLE_STORAGE_UI_WRITES=true` to Vercel Preview only.
+  - Confirmed Production env remained empty after adding the Preview write flag.
+  - Created write-enabled Preview deployment `dpl_JgKNc9zuAqgMsy5w13gbZoqkEhnY`.
+  - Write-enabled Preview URL: `https://words-learning-app-for-mimi-8r2cn2jko-anorias-projects.vercel.app`.
+  - Verified with Vercel inspect that the write-enabled deployment target was `preview` and ready state was `READY`.
+  - Verified `/api/storage/health` and `/api/storage/data` were ready with zero counts before the write.
+  - Called `/api/storage/data` once with `x-mimi-ui-storage-write: allow-dev-preview-ui-write`.
+  - The controlled write created person id `020d84d6-6f3c-4cdd-b8fb-682a1de46554` and vocabulary item id `b144680c-590a-4855-aff5-d60058f6e415`.
+  - The controlled vocabulary surface text was `stage five n preview ui write`.
+  - Verified after write that the database contained exactly one person, one vocabulary item, and one review settings row, with zero import/review event rows.
+  - Queried error logs for the write-enabled deployment; no error records were returned.
+  - Ran `npm run db:cleanup-stage5n-ui-smoke:dev`, removing one vocabulary item, one review settings row, and one person.
+  - Removed `MIMI_ENABLE_STORAGE_UI_WRITES` from Vercel Preview.
+  - Created disabled Preview deployment `dpl_Athg2hWZK1gV6ereWdbYk1WXG58C`.
+  - Disabled Preview URL: `https://words-learning-app-for-mimi-6v8azqoaa-anorias-projects.vercel.app`.
+  - Verified the disabled Preview deployment target was `preview` and ready state was `READY`.
+  - Verified disabled Preview `/api/storage/health` returned zero counts.
+  - Verified disabled Preview `/api/storage/data` POST returned reason `ui-writes-not-enabled`.
+  - Removed write-enabled deployment `dpl_JgKNc9zuAqgMsy5w13gbZoqkEhnY`.
+  - Confirmed final Preview env no longer contains `MIMI_ENABLE_STORAGE_UI_WRITES`.
+  - Confirmed final Production env remains empty.
+  - Confirmed final development database counts are zero.
+  - Verified app routes return HTTP 200 on the disabled Preview deployment.
+- Validation:
+  - Passed: `npm run lint`.
+  - Passed: `npm run typecheck`.
+  - Passed: `npm run db:cleanup-stage5n-ui-smoke:dev` on an empty DB as a no-op.
+  - Passed: `npm run db:inspect:dev` before remote writes, reporting zero core study rows.
+  - Passed: `printf 'true\n' | npx vercel@latest env add MIMI_ENABLE_STORAGE_UI_WRITES preview`.
+  - Passed: `npx vercel@latest env ls preview`, showing `MIMI_ENABLE_STORAGE_UI_WRITES` in Preview only during the test window.
+  - Passed: `npx vercel@latest env ls production`, reporting no Production env vars.
+  - Passed: `npx vercel@latest deploy --yes`, creating write-enabled Preview deployment `dpl_JgKNc9zuAqgMsy5w13gbZoqkEhnY`.
+  - Passed: `npx vercel@latest inspect https://words-learning-app-for-mimi-8r2cn2jko-anorias-projects.vercel.app --format=json`, reporting `target=preview`.
+  - Passed: write-enabled Preview `/api/storage/health`, reporting zero counts.
+  - Passed: write-enabled Preview `/api/storage/data` POST with the required confirmation header, returning `ok=true`.
+  - Passed: `npm run db:inspect:dev` after write, reporting `people=1`, `vocabulary_items=1`, and `review_settings=1`.
+  - Passed: write-enabled Preview `/api/storage/data` GET, returning the controlled smoke row.
+  - Passed: `npx vercel@latest logs dpl_JgKNc9zuAqgMsy5w13gbZoqkEhnY --level error --since 15m --json`, returning no error records.
+  - Passed: `npm run db:cleanup-stage5n-ui-smoke:dev`, removing the controlled row set and returning core counts to zero.
+  - Passed: `npx vercel@latest env rm MIMI_ENABLE_STORAGE_UI_WRITES preview --yes`.
+  - Passed: `npx vercel@latest deploy --yes`, creating disabled Preview deployment `dpl_Athg2hWZK1gV6ereWdbYk1WXG58C`.
+  - Passed: disabled Preview inspect, reporting `target=preview`.
+  - Passed: disabled Preview `/api/storage/health`, reporting zero counts.
+  - Passed: disabled Preview `/api/storage/data` POST with the confirmation header, returning `ui-writes-not-enabled`.
+  - Passed: `npx vercel@latest logs dpl_Athg2hWZK1gV6ereWdbYk1WXG58C --level error --since 15m --json`, returning no error records.
+  - Passed: `npx vercel@latest remove dpl_JgKNc9zuAqgMsy5w13gbZoqkEhnY --yes`.
+  - Passed: final `npx vercel@latest env ls preview`, showing no `MIMI_ENABLE_STORAGE_UI_WRITES`.
+  - Passed: final `npx vercel@latest env ls production`, reporting no Production env vars.
+  - Passed: final `npm run db:inspect:dev`, reporting zero core study rows.
+  - Passed: disabled Preview route checks for `/`, `/add`, `/import`, `/library`, `/review`, `/export`, and `/settings`, all returning HTTP 200.
+- Safety notes: one controlled non-production row set was written and then cleaned. The temporary Preview write flag was removed. The temporary write-enabled Preview deployment was removed. No real user backup file was imported, no Production env var was added, no Production deployment was created or promoted, no Production database migration or import was run, no authentication, analytics, AI generation, embedding generation, FSRS implementation, email, notification, or 付费/扣款 feature was added. Existing non-official Production deployment remains untouched.
+
+## 2026-07-05 23:25 AEST
+
+- Task: execute the confirmed next step after Stage 5M: Stage 5N-A Preview UI runtime read-only verification.
+- Plan agreed: yes. The user confirmed the proposed Stage 5N direction. This execution was limited to Preview deployment and read-only verification. Controlled Preview UI writes remain pending a separate confirmation.
+- Changed files:
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE5N_PREVIEW_UI_RUNTIME_VERIFICATION.md`
+- Reason: prove the Stage 5M Postgres UI runtime read path in real Vercel Preview before enabling any Preview UI write smoke.
+- Implementation notes:
+  - Confirmed working tree was clean and latest commit was `eb616f7` on `V1`, synchronized with `origin/V1`.
+  - Read Vercel CLI, deployment, and env-var skill guidance before remote checks.
+  - Verified Vercel CLI version `54.20.1`.
+  - Verified Preview env includes `MIMI_STORAGE_RUNTIME` and Neon variables, and does not include `MIMI_ENABLE_STORAGE_UI_WRITES`.
+  - Verified Production env remains empty.
+  - Verified development database counts were zero before deployment.
+  - Created Preview deployment `dpl_HpcPDb5B2su2BLPWJVsYZjPDnWSg`.
+  - Preview URL: `https://words-learning-app-for-mimi-kb5b08c5v-anorias-projects.vercel.app`.
+  - Verified with `vercel inspect` that deployment target is `preview` and ready state is `READY`.
+  - Verified `/api/storage/health` returns runtime `postgres-preview` and zero counts.
+  - Verified `/api/storage/data` returns runtime `postgres-preview`, schema version 3, and an empty default `Mimi` snapshot with no study records.
+  - Verified `/api/storage/data` POST with UI confirmation header is blocked with reason `ui-writes-not-enabled`.
+  - Verified app routes `/`, `/add`, `/import`, `/library`, `/review`, `/export`, and `/settings` return HTTP 200.
+  - Queried Preview error logs for the deployment; no error records were returned.
+  - Verified development database counts remained zero after verification.
+- Validation:
+  - Passed: `npx vercel@latest env ls preview`, showing no `MIMI_ENABLE_STORAGE_UI_WRITES`.
+  - Passed: `npx vercel@latest env ls production`, reporting no Production env vars.
+  - Passed: `npm run db:inspect:dev` before deployment, reporting zero core study rows.
+  - Passed: `npx vercel@latest deploy --yes`, creating Preview deployment `dpl_HpcPDb5B2su2BLPWJVsYZjPDnWSg`.
+  - Passed: `npx vercel@latest inspect https://words-learning-app-for-mimi-kb5b08c5v-anorias-projects.vercel.app --format=json`, reporting `target=preview` and `readyState=READY`.
+  - Passed: Preview `/api/storage/health`, reporting `runtime=postgres-preview`, `people=0`, `vocabularyItems=0`, and `reviewEvents=0`.
+  - Passed: Preview `/api/storage/data`, reporting an empty schema version 3 snapshot.
+  - Passed: Preview `/api/storage/data` POST with `x-mimi-ui-storage-write: allow-dev-preview-ui-write`, returning `ui-writes-not-enabled`.
+  - Passed: route checks for `/`, `/add`, `/import`, `/library`, `/review`, `/export`, and `/settings`, all returning HTTP 200.
+  - Passed: `npx vercel@latest logs dpl_HpcPDb5B2su2BLPWJVsYZjPDnWSg --level error --since 15m --json`, returning no error records.
+  - Passed: final `npm run db:inspect:dev`, reporting zero core study rows.
+- Safety notes: no database write, no real user backup import, no Vercel env var mutation, no Production deployment, no Production promotion, no Production alias change, no Production database migration or import, no authentication, analytics, AI generation, embedding generation, FSRS implementation, email, notification, or 付费/扣款 feature was performed. Existing non-official Production deployment remains untouched.
+
+## 2026-07-05 22:52 AEST
+
+- Task: execute Stage 5M after the user confirmed the next step should design user backup import first, then UI runtime cutover, then implement the complete stage; the user also stated local host 3000 was safe to use.
+- Plan agreed: yes. The accepted scope was development / preview backup import and UI runtime cutover, with no Production work and no Vercel env mutation. Because no real user backup file was provided, real user import was implemented as a guarded capability and validated with a non-private fixture file.
+- Changed files:
+  - `.env.example`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `package.json`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE5M_USER_BACKUP_IMPORT_AND_UI_RUNTIME_CUTOVER.md`
+  - `scripts/backup-import-plan.test.mjs`
+  - `scripts/backup-import-postgres.mjs`
+  - `src/app/api/storage/data/route.ts`
+  - `src/components/add-word-form.tsx`
+  - `src/components/export/export-workspace.tsx`
+  - `src/components/review/review-session.tsx`
+  - `src/components/settings/person-settings-form.tsx`
+  - `src/components/settings/review-settings-form.tsx`
+  - `src/components/vocabulary/import-workspace.tsx`
+  - `src/components/vocabulary/use-vocabulary-data.ts`
+  - `src/components/vocabulary/vocabulary-library.tsx`
+  - `src/lib/storage/postgres/repository.ts`
+  - `src/lib/storage/runtime-mode.test.ts`
+  - `src/lib/storage/runtime-mode.ts`
+  - `test_fixtures/stage5m-backup.json`
+- Reason: complete the formal non-production backup import path and prove the UI can read/write through Postgres in development / preview while preserving `localStorage` as the default runtime and leaving Production untouched.
+- Implementation notes:
+  - Added Stage 5M child plan with source plan, derived-from markers, scope, non-scope, safety notes, exit criteria, results, validation, and residual boundaries.
+  - Extended `scripts/backup-import-postgres.mjs` to support `--file <backup.json>` with `--dry-run`, `--trial-rollback`, and guarded `--commit --i-confirm-development-import`.
+  - Added a file-backed Stage 5M backup fixture and test coverage for `buildBackupImportPlanFromText`.
+  - Added fixture commit and cleanup commands for development verification.
+  - Added Postgres snapshot and person creation helpers.
+  - Wrapped Postgres person creation and default review settings creation in one transaction.
+  - Added `/api/storage/data` as a development / preview route for Postgres snapshot reads and controlled UI mutations.
+  - Required `MIMI_STORAGE_RUNTIME=postgres-preview`, `MIMI_ENABLE_STORAGE_UI_WRITES=true`, and `x-mimi-ui-storage-write: allow-dev-preview-ui-write` for UI writes.
+  - Kept Production rejection in the runtime path.
+  - Updated `useVocabularyData()` to prefer Postgres only when the API reports ready and otherwise fall back to browser `localStorage`.
+  - Updated add, import, library edit/archive/restore, review, review settings, person switching, person creation, and export restore boundary for the async runtime adapter.
+  - Kept JSON restore browser-local; in `postgres-preview`, formal backup import uses the Stage 5M script path.
+  - Stopped a leftover same-project `next dev` process on port 3000 before local verification, then restarted the dev server with the Stage 5M runtime flags.
+  - Committed the Stage 5M fixture into the empty development database, verified local API read/write and browser library rendering, then cleaned the fixture person and both fixture vocabulary rows.
+  - Final development database inspection reported zero rows in core study tables.
+- Validation:
+  - Passed: `npm run test` with 13 test files and 48 tests.
+  - Passed: `node scripts/backup-import-postgres.mjs --file test_fixtures/stage5m-backup.json --dry-run`.
+  - Passed: `npm run db:inspect:dev` before import, reporting 8 tables, 11 indexes, 5 key constraints, and zero rows in core study tables.
+  - Passed: `STAGE5F_DATABASE_TARGET=development ./node_modules/.bin/dotenv -e .env.local -- node scripts/backup-import-postgres.mjs --file test_fixtures/stage5m-backup.json --trial-rollback`, inserting and rolling back one fixture dataset, one backup import row, and six backup import mappings.
+  - Passed: `STAGE5F_DATABASE_TARGET=development ./node_modules/.bin/dotenv -e .env.local -- node scripts/backup-import-postgres.mjs --file test_fixtures/stage5m-backup.json --commit --i-confirm-development-import`, inserting the fixture dataset into an empty development database.
+  - Passed: local `/api/storage/data` GET with `MIMI_STORAGE_RUNTIME=postgres-preview` and `MIMI_ENABLE_STORAGE_UI_WRITES=true`, returning `runtime=postgres-preview`, one person, and one item.
+  - Passed: local `/api/storage/data` POST with `x-mimi-ui-storage-write: allow-dev-preview-ui-write`, returning two items after adding `stage five m ui write`.
+  - Passed: browser `/library` check, showing `stage five m import`, `stage five m ui write`, and `2 shown / 2 total`.
+  - Passed: `npm run db:cleanup-fixture:dev`, removing the Stage 5M fixture person, two vocabulary rows, one import batch, one review state, one review event, one review settings row, one backup import row, and six mapping rows.
+  - Passed: final `npm run db:inspect:dev`, reporting zero rows in core study tables.
+  - Passed: `npm run typecheck`.
+  - Passed: `npm run lint`.
+  - Passed: `npm run build`.
+  - Passed: `npm audit --json` with 0 vulnerabilities.
+  - Passed: `npm run backup:dry-run:fixture`.
+  - Passed: `git diff --check`.
+  - Passed: `npm run governance:preflight`.
+  - Passed: `python3 governance/preflight.py --tier 3 --require-skill-marker`.
+- Safety notes: no real user backup file was imported, no Vercel environment variable was changed, no Preview deployment was created, no Production deployment was created or promoted, no Production database migration or import was run, no authentication, analytics, AI generation, embedding generation, FSRS implementation, email, notification, or 付费/扣款 feature was added. The development database is empty at handoff.
+
+## 2026-07-05 15:45 AEST
+
+- Task: execute the complete Stage 5L backup import harness and smoke cleanup after the user explicitly requested Stage 5L-A and Stage 5L-B together, including cleanup of used smoke test rows.
+- Plan agreed: yes. The accepted scope was backup import dry run, fixture tests, development DB fixture rollback trial, and cleanup of the fixed Stage 5K smoke rows. Production work, formal user backup import, and UI runtime cutover remained out of scope.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `db/LOCAL_BACKUP_TO_POSTGRES.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `package.json`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE5L_BACKUP_IMPORT_HARNESS_AND_SMOKE_CLEANUP.md`
+  - `scripts/backup-import-plan.mjs`
+  - `scripts/backup-import-plan.test.mjs`
+  - `scripts/backup-import-postgres.mjs`
+- Reason: prepare formal backup import safely by proving validation, target UUID mapping, and transaction rollback behavior before importing real user data, while removing the temporary Stage 5K smoke data from the development database.
+- Implementation notes:
+  - Added Stage 5L plan with source plan, derived-from markers, scope, non-scope, safety notes, execution plan, and exit criteria.
+  - Added a schema version 3 fixture backup representing one person, one import batch, one vocabulary item, one review state, one review event, and one review settings row.
+  - Added backup import planning that validates metadata counts, person-scoped references, supported values, required settings, and target UUID mapping.
+  - Added a guarded development / preview script for fixture dry run, fixed smoke cleanup, and fixture transaction trial with rollback.
+  - Added npm scripts `backup:dry-run:fixture`, `db:cleanup-smoke:dev`, and `db:import-fixture-trial:dev`.
+  - Added tests for fixture target UUID mapping, metadata count mismatch rejection, and cross-person review reference rejection.
+  - Verified pre-cleanup development database counts were the Stage 5K smoke row set: one person, one vocabulary item, one review state, one review event, and one review settings row.
+  - Cleaned the fixed smoke row set under person id `00000000-0000-4000-8000-0000000005f1` and slug `storage-smoke`.
+  - Verified post-cleanup development database counts were zero across core study tables and backup import tables.
+  - Ran fixture transaction trial in the development database; it inserted one complete fixture dataset plus one backup import row and six backup import mappings inside a transaction.
+  - Verified the fixture transaction rolled back and left no fixture rows in the development database.
+- Validation:
+  - Passed: `npm run backup:dry-run:fixture`, reporting fixture plan counts `people=1`, `importBatches=1`, `vocabularyItems=1`, `reviewStates=1`, `reviewEvents=1`, `reviewSettings=1`, `backupImports=1`, and `backupImportMappings=6`.
+  - Passed: `npm run db:cleanup-smoke:dev`, removing the Stage 5K smoke row set and reporting all post-cleanup row counts as zero.
+  - Passed: `npm run db:import-fixture-trial:dev`, inserting fixture counts inside a transaction and rolling back to zero.
+  - Passed: `npm run test` with 13 test files and 46 tests.
+  - Passed: `npm run typecheck`.
+  - Passed: `npm run lint`.
+  - Passed: `npm run build`.
+  - Passed: `npm audit --json` with 0 vulnerabilities.
+  - Passed: `npm run db:inspect:dev`, reporting 8 tables, 11 indexes, 5 key constraints, and zero rows in core study tables.
+  - Passed: `git diff --check`.
+  - Passed: `npm run governance:preflight`.
+  - Passed: `python3 governance/preflight.py --tier 3 --require-skill-marker`.
+- Safety notes: development smoke test rows were cleaned with explicit user authorization. Fixture import trial used a transaction rollback and left no fixture rows. No Production env var, Production deployment, Production promotion, Production alias change, Production migration, formal user backup import, UI runtime cutover, authentication implementation, analytics, AI generation, embedding generation, FSRS implementation, email, notification, or 付费/扣款 feature was performed. Existing non-official Production deployment remains untouched.
+
+## 2026-07-05 15:21 AEST
+
+- Task: execute Stage 5K controlled write smoke after the user confirmed the Stage 5K plan.
+- Plan agreed: yes. The accepted scope was one controlled development / Preview Postgres write through `/api/storage/smoke`, with no Production work, no backup import, no UI runtime cutover, and no smoke row cleanup unless separately confirmed.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE5K_CONTROLLED_WRITE_SMOKE.md`
+- Reason: prove the Stage 5I runtime Postgres adapter write path in Vercel Preview exactly once, then close the temporary write surface before moving toward backup import or UI storage cutover planning.
+- Implementation notes:
+  - Confirmed the branch was `V1` tracking `origin/V1` and the working tree was clean except for the new Stage 5K plan before remote writes.
+  - Confirmed baseline development database counts were zero across `people`, `vocabulary_items`, `import_batches`, `review_states`, `review_events`, and `review_settings`.
+  - Confirmed Production env list was empty before adding the smoke write flag.
+  - Added `MIMI_ENABLE_STORAGE_SMOKE_WRITES=true` to Vercel Preview only.
+  - Created smoke-enabled Preview deployment `dpl_BbgqrsKCtFzbLfKjAaazfugPvfCv` at `https://words-learning-app-for-mimi-kj0qj7l5k-anorias-projects.vercel.app`.
+  - Verified the deployment with `vercel inspect`; target was `preview` and ready state was `READY`.
+  - Verified pre-write Preview `/api/storage/health` returned `status=ready`, runtime `postgres-preview`, and zero counts.
+  - Called `/api/storage/smoke` once with `x-mimi-storage-smoke: allow-dev-preview-write`; it returned `ok=true`.
+  - The smoke route returned person id `00000000-0000-4000-8000-0000000005f1`, item id `22ddb9a7-affb-4b1a-9915-6f13cb357b66`, review event id `5717263b-990a-4f74-94cc-48a02ad62e9d`, and review state id `b324bd50-f815-4cbe-b695-1f8928fa114c`.
+  - Verified database counts became `people=1`, `vocabulary_items=1`, `import_batches=0`, `review_states=1`, `review_events=1`, and `review_settings=1`.
+  - Ran a read-only person-scoping SQL check and confirmed the smoke vocabulary, review state, and review event are scoped to the smoke `person_id`, with no non-smoke vocabulary rows.
+  - Checked current official Vercel documentation and confirmed environment variable changes apply only to new deployments.
+  - Removed `MIMI_ENABLE_STORAGE_SMOKE_WRITES` from Preview after the successful write.
+  - Created follow-up disabled Preview deployment `dpl_BJn1pFAbLiiY4LgCyThKx2vDTSar` at `https://words-learning-app-for-mimi-7bzktk5uc-anorias-projects.vercel.app`.
+  - Verified the disabled deployment with `vercel inspect`; target was `preview`, ready state was `READY`, and the branch alias pointed at the disabled deployment.
+  - Verified disabled Preview `/api/storage/health` returned `status=ready`, runtime `postgres-preview`, and counts `people=1`, `vocabularyItems=1`, and `reviewEvents=1`.
+  - Verified disabled Preview `/api/storage/smoke` returned `status=disabled` with reason `smoke-writes-not-enabled`.
+  - Removed smoke-enabled Preview deployment `dpl_BbgqrsKCtFzbLfKjAaazfugPvfCv`.
+  - Confirmed the removed smoke-enabled deployment no longer appears in `vercel ls`.
+- Validation:
+  - Passed: `npm run db:inspect:dev` before smoke, reporting 8 tables, 11 indexes, 5 key constraints, and zero rows in core business tables.
+  - Passed: `npx vercel@latest env ls preview`, showing the smoke write flag in Preview only after add and absent again after removal.
+  - Passed: `npx vercel@latest env ls production`, reporting no Production env vars before and after the smoke.
+  - Passed: `npx vercel@latest inspect https://words-learning-app-for-mimi-kj0qj7l5k-anorias-projects.vercel.app --format=json`, reporting `target=preview`.
+  - Passed: `npx vercel@latest curl /api/storage/health --deployment https://words-learning-app-for-mimi-kj0qj7l5k-anorias-projects.vercel.app`, reporting pre-write zero counts.
+  - Passed: `npx vercel@latest curl /api/storage/smoke --deployment https://words-learning-app-for-mimi-kj0qj7l5k-anorias-projects.vercel.app -- --request POST --header 'x-mimi-storage-smoke: allow-dev-preview-write'`, returning `ok=true`.
+  - Passed: `npm run db:inspect:dev` after smoke, reporting exactly one smoke row set.
+  - Passed: read-only SQL person-scoping inspection, reporting `smoke_people=1`, `smoke_vocabulary_items=1`, `smoke_review_states=1`, `smoke_review_events=1`, `smoke_review_settings=1`, `review_state_item_person_matches=1`, `review_event_item_person_matches=1`, and `non_smoke_vocabulary_items=0`.
+  - Passed: `npx vercel@latest inspect https://words-learning-app-for-mimi-7bzktk5uc-anorias-projects.vercel.app --format=json`, reporting `target=preview`.
+  - Passed: disabled Preview `/api/storage/health`, reporting counts `people=1`, `vocabularyItems=1`, and `reviewEvents=1`.
+  - Passed: disabled Preview `/api/storage/smoke` without confirmation header, returning reason `smoke-writes-not-enabled`.
+  - Passed: `npx vercel@latest remove dpl_BbgqrsKCtFzbLfKjAaazfugPvfCv --yes`.
+  - Passed: final `npm run db:inspect:dev`, still reporting exactly one smoke row set.
+  - Passed: `npx vercel@latest logs dpl_BJn1pFAbLiiY4LgCyThKx2vDTSar --level error --since 10m --json`, returning no error records.
+  - Passed: `npm run test` with 12 test files and 43 tests.
+  - Passed: `npm run typecheck`.
+  - Passed: `npm run lint`.
+  - Passed: `npm audit --json` with 0 vulnerabilities.
+  - Passed: `git diff --check`.
+  - Passed: `npm run build`.
+  - Passed: `npm run governance:preflight`.
+  - Passed: `python3 governance/preflight.py --tier 3 --require-skill-marker`.
+- Safety notes: one non-production smoke row set was intentionally written and remains in the development database. No smoke row cleanup, backup import, UI runtime cutover, Production env var, Production deployment, Production promotion, Production alias change, Production migration, authentication implementation, analytics, AI generation, embedding generation, FSRS implementation, email, notification, or 付费/扣款 feature was performed. Existing non-official Production deployment remains untouched.
+
+## 2026-07-05 15:04 AEST
+
+- Task: execute Stage 5J Postgres adapter read-only verification after the user confirmed the Stage 5J plan.
+- Plan agreed: yes. The accepted scope was read-only local and Preview verification, plus Preview-only `MIMI_STORAGE_RUNTIME=postgres-preview`. Smoke writes, backup import, UI runtime cutover, and Production work remained out of scope.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE5J_POSTGRES_ADAPTER_READ_ONLY_VERIFICATION.md`
+- Reason: verify the Stage 5I runtime Postgres adapter in local and Vercel Preview read-only mode before any write-path smoke, backup import, UI cutover, or Production action.
+- Implementation notes:
+  - Confirmed the working tree was clean and `V1` matched `origin/V1` before remote actions.
+  - Read Vercel CLI, environment variable, and deployment guidance from the installed Vercel skills.
+  - Confirmed local Vercel CLI version `54.20.1`.
+  - Verified local default `/api/storage/health` returned `status=disabled`, runtime `local`, reason `missing`.
+  - Verified local `postgres-preview` `/api/storage/health` returned `status=ready`, runtime `postgres-preview`, and zero counts.
+  - Read Vercel project/deployment/env state without printing secret values.
+  - Confirmed Vercel production branch is `main`.
+  - Confirmed existing database env vars are Development / Preview scoped.
+  - Added `MIMI_STORAGE_RUNTIME=postgres-preview` to Preview only.
+  - Confirmed `MIMI_ENABLE_STORAGE_SMOKE_WRITES` was not present.
+  - Created Preview deployment `dpl_CFeC2VwRKtMSAjBiGGtyStsFw2tr` at `https://words-learning-app-for-mimi-dbkkkow3d-anorias-projects.vercel.app`.
+  - Verified the new deployment with `vercel inspect`; target is `preview` and ready state is `READY`.
+  - Verified Preview `/api/storage/health` through `vercel curl`; it returned `status=ready`, runtime `postgres-preview`, and zero counts.
+  - Queried Preview error logs for the deployment; no error records were returned.
+- Validation:
+  - Passed: local default health route returned disabled.
+  - Passed: local `postgres-preview` health route returned ready with zero counts.
+  - Passed: `npm run db:inspect:dev` before and after Preview verification, reporting 8 tables, 11 indexes, 5 key constraints, and zero rows in core business tables.
+  - Passed: `npx vercel@latest env ls preview`, showing `MIMI_STORAGE_RUNTIME` in Preview only and no smoke write flag.
+  - Passed: `npx vercel@latest inspect https://words-learning-app-for-mimi-dbkkkow3d-anorias-projects.vercel.app --format=json`, reporting `target=preview`.
+  - Passed: `npx vercel@latest curl /api/storage/health --deployment https://words-learning-app-for-mimi-dbkkkow3d-anorias-projects.vercel.app`.
+  - Passed: `npm run test` with 12 test files and 43 tests.
+  - Passed: `npm run typecheck`.
+  - Passed: `npm run lint`.
+  - Passed: `git diff --check`.
+  - Passed: `npm audit --json` with 0 vulnerabilities.
+  - Passed: `npm run build`.
+  - Passed: `npm run governance:preflight`.
+  - Passed: `python3 governance/preflight.py --tier 3 --require-skill-marker`.
+- Safety notes: no `/api/storage/smoke` call, no database write, no backup import, no UI runtime cutover, no Production env var, no Production deployment, no Production promotion, no Production alias change, no Production migration, no authentication implementation, analytics, AI generation, embedding generation, FSRS implementation, email, notification, or 付费/扣款 feature was performed. Existing non-official Production deployment remains untouched.
+
+## 2026-07-05 14:48 AEST
+
+- Task: implement Stage 5I runtime Postgres adapter after the user confirmed the Stage 5H design.
+- Plan agreed: yes. The user confirmed execution. The accepted scope was adapter-first implementation only: server-only Postgres runtime modules, development / preview health and smoke routes, tests, and documentation, while keeping UI runtime on browser `localStorage`.
+- Changed files:
+  - `.env.example`
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE5I_RUNTIME_POSTGRES_ADAPTER_IMPLEMENTATION.md`
+  - `src/app/api/storage/health/route.ts`
+  - `src/app/api/storage/smoke/route.ts`
+  - `src/lib/storage/runtime-mode.test.ts`
+  - `src/lib/storage/runtime-mode.ts`
+  - `src/lib/storage/postgres/client.ts`
+  - `src/lib/storage/postgres/mappers.test.ts`
+  - `src/lib/storage/postgres/mappers.ts`
+  - `src/lib/storage/postgres/repository.ts`
+- Reason: prove the database adapter boundary before any user-facing storage runtime switch or Production database work.
+- Implementation notes:
+  - Added runtime mode parsing with default `local` behavior and explicit `MIMI_STORAGE_RUNTIME=postgres-preview` opt-in.
+  - Added lazy Neon `Pool` creation behind server-only and development / preview runtime checks.
+  - Added Postgres row mappers for people, vocabulary items, import batches, review states, review events, and review settings.
+  - Implemented `DurableRepositoryPort` for Postgres people, review settings, vocabulary list/add/update/archive/restore, import commit, review queue selection, review recording, and review event listing.
+  - Kept Postgres database UUIDs as canonical adapter IDs.
+  - Kept all learning-data reads and writes scoped by `personId`.
+  - Wrapped import commit and review recording in transactions.
+  - Added `/api/storage/health` as a read-only dynamic route.
+  - Added `/api/storage/smoke` as an opt-in write smoke route requiring `MIMI_STORAGE_RUNTIME=postgres-preview`, `MIMI_ENABLE_STORAGE_SMOKE_WRITES=true`, and `x-mimi-storage-smoke: allow-dev-preview-write`.
+  - Added unit tests for runtime mode behavior and Postgres mappers.
+- Validation:
+  - Passed: `npm run test` with 12 test files and 43 tests.
+  - Passed: `npm run typecheck`.
+  - Passed: `npm run lint`.
+  - Passed: `git diff --check`.
+  - Passed: `npm audit --json` with 0 vulnerabilities.
+  - Passed: `npm run db:inspect:dev`, reporting 8 tables, 11 indexes, 5 key constraints, and zero rows in core business tables.
+  - Passed: `npm run build`, including dynamic routes `/api/storage/health` and `/api/storage/smoke`.
+  - Passed: `npm run governance:preflight`.
+  - Passed: `python3 governance/preflight.py --tier 3 --require-skill-marker`.
+- Safety notes: no GitHub push, Production deployment, Production env var change, Production database migration, Production import, storage runtime cutover, backup import, authentication implementation, analytics, AI generation, embedding generation, FSRS implementation, email, notification, 付费/扣款 feature, or local/remote data import was performed. The smoke write route was not called, and the development database inspection still showed zero core business rows.
+
+## 2026-07-05 14:26 AEST
+
+- Task: proceed to the next step after Stage 5G by documenting current deployment state and designing Stage 5H runtime Postgres adapter work.
+- Plan agreed: yes. The user asked to proceed to the next step; because runtime Postgres affects persistent data flow, this turn stayed design-only and did not implement or enable database-backed runtime writes.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE5G_PREVIEW_DEPLOYMENT_BOUNDARY.md`
+  - `plan_docs/PLAN_V1_STAGE5H_RUNTIME_POSTGRES_ADAPTER_DESIGN.md`
+- Reason: prepare runtime Postgres implementation safely while keeping the current user-facing runtime on browser `localStorage`.
+- Implementation notes:
+  - Confirmed the working tree was clean at the start of the turn and latest local / remote commit was `06120f7`.
+  - Confirmed Vercel Git integration created a clean Preview deployment from committed `origin/V1`: `dpl_EmhfvP8yE9NrxCWPcdK3Qdd8sdk8`.
+  - Verified the clean Preview deployment with `vercel inspect` and Vercel API OIDC claims; it is Preview and uses environment `preview`.
+  - Read the existing durable repository contract, local vocabulary repository, local storage migration, and backup-to-Postgres mapping before designing Stage 5H.
+  - Added Stage 5H design plan for a server-only runtime Postgres adapter, development / preview first, with `localStorage` fallback retained by default.
+  - Documented that Production Postgres runtime remains disabled until formal Production, accepted access boundary, backup/import/rollback planning, and explicit confirmation.
+- Validation:
+  - Passed: `npm run governance:preflight`
+  - Passed: `git diff --check`
+  - Initial Tier 3 preflight caught this entry's pending validation placeholder.
+  - Passed: `python3 governance/preflight.py --tier 3 --require-skill-marker` after replacing the placeholder with actual results.
+- Safety notes: documentation and planning only. No database writes, data import, runtime storage cutover, Production deployment deletion, Production promotion, Production env var changes, authentication implementation, analytics, AI generation, email, notification, 付费/扣款 feature, or public Production write endpoint was added.
+
+## 2026-07-05 14:00 AEST
+
+- Task: continue from Stage 5F by documenting the active Production deployment state and creating a true Preview deployment without touching Production.
+- Plan agreed: yes. The user explicitly said not to delete the current active Production deployment for now, to document it clearly, and to use `vercel deploy` for Preview only.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE5F_DEV_PREVIEW_NEON_BOOTSTRAP.md`
+  - `plan_docs/PLAN_V1_STAGE5G_PREVIEW_DEPLOYMENT_BOUNDARY.md`
+- Reason: align project documentation with actual Vercel state and establish a verified Preview deployment path while deferring formal Production until V1 completion and merge.
+- Implementation notes:
+  - Re-read Vercel CLI and deployment skill guidance.
+  - Checked current official Vercel docs for CLI preview deployment, Production deployment, environments, Git production branch behavior, and Git preview branches.
+  - Verified through Vercel API that the Git link production branch is `main`.
+  - Verified active Production deployment `dpl_2nvALJ1CutPjeFteXKMCHWKa4UsD` from branch `V1`; per user instruction, it was not removed.
+  - Added Stage 5G plan doc and updated architecture/readme/master plan to classify the active Production deployment as non-official.
+  - Ran `npx vercel@latest deploy --yes`, which created Preview deployment `dpl_d5LUb6r1wEXiJBUENb2PACEZMVsu`.
+  - Verified the Preview deployment with `vercel inspect`, Vercel API OIDC claims, `vercel ls`, route smoke checks, and error-log query.
+  - `vercel curl` generated a deployment protection bypass token for protected Preview access. The token value was not printed and was not committed.
+- Validation:
+  - Passed: `vercel inspect words-learning-app-for-mimi-bwfhi5rap-anorias-projects.vercel.app`, reporting `target preview`.
+  - Passed: Vercel API OIDC claims for `dpl_d5LUb6r1wEXiJBUENb2PACEZMVsu`, reporting `environment: preview`.
+  - Passed: `vercel ls words-learning-app-for-mimi`, showing both the verified Preview deployment and the non-official Production deployment.
+  - Passed: `vercel curl` route checks for `/`, `/add`, `/import`, `/library`, `/review`, `/export`, and `/settings`, all returning HTTP 200.
+  - Passed: `vercel logs dpl_d5LUb6r1wEXiJBUENb2PACEZMVsu --level error --since 10m --json`, returning no error log records.
+- Safety notes: no Production deployment was deleted, promoted, or newly created in this step. No Production database migration, Production import, runtime Postgres adapter, authentication implementation, analytics, AI generation, email, 付费/扣款, notification, GitHub push, or production-domain change was performed. The Preview deployment was created from a dirty local working tree and should be treated as a preview artifact only.
+
+## 2026-07-05 13:09 AEST
+
+- Task: execute Stage 5F development / preview Vercel and Neon bootstrap after the user supplied approvals and asked to continue after token refresh.
+- Plan agreed: yes. The user approved Vercel link/project creation, Neon creation through the Vercel path, development / preview env handling, minimal database packages, non-production migration dry run, schema inspection, and smoke testing. Production migration, production import, and production deployment still require separate confirmation.
+- Changed files:
+  - `.env.example`
+  - `.gitignore`
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `db/migrations/0001_initial.sql`
+  - `governance/AI_AGENT_LOG.md`
+  - `package-lock.json`
+  - `package.json`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE5F_DEV_PREVIEW_NEON_BOOTSTRAP.md`
+  - `scripts/db-connection.mjs`
+  - `scripts/inspect-database-schema.mjs`
+  - `scripts/run-sql-migration.mjs`
+  - `src/lib/storage/durable-schema.test.ts`
+- Reason: complete the accepted non-production remote dry run for the Neon Postgres direction while preserving the browser-local runtime and keeping production data/deployment boundaries explicit.
+- Implementation notes:
+  - Verified the Vercel user/project boundary and created/linked `anorias-projects/words-learning-app-for-mimi`.
+  - Created Neon resource `words-learning-app-for-mimi-neon` for Development and Preview through the Vercel Marketplace path after the user accepted Marketplace terms.
+  - Pulled generated env vars into ignored `.env.local` without printing values.
+  - Added `.env.example` with placeholder connection URL names only and kept `.env.local` / `.vercel` ignored.
+  - Installed `@neondatabase/serverless` and `dotenv-cli`; no ORM was added.
+  - Added guarded `db:migrate:dev` and `db:inspect:dev` scripts requiring `STAGE5F_DATABASE_TARGET=development`.
+  - Updated the SQL migration header from Stage 5D draft language to Stage 5F non-production execution language.
+  - Applied `db/migrations/0001_initial.sql` to the development Neon database.
+  - Added read-only schema inspection for expected tables, indexes, constraints, and empty business-table counts.
+  - Updated docs to state that the app runtime still uses browser `localStorage` and that the runtime Postgres adapter remains future work.
+  - Attempted a preview deployment with `npx vercel@latest --yes --target preview`; Vercel CLI returned `target: production` and assigned production aliases. The unexpected deployment `dpl_Hgn5b9j7TD3GEEiZjzvNh8Mvoe5b` was removed immediately, and follow-up inspection reported no deployments.
+- Validation:
+  - Passed: `npm run db:migrate:dev`
+  - Passed: `npm run db:inspect:dev`, reporting 8 tables, 11 indexes, 5 key constraints, and zero rows in core business tables.
+  - Passed: `npm run test` with 10 test files and 35 tests.
+  - Passed: `npm run typecheck`
+  - Passed: `npm run lint`
+  - Passed: `npm run build`
+  - Passed: `npm audit --json` with 0 vulnerabilities.
+  - Passed: local browser smoke test for settings/person switching, manual add, pasted-text import, library edit/archive, review recording, JSON backup button, CSV button, and browser console errors.
+  - Passed: Vercel read-only deployment cleanup checks; removed deployment id and production alias were not found, and `npx vercel@latest ls words-learning-app-for-mimi` reported no deployments.
+  - Passed: `npx vercel@latest env ls` confirmed the database env vars are scoped to Development and Preview only.
+- Safety notes: remote work was intended for development / preview only. Secret values were not printed or committed. No backup import was performed because the user confirmed local storage is empty. No production database migration, production import, runtime Postgres adapter, authentication implementation, analytics, AI generation, email, 付费/扣款, notification, GitHub push, or active Vercel deployment remains. Preview deployment is paused until the Vercel CLI target mismatch and project production-branch behavior are checked in a separate step.
+
+## 2026-07-05 01:29 AEST
+
+- Task: start Stage 5E by documenting the Neon execution gate after the user asked to begin the next stage.
+- Plan agreed: yes. The bounded next step was documentation-only execution planning before any Tier 3 remote action.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE5E_NEON_EXECUTION_GATE.md`
+- Reason: define the approval gate, future execution sequence, stop conditions, rollback direction, and validation path before any Neon/Vercel credential or remote database work.
+- Implementation notes:
+  - Checked current official Vercel and Neon docs for Postgres, Neon integration, Next.js access, and environment variable behavior.
+  - Recorded that future remote work must upgrade to Tier 3.
+  - Recorded required explicit approvals before Vercel/Neon execution.
+  - Recorded fresh JSON backup, non-production migration dry run, backup import trial, and person-scoped verification expectations.
+  - Recorded stop conditions and rollback direction.
+- Validation:
+  - Passed: `npm run governance:preflight`
+- Safety notes: documentation and planning only. No Neon project creation, Vercel Marketplace installation, Vercel CLI command, database package installation, `.env` editing, credential access, remote migration, remote data mutation, authentication implementation, production deployment, GitHub push, embedding generation, FSRS implementation, analytics, AI generation, email, 付费/扣款, notification, or production action was performed.
+
+## 2026-07-05 01:12 AEST
+
+- Task: implement Stage 5D durable storage readiness after the user confirmed execution.
+- Plan agreed: yes. The accepted scope was local SQL schema draft, repository adapter contract, backup-to-Postgres mapping, static validation, and documentation only, with no Neon project creation, no database package installation, no `.env` work, no remote migration, no deployment, and no authentication implementation.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `db/LOCAL_BACKUP_TO_POSTGRES.md`
+  - `db/migrations/0001_initial.sql`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE5D_DURABLE_STORAGE_READINESS.md`
+  - `src/lib/storage/durable-repository-contract.ts`
+  - `src/lib/storage/durable-schema.test.ts`
+- Reason: prepare the database and code boundaries for the accepted one-Neon-Postgres / many-people durable model before any credential, migration, or remote persistence work.
+- Implementation notes:
+  - Added a local SQL draft with `people`, `import_batches`, `vocabulary_items`, `review_states`, `review_events`, `review_settings`, `backup_imports`, and `backup_import_mappings`.
+  - Added `person_id` to every durable learning-data and backup mapping table.
+  - Added person-scoped foreign keys, review-state uniqueness by `(person_id, vocabulary_item_id)`, and indexes for the expected query paths.
+  - Documented schema version 3 JSON backup import mapping, local string id to database UUID mapping, validation, count checks, and failure behavior.
+  - Added a TypeScript repository adapter contract requiring explicit person context.
+  - Added Vitest static checks for the SQL draft.
+- Validation:
+  - Passed: `npm run test` with 10 test files and 35 tests.
+  - Passed: `npm run typecheck`
+  - Passed: `npm run lint`
+  - Passed: `npm run build`
+  - Passed: `npm audit --json` with 0 vulnerabilities.
+  - Passed: `npm run governance:preflight`
+- Safety notes: local source, SQL draft, tests, and documentation only. No Neon project creation, Vercel Marketplace installation, database package installation, `.env` editing, credential access, remote migration, remote data mutation, authentication implementation, production deployment, GitHub push, embedding generation, FSRS implementation, analytics, AI generation, email, 付费/扣款, notification, or production action was performed. The SQL migration draft was not executed.
+
+## 2026-07-05 00:54 AEST
+
+- Task: implement Stage 5C local person adapter after the user confirmed execution.
+- Plan agreed: yes. The accepted scope was local code preparation for `people` / `personId` separation only, with no Neon project creation, no database package installation, no `.env` work, no deployment, and no authentication implementation.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE5C_LOCAL_PERSON_ADAPTER.md`
+  - `src/app/settings/page.tsx`
+  - `src/components/review/review-session.tsx`
+  - `src/components/settings/person-settings-form.tsx`
+  - `src/components/settings/review-settings-form.tsx`
+  - `src/components/vocabulary/home-dashboard.tsx`
+  - `src/components/vocabulary/vocabulary-library.tsx`
+  - `src/components/export/export-workspace.tsx`
+  - `src/lib/backup/csv-export.test.ts`
+  - `src/lib/backup/csv-export.ts`
+  - `src/lib/backup/json-backup.test.ts`
+  - `src/lib/backup/json-backup.ts`
+  - `src/lib/backup/types.ts`
+  - `src/lib/people/repository.ts`
+  - `src/lib/review/repository.test.ts`
+  - `src/lib/review/repository.ts`
+  - `src/lib/review/scheduler.test.ts`
+  - `src/lib/review/scheduler.ts`
+  - `src/lib/review/settings.test.ts`
+  - `src/lib/review/settings.ts`
+  - `src/lib/review/types.ts`
+  - `src/lib/vocabulary/local-storage-repository.test.ts`
+  - `src/lib/vocabulary/local-storage-repository.ts`
+  - `src/lib/vocabulary/repository.ts`
+  - `src/lib/vocabulary/types.ts`
+- Reason: align local behavior with the accepted future durable model where multiple trusted people share one project but study data is separated by person.
+- Implementation notes:
+  - Upgraded local data to schema version 3.
+  - Added `people`, `selectedPersonId`, and `settingsByPerson`.
+  - Added `personId` to vocabulary items, import batches, review states, and review events.
+  - Migrated schema version 1 / 2 local data to the default person.
+  - Added person-scoped repository, scheduler, review, settings, duplicate detection, CSV export, and JSON backup behavior.
+  - Added a minimal person switch and add-person control in `/settings`.
+- Validation:
+  - Passed: `npm run test` with 9 test files and 30 tests.
+  - Passed: `npm run typecheck`
+  - Passed: `npm run lint`
+  - Passed: `npm run governance:preflight`
+  - Passed: `npm run build`
+  - Passed: `npm audit --json` with 0 vulnerabilities.
+  - Passed: local dev server smoke checks for `/settings`, `/library`, `/review`, and `/export` on `http://localhost:3000`.
+- Safety notes: local source, documentation, browser-local schema migration, and local person switching only. No Neon project creation, Vercel Marketplace installation, database package installation, `.env` editing, credential access, remote migration, remote data mutation, authentication implementation, production deployment, GitHub push, embedding generation, FSRS implementation, analytics, AI generation, email, 付费/扣款, notification, or production action was performed.
+
+## 2026-07-05 00:41 AEST
+
+- Task: document Stage 5B storage provider decision and multi-person data model after the user confirmed the stage and clarified the app will be used by a small private group.
+- Plan agreed: yes. The user confirmed Stage 5B and specified one Neon Postgres（关系型数据库）, a `people` table, and `person_id` separation for all learning data, without password / credential isolation.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE5B_STORAGE_PROVIDER_DECISION.md`
+- Reason: convert the durable storage plan from single-person assumptions to private multi-person data separation before any remote database work.
+- Implementation notes:
+  - Recorded Neon Postgres through Vercel Marketplace as the preferred durable storage provider.
+  - Recorded Supabase Postgres as fallback only if later needs justify its larger platform surface.
+  - Recorded that `@vercel/postgres` is not the new-project path.
+  - Added the future `people` table and `person_id` requirement for vocabulary items, import batches, review states, review events, review settings, and backup imports.
+  - Clarified that no-password person switching is convenience separation for trusted private users, not security isolation.
+- Validation:
+  - Passed: `npm run governance:preflight`.
+- Safety notes: documentation and architecture planning only. No Neon project creation, Vercel Marketplace installation, database migration, remote data mutation, package installation, `.env` editing, credential access, authentication implementation, deployment, GitHub push, embedding generation, FSRS implementation, analytics, AI generation, email, 付费/扣款, notification, or production action was performed.
+
+## 2026-07-05 00:23 AEST
+
+- Task: implement Stage 5A local export and backup after the user confirmed execution.
+- Plan agreed: yes. The user confirmed the Stage 5A plan, which keeps durable database provider selection, deployment, credentials, cloud sync, embedding（向量嵌入）, and FSRS（Free Spaced Repetition Scheduler，自由间隔重复调度算法）out of scope.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE5A_LOCAL_EXPORT_BACKUP.md`
+  - `src/app/export/page.tsx`
+  - `src/components/export/export-workspace.tsx`
+  - `src/lib/backup/csv-export.test.ts`
+  - `src/lib/backup/csv-export.ts`
+  - `src/lib/backup/json-backup.test.ts`
+  - `src/lib/backup/json-backup.ts`
+  - `src/lib/backup/types.ts`
+- Reason: provide a local backup and restore path before remote persistence, deployment, or production-only storage.
+- Implementation notes:
+  - Added a JSON backup envelope with `format`, `backupVersion`, `metadata`, and schema version 2 `data`.
+  - Added metadata counts for vocabulary items, archived items, import batches, review states, and review events.
+  - Added vocabulary CSV export with stable headers and CSV escaping.
+  - Added `/export` actions for JSON backup download, CSV download, JSON backup file parsing, restore preview, and explicit local restore.
+  - Added validation that rejects malformed JSON, unsupported backup shapes, missing required fields, missing metadata counts, and review records that reference missing vocabulary items.
+- Validation:
+  - Passed: `npm run test` with 9 test files and 26 tests.
+  - Passed: `npm run typecheck`
+  - Passed: `npm run lint`
+  - Passed: `npm run governance:preflight`
+  - Passed: `npm run build`
+  - Passed: `npm audit --json` with 0 vulnerabilities.
+  - Passed: local dev server smoke check for `/export` on `http://localhost:3000`.
+- Safety notes: local source, documentation, browser-local export, and browser-local restore preview only. No database creation, remote migration, production data mutation, Vercel deployment, GitHub push, credential access, `.env` editing, external API integration, cloud sync, embedding generation, FSRS implementation, analytics, AI generation, email, 付费/扣款, notification, or production action was performed. JSON backup files can contain personal study data and should be kept private.
+
+## 2026-07-04 23:42 AEST
+
+- Task: implement Stage 4 local review scheduler, flashcards, and customizable session limit after the user confirmed the revised Stage 4 plan.
+- Plan agreed: yes. The user confirmed Stage 4 execution and added that future embedding（向量嵌入）/ FSRS（Free Spaced Repetition Scheduler，自由间隔重复调度算法）direction must be documented, while `sessionLimit` must be user-customizable and actually affect review.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE4_REVIEW_SCHEDULER_FLASHCARDS.md`
+  - `src/app/page.tsx`
+  - `src/app/review/page.tsx`
+  - `src/app/settings/page.tsx`
+  - `src/components/review/review-session.tsx`
+  - `src/components/settings/review-settings-form.tsx`
+  - `src/components/vocabulary/home-dashboard.tsx`
+  - `src/lib/review/repository.ts`
+  - `src/lib/review/repository.test.ts`
+  - `src/lib/review/scheduler.ts`
+  - `src/lib/review/scheduler.test.ts`
+  - `src/lib/review/settings.ts`
+  - `src/lib/review/settings.test.ts`
+  - `src/lib/review/types.ts`
+  - `src/lib/stage-two-data.ts`
+  - `src/lib/vocabulary/local-storage-repository.ts`
+  - `src/lib/vocabulary/local-storage-repository.test.ts`
+  - `src/lib/vocabulary/repository.ts`
+  - `src/lib/vocabulary/types.ts`
+- Reason: close the local review loop before durable persistence, export/backup, deployment, polished visual design, or advanced scheduling.
+- Implementation notes:
+  - Upgraded local browser storage shape to schema version 2 with additive migration from version 1.
+  - Added `reviewStates`, `reviewEvents`, and `settings` while preserving existing vocabulary and import batches.
+  - Added a deterministic Stage 4 scheduler with due-first queue selection, new-card fallback, and saved `sessionLimit` enforcement.
+  - Added `/review` session UI for card reveal, four-rating submission, review event creation, review state updates, and next-card progression.
+  - Added `/settings` session limit and timezone saving, with safe session limit normalization.
+  - Documented that fixed rules are an MVP bootstrap and later scheduling should evaluate embedding and FSRS through a separate explicit plan.
+- Validation:
+  - Passed: `npm run test` with 7 test files and 20 tests.
+  - Passed: `npm run typecheck`
+  - Passed: `npm run lint`
+  - Passed: `npm run build`
+  - Passed: `npm audit --json` with 0 vulnerabilities.
+  - Passed: `npm run governance:preflight`
+  - Passed: local dev server smoke checks for `/`, `/review`, and `/settings` on `http://localhost:3000`.
+- Safety notes: local source, documentation, and browser-local study-data code only. No database creation, remote migration, remote persistent data mutation, Vercel deployment, GitHub push, credential access, `.env` editing, external API integration, embedding generation, FSRS implementation, analytics, AI generation, email, 付费/扣款, notification, or production action was performed. Stage 4 review history remains browser `localStorage`, so it is not a durable backup or cross-device storage.
+
+## 2026-07-04 01:14 AEST
+
+- Task: implement Stage 3 local vocabulary CRUD and `.txt` / pasted text import after the user confirmed the Stage 3 design.
+- Plan agreed: yes. The user confirmed the Stage 3 design and requested rigorous implementation according to the agreed plan and rules.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `package.json`
+  - `package-lock.json`
+  - `vitest.config.ts`
+  - `plan_docs/PLAN_V1_MASTER.md`
+  - `plan_docs/PLAN_V1_STAGE3_VOCABULARY_CRUD_IMPORT.md`
+  - `src/app/page.tsx`
+  - `src/app/import/page.tsx`
+  - `src/app/library/page.tsx`
+  - `src/app/review/page.tsx`
+  - `src/components/add-word-form.tsx`
+  - `src/components/vocabulary/home-dashboard.tsx`
+  - `src/components/vocabulary/import-workspace.tsx`
+  - `src/components/vocabulary/use-vocabulary-data.ts`
+  - `src/components/vocabulary/vocabulary-library.tsx`
+  - `src/lib/stage-two-data.ts`
+  - `src/lib/vocabulary/import-parser.ts`
+  - `src/lib/vocabulary/import-parser.test.ts`
+  - `src/lib/vocabulary/local-storage-repository.ts`
+  - `src/lib/vocabulary/normalize.ts`
+  - `src/lib/vocabulary/normalize.test.ts`
+  - `src/lib/vocabulary/repository.ts`
+  - `src/lib/vocabulary/repository.test.ts`
+  - `src/lib/vocabulary/types.ts`
+- Reason: complete Stage 3's local feature layer before scheduler, durable persistence, export, deployment, or polished visual design work.
+- Implementation notes:
+  - Added browser `localStorage` storage under `mimi-pte-vocabulary-v1`.
+  - Manual add now saves real local vocabulary items and records editable `createdAt`, system-maintained `systemCreatedAt`, `updatedAt`, and timezone.
+  - Import preview now parses `.txt` files and pasted text, marks duplicate/invalid rows, allows candidate edits, and records import batches.
+  - Library supports search, active/archived/all filters, edit, archive, and restore. Hard delete remains omitted.
+  - Review page reads the first active local item but does not implement Stage 4 scheduling.
+- Validation:
+  - Passed: `npm run lint`
+  - Passed: `npm run typecheck`
+  - Passed: `npm run test` with 3 test files and 9 tests.
+  - Passed: `npm run build`
+  - Passed: `npm audit --json` with 0 total vulnerabilities.
+  - Passed: `npm run governance:preflight`
+  - Passed: local dev server smoke check for `/`, `/add`, `/import`, `/library`, and `/review` at `http://localhost:3000`.
+- Safety notes: local source, documentation, package metadata, and browser-local study-data code only. No database creation, migration, remote persistent data mutation, Vercel deployment, GitHub push, credential access, `.env` editing, external API integration, analytics, AI generation, email, 付费/扣款, or production action was performed. Stage 3 data is local browser `localStorage`, so it is not a durable backup or cross-device storage.
+
+## 2026-07-04 00:27 AEST
+
+- Task: upgrade the repository governance setup to `human-ai-governance v0.2.0` with version markers and a light preflight scaffold.
+- Plan agreed: yes. The user confirmed the proposed migration plan after read-only inspection.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `governance/preflight.py`
+  - `package.json`
+  - `plan_docs/PLAN_V1_STAGE2_APP_SCAFFOLD.md`
+- Reason: record the current human-ai-governance skill version in a durable local governance file and add a Tier 1 preflight command without over-governing the local scaffold.
+- Validation:
+  - Passed: `npm run governance:preflight`
+  - Passed: `npm run lint`
+  - Passed: `npm run typecheck`
+  - Passed: `npm run build`
+- Safety notes: local governance files, package scripts, and documentation only. No durable study-data mutation, database migration, Vercel deployment, GitHub push, credential access, `.env` editing, external API integration, analytics, AI generation, email, 付费/扣款, or production action was performed.
+
+## 2026-07-03 19:23 AEST
+
+- Task: fix the residual npm security risk from `next -> postcss`.
+- Plan agreed: yes. The user explicitly requested fixing the current residual risk.
+- Changed files:
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `package.json`
+  - `package-lock.json`
+  - `plan_docs/PLAN_V1_STAGE2_APP_SCAFFOLD.md`
+- Reason: remove the moderate PostCSS audit finding while staying on stable `next@16.2.10`.
+- Investigation:
+  - `npm audit --json` identified GHSA-qx2v-qp2m-jg93 / CVE-2026-41305 through `next -> postcss@8.4.31`.
+  - GitHub advisory and CVE sources identify patched PostCSS versions as 8.5.10 and later.
+  - `npm view next version` returned `16.2.10`; `npm view next@latest dependencies.postcss` returned `8.4.31`.
+  - `npm view next@canary dependencies.postcss` returned `8.5.10`, but canary was avoided for this stable scaffold.
+  - npm official documentation supports root `overrides` for replacing vulnerable transitive dependencies.
+- Validation:
+  - Passed: `npm install` with `found 0 vulnerabilities`
+  - Passed: `npm audit --json` with 0 total vulnerabilities
+  - Passed: `npm ls next postcss @tailwindcss/postcss tailwindcss --all`, showing `next@16.2.10 -> postcss@8.5.16 deduped`
+  - Passed: `npm run lint`
+  - Passed: `npm run typecheck`
+  - Passed: `npm run build`
+- Safety notes: local dependency metadata and documentation only. No app feature behavior, database, persistent study-data mutation, Vercel deployment, GitHub push, credential access, `.env` editing, external API integration, analytics, AI generation, email, 付费/扣款, or production action was performed.
+
+## 2026-07-03 02:21 AEST
+
+- Task: implement Stage 2 local app scaffold with minimal UI frame only.
+- Plan agreed: yes. The user confirmed Stage 2 implementation and clarified that UI should remain a simplest framework, with polished visual design deferred to a later dedicated stage.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `.gitignore`
+  - `eslint.config.mjs`
+  - `next.config.ts`
+  - `package.json`
+  - `package-lock.json`
+  - `postcss.config.mjs`
+  - `tsconfig.json`
+  - `plan_docs/PLAN_V1_STAGE2_APP_SCAFFOLD.md`
+  - `src/app/**`
+  - `src/components/**`
+  - `src/lib/**`
+- Reason: create a runnable local Next.js app shell that reflects the agreed Stage 1 product boundaries before later CRUD, scheduler, persistence, and visual-design stages.
+- Validation:
+  - Passed: `npm run lint`
+  - Passed: `npm run typecheck`
+  - Passed: `npm run build`
+  - Passed: HTTP smoke checks for `/`, `/add`, `/import`, and `/review`
+  - Passed: Chrome smoke check for homepage and `/add`
+  - Passed: “修改添加时间” expands `Created at` and `Timezone`, with timezone detected as `Australia/Melbourne`
+  - Residual: `npm audit --json` reports 2 moderate severity findings through `next -> postcss`; npm audit only offered a semver-major downgrade to old Next.js, so no force fix was applied.
+- Safety notes: local application scaffold and documentation only. No database, persistent study-data mutation, Vercel deployment, GitHub push, credential access, `.env` editing, external API integration, analytics, AI generation, email, 付费/扣款, or production action was performed.
+
+## 2026-07-03 01:48 AEST
+
+- Task: update Stage 1 time-field rules so added time is recorded automatically by default while retaining a user option to modify added time.
+- Plan agreed: yes. The user confirmed the proposed documentation-only update.
+- Changed files:
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_STAGE1_PRODUCT_MVP.md`
+- Reason: align the MVP capture workflow with the user preference for automatic timestamps while supporting backfilled older vocabulary.
+- Validation:
+  - Passed: `find . -maxdepth 3 -type f | sort`
+  - Passed: `rg -n "created_at|timezone|添加时间|modify added time|backfilled|write/update|自动记录|修改添加时间" plan_docs/PLAN_V1_STAGE1_PRODUCT_MVP.md ARCHITECTURE.md CHANGELOG.md governance/AI_AGENT_LOG.md`
+- Safety notes: local documentation files only. No application code, database schema, Vercel deployment, credential access, external API calls, or persistent user-data mutation was performed.
+
 ## 2026-07-03 01:15 AEST
 
 - Task: create Stage 1 product MVP design for manual entry, `.txt` batch import, import preview, and four fixed review ratings.

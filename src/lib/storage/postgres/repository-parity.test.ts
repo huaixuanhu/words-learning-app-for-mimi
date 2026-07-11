@@ -1,0 +1,43 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { describe, expect, it } from "vitest";
+
+const repositorySource = readFileSync(join(process.cwd(), "src/lib/storage/postgres/repository.ts"), "utf8");
+
+describe("Postgres repository parity source", () => {
+  it("persists schema version 5 vocabulary fields without source down-mapping", () => {
+    expect(repositorySource).toContain("meanings_zh");
+    expect(repositorySource).toContain("examples");
+    expect(repositorySource).toContain("learning_track");
+    expect(repositorySource).toContain("tags");
+    expect(repositorySource).toContain("batchInput.sourceType");
+    expect(repositorySource).toContain("source: batch.sourceType");
+    expect(repositorySource).not.toContain("persistedSourceType");
+    expect(repositorySource).not.toContain("batchInput.sourceType === \"txt_file\" ? \"txt_file\" : \"pasted_text\"");
+  });
+
+  it("keeps Recognition and Active review settings as separate database fields", () => {
+    expect(repositorySource).toContain("recognition_session_limit");
+    expect(repositorySource).toContain("active_session_limit");
+    expect(repositorySource).toContain("settings.recognitionSessionLimit");
+    expect(repositorySource).toContain("settings.activeSessionLimit");
+  });
+
+  it("implements destructive and repair operations behind repository methods", () => {
+    expect(repositorySource).toContain("deleteItem: (context, vocabularyItemId)");
+    expect(repositorySource).toContain("rollbackImportBatch: (context, importBatchId)");
+    expect(repositorySource).toContain("resetToday: (context) => resetTodayReview(context)");
+    expect(repositorySource).toContain("rollbackEvent: (context, reviewEventId) => rollbackReviewEvent(context, reviewEventId)");
+    expect(repositorySource).toContain("delete from vocabulary_items");
+    expect(repositorySource).toContain("delete from import_batches");
+    expect(repositorySource).toContain("delete from review_events");
+    expect(repositorySource).toContain("delete from review_states");
+  });
+
+  it("rebuilds review state from remaining events with local natural-day semantics", () => {
+    expect(repositorySource).toContain("getLocalDateKey");
+    expect(repositorySource).toContain("rebuildReviewStateFromEvents");
+    expect(repositorySource).toContain("scheduleNextReview");
+    expect(repositorySource).toContain("getLocalDateKey(context.now, settings.timezone)");
+  });
+});
