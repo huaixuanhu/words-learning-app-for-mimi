@@ -339,7 +339,7 @@ Exit criteria:
 
 ### Stage 6B-P1-G-C-5: Live Production Execution
 
-Status: in progress under explicit user approval in `plan_docs/PLAN_V1_STAGE6B_P1_G_C_5_LIVE_PRODUCTION_EXECUTION.md`.
+Status: completed on 2026-07-11 under explicit user approval in `plan_docs/PLAN_V1_STAGE6B_P1_G_C_5_LIVE_PRODUCTION_EXECUTION.md`.
 
 Completed release boundaries:
 
@@ -350,7 +350,7 @@ Completed release boundaries:
 - an application-level Basic Auth gate protects Production page and storage API access for the current trusted group;
 - Preview passed current-code read-only runtime and empty-state verification.
 
-Remaining exit work is the pull-request merge to `main`, Ready Production deployment, authenticated canonical-domain read-only verification, and final evidence sync. First formal write remains the first real user action.
+PR `#1` merged `V1` to `main`. Final functional deployment `dpl_ZrEHc39z4dufgq3RcPQGUV1vK4n2` is Ready on the canonical domain, rejects unauthenticated access, serves authenticated requests, reports `postgres-production`, returns schema version 5 with empty formal data, and has no recorded error/5xx logs. First formal write remains the first real user action.
 
 ## Scheduling Strategy
 

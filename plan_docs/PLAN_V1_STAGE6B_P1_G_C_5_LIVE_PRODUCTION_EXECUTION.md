@@ -1,7 +1,7 @@
 # Words Learning App For Mimi Stage 6B-P1-G-C-5: Live Production Execution
 
 Created: 2026-07-11 02:01 AEST
-Last updated: 2026-07-11 12:37 AEST
+Last updated: 2026-07-11 12:40 AEST
 
 Source plan:
 - `plan_docs/PLAN_V1_STAGE6B_P1_G_C_HUMAN_DECISION_CLOSURE.md`
@@ -160,6 +160,15 @@ Bounded follow-up:
 - make no data-flow, scheduler, layout, or runtime change;
 - rerun local validation and create one small `main` follow-up deployment before closing C5.
 
+Follow-up result:
+
+- copy correction commit `3941fc0` reached Production as `dpl_ZrEHc39z4dufgq3RcPQGUV1vK4n2`;
+- the deployment is Ready and owns the canonical aliases;
+- authenticated canonical HTML contains the new FSRS copy and none of the three obsolete local-runtime phrases;
+- unauthenticated root remains `401`, authenticated root remains `200`, health remains Ready `postgres-production`, and data remains schema version 5 and empty;
+- Vercel returned no error-level or `5xx` logs for the final functional deployment;
+- no Production write occurred.
+
 ## Stop Conditions
 
 Stop before merge or deployment if:
@@ -172,6 +181,6 @@ Stop before merge or deployment if:
 - local tests, build, governance preflight, or Preview read-only verification fails;
 - a provider action requests billing or destructive data deletion.
 
-## Current Result
+## Final Result
 
-P1-G-C-5 has completed the formal GitHub merge and core Production deployment/acceptance. The cloud-backed runtime is live and protected, formal data remains empty, and no Production write has occurred. C5 remains briefly open only for the cloud-neutral copy follow-up, its Ready deployment, final error-log check, parent-document closure, temporary-secret cleanup, and credential handoff.
+P1-G-C-5 is complete. The cloud-backed V1 runtime is live behind Basic Auth at `https://words-learning-app-for-mimi.vercel.app`; Production uses Neon `main`, Development / Preview use `staging`, runtime reports `postgres-production`, schema version 5 is active, and formal data remains empty. PR `#1`, merge commit `a70b341a2af61161bb1f778ffeae69a143f03146`, and final functional deployment `dpl_ZrEHc39z4dufgq3RcPQGUV1vK4n2` are the release evidence. The first real user action remains the first formal write acceptance. Temporary secrets are cleaned after the password is placed in the user's local clipboard.

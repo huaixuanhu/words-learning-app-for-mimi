@@ -61,7 +61,7 @@ Known current facts:
 
 Open blocker:
 
-The user explicitly approved the bounded live release execution on 2026-07-11. P1-G-C-5 has completed the branch/environment and credential boundary, Basic Auth implementation, schema/zero-count checks, and Preview gate. P1-G-C remains open only until the pull-request merge, formal Production deployment, authenticated read-only verification, and final evidence sync complete.
+The user explicitly approved the bounded live release execution on 2026-07-11. P1-G-C-5 completed branch/environment and credential isolation, Basic Auth, schema/zero-count checks, Preview verification, PR merge, formal Production deployment, authenticated read-only acceptance, cloud-neutral copy correction, and final error-log checks. P1-G-C is closed for the V1 launch.
 
 ## Reference Check
 
@@ -278,9 +278,9 @@ Accepted next evidence routes:
 - a separately approved browser SSO read-only inspection with a hard stop at `Almost there` or any account-changing prompt;
 - a separately approved Neon CLI / API path only if secret handling is explicitly included.
 
-P1-G-C live execution is now approved and tracked by P1-G-C-5. It remains open only for merge, formal Production deployment, authenticated read-only verification, and final evidence sync.
+P1-G-C live execution was approved and completed through P1-G-C-5.
 
-`P1-G-C-5 Live Production Execution` is in progress in `plan_docs/PLAN_V1_STAGE6B_P1_G_C_5_LIVE_PRODUCTION_EXECUTION.md`.
+`P1-G-C-5 Live Production Execution` is complete in `plan_docs/PLAN_V1_STAGE6B_P1_G_C_5_LIVE_PRODUCTION_EXECUTION.md`.
 
 It has completed:
 
@@ -292,7 +292,7 @@ It has completed:
 - schema version 5 and zero-count verification on both branches;
 - a current Ready Preview read-only runtime and empty-state check.
 
-It still needs the accepted pull-request merge, Git-integrated Production deployment, canonical-domain verification, and final record closure.
+PR `#1`, merge commit `a70b341a2af61161bb1f778ffeae69a143f03146`, and final functional deployment `dpl_ZrEHc39z4dufgq3RcPQGUV1vK4n2` close those execution items.
 
 `P1-G-C-2 Evidence Route Decision` is complete in `plan_docs/PLAN_V1_STAGE6B_P1_G_C_2_EVIDENCE_ROUTE_DECISION.md`.
 
@@ -349,6 +349,6 @@ P1-G-C-4 is documented in `plan_docs/PLAN_V1_STAGE6B_P1_G_C_4_BRANCH_ENVIRONMENT
 
 P1-G-C remains open for separately approved live branch/environment actions, access-boundary choice, merge path, deployment mechanism, first-write acceptance, and historical deployment treatment. P1-G-C-4 did not create a branch, change environment variables, read `.env`, connect to a database, migrate, deploy, or write Production data.
 
-## P1-G-C-5 Current Result
+## P1-G-C-5 Final Result
 
-P1-G-C-5 is documented in `plan_docs/PLAN_V1_STAGE6B_P1_G_C_5_LIVE_PRODUCTION_EXECUTION.md`. The user approved the live cloud/Git release scope. Branch and environment separation, distinct credentials, Production Basic Auth, schema/empty-state checks, and Preview verification are complete. No formal Production row was created. P1-G-C will close after the accepted `V1` to `main` merge, Ready Production deployment, authenticated read-only checks, and final evidence sync.
+P1-G-C-5 is complete in `plan_docs/PLAN_V1_STAGE6B_P1_G_C_5_LIVE_PRODUCTION_EXECUTION.md`. Branch/environment separation, distinct credentials, Production Basic Auth, schema/empty-state checks, Preview verification, PR merge, Ready Production deployment, authenticated runtime/data checks, cloud-neutral copy correction, and clean error/5xx log checks passed. No formal Production row was created. P1-G-C is closed for V1; the first real user action remains the first write acceptance.

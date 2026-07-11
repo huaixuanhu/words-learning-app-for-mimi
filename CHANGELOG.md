@@ -9,6 +9,7 @@
 - Visually verified the current release in the user's authenticated Chrome session and found obsolete `local` wording on the Dashboard/Library.
 - Replaced the stale local-runtime wording with cloud-neutral Recognition FSRS and empty-vocabulary copy without changing scheduler, storage, layout, or data behavior.
 - Passed ESLint, TypeScript, the full Vitest suite with 111 passed and 1 skipped, and Next.js Production build after the copy correction.
+- Deployed copy correction commit `3941fc0` as final functional Production deployment `dpl_ZrEHc39z4dufgq3RcPQGUV1vK4n2`; revalidated canonical Basic Auth, `postgres-production`, schema version 5, empty formal data, corrected HTML copy, and no error/5xx logs.
 - Reason: keep the newly cloud-backed V1 interface consistent with its actual `postgres-production` runtime before final handoff.
 
 ## 2026-07-11 02:01 AEST

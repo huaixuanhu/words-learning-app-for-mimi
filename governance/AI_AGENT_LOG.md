@@ -21,6 +21,11 @@
   - Authenticated health returned Ready `postgres-production`; authenticated data returned schema version 5 and empty vocabulary/import/review arrays.
   - Visual Preview acceptance rendered the intended Mimi dashboard without visible overlap and exposed the stale copy corrected here.
   - Passed `npm run lint`, `npm run typecheck`, `npm run test` with 111 passed and 1 skipped, and `npm run build` after the copy update.
+- Final deployment evidence:
+  - Copy correction commit `3941fc0` reached Ready Production deployment `dpl_ZrEHc39z4dufgq3RcPQGUV1vK4n2` and owns the canonical aliases.
+  - Canonical unauthenticated/authenticated checks remained `401`/`200`; health remained Ready `postgres-production`; schema version 5 data remained empty.
+  - Authenticated HTML contains the new FSRS copy and none of the three obsolete local-runtime phrases.
+  - Vercel returned no error-level or `5xx` logs for the final functional deployment.
 - Safety notes: no credential value was printed or committed. No database migration, backup import, synthetic vocabulary, cleanup, or Production study-data write was performed. The historical pre-release deployment remains available as prior context; the active formal release comes from `main`.
 
 ## 2026-07-11 02:01 AEST

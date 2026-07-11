@@ -300,7 +300,7 @@ The user separately approved live execution on 2026-07-11. `plan_docs/PLAN_V1_ST
 - no development data was promoted and both branches remain empty;
 - a bounded Basic Auth gate closes the current private trusted-group access decision.
 
-The remaining C5 work is Git merge, formal Production deployment, and read-only post-deployment acceptance. The first real user action remains the first formal write acceptance.
+C5 completed Git merge, formal Production deployment, and read-only post-deployment acceptance. Final functional deployment `dpl_ZrEHc39z4dufgq3RcPQGUV1vK4n2` uses Production `main`; formal data remains empty. The first real user action remains the first formal write acceptance.
 
 ## Stop Conditions
 

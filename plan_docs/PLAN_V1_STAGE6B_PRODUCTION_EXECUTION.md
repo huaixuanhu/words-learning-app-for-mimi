@@ -303,4 +303,4 @@ Completed:
 - Production Basic Auth access gate implemented;
 - both branches verified empty and current Preview verified read-only.
 
-Accepted remaining path: pull request from `V1` to `main`, Vercel Git-integrated Production deployment, authenticated read-only canonical-domain acceptance, and first real user action as the later write acceptance. No synthetic Production row will be created.
+Completed path: PR `#1` merged `V1` to `main`; Vercel Git integration produced final functional deployment `dpl_ZrEHc39z4dufgq3RcPQGUV1vK4n2`; the canonical domain passed Basic Auth, `postgres-production`, schema version 5, empty-data, copy, and error/5xx checks. The first real user action remains the later write acceptance. No synthetic Production row was created.
