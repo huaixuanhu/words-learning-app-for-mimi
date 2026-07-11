@@ -111,7 +111,7 @@ export function HomeDashboard() {
               </div>
               <h2 className="text-xl font-semibold text-[#203229]">Today Hub</h2>
               <p className="mt-2 max-w-xl text-sm leading-6 text-[#5f6d62]">
-                Pick the right learning track for today. V1 keeps the existing local review flow, while the active track has a calm space ready for later practice.
+                Pick the right learning track for today. Recognition review is ready, while the active track has a calm space prepared for later practice.
               </p>
             </div>
             <Link
@@ -192,7 +192,7 @@ export function HomeDashboard() {
             ))}
           </div>
           <p className="mt-3 text-sm leading-6 text-[var(--mimi-panel-dark-muted)]">
-            The queue still follows the existing local scheduler.
+            Recognition reviews follow the current FSRS schedule.
           </p>
         </section>
       </CalmEntrance>
@@ -219,7 +219,7 @@ export function HomeDashboard() {
             </div>
           ) : (
             <p className="rounded-md border border-dashed border-[#afbea9] bg-[#fffaf1] p-3 text-sm leading-6 text-[#5f6d62]">
-              {isLoaded ? "还没有本地词条。可以从导入页添加单个词或导入 JSON。" : "Loading local vocabulary..."}
+              {isLoaded ? "还没有词条。可以从导入页添加单个词或导入 JSON。" : "Loading vocabulary..."}
             </p>
           )}
         </section>

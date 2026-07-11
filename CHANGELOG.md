@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## 2026-07-11 12:37 AEST
+
+- Merged formal release pull request `#1` from `V1` to `main` with merge commit `a70b341a2af61161bb1f778ffeae69a143f03146`.
+- Verified Ready Production deployment `dpl_8eavod6FSJw3arDD67K6rW2HUUbn` on the canonical domain.
+- Confirmed unauthenticated root access returns HTTP `401` with Basic Auth challenge, authenticated root returns `200`, storage health reports Ready `postgres-production`, and storage data reports schema version 5 with empty vocabulary/import/review arrays.
+- Performed no synthetic or formal Production write; the first real user action remains the first write acceptance event.
+- Visually verified the current release in the user's authenticated Chrome session and found obsolete `local` wording on the Dashboard/Library.
+- Replaced the stale local-runtime wording with cloud-neutral Recognition FSRS and empty-vocabulary copy without changing scheduler, storage, layout, or data behavior.
+- Passed ESLint, TypeScript, the full Vitest suite with 111 passed and 1 skipped, and Next.js Production build after the copy correction.
+- Reason: keep the newly cloud-backed V1 interface consistent with its actual `postgres-production` runtime before final handoff.
+
 ## 2026-07-11 02:01 AEST
 
 - Started the explicitly approved Stage 6B-P1-G-C-5 live Production execution and added `plan_docs/PLAN_V1_STAGE6B_P1_G_C_5_LIVE_PRODUCTION_EXECUTION.md`.

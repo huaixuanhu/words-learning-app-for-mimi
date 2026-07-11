@@ -718,7 +718,7 @@ export function VocabularyLibrary() {
             {isLoaded
               ? filter === "activeVocabulary"
                 ? "还没有 Active Vocabulary 词条。可以从导入页添加输出词汇。"
-                : "没有匹配的本地词条。"
+                : "没有匹配的词条。"
               : "Loading..."}
           </p>
         )}

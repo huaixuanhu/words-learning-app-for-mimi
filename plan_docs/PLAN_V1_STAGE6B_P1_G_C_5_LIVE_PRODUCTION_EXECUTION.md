@@ -1,7 +1,7 @@
 # Words Learning App For Mimi Stage 6B-P1-G-C-5: Live Production Execution
 
 Created: 2026-07-11 02:01 AEST
-Last updated: 2026-07-11 02:01 AEST
+Last updated: 2026-07-11 12:37 AEST
 
 Source plan:
 - `plan_docs/PLAN_V1_STAGE6B_P1_G_C_HUMAN_DECISION_CLOSURE.md`
@@ -135,15 +135,30 @@ On the resumed execution, Vercel correctly returned empty placeholders when `env
 - The Basic Auth username/password were regenerated locally, updated in Vercel Production, and retained only in `0600` temporary files for deployment acceptance and user handoff.
 - Final Production database acceptance will run inside the deployed Vercel runtime through authenticated read-only health/data routes, where sensitive Production variables are available without being disclosed.
 
-## Remaining Execution
+## Formal Production Execution
 
-1. Complete final local validation and secret-hygiene checks.
-2. Commit and push the accepted `V1` release changes.
-3. Create and merge the `V1` to `main` pull request.
-4. Wait for a Ready Production deployment from `main`.
-5. Verify unauthenticated rejection and authenticated application/API reads on the canonical domain.
-6. Confirm Production runtime is `postgres-production`, formal data is still empty, and no high-severity runtime error is present.
-7. Record the final deployment identifiers, verification result, and rollback reference in this document and parent governance files.
+Completed on 2026-07-11:
+
+- committed release preparation as `bfcd418` and pushed `V1`;
+- created ready pull request `#1` from `V1` to `main`;
+- verified current-code Preview deployment `dpl_AJNM1XAoL9eG4NCGdQDx3AGsTzd8` as Ready with `postgres-preview` and empty data;
+- merged pull request `#1` with merge commit `a70b341a2af61161bb1f778ffeae69a143f03146`;
+- received Ready Production deployment `dpl_8eavod6FSJw3arDD67K6rW2HUUbn` from `main`;
+- verified the canonical domain `https://words-learning-app-for-mimi.vercel.app` challenges unauthenticated access with HTTP `401` and Basic Auth;
+- verified authenticated root access returns HTTP `200`;
+- verified authenticated storage health returns Ready with runtime `postgres-production`;
+- verified authenticated storage data returns schema version 5 with empty vocabulary, import, review-state, and review-event arrays;
+- performed no Production write.
+
+### Visual Acceptance Follow-up
+
+The current-code Preview rendered successfully in the user's authenticated Chrome session with the expected Mimi dashboard, local cat asset, navigation, empty counts, and no visible overlap. The visual pass also found three obsolete user-facing phrases that still described the review/data flow as local.
+
+Bounded follow-up:
+
+- remove `existing local review flow`, `local scheduler`, and `本地词条` from cloud-neutral dashboard/library copy;
+- make no data-flow, scheduler, layout, or runtime change;
+- rerun local validation and create one small `main` follow-up deployment before closing C5.
 
 ## Stop Conditions
 
@@ -159,4 +174,4 @@ Stop before merge or deployment if:
 
 ## Current Result
 
-P1-G-C-5 is in progress. The live database/environment boundary, credential isolation, schema/empty-state checks, Basic Auth implementation, and Preview gate are complete. GitHub merge and formal Production deployment remain to be executed and recorded.
+P1-G-C-5 has completed the formal GitHub merge and core Production deployment/acceptance. The cloud-backed runtime is live and protected, formal data remains empty, and no Production write has occurred. C5 remains briefly open only for the cloud-neutral copy follow-up, its Ready deployment, final error-log check, parent-document closure, temporary-secret cleanup, and credential handoff.

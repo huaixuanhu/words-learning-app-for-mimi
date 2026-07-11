@@ -1,5 +1,28 @@
 # AI Agent Log
 
+## 2026-07-11 12:37 AEST
+
+- Task: complete the formal V1 merge/deployment, run authenticated Production acceptance, and correct obsolete browser-local wording found during visual verification.
+- Plan agreed: yes. The user explicitly approved the complete V1 launch. This follow-up is limited to cloud-neutral copy and final release evidence; no Production write, schema change, credential disclosure, feature expansion, or data import is included.
+- Changed files:
+  - `ARCHITECTURE.md`
+  - `CHANGELOG.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V1_STAGE6B_P1_G_C_5_LIVE_PRODUCTION_EXECUTION.md`
+  - `src/components/vocabulary/home-dashboard.tsx`
+  - `src/components/vocabulary/vocabulary-library.tsx`
+- Reason: the Production runtime is cloud-backed, but three visible strings still described the review/data flow as local and would mislead the user after launch.
+- Implementation:
+  - Merged PR `#1` from `V1` to `main` through merge commit `a70b341a2af61161bb1f778ffeae69a143f03146`.
+  - Verified Ready Production deployment `dpl_8eavod6FSJw3arDD67K6rW2HUUbn` and canonical Basic Auth behavior.
+  - Replaced obsolete Dashboard/Library `local` wording with Recognition FSRS and cloud-neutral vocabulary copy.
+- Validation:
+  - Production unauthenticated root returned `401` with Basic Auth challenge; authenticated root returned `200`.
+  - Authenticated health returned Ready `postgres-production`; authenticated data returned schema version 5 and empty vocabulary/import/review arrays.
+  - Visual Preview acceptance rendered the intended Mimi dashboard without visible overlap and exposed the stale copy corrected here.
+  - Passed `npm run lint`, `npm run typecheck`, `npm run test` with 111 passed and 1 skipped, and `npm run build` after the copy update.
+- Safety notes: no credential value was printed or committed. No database migration, backup import, synthetic vocabulary, cleanup, or Production study-data write was performed. The historical pre-release deployment remains available as prior context; the active formal release comes from `main`.
+
 ## 2026-07-11 02:01 AEST
 
 - Task: execute the remaining bounded Stage 6B-P1-G-C release work and attempt the complete cloud-backed V1 launch after the user granted explicit permission for cloud, credential, database, GitHub, merge, and deployment actions.
