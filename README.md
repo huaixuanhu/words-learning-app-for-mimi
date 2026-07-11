@@ -1,92 +1,133 @@
-# Words Learning App For Mimi
+<p align="center">
+  <img src="./public/brand/mimi-cats.png" alt="咪咪 Vocabulary 猫咪头像" width="180" />
+</p>
 
-Accepted Stage 8 Review Memory Algorithm and Stage 8.5 Data Lifecycle（数据生命周期）and environment strategy for Mimi's mobile-first vocabulary app, with local vocabulary, single input, batch JSON import, recognition-only review scheduler, flashcards, local export / backup, local multi-person adapter, durable storage readiness, development / preview Neon bootstrap, server-only runtime Postgres adapter, controlled Preview smoke checks, backup import harness, development / preview UI runtime cutover, read-only Preview UI runtime verification, a locally accepted darker sage visual design pass with Motion for React interaction animation plus Stage 7.2 Mimi brand refinement, Stage 7.3 ChillRoundF font trial, Stage 7.4 light / dark theme toggle, Stage 7.5 soft click sound audition, Stage 7.6 UI-only sound settings, Stage 7.7 final acceptance, Stage 7.8 dual-track UI refinement, Stage 7.9 Recognition / Active data import refinement, Stage 7.10 Library / Review controls, Stage 7.11 Review rollback / auto-refresh controls, Stage 8-B / 8-C / 8-D / 8-E / 8-F / 8-G Recognition Vocabulary（阅读词汇）memory behavior, backup compatibility, Postgres Production handoff, and final local acceptance, plus Stage 6B-P1-B local schema version 5 migration/static tests, Stage 6B-P1-C local `postgres-production` runtime / API contract tests, Stage 6B-P1-D local repository parity, Stage 6B-P1-E local backup import version 5 support, Stage 6B-P1-F non-production database verification, Stage 6B-P1-G-A Production execution handoff documentation, Stage 6B-P1-G-B read-only Production inventory, Stage 6B-P1-G-C-0 human decision packet, Stage 6B-P1-G-C-1 read-only provider supplement, Stage 6B-P1-G-C-2 evidence route decision, Stage 6B-P1-G-C-3 read-only Neon dashboard evidence, and Stage 6B-P1-G-C-4 branch/environment execution decision for the future Postgres Production runtime path.
+<h1 align="center">咪咪 Vocabulary</h1>
 
-Stage 6B-P1-G-C-5 completed the formal cloud-backed V1 launch. Neon `main` is Production, `staging` is the long-lived non-production/default branch, Vercel environment scopes and credentials are separated, formal data remains empty, and Production-only Basic Auth（基础认证）protects the private trusted-group site. PR `#1` merged `V1` to `main`; final functional deployment `dpl_ZrEHc39z4dufgq3RcPQGUV1vK4n2` is Ready at `https://words-learning-app-for-mimi.vercel.app` with runtime `postgres-production`.
+<p align="center">
+  一个温和、可自定义、ADHD-friendly（对 ADHD 友好）的私人词汇学习应用。
+</p>
 
-## Commands
+## 项目简介
+
+咪咪 Vocabulary 目前是给 **Mimi 和 Anoria** 使用的私人小型词汇学习应用，主要服务于 PTE 备考和长期英语词汇积累。
+
+它重视：
+
+- **自定义能力**：词义、例句、标签、每日复习量和学习轨道都由使用者控制。
+- **温和的 UI（用户界面）交互**：减少催促、惩罚感和不必要的信息压力。
+- **ADHD-friendly 学习体验**：把任务拆小、保持明确反馈，并允许保守地回退和重新开始。
+- **长期数据可控**：正式学习数据保存在云端数据库，同时保留导出和备份能力。
+
+当前 V1 已作为受保护的私人应用上线。未来可能扩展为支持 SSO（Single Sign-On，单点登录）的多人开放应用，但这不属于当前 V1 的功能范围。
+
+## 正式版本
+
+- 访问地址：[words-learning-app-for-mimi.vercel.app](https://words-learning-app-for-mimi.vercel.app)
+- 当前版本：cloud-backed V1（云端持久化 V1）
+- 访问方式：私人 Basic Auth（基础认证）；账号信息不会存放在仓库中
+- 正式数据：Neon Postgres（关系型数据库）
+
+## V1 能做什么
+
+- 通过单词表单或 Batch JSON（批量 JSON）录入词汇。
+- 为每个词保存多个中文释义、多个例句、标签和学习轨道。
+- 在词库中搜索、筛选、编辑、归档、恢复和删除词汇。
+- 使用四档自评完成 Recognition Vocabulary（阅读词汇）复习。
+- 使用 FSRS-6（Free Spaced Repetition Scheduler 6，自由间隔重复调度器第 6 版）安排跨日复习。
+- 当选择“完全忘记了”或“有点忘记了”时，在当前复习局内重新出现该词。
+- 支持“回退 1 词”和重置当日复习任务。
+- 按人物分别保存词汇、复习历史和每日任务设置。
+- 导出 JSON backup（JSON 备份）和 vocabulary CSV（词汇表格）。
+- 自定义深浅主题、交互声音和 Recognition / Active 每日数量。
+
+## 两条学习轨道
+
+| 学习轨道 | V1 状态 | 当前用途 |
+| --- | --- | --- |
+| Recognition Vocabulary | 已启用复习调度 | 识别单词、词义和例句；使用 FSRS-6 与自然日到期判断 |
+| Active Vocabulary（输出词汇） | 仅保存和展示 | 可录入、导入、导出和筛选；V1 不创建复习状态或复习事件 |
+
+Active Vocabulary 未来可发展为听写、拼写、造句、写作和口语练习。它会使用独立的训练与评分维度，不与 Recognition 的记忆状态共用一条调度记录。
+
+## 技术概览
+
+- Next.js 16 App Router
+- React 19 + TypeScript
+- Tailwind CSS 4 + Motion for React
+- Neon Postgres + `@neondatabase/serverless`
+- `ts-fsrs` Recognition scheduler（阅读词汇调度器）
+- Vitest + ESLint
+- GitHub + Vercel
+
+### 环境划分
+
+| 环境 | 数据位置 | 用途 |
+| --- | --- | --- |
+| Local（本地） | 浏览器 `localStorage` fallback（后备存储） | 日常开发和无数据库调试 |
+| Preview（预览环境） | Neon `staging` | 合并前验证；默认不开放写入 |
+| Production（生产环境） | Neon `main` | Mimi 和 Anoria 的正式学习数据 |
+
+`person_id` 用于区分人物数据，目前不等同于完整的账户权限隔离。Production 入口由 Basic Auth 保护；真正的多人身份与权限系统留给未来 SSO 阶段。
+
+## 本地运行
+
+```bash
+npm ci
+npm run dev
+```
+
+打开 [http://localhost:3000](http://localhost:3000)。默认本地模式不要求数据库凭证。
+
+常用验证命令：
 
 ```bash
 npm run governance:preflight
 npm run lint
 npm run typecheck
 npm run test
-npm run backup:dry-run:fixture
-npm run backup:dry-run:schema5-fixture
-npm run db:inspect:dev
-npm run db:inspect:schema5:dev
 npm run build
-npm run dev
 ```
 
-Database commands require ignored `.env.local` values from the approved Vercel / Neon setup:
+数据库迁移、检查、备份导入和清理命令具有更明确的环境边界，不在 README 中展开。执行前请阅读对应的数据库和 Production 计划文档。
 
-```bash
-npm run db:migrate:dev
-npm run db:migrate:schema5:dev
-npm run db:inspect:dev
-npm run db:inspect:schema5:dev
-npm run db:verify:schema5-active-guard:dev
-npm run db:test:repository:dev
-npm run db:cleanup-smoke:dev
-npm run db:import-fixture-trial:dev
-npm run db:import-schema5-fixture-trial:dev
-npm run db:import-fixture-commit:dev
-npm run db:import-schema5-fixture-commit:dev
-npm run db:cleanup-fixture:dev
-```
+## 分支与发布
 
-File-backed backup import command shape for development only:
+- `V1`：当前 V1 维护和后续小版本开发。
+- `main`：Vercel Production branch（生产发布分支）。
+- 推荐流程：在 `V1` 修改并验证，通过 Preview 检查，再使用 Pull Request（合并请求）进入 `main`。
+- 凭证、Production 数据、数据库结构或部署设置的变更继续使用 Tier 3（三级治理）流程。
 
-```bash
-STAGE5F_DATABASE_TARGET=development dotenv -e .env.local -- node scripts/backup-import-postgres.mjs --file <backup.json> --dry-run
-STAGE5F_DATABASE_TARGET=development dotenv -e .env.local -- node scripts/backup-import-postgres.mjs --file <backup.json> --trial-rollback
-STAGE5F_DATABASE_TARGET=development dotenv -e .env.local -- node scripts/backup-import-postgres.mjs --file <backup.json> --commit --i-confirm-development-import
-```
+## 数据与产品边界
 
-## Current Scope
+- 当前产品面向私人熟人小组，不是公开注册服务。
+- Production 不接收 Development / Preview 的测试数据。
+- Active Vocabulary 在 V1 中没有调度行为。
+- AI API（人工智能接口）、写作评分、口语评分和外部词典不属于 V1。
+- PTE / IELTS 持久化考试模式、PWA（Progressive Web App，渐进式 Web 应用）和正式 SSO 账户系统仍是未来方向。
+- 正式学习数据开始积累后，按当前策略执行定期逻辑备份，并在高风险数据操作前增加备份。
 
-- Next.js App Router scaffold.
-- Minimal routes for dashboard, study, add, import, review, library, practice lab, export, and settings.
-- Local single vocabulary input, library search/edit/archive/restore/hard delete, JSON batch rollback, and `.json` / pasted JSON import preview.
-- Local Recognition Vocabulary（阅读词汇）review sessions with four ratings, side-panel rating buttons, review event/state updates, one-word rollback, reset-today review control, conservative empty-queue auto-refresh, customizable Recognition daily limit（每日上限）, same-session repeat for failed ratings, and FSRS-6（Free Spaced Repetition Scheduler 6，自由间隔重复调度器第 6 版）cross-day scheduling.
-- Stage 8-C same-session repeat: `完全忘记了` and `有点忘记了` record attempts and requeue the word within the current Recognition session until the learner chooses `模糊记得` or `完全记得`.
-- Stage 8-D scheduler replacement: V1 Recognition reviews use `ts-fsrs` with deterministic calibration, write neutral `difficulty` / `stability` state fields, rebuild state through reset / rollback event replay, and select due cards by Mimi's local natural-day bucket（本地自然日分桶）instead of exact prior-review clock time.
-- Stage 8-E backup compatibility: schema version 5 remains sufficient; JSON restore rejects impossible Active Vocabulary review states/events while preserving Active words without review history and Recognition FSRS state values.
-- Stage 8-F Postgres Production handoff: Stage 6B-P1 records the final V1 Recognition FSRS state shape and keeps `dueAt` exact with natural-day queue semantics in app code.
-- Stage 8-G final acceptance: full local validation and a local browser review-flow smoke check accepted Stage 8; Stage 6B-P1 is now the next separate implementation stage after explicit approval.
-- Stage 6B-P1-B local schema and static tests: `db/migrations/0002_schema5_production_runtime.sql` drafts schema version 5 Production persistence with JSONB（JSON 二进制存储）arrays, dual Recognition / Active limits, JSON import sources, backup schema 5 support, and database-level Active review row guards.
-- Stage 6B-P1-C local runtime / API contract: `MIMI_STORAGE_RUNTIME=postgres-production` is now parsed and accepted only in Vercel Production; `/api/storage/health` and `/api/storage/data` have guarded Production behavior; Preview UI writes still require development / preview flags. The shared Postgres repository/database behavior has been validated in P1-F, but the `postgres-production` route has not been exercised in Production.
-- Stage 6B-P1-D local repository parity: Postgres mappers and repository SQL now target schema version 5 arrays, tracks, tags, JSON import sources, dual limits, hard delete, JSON batch rollback, reset-today Review rebuild, and one-word Review rollback rebuild.
-- Stage 6B-P1-E local backup import version 5: backup import planning and Postgres insert scripts now accept schema version 5, preserve multi-meaning / multi-example fields, JSON sources, dual limits, and reject Active Vocabulary review state/event rows before writing.
-- Stage 6B-P1-F non-production database verification: `0002_schema5_production_runtime.sql` has been applied only to the approved non-production development database; schema version 5 columns / constraints / trigger guards, fixture rollback/commit/cleanup, and actual Postgres repository integration behavior were verified, with final development database business counts back to zero.
-- Stage 6B-P1-G-A / P1-G-B / P1-G-C-0 / P1-G-C-1 / P1-G-C-2 / P1-G-C-3 / P1-G-C-4 Production handoff: `plan_docs/PLAN_V1_STAGE6B_P1_G_PRODUCTION_EXECUTION_HANDOFF.md` records an empty Production start, no development-data copy, no formal first-launch backup import, and the completed read-only Vercel / Neon inventory. `plan_docs/PLAN_V1_STAGE6B_P1_G_C_HUMAN_DECISION_CLOSURE.md` records the remaining P1-G-C decision packet. `plan_docs/PLAN_V1_STAGE6B_P1_G_C_1_PROVIDER_SUPPLEMENT.md` records that the Vercel-managed Neon resource is owned, available, Free-plan, and connected only to Development / Preview; Production env vars and database target are absent. `plan_docs/PLAN_V1_STAGE6B_P1_G_C_2_EVIDENCE_ROUTE_DECISION.md` recommends human dashboard evidence as the next safest route, with redaction rules for secrets and connection metadata. `plan_docs/PLAN_V1_STAGE6B_P1_G_C_3_DASHBOARD_EVIDENCE.md` records the approved read-only Neon dashboard evidence: only `main` exists, `main` is Default, `neondb` / `neondb_owner` are the visible database / role labels, the region is Sydney, Postgres is 17, the restore window is 6 hours, and no separate empty Production target is visible. `plan_docs/PLAN_V1_STAGE6B_P1_G_C_4_BRANCH_ENVIRONMENT_EXECUTION_DECISION.md` records the documentation-first branch/environment execution sequence: create `staging` from verified clean `main`, move Development / Preview away from `main`, keep logical `preview/*` derived from `staging`, reserve `main` for Production, and do not rerun already-applied migrations blindly.
-- Stage 6B-P1-G-C-5 live execution: `plan_docs/PLAN_V1_STAGE6B_P1_G_C_5_LIVE_PRODUCTION_EXECUTION.md` records completed branch/environment/credential separation, Marketplace disconnect, Basic Auth gate, schema/zero-count checks, PR merge, Production deployment, cloud-neutral copy correction, authenticated read-only acceptance, and clean error/5xx log checks. Production received no development-data import or synthetic write; the first real user action is the first write acceptance.
-- Local Active Vocabulary（输出词汇）classification and lower-volume daily limit setting; Active words are stored, exported, and imported, but V1 must not put them in review queue（复习队列）, create review state（复习状态）, or create review event（复习事件）. Dictation, spelling, writing practice, prompt version（提示词版本）, and AI API（人工智能接口）feedback remain future work.
-- Local JSON backup（JSON 备份）download, vocabulary CSV（逗号分隔值）download with `learningTrack` / `tags`, and JSON restore preview.
-- Local `people` and selected person switching, with vocabulary, imports, review history, and review settings scoped by `personId`.
-- Stage 5B storage decision: future durable storage should use one Neon Postgres（关系型数据库）database with a `people` table and `person_id` separation for each learner's data.
-- Stage 5D durable storage readiness: local SQL migration（迁移）draft, backup-to-Postgres mapping, repository adapter contract（仓储适配层接口）, and SQL static tests.
-- Stage 5E execution gate: documented approval checklist, remote execution order, stop conditions, and rollback direction before Neon/Vercel action.
-- Stage 5F development / preview bootstrap: linked the Vercel project, created the Neon resource for development / preview, pulled ignored local env vars, added minimal database scripts, applied `0001_initial.sql` to the non-production development database, and verified the empty schema.
-- Historical non-official Production deployment `dpl_2nvALJ1CutPjeFteXKMCHWKa4UsD` remains prior context only. The formal V1 release comes from `main`; final functional deployment `dpl_ZrEHc39z4dufgq3RcPQGUV1vK4n2` owns the canonical domain.
-- Verified Preview deployment: `https://words-learning-app-for-mimi-bwfhi5rap-anorias-projects.vercel.app` (`dpl_d5LUb6r1wEXiJBUENb2PACEZMVsu`, inspected as `target=preview`).
-- Clean Git integration Preview deployment: `https://words-learning-app-for-mimi-aczic0spy-anorias-projects.vercel.app` (`dpl_EmhfvP8yE9NrxCWPcdK3Qdd8sdk8`, from committed `origin/V1`).
-- Stage 5I runtime Postgres adapter: server-only development / preview adapter modules exist for health checks, people, vocabulary, imports, review settings, review queue, review events, and review states.
-- Stage 5J read-only verification: Preview deployment `https://words-learning-app-for-mimi-dbkkkow3d-anorias-projects.vercel.app` (`dpl_CFeC2VwRKtMSAjBiGGtyStsFw2tr`) verified `/api/storage/health` with `postgres-preview` and zero database rows.
-- Stage 5K controlled write smoke: temporarily enabled `MIMI_ENABLE_STORAGE_SMOKE_WRITES=true` in Preview only, ran one `/api/storage/smoke` write, verified exactly one smoke row set in the development database, removed the write flag, deployed disabled Preview `https://words-learning-app-for-mimi-7bzktk5uc-anorias-projects.vercel.app` (`dpl_BJn1pFAbLiiY4LgCyThKx2vDTSar`), and removed the smoke-enabled Preview deployment.
-- Stage 5L backup import harness and cleanup: added fixture backup import dry run, development DB fixture transaction trial with rollback, and cleaned the Stage 5K smoke rows. The development database now reports zero rows in core study tables.
-- Stage 5M backup import and UI runtime cutover: added file-backed backup dry run, rollback trial, and guarded development commit; added `/api/storage/data`; updated the UI data hook and write flows so development / preview can read/write through Postgres when explicitly enabled.
-- Stage 5N Preview UI runtime verification: Stage 5N-A created read-only Preview deployment `https://words-learning-app-for-mimi-kb5b08c5v-anorias-projects.vercel.app` (`dpl_HpcPDb5B2su2BLPWJVsYZjPDnWSg`) and verified the Postgres read path. Stage 5N-B temporarily enabled Preview UI writes, created write-enabled Preview deployment `https://words-learning-app-for-mimi-8r2cn2jko-anorias-projects.vercel.app` (`dpl_JgKNc9zuAqgMsy5w13gbZoqkEhnY`), wrote one controlled smoke row, cleaned it, removed the write flag, removed the write-enabled deployment, and created disabled Preview deployment `https://words-learning-app-for-mimi-6v8azqoaa-anorias-projects.vercel.app` (`dpl_Athg2hWZK1gV6ereWdbYk1WXG58C`).
-- Confirmed release sequence: Stage 6A documents the Production（生产环境）release gate, Stage 7 completes UI（用户界面）/ visual design, Stage 8 accepts the Recognition memory algorithm, Stage 8.5 fixes the cross-stage data lifecycle/environment policy, and Stage 6B later handles merge（合并）to `main` plus formal Production execution after explicit approval.
-- Stage 6A release gate: documented the formal Production checklist, access boundary, env matrix, database migration and backup/import/rollback expectations, and the rule that `person_id` separates learning data but is not security isolation.
-- Stage 6B Production execution plan: `plan_docs/PLAN_V1_STAGE6B_PRODUCTION_EXECUTION.md` records the 2026-07-08 user decision to launch formal V1 with shared Postgres Production. `plan_docs/PLAN_V1_STAGE6B_P1_POSTGRES_PRODUCTION_RUNTIME.md` is the required runtime bridge before merge, Production migration, and deployment; Stage 8 is accepted, Stage 6B-P1-B has added the local schema draft, Stage 6B-P1-C has added the local runtime / API contract, Stage 6B-P1-D has added local repository parity, Stage 6B-P1-E has added local backup import version 5 support, Stage 6B-P1-F has validated the migrated non-production development database, Stage 6B-P1-G-A has documented the empty Production handoff, Stage 6B-P1-G-B has completed the read-only account inventory, Stage 6B-P1-G-C-0 has documented the human decision packet, Stage 6B-P1-G-C-1 has completed the read-only provider supplement, Stage 6B-P1-G-C-2 has selected human dashboard evidence as the recommended route, Stage 6B-P1-G-C-3 has captured that evidence, and Stage 6B-P1-G-C-4 has documented the branch/environment execution decision. Stage 8.5 closes the policy-level Production topology. The next gate is separately approved live branch/environment setup plus final access / merge / deployment / first-write decisions.
-- Stage 8 Review Memory Algorithm: `plan_docs/PLAN_V1_STAGE8_REVIEW_MEMORY_ALGORITHM.md` documents and accepts the Recognition-only FSRS-6 plan, same-session repeat for failed Recognition ratings, Active Vocabulary no-scheduling boundary, neutral `difficulty` / `stability` naming, and V2-compatible separate future Active scheduler dimensions such as `review_profile`, `skill_type`, or `activity_type`.
-- Stage 8.5 Data Lifecycle（数据生命周期）and environment strategy: `plan_docs/PLAN_V1_STAGE8_5_DATA_LIFECYCLE_ENVIRONMENT_STRATEGY.md` is the accepted cross-stage policy. For the current private trusted-group phase it uses the existing Neon project with `main` as future Production, `staging` as the long-lived non-production baseline, and temporary logical `preview/*` branches derived from `staging`. Production starts empty, non-production business rows do not promote into Production, and the independent logical-backup target after formal data begins is weekly plus before high-risk Production changes.
-- Stage 7 UI（用户界面）visual design: added `plan_docs/PLAN_V1_STAGE7_UI_VISUAL_DESIGN.md`, a darker soft sage palette, Motion for React interaction animation（交互动效）, desktop sidebar navigation, mobile bottom navigation, and redesigned dashboard / flashcard / import / library / export / settings surfaces. Stage 7.2 adds `plan_docs/PLAN_V1_STAGE7_2_UI_REFINEMENT.md`, the local cat avatar brand area, `咪咪 Vocabulary`, smaller desktop action cards, and stronger hover / tap feedback. Stage 7.3 adds `plan_docs/PLAN_V1_STAGE7_3_CHILLROUND_FONT_TRIAL.md` and self-hosted ChillRoundF 寒蝉全圆体 `v3.200` for CJK（中日韩文字）UI text. Stage 7.4 adds `plan_docs/PLAN_V1_STAGE7_4_THEME_TOGGLE.md`, `dark` / `light` UI theme（主题）switching in Settings, and a separate `mimi-ui-theme-v1` UI preference key. Stage 7.5 adds `plan_docs/PLAN_V1_STAGE7_5_SOFT_CLICK_SOUND_TRIAL.md`, one Kenney CC0 click sound asset, and a low-volume Settings audition control. Stage 7.6 adds `plan_docs/PLAN_V1_STAGE7_6_SOUND_DESIGN.md`, `mimi-ui-sound-v1` UI-only sound settings, app-wide soft button feedback, and a review-completion modal using the user-provided Mimi sound. Stage 7.7 adds `plan_docs/PLAN_V1_STAGE7_7_FINAL_ACCEPTANCE.md`, recording local validation, route / asset checks, API safety smoke checks, and focused Settings browser acceptance. Stage 7.8 adds `plan_docs/PLAN_V1_STAGE7_8_DUAL_TRACK_UI_REFINEMENT.md`, a Today Hub, Recognition Vocabulary / Active Vocabulary UI track cards, Study / 学习 and Practice Lab / 练习室 entries, Library filters and mastery labels, and a more intentional cat Home Brand Button. Stage 7.9 adds `plan_docs/PLAN_V1_STAGE7_9_DUAL_TRACK_DATA_IMPORT.md`, schema version 5 `learningTrack` / nullable `tags` / `meaningsZh` / `examples`, `/import` Single input and Batch JSON import, separate Recognition / Active daily limits, nullable `rarityScore`, and Recognition-only review scheduling. Stage 7.10 adds `plan_docs/PLAN_V1_STAGE7_10_LIBRARY_REVIEW_CONTROLS.md`, interactive side-panel review buttons, Library hard delete, JSON batch rollback, `Batch imported` chips, and reset-today review confirmation. Stage 7.11 adds `plan_docs/PLAN_V1_STAGE7_11_REVIEW_ROLLBACK_AUTO_REFRESH.md`, removes confusing Review regenerate buttons, adds conservative empty-queue auto-refresh, and adds browser-local `回退1词`. PTE / IELTS persisted exam-mode classification and AI API implementation remain out of V1 scope.
-- Runtime mode stays `local` by default. Development / Preview Postgres UI runtime requires `MIMI_STORAGE_RUNTIME=postgres-preview`; Preview UI writes also require `MIMI_ENABLE_STORAGE_UI_WRITES=true` and `x-mimi-ui-storage-write: allow-dev-preview-ui-write`. Production Postgres runtime requires `MIMI_STORAGE_RUNTIME=postgres-production` in Vercel Production and still needs later database validation before formal launch.
-- Vercel Preview currently has `MIMI_STORAGE_RUNTIME=postgres-preview` from Stage 5J, but `MIMI_ENABLE_STORAGE_UI_WRITES` has not been added to Vercel.
-- Browser `localStorage`（本地浏览器存储）remains the default fallback and local restore target. In `postgres-preview`, formal backup import uses the guarded Stage 5M script path.
-- Production reused the already-present verified schema version 5 without rerunning migrations. V1 now has a trusted-group Basic Auth gate and formal Production deployment; no external AI API, analytics, Production backup import, synthetic Production study row, or first real user write has occurred.
+## 项目文档
 
-Project rules live in `AGENTS.md`. Stage plans live in `plan_docs/`.
+README 面向第一次看到仓库的人。详细架构、历史决策、执行证据和安全边界保存在以下文档中：
+
+- [Architecture](./ARCHITECTURE.md)：系统结构、数据模型和运行边界
+- [V1 Master Plan](./plan_docs/PLAN_V1_MASTER.md)：V1 总体阶段与范围
+- [Stage 8 Review Memory Algorithm](./plan_docs/PLAN_V1_STAGE8_REVIEW_MEMORY_ALGORITHM.md)：Recognition FSRS 与 Active 隔离设计
+- [Stage 8.5 Data Lifecycle](./plan_docs/PLAN_V1_STAGE8_5_DATA_LIFECYCLE_ENVIRONMENT_STRATEGY.md)：环境、备份和数据生命周期策略
+- [Production Execution Record](./plan_docs/PLAN_V1_STAGE6B_P1_G_C_5_LIVE_PRODUCTION_EXECUTION.md)：正式上线执行记录
+- [Database Backup Mapping](./db/LOCAL_BACKUP_TO_POSTGRES.md)：备份格式与 Postgres 映射
+- [Changelog](./CHANGELOG.md)：按时间记录的重要变更
+- [AI Agent Log](./governance/AI_AGENT_LOG.md)：人机协作执行与验证记录
+
+## 未来方向
+
+在不破坏现有 V1 数据边界的前提下，未来可逐步考虑：
+
+- 支持 SSO 的多人账户、角色和权限系统。
+- 独立的 Active Vocabulary 训练与记忆调度。
+- 听写、拼写、造句、写作和口语任务。
+- 带 prompt version（提示词版本）和评分依据的 AI 反馈。
+- 更丰富的个性化学习设置与可访问性支持。
+
+这些方向需要独立规划和数据结构设计，不会提前写入当前 V1 的正式学习状态。

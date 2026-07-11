@@ -641,3 +641,12 @@ Current unit tests cover vocabulary normalization, text and JSON import parsing,
 - cross-person data separation once Neon persistence is implemented
 - Production database migration dry run once the Production target and Stage 6B execution plan are explicitly approved
 - embedding or FSRS migration safety when those later stages are explicitly approved
+
+## Documentation Responsibility
+
+- `README.md` is the human-facing repository entrance. It explains the product, intended users, current V1 capabilities, basic local setup, major boundaries, and future direction in a form suitable for someone seeing the repository for the first time.
+- `ARCHITECTURE.md` owns system structure, data models, runtime boundaries, edge cases, and validation expectations.
+- `plan_docs/` owns stage scope, decisions, execution gates, and detailed release evidence.
+- `CHANGELOG.md` owns chronological change history.
+- `governance/AI_AGENT_LOG.md` owns human-AI execution, validation, and safety records.
+- Historical Preview URLs, deployment ids, migration commands, credential procedures, and provider evidence should stay in their specialized documents instead of accumulating in the README.

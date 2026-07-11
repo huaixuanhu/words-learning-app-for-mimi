@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## 2026-07-11 13:16 AEST
+
+- Rebuilt `README.md` as a human-facing introduction for people seeing the repository for the first time.
+- Defined the product as a private small vocabulary-learning app for Mimi and Anoria, centered on customization, gentle UI interaction, and an ADHD-friendly learning experience.
+- Recorded the possible future direction toward an SSO-enabled open multi-user application without presenting it as current V1 behavior.
+- Replaced Stage 5/6/7/8 chronology, historical Preview URLs, deployment ids, migration commands, and stale release-state wording with concise sections for product purpose, V1 features, learning tracks, architecture, local setup, environments, data boundaries, documentation, and future direction.
+- Kept credentials and private access details out of the README while retaining the canonical Production URL and current cloud-backed status.
+- Added an explicit documentation-responsibility boundary to `ARCHITECTURE.md`: README is the human entrypoint; architecture, plans, changelog, and AI log own technical detail and historical evidence.
+- Reason: make the GitHub repository understandable and useful to a new human reader while keeping detailed engineering history in its specialized repository documents.
+
 ## 2026-07-11 12:37 AEST
 
 - Merged formal release pull request `#1` from `V1` to `main` with merge commit `a70b341a2af61161bb1f778ffeae69a143f03146`.
