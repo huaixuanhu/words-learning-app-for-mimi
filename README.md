@@ -96,7 +96,7 @@ npm run build
 - `V1`：当前 V1 维护和后续小版本开发。
 - `main`：Vercel Production branch（生产发布分支）。
 - 推荐流程：在 `V1` 修改并验证，通过 Preview 检查，再使用 Pull Request（合并请求）进入 `main`。
-- 凭证、Production 数据、数据库结构或部署设置的变更继续使用 Tier 3（三级治理）流程。
+- 当前运行、目标能力和日常工作均使用 Tier 3（三级治理）；凭证、Production 数据、数据库结构或部署设置的实质变更继续要求明确的人类批准。
 
 ## 数据与产品边界
 
