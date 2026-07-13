@@ -1,11 +1,15 @@
 # Words Learning App For Mimi Architecture
 
 Created: 2026-07-02 23:30 AEST
-Last updated: 2026-07-11 20:54 AEST
+Last updated: 2026-07-13 00:26 AEST
 
 ## Current State
 
 Formal private V1 is live. Current operational tier, target capability tier, and working tier are Tier 3 under `human-ai-governance v0.3.0`; the Stage 6B-P1-G-C-5 record is the current release source of truth. The chronological inventory below retains the pre-launch path that led to this state.
+
+### Current Stack And Historical V1 Build Chronology
+
+The package list in this section is current. The Stage 1–8 / Stage 6B paragraphs preserve the then-current build and release path. Phrases such as `current`, `future Production`, or `Production disabled` inside those Stage paragraphs describe their historical stage and are superseded by the C5 live record and the Current V2 Planning Baseline below.
 
 This repository has accepted Stage 8 Review Memory Algorithm（复习记忆算法）and Stage 8.5 Data Lifecycle（数据生命周期）and environment strategy before formal V1 Production（生产环境）launch. It contains collaboration rules, architecture notes, master and stage plans, changelog, AI agent log, a Tier 3 governance preflight adapted from `human-ai-governance v0.3.0`, and a Next.js App Router application with browser-local vocabulary, review mutations, export, restore preview, selected-person switching, local SQL storage, repository adapter contract, approved development / preview Vercel and Neon setup, a server-only development / preview Postgres runtime adapter, guarded backup import dry-run / rollback / commit tooling, a development / preview-only Postgres UI runtime cutover path, verified Preview UI runtime checks, a local Stage 7 darker sage visual system with Motion for React interaction animation, Stage 7.2 brand refinement, Stage 7.3 ChillRoundF font trial, Stage 7.4 light / dark theme toggle, Stage 7.5 soft click sound audition, Stage 7.6 UI-only sound settings with review-completion feedback, Stage 7.7 final acceptance coverage, Stage 7.8 Today Hub / dual-track information architecture, Stage 7.9 local Recognition Vocabulary（阅读词汇）/ Active Vocabulary（输出词汇）data semantics, Stage 7.10 local hard-delete, batch rollback, and review reset controls, Stage 7.11 one-word Review rollback plus conservative queue auto-refresh, Stage 8-B / 8-C / 8-D / 8-E / 8-F / 8-G Recognition-only FSRS-6（Free Spaced Repetition Scheduler 6，自由间隔重复调度器第 6 版）review memory behavior, backup compatibility, Postgres Production handoff, and final local acceptance, a Stage 6B plan for formal Production execution, Stage 6B-P1-B local schema version 5 migration/static tests, Stage 6B-P1-C local `postgres-production` runtime / API contract tests, Stage 6B-P1-D local Postgres repository parity, Stage 6B-P1-E local backup import version 5 support, Stage 6B-P1-F non-production database verification, Stage 6B-P1-G-A Production execution handoff documentation, Stage 6B-P1-G-B read-only Production inventory, Stage 6B-P1-G-C-0 human decision packet, Stage 6B-P1-G-C-1 provider supplement, Stage 6B-P1-G-C-2 evidence route decision, Stage 6B-P1-G-C-3 read-only Neon dashboard evidence, and Stage 6B-P1-G-C-4 branch/environment execution decision for the future cloud-backed runtime path. Stage 8.5 defines one Neon project with `main` as future Production, `staging` as the long-lived non-production baseline, temporary logical `preview/*` branches derived from `staging`, weekly independent logical backups after formal data begins, and explicit future isolation/backup upgrade triggers; P1-G-C-4 turns that policy into a documentation-first live execution sequence without performing remote changes.
 
@@ -60,6 +64,50 @@ The GitHub repository URL was provided by the user:
 
 The local `main` branch now tracks `origin/main`. Remote repository settings have not been audited beyond the local Git connection.
 
+## Current V2 Planning Baseline
+
+The cloud-backed V1 described above is live and remains the current application behavior. On 2026-07-13 the user accepted `plan_docs/PLAN_V2_MASTER.md` as the canonical V2 documentation baseline on branch `V2`. No V2 code, schema migration, external API, paid provider, credential, database, or deployment action has been performed by that documentation decision.
+
+The accepted V2 architecture direction is:
+
+```text
+Recognition Vocabulary
+  -> separate Review / New Words zones
+  -> Recognition FSRS parameter set
+  -> browser pronunciation playback
+
+Active Vocabulary
+  -> Say it / Spell it / Dictation
+  -> independent Active FSRS parameter set
+
+Both Tracks
+  -> Added today / Suggested review / Review goal / New-word goal
+  -> distinct-entry actuals
+  -> Today’s progress / Learning rhythm / Memory outlook
+
+Lexical enrichment
+  -> Datamuse candidates
+  -> Free Dictionary best-effort evidence
+  -> bounded paid AI structured draft
+  -> human edit / reject / accept
+  -> accepted enrichment or separate learning entry
+```
+
+Key accepted boundaries:
+
+- A `VocabularyItem` counts as one learning entry whether it is a single word, phrase, or fixed collocation.
+- A newly saved entry remains `New` until the first valid rating creates state for its Track-specific Review Profile（复习配置）.
+- Recognition and Active share the FSRS-6 algorithm family but never share parameter sets, state rows, event histories, or rebuild tests.
+- Recognition pronunciation and first-generation Active Dictation use browser SpeechSynthesis（浏览器文字转语音）without an AI call.
+- Automated Speech Recognition（自动语音识别）, microphone upload, and AI pronunciation scoring are deferred and send no audio in the accepted V2 baseline.
+- The paid AI candidate remains behind an evidence gate, server-only adapter, atomic global quotas, Cache（缓存）, provider billing cap, and Kill Switch（紧急关闭开关）.
+- Initial accepted provider-call ceilings are 100 provider attempts per person per local day and 200 provider attempts across Production per server-owned `Australia/Melbourne` budget day. A submitted provider attempt keeps its request count even when it later fails. Because `person_id` is not authentication, only global request / token / cost / concurrency controls form the hard security boundary.
+- Paid-provider limited safety / abuse / legal retention is acceptable when accurately disclosed; V2 must not claim Zero Retention（零保留）.
+- Before the first outbound AI call, a versioned disclosure must name the provider, outbound lexical fields, excluded personal fields, limited content retention, separate technical / usage metadata, and quota / cost boundary, then require explicit user confirmation.
+- SSO（Single Sign-On，单点登录）and confidential multi-user isolation remain in `plan_docs/PLAN_VERSION_HOLD_MULTI_USER_CONFIDENTIAL_ISOLATION.md` and are not V2 scope.
+
+Schema Version 6 is a candidate, not a completed decision. A derived V2 data-contract plan must inspect local fallback, Postgres, repository, API, backup, restore, export, fixtures, and existing migrations before finalizing the version or SQL shape. Existing executed migrations remain immutable.
+
 ## Product Goal
 
 Build a mobile-first vocabulary web app for PTE preparation. The app should make it easy to add new words during practice, preserve context, and review cards according to Spaced Repetition（间隔重复）and a practical Forgetting Curve（遗忘曲线）model.
@@ -71,6 +119,8 @@ The product should optimize for daily use:
 - transparent scheduling
 - safe persistence of personal study data
 - easy export and backup
+- calm daily separation between review and first learning
+- optional evidence-backed lexical enrichment with mechanically bounded cost
 
 ## Planned Architecture
 
@@ -281,6 +331,8 @@ Stage 6B-P1-G-A / P1-G-B / P1-G-C-0 / P1-G-C-1 / P1-G-C-2 / P1-G-C-3 Production 
 
 Stage 5E execution gate:
 
+The Stage 5E–5N and Stage 5H–5I notes below are historical implementation evidence. Their then-current statements about Development-only Neon, browser-local default runtime, disabled Production Postgres, and a non-official deployment are superseded by P1-G-C-5.
+
 - Current operational, target-capability, and working tiers are all Tier 3. Future Production, credential, migration, deployment, or destructive-data work stays at Tier 3 and requires the approval boundary recorded in `AGENTS.md`.
 - The user must explicitly approve Vercel project, Vercel account scope, Neon account/project path, environment variable handling, package installation, migration execution, backup import, and deployment scope.
 - A fresh JSON backup from `/export` is required before any remote import.
@@ -453,7 +505,7 @@ The `data` field contains the current `VocabularyData` schema version 5 shape. T
 
 ### Deployment Boundary
 
-The Vercel project is linked for development / preview work after explicit approval. Vercel currently has an active Production deployment from branch `V1`; it remains in place for now but is not the official V1 production release. Formal Production must wait for accepted Stage 7, Stage 8, Stage 8.5, the Stage 6B-P1 handoff gates, and a separate Stage 6B execution approval. In Stage 6B, `V1` should merge to `main`, and Vercel's production branch should remain `main`. Preview deployment work should use `vercel deploy` without `--prod` and must verify `target=preview`; Stage 5G verified this with Preview deployment `dpl_d5LUb6r1wEXiJBUENb2PACEZMVsu`. Stage 6A's release gate also requires re-checking the Vercel production branch, Production env vars, deployment target, Production database target, and no-credential private-URL risk before any formal Production action.
+Formal private V1 is live from `main` behind application Basic Auth. Vercel Production uses `postgres-production` against Neon `main`; Development / Preview use Neon `staging` and must not promote non-production business rows. `plan_docs/PLAN_V1_STAGE6B_P1_G_C_5_LIVE_PRODUCTION_EXECUTION.md` is the release source of truth. Branch `V2` is a development branch only; any V2 migration, Preview, pull request, merge, or Production deployment requires its derived stage plan, validation, and separate Tier 3 approval.
 
 ### Data Lifecycle And Environment Topology
 
@@ -467,22 +519,22 @@ words-learning-app-for-mimi-neon
 ```
 
 - This single-project topology is intentionally proportionate to the current private trusted-group app. It favors operational convenience and future adaptability while keeping branch roles and environment-variable scope explicit.
-- `main` may become Production only after `staging` exists, Development / Preview no longer point to `main`, schema version 5 and zero counts are re-verified, and Production-only runtime variables are separately approved.
+- `main` is Production. `staging` exists as the long-lived non-production/default branch, and Development / Preview no longer point to `main`.
 - `staging` is the stable Development / pre-production database baseline. It contains only synthetic, fixture, or disposable test rows.
 - Logical `preview/*` branches derive from `staging`, use test data only, close with their review/PR, and have a seven-day cleanup backstop. Provider-generated labels may differ.
-- P1-G-C-4 requires live execution to verify or avoid Neon-managed Preview branch automation that would derive branches from the Neon default branch if that default is Production `main`.
+- P1-G-C-5 completed the branch separation; managed per-feature Preview branch automation remains deferred.
 - Versioned code and migrations move across environments; non-production business rows do not promote into Production.
-- Production starts empty. Real learning data and future real-user AI-derived data stay in Production.
+- Production began empty. Real learning data and future accepted V2 AI-derived data stay in Production.
 - After formal data begins, the V1 target is one encrypted logical backup per week plus an additional backup before high-risk Production data changes. Increase frequency when the product leaves the trusted-group phase or its recovery/AI-data requirements tighten.
 - A separate Neon Production project remains a future upgrade option when authentication, unfamiliar users, multiple maintainers, higher-sensitivity data, or stricter recovery/blast-radius requirements appear.
 
 ## Draft Data Model
 
-This is the current development database schema model. It is applied only to the non-production development Neon database so far.
+The schema listing below originated as the development database model. Schema version 5 is now the live V1 shape on Production `main` and non-production `staging`; C5 is the current execution evidence.
 
-Stage 5F applied `db/migrations/0001_initial.sql` after explicit approval. Production execution still requires a separate confirmation.
+Stage 5F first applied `db/migrations/0001_initial.sql` in non-production. Later approved V1 execution verified the already-present schema on `main` / `staging` and did not blindly rerun non-idempotent migrations.
 
-Stage 7.9 updates the browser-local and backup JSON data model to schema version 5. The Postgres draft below remains the already-applied Stage 5F development / preview schema; no Stage 7.9 remote database migration was executed. The Postgres preview adapter maps only the first `meaningsZh` / `examples` entry through the existing `meaning_zh` / `example` columns until a later approved database migration exists.
+Stage 7.9 updated browser-local and backup JSON to schema version 5. `db/migrations/0002_schema5_production_runtime.sql` later added `learning_track`, `tags`, `meanings_zh`, and `examples` to Postgres and is present in the verified live V1 schema. Any V2 change begins with a new migration; `0001` and `0002` remain immutable historical migrations.
 
 ### Vocabulary Item
 
@@ -590,14 +642,17 @@ Stage 7.9 updates the browser-local and backup JSON data model to schema version
 - Study data is private by default.
 - Durable study data should be separated by `person_id` for each private learner.
 - Person switching is convenience separation, not security isolation.
-- No analytics, tracking, AI generation, or third-party data sharing should be added without explicit approval.
+- Current V1 contains no analytics, tracking, AI generation, or third-party lexical data sharing. The accepted V2 master plan permits only later, separately approved implementation of the bounded lexical-provider path defined there.
 - Credentials and database URLs must stay out of source control.
 - Export should be available before the project depends on production-only persistence.
+- Paid-provider copy must disclose limited provider safety / abuse / legal retention and must not claim Zero Retention.
+- No V2 microphone audio or Speech Recognition data is collected or sent under the accepted baseline.
+- Shared Basic Auth plus `person_id` remains trusted-group access and data separation, not confidential per-person authorization.
 
 ## Known Edge Cases
 
 - duplicate words with different meanings
-- phrase cards versus single-word cards
+- phrase cards and fixed collocations versus single-word cards; each vocabulary entry counts once in distinct daily metrics
 - `.txt` files with mixed delimiters
 - JSON import files with unsupported `track` values
 - JSON import files with unsupported or non-array `tags`
@@ -617,6 +672,13 @@ Stage 7.9 updates the browser-local and backup JSON data model to schema version
 - accidental cross-person reads or writes if `person_id` is not filtered
 - person switching without password isolation being misunderstood as security
 - offline or slow mobile usage
+- a goal larger than the available queue or large enough to cause unbounded allocation if pagination is missing
+- recommendation snapshots across local-midnight or timezone changes
+- same entry receiving repeated attempts but only one distinct actual count
+- Track changes after a Review Profile already has history
+- duplicate AI suggestions that already exist as vocabulary entries
+- AI quota replay, concurrent double submission, provider failure, or stale Cache lineage
+- mobile navigation absence between current `md` and `lg` breakpoints
 
 ## Validation Boundary
 
@@ -643,10 +705,16 @@ Current unit tests cover vocabulary normalization, text and JSON import parsing,
 - cross-person data separation once Neon persistence is implemented
 - Production database migration dry run once the Production target and Stage 6B execution plan are explicitly approved
 - embedding or FSRS migration safety when those later stages are explicitly approved
+- V2 distinct-entry counting for single words, phrases, and fixed collocations
+- V2 Review Profile isolation and V1-to-Recognition state migration
+- V2 browser pronunciation playback with no review-state side effect
+- V2 AI quota / concurrency / replay / Cache / Kill Switch behavior
+- V2 limited-retention disclosure and minimal outbound lexical data
+- V2 mobile acceptance at 320 / 375 / 390 / 768 / 1024 px and representative desktop width
 
 ## Documentation Responsibility
 
-- `README.md` is the human-facing repository entrance. It explains the product, intended users, current V1 capabilities, basic local setup, major boundaries, and future direction in a form suitable for someone seeing the repository for the first time.
+- `README.md` is the human-facing repository entrance. It explains the product, intended users, current V1 capabilities, accepted V2 direction, basic local setup, major boundaries, and later direction in a form suitable for someone seeing the repository for the first time.
 - `ARCHITECTURE.md` owns system structure, data models, runtime boundaries, edge cases, and validation expectations.
 - `plan_docs/` owns stage scope, decisions, execution gates, and detailed release evidence.
 - `CHANGELOG.md` owns chronological change history.

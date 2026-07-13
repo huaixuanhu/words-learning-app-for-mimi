@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## 2026-07-13 00:26 AEST
+
+- Added `plan_docs/PLAN_V2_MASTER.md` as the accepted V2 documentation baseline derived from the completed V1 plan, dual-track UI/data work, Recognition FSRS plan, Data Lifecycle policy, live V1 release record, architecture, Mimi feedback, and the user's confirmation.
+- Defined the V2 mainline as separate Review / New Words zones, four daily values per Track, distinct-entry actuals, independent Recognition / Active FSRS profiles, three Active practice modes, Recognition pronunciation playback, mobile refinement, dashboard insight, and mandatory first-generation AI enrichment.
+- Fixed the counting unit so one vocabulary entry counts once whether it is a single word, phrase, or fixed collocation.
+- Expanded the initial AI request ceilings to 100 provider attempts per person per local day and 200 provider attempts across Production per server-owned `Australia/Melbourne` budget day; a submitted provider call retains its request count even if it later fails, while global token, cost, concurrency, Cache, billing, and Kill Switch controls remain the hard boundary.
+- Recorded that paid-provider limited safety / abuse / legal retention is acceptable when disclosed accurately and must not be described as Zero Retention.
+- Deferred Speech Recognition, microphone upload, and AI pronunciation scoring while adding browser SpeechSynthesis playback to the planned Recognition and Active flows.
+- Added `plan_docs/PLAN_VERSION_HOLD_MULTI_USER_CONFIDENTIAL_ISOLATION.md` to preserve future SSO, authorization, account recovery, deletion, and tenant-isolation requirements without placing them in V2.
+- Rewrote `AGENTS.md` around the current live V1 / accepted V2 source of truth and synchronized README / architecture with the accepted plan while keeping all V2 implementation and Production actions unperformed.
+- Reason: establish one durable, non-drifting V2 parent plan before any child plan or code change and incorporate the user's final metric, quota, retention, speech, and Recognition-playback decisions.
+
 ## 2026-07-11 20:54 AEST
 
 - Upgraded the repository governance marker and project-specific preflight from `human-ai-governance v0.2.0` to `v0.3.0` after explicit user approval.

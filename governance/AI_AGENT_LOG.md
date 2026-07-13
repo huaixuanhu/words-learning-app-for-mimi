@@ -1,5 +1,28 @@
 # AI Agent Log
 
+## 2026-07-13 00:26 AEST
+
+- Task: create the confirmed V2 documentation baseline and synchronize the repository's current project, architecture, changelog, and governance context without beginning implementation.
+- Plan agreed: yes. The user confirmed the recommended V2 defaults and explicitly requested the documentation work, then clarified limited-retention disclosure, doubled request ceilings, vocabulary-entry counting, deferred Speech Recognition, and Recognition pronunciation playback.
+- Working tier: Tier 3 because the current system is a live private web app with confidential study data and ordinary credentials, while the planned paid AI route remains mechanically bounded and has no material economic or high-consequence account authority.
+- Changed files:
+  - `plan_docs/PLAN_V2_MASTER.md`
+  - `plan_docs/PLAN_VERSION_HOLD_MULTI_USER_CONFIDENTIAL_ISOLATION.md`
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `README.md`
+  - `CHANGELOG.md`
+  - `governance/AI_AGENT_LOG.md`
+- Reason: create one canonical parent for daily learning, independent Active practice, mobile refinement, dashboard insight, and first-generation AI enrichment while preserving V1 as the live baseline and holding SSO / confidential multi-user isolation outside V2.
+- Validation:
+  - Passed: `git diff --check` before changelog / AI-log insertion.
+  - Passed: focused `rg` coverage scan for Source / Derived / Scope / Non-Scope / Exit markers, the five final user clarifications, and current-versus-planned wording.
+  - Passed: `npm run governance:preflight` at Tier 3 with strict side-effect scanning and the required `human-ai-governance v0.3.0` marker.
+  - Passed: independent read-only V2 scope / governance review; corrected request-attempt accounting, fixed global budget timezone, separated provider content retention from technical metadata, added first-outbound-call confirmation, removed an unapproved typed-phrase reset requirement, and marked stale V1 architecture paragraphs as historical.
+  - Passed: independent read-only provider-fact review; added exact model lifecycle qualifications, terms-compatibility recheck, conditional billing-control wording, conservative thinking-token assumptions, Datamuse key / query-log facts, and Free Dictionary source / license limits.
+  - Not run: lint, typecheck, tests, database inspection, backup fixtures, build, or browser smoke because this slice changes Markdown documentation only and does not change executable behavior.
+- Safety notes: local documentation only. No application code, package, schema, migration, database connection, Production data, `.env`, credential, provider account, billing, external API, Vercel / Neon setting, GitHub remote, pull request, merge, or deployment was read or changed. No paid call or user-data transmission occurred.
+
 ## 2026-07-11 20:54 AEST
 
 - Task: install the updated local `human-ai-governance v0.3.0` skill conventions into this repository.
