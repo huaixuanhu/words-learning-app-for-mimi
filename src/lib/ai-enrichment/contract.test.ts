@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  AI_MAX_COMBINED_CANDIDATES,
   AI_DISCLOSURE_VERSION,
   AI_PRODUCTION_LIMITS,
   AI_STAGE2_EVALUATION_LIMITS,
@@ -17,9 +18,18 @@ import {
   validateTrustedAiLexicalPayload,
 } from "./contract";
 
+function lexicalSource(
+  term: string,
+  meaningsZh: string[] = ["已有释义"],
+  examples: string[] = [],
+) {
+  return { term, meaningsZh, examples };
+}
+
 describe("V2 Stage 2 AI enrichment contract", () => {
   it("pins the approved model and evaluation envelope", () => {
     expect(GEMINI_STAGE2_MODEL).toBe("gemini-3.1-flash-lite");
+    expect(AI_MAX_COMBINED_CANDIDATES).toBe(3);
     expect(AI_STAGE2_EVALUATION_LIMITS).toEqual({
       corpusEntries: 120,
       maximumSubmittedRequests: 120,
@@ -101,32 +111,35 @@ describe("V2 Stage 2 AI enrichment contract", () => {
   });
 
   it("accepts a compact valid draft", () => {
-    expect(
-      validateAiEnrichmentDraft(
-        {
-          additionalMeaningsZh: ["顾及"],
-          examples: ["We must take the weather into account."],
-          similarWords: [
-            {
-              word: "consider",
-              differenceZh: "更常作为单个动词直接使用",
-            },
-          ],
-          confusableWords: [
-            {
-              word: "take into consideration",
-              type: "usage",
-              differenceZh: "含义接近，但表达形式不同",
-              examplePair: [
-                "Take the cost into account.",
-                "Take the cost into consideration.",
-              ],
-            },
-          ],
-        },
+    const accepted = validateAiEnrichmentDraft(
+      {
+        additionalMeaningsZh: ["顾及"],
+        examples: ["We must take the weather into account."],
+        similarWords: [
+          {
+            word: "consider",
+            differenceZh: "更常作为单个动词直接使用",
+          },
+        ],
+        confusableWords: [
+          {
+            word: "take into consideration",
+            type: "usage",
+            differenceZh: "含义接近，但表达形式不同",
+            examplePair: [
+              "Take the cost into account.",
+              "Take the cost into consideration.",
+            ],
+          },
+        ],
+      },
+      lexicalSource(
         "take into account",
+        ["考虑到"],
+        ["The report takes regional differences into account."],
       ),
-    ).toMatchObject({
+    );
+    expect(accepted).toMatchObject({
       additionalMeaningsZh: ["顾及"],
       similarWords: [{ word: "consider" }],
       confusableWords: [{ word: "take into consideration", type: "usage" }],
@@ -142,7 +155,7 @@ describe("V2 Stage 2 AI enrichment contract", () => {
           similarWords: [],
           confusableWords: [],
         },
-        "rare fixture",
+        lexicalSource("rare fixture"),
       ),
     ).toEqual({
       additionalMeaningsZh: [],
@@ -161,7 +174,7 @@ describe("V2 Stage 2 AI enrichment contract", () => {
           similarWords: [{ word: "Effect", differenceZh: "重复源词" }],
           confusableWords: [],
         },
-        "effect",
+        lexicalSource("effect"),
       ),
     ).toThrow("candidate words must be unique and not the source term");
 
@@ -180,7 +193,7 @@ describe("V2 Stage 2 AI enrichment contract", () => {
             },
           ],
         },
-        "effect",
+        lexicalSource("effect"),
       ),
     ).toThrow("candidate words must be unique and not the source term");
 
@@ -199,7 +212,7 @@ describe("V2 Stage 2 AI enrichment contract", () => {
             },
           ],
         },
-        "effect",
+        lexicalSource("effect"),
       ),
     ).toThrow("examplePair must be empty or contain two examples");
   });
@@ -214,7 +227,7 @@ describe("V2 Stage 2 AI enrichment contract", () => {
           confusableWords: [],
           sources: ["dictionary"],
         },
-        "effect",
+        lexicalSource("effect"),
       ),
     ).toThrow("draft fields do not match the contract");
 
@@ -226,9 +239,152 @@ describe("V2 Stage 2 AI enrichment contract", () => {
           similarWords: [],
           confusableWords: [],
         },
-        "effect",
+        lexicalSource("effect"),
       ),
     ).toThrow("additionalMeaningsZh must contain 0 to 3 items");
+  });
+
+  it("limits both candidate arrays to three learnable entries combined", () => {
+    expect(() =>
+      validateAiEnrichmentDraft(
+        {
+          additionalMeaningsZh: [],
+          examples: [],
+          similarWords: [
+            { word: "result", differenceZh: "更强调最终结果" },
+            { word: "impact", differenceZh: "更强调产生的影响" },
+          ],
+          confusableWords: [
+            {
+              word: "affect",
+              type: "usage",
+              differenceZh: "通常作为动词使用",
+              examplePair: [],
+            },
+            {
+              word: "effective",
+              type: "usage",
+              differenceZh: "这是形容词，表示有效的",
+              examplePair: [],
+            },
+          ],
+        },
+        lexicalSource("effect"),
+      ),
+    ).toThrow("candidate arrays must contain at most 3 items combined");
+  });
+
+  it("accepts plain apostrophe and hyphen candidates but rejects meta values", () => {
+    const accepted = validateAiEnrichmentDraft(
+      {
+        additionalMeaningsZh: [],
+        examples: [],
+        similarWords: [
+          { word: "well-founded", differenceZh: "强调有充分依据" },
+          { word: "learner's choice", differenceZh: "强调学习者自行选择" },
+        ],
+        confusableWords: [],
+      },
+      lexicalSource("sound"),
+    );
+    expect(accepted.similarWords.map((entry) => entry.word)).toEqual([
+      "well-founded",
+      "learner's choice",
+    ]);
+
+    expect(() =>
+      validateAiEnrichmentDraft(
+        {
+          additionalMeaningsZh: [],
+          examples: [],
+          similarWords: [],
+          confusableWords: [
+            {
+              word: "pose vs poise",
+              type: "spelling",
+              differenceZh: "两者含义不同",
+              examplePair: [],
+            },
+          ],
+        },
+        lexicalSource("pose"),
+      ),
+    ).toThrow("must not contain a comparison label");
+
+    expect(() =>
+      validateAiEnrichmentDraft(
+        {
+          additionalMeaningsZh: [],
+          examples: [],
+          similarWords: [{ word: "derive (verb)", differenceZh: "动词形式" }],
+          confusableWords: [],
+        },
+        lexicalSource("derive"),
+      ),
+    ).toThrow("must be one plain standard-English word or phrase");
+  });
+
+  it("rejects candidates described as errors and labelled wrong examples", () => {
+    expect(() =>
+      validateAiEnrichmentDraft(
+        {
+          additionalMeaningsZh: [],
+          examples: [],
+          similarWords: [],
+          confusableWords: [
+            {
+              word: "interperet",
+              type: "spelling",
+              differenceZh: "这是常见拼写错误",
+              examplePair: [],
+            },
+          ],
+        },
+        lexicalSource("interpret"),
+      ),
+    ).toThrow("must not describe the candidate as an incorrect form");
+
+    expect(() =>
+      validateAiEnrichmentDraft(
+        {
+          additionalMeaningsZh: [],
+          examples: ["Incorrect: The policy had affect."],
+          similarWords: [],
+          confusableWords: [],
+        },
+        lexicalSource("effect"),
+      ),
+    ).toThrow("must not be an error-labelled example");
+  });
+
+  it("rejects generated meanings and examples that repeat supplied content", () => {
+    expect(() =>
+      validateAiEnrichmentDraft(
+        {
+          additionalMeaningsZh: ["影响。"],
+          examples: [],
+          similarWords: [],
+          confusableWords: [],
+        },
+        lexicalSource("effect", ["影响"], []),
+      ),
+    ).toThrow("additionalMeaningsZh must be unique and not repeat supplied content");
+
+    expect(() =>
+      validateAiEnrichmentDraft(
+        {
+          additionalMeaningsZh: [],
+          examples: ["The policy had an effect"],
+          similarWords: [],
+          confusableWords: [],
+        },
+        lexicalSource(
+          "effect",
+          ["影响"],
+          ["The policy had an effect."],
+        ),
+      ),
+    ).toThrow("examples must be unique and not repeat supplied content");
   });
 
   it("normalizes and prices provider usage including thinking tokens", () => {

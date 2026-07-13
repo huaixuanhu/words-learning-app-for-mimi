@@ -17,9 +17,10 @@ import type {
 } from "./types";
 
 export const GEMINI_STAGE2_MODEL = "gemini-3.1-flash-lite" as const;
-export const AI_PROMPT_VERSION = "v2-ai-enrichment-prompt-v1" as const;
-export const AI_OUTPUT_SCHEMA_VERSION = "v2-ai-enrichment-draft-v1" as const;
+export const AI_PROMPT_VERSION = "v2-ai-enrichment-prompt-v2" as const;
+export const AI_OUTPUT_SCHEMA_VERSION = "v2-ai-enrichment-draft-v2" as const;
 export const AI_DISCLOSURE_VERSION = "ai-disclosure-v1" as const;
+export const AI_MAX_COMBINED_CANDIDATES = 3 as const;
 
 export const GEMINI_PRICING_2026_07_13: GeminiPricing = Object.freeze({
   provider: "google-gemini-api",
@@ -163,6 +164,102 @@ function boundedTextArray(
   );
 }
 
+const AI_CANDIDATE_SURFACE_PATTERN =
+  /^[A-Za-z]+(?:['’-][A-Za-z]+)*(?: [A-Za-z]+(?:['’-][A-Za-z]+)*)*$/u;
+const AI_URL_PATTERN = /(?:https?:\/\/|www\.)/iu;
+const AI_ERROR_FORM_EXPLANATION_PATTERN =
+  /(?:拼写错误|语法错误|错误的搭配|错误形式|不正确|非标准|不标准|并不标准|此处应(?:使用|改为)|应改为|不可使用|misspell(?:ing|ed)?|ungrammatical|nonstandard|incorrect form)/iu;
+const AI_EXAMPLE_ERROR_MARKER_PATTERN =
+  /^(?:(?:correct|incorrect|wrong)\s*[:：-]|[✓✗✘]\s*)/iu;
+
+function normalizeComparableAiText(value: string) {
+  return value
+    .normalize("NFKC")
+    .trim()
+    .toLocaleLowerCase("en-US")
+    .replace(/\s+/gu, " ")
+    .replace(/[\s,，;；:：。.!！?？、]+$/gu, "")
+    .trim();
+}
+
+function boundedGeneratedText(
+  value: unknown,
+  label: string,
+  maximumCodePoints: number,
+) {
+  const text = boundedText(value, label, maximumCodePoints);
+  if (AI_URL_PATTERN.test(text)) {
+    throw new AiEnrichmentContractError(`${label} must not contain a URL`);
+  }
+  return text;
+}
+
+function uniqueNovelGeneratedTextArray(
+  value: unknown,
+  label: string,
+  minimumItems: number,
+  maximumItems: number,
+  maximumCodePoints: number,
+  existing: readonly string[],
+  rejectErrorMarkers = false,
+) {
+  if (!Array.isArray(value)) {
+    throw new AiEnrichmentContractError(`${label} must be an array`);
+  }
+  if (value.length < minimumItems || value.length > maximumItems) {
+    throw new AiEnrichmentContractError(
+      `${label} must contain ${minimumItems} to ${maximumItems} items`,
+    );
+  }
+  const seen = new Set(existing.map(normalizeComparableAiText));
+  return value.map((entry, index) => {
+    const text = boundedGeneratedText(
+      entry,
+      `${label}[${index}]`,
+      maximumCodePoints,
+    );
+    if (rejectErrorMarkers && AI_EXAMPLE_ERROR_MARKER_PATTERN.test(text)) {
+      throw new AiEnrichmentContractError(
+        `${label}[${index}] must not be an error-labelled example`,
+      );
+    }
+    const normalized = normalizeComparableAiText(text);
+    if (seen.has(normalized)) {
+      throw new AiEnrichmentContractError(
+        `${label} must be unique and not repeat supplied content`,
+      );
+    }
+    seen.add(normalized);
+    return text;
+  });
+}
+
+function validateLearnableCandidate(value: unknown, label: string) {
+  const word = boundedGeneratedText(value, label, 80);
+  if (!AI_CANDIDATE_SURFACE_PATTERN.test(word)) {
+    throw new AiEnrichmentContractError(
+      `${label} must be one plain standard-English word or phrase`,
+    );
+  }
+  const tokens = normalizeAiCandidate(word).split(" ");
+  if (tokens.includes("vs") || tokens.includes("versus")) {
+    throw new AiEnrichmentContractError(
+      `${label} must not contain a comparison label`,
+    );
+  }
+  return word;
+}
+
+function validateDifferenceExplanation(value: unknown, label: string) {
+  const difference = boundedGeneratedText(value, label, 180);
+  if (AI_ERROR_FORM_EXPLANATION_PATTERN.test(difference)) {
+    throw new AiEnrichmentContractError(
+      `${label} must not describe the candidate as an incorrect form`,
+    );
+  }
+  return difference;
+}
+
 function nonNegativeInteger(value: unknown, label: string) {
   if (!Number.isSafeInteger(value) || Number(value) < 0) {
     throw new AiEnrichmentContractError(`${label} must be a non-negative integer`);
@@ -233,20 +330,30 @@ export function validateTrustedAiLexicalPayload(
 
 export function validateAiEnrichmentDraft(
   value: unknown,
-  sourceTerm: string,
+  sourceContext: TrustedAiLexicalPayload,
 ): AiEnrichmentDraft {
   const record = asRecord(value, "draft");
   exactKeys(record, DRAFT_KEYS, "draft");
-  const source = normalizeAiCandidate(boundedText(sourceTerm, "sourceTerm", 120));
+  const lexicalSource = validateTrustedAiLexicalPayload(sourceContext);
+  const source = normalizeAiCandidate(lexicalSource.term);
 
-  const additionalMeaningsZh = boundedTextArray(
+  const additionalMeaningsZh = uniqueNovelGeneratedTextArray(
     record.additionalMeaningsZh,
     "additionalMeaningsZh",
     0,
     3,
     80,
+    lexicalSource.meaningsZh,
   );
-  const examples = boundedTextArray(record.examples, "examples", 0, 3, 240);
+  const examples = uniqueNovelGeneratedTextArray(
+    record.examples,
+    "examples",
+    0,
+    3,
+    240,
+    lexicalSource.examples,
+    true,
+  );
 
   if (!Array.isArray(record.similarWords) || record.similarWords.length > 3) {
     throw new AiEnrichmentContractError("similarWords must contain 0 to 3 items");
@@ -254,12 +361,23 @@ export function validateAiEnrichmentDraft(
   if (!Array.isArray(record.confusableWords) || record.confusableWords.length > 3) {
     throw new AiEnrichmentContractError("confusableWords must contain 0 to 3 items");
   }
+  if (
+    record.similarWords.length + record.confusableWords.length >
+    AI_MAX_COMBINED_CANDIDATES
+  ) {
+    throw new AiEnrichmentContractError(
+      `candidate arrays must contain at most ${AI_MAX_COMBINED_CANDIDATES} items combined`,
+    );
+  }
 
   const seen = new Set<string>([source]);
   const similarWords = record.similarWords.map((entry, index) => {
     const item = asRecord(entry, `similarWords[${index}]`);
     exactKeys(item, SIMILAR_WORD_KEYS, `similarWords[${index}]`);
-    const word = boundedText(item.word, `similarWords[${index}].word`, 80);
+    const word = validateLearnableCandidate(
+      item.word,
+      `similarWords[${index}].word`,
+    );
     const normalized = normalizeAiCandidate(word);
     if (seen.has(normalized)) {
       throw new AiEnrichmentContractError("candidate words must be unique and not the source term");
@@ -267,10 +385,9 @@ export function validateAiEnrichmentDraft(
     seen.add(normalized);
     return {
       word,
-      differenceZh: boundedText(
+      differenceZh: validateDifferenceExplanation(
         item.differenceZh,
         `similarWords[${index}].differenceZh`,
-        180,
       ),
     };
   });
@@ -278,7 +395,10 @@ export function validateAiEnrichmentDraft(
   const confusableWords = record.confusableWords.map((entry, index) => {
     const item = asRecord(entry, `confusableWords[${index}]`);
     exactKeys(item, CONFUSABLE_WORD_KEYS, `confusableWords[${index}]`);
-    const word = boundedText(item.word, `confusableWords[${index}].word`, 80);
+    const word = validateLearnableCandidate(
+      item.word,
+      `confusableWords[${index}].word`,
+    );
     const normalized = normalizeAiCandidate(word);
     if (seen.has(normalized)) {
       throw new AiEnrichmentContractError("candidate words must be unique and not the source term");
@@ -289,12 +409,14 @@ export function validateAiEnrichmentDraft(
         `confusableWords[${index}].type is unsupported`,
       );
     }
-    const examplePair = boundedTextArray(
+    const examplePair = uniqueNovelGeneratedTextArray(
       item.examplePair,
       `confusableWords[${index}].examplePair`,
       0,
       2,
       240,
+      [],
+      true,
     );
     if (examplePair.length === 1) {
       throw new AiEnrichmentContractError("examplePair must be empty or contain two examples");
@@ -302,10 +424,9 @@ export function validateAiEnrichmentDraft(
     return {
       word,
       type: item.type as (typeof AI_CONFUSABLE_TYPES)[number],
-      differenceZh: boundedText(
+      differenceZh: validateDifferenceExplanation(
         item.differenceZh,
         `confusableWords[${index}].differenceZh`,
-        180,
       ),
       examplePair,
     };

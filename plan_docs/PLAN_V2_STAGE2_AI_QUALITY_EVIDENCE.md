@@ -1,7 +1,7 @@
 # Words Learning App For Mimi V2 Stage 2: First AI Quality Evidence
 
 Created: 2026-07-13 21:23 AEST
-Last updated: 2026-07-13 21:33 AEST
+Last updated: 2026-07-13 22:06 AEST
 
 Source plan:
 
@@ -170,9 +170,11 @@ local_artifacts/v2-stage2-ai/2026-07-13T11-14-05-415Z/review-worksheet.csv
 
 Chinese meaning accuracy, example naturalness, candidate relevance, unsupported/fabricated content, and overall accept/edit/reject rates remain unscored. The lexical thresholds cannot yet be evaluated. V2-7 must not use this first run as Production-provider acceptance.
 
-## Proposed Next Decision
+## Accepted Stage 2-B Follow-Up
 
-A second paid evaluation should be considered only after agreement on a small Stage 2 revision:
+The user approved this follow-up on 2026-07-13. Its derived execution plan is `plan_docs/PLAN_V2_STAGE2_B_AI_QUALITY_REFINEMENT.md`. The list below is preserved as the input decision for that plan; this first-run evidence remains unchanged.
+
+The accepted revision is:
 
 1. Permit only real standard-English words or grammatical phrases in learnable candidate fields; exclude misspellings, malformed phrases, `vs.` labels, and explanatory text.
 2. Decide whether the two candidate arrays should share a combined maximum of three suggestions, reducing filler and review load, or retain the current maximum of three per array.
@@ -182,3 +184,5 @@ A second paid evaluation should be considered only after agreement on a small St
 6. Run the same fixed 120-entry corpus again only after explicit approval; do not retry selected failed entries silently.
 
 No second paid request was made while producing this evidence or repairing the runner.
+
+Stage 2-B was later executed under separate user approval. Its unchanged-corpus second-run result and comparison are recorded in `plan_docs/PLAN_V2_STAGE2_B_AI_QUALITY_EVIDENCE.md`. This first-run record remains unchanged evidence and must not be replaced by the later result.

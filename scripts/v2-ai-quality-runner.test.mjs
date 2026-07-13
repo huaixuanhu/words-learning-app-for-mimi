@@ -1,11 +1,17 @@
 import { readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
 import {
+  STAGE2_BASELINE_HASHES,
   STAGE2_CONFIRMATION_FLAG,
   STAGE2_CORPUS_SIZE,
+  STAGE2_MAX_COMBINED_CANDIDATES,
   STAGE2_MAXIMUM_RESERVED_RUN_COST_USD,
   STAGE2_MODEL,
+  STAGE2_PROMPT_VERSION,
+  STAGE2_RUNNER_VERSION,
+  STAGE2_SCHEMA_VERSION,
   Stage2AiQualityError,
+  assertStage2BaselineHashes,
   assertLiveGuards,
   buildGeminiRequest,
   buildProviderLexicalPayload,
@@ -20,9 +26,14 @@ import {
 
 const corpusUrl = new URL("../test_fixtures/v2-stage2-ai-corpus.json", import.meta.url);
 const schemaUrl = new URL(
-  "../src/lib/ai-enrichment/gemini-response-schema.json",
+  "../src/lib/ai-enrichment/gemini-response-schema-v2.json",
   import.meta.url,
 );
+const effectSource = {
+  term: "effect",
+  meaningsZh: ["影响；结果"],
+  examples: [],
+};
 
 async function fixtureInputs() {
   const [corpusText, schemaText] = await Promise.all([
@@ -48,6 +59,20 @@ describe("V2 Stage 2 Gemini quality runner", () => {
       usage: 10,
     });
     expect(new Set(corpus.entries.map((entry) => entry.term.toLowerCase())).size).toBe(120);
+  });
+
+  it("pins Stage 2-B versions and the immutable first-run hashes", () => {
+    expect(STAGE2_RUNNER_VERSION).toBe("v2-ai-quality-runner-v4");
+    expect(STAGE2_PROMPT_VERSION).toBe("v2-ai-enrichment-prompt-v2");
+    expect(STAGE2_SCHEMA_VERSION).toBe("v2-ai-enrichment-draft-v2");
+    expect(STAGE2_MAX_COMBINED_CANDIDATES).toBe(3);
+    expect(() => assertStage2BaselineHashes(STAGE2_BASELINE_HASHES)).not.toThrow();
+    expect(() =>
+      assertStage2BaselineHashes({
+        ...STAGE2_BASELINE_HASHES,
+        corpus: "drifted",
+      }),
+    ).toThrow("Stage 2 baseline hash drift: corpus");
   });
 
   it("sends only lexical fields and pins the explicit stable model outside the body", async () => {
@@ -116,7 +141,7 @@ describe("V2 Stage 2 Gemini quality runner", () => {
             },
           ],
         },
-        "effect",
+        effectSource,
       ),
     ).toMatchObject({ confusableWords: [{ word: "affect" }] });
 
@@ -128,9 +153,89 @@ describe("V2 Stage 2 Gemini quality runner", () => {
           similarWords: [{ word: "effect", differenceZh: "self" }],
           confusableWords: [],
         },
-        "effect",
+        effectSource,
       ),
     ).toThrow("candidate words must be unique and not the source term");
+  });
+
+  it("enforces the Stage 2-B learnable-candidate and novelty rules", () => {
+    expect(() =>
+      validateDraftForRunner(
+        {
+          additionalMeaningsZh: [],
+          examples: [],
+          similarWords: [
+            { word: "result", differenceZh: "更强调最终结果" },
+            { word: "impact", differenceZh: "更强调产生影响" },
+          ],
+          confusableWords: [
+            {
+              word: "affect",
+              type: "usage",
+              differenceZh: "通常作动词",
+              examplePair: [],
+            },
+            {
+              word: "effective",
+              type: "usage",
+              differenceZh: "通常作形容词",
+              examplePair: [],
+            },
+          ],
+        },
+        effectSource,
+      ),
+    ).toThrow("candidate arrays must contain at most 3 items combined");
+
+    expect(() =>
+      validateDraftForRunner(
+        {
+          additionalMeaningsZh: [],
+          examples: [],
+          similarWords: [],
+          confusableWords: [
+            {
+              word: "effect vs affect",
+              type: "usage",
+              differenceZh: "两者词性不同",
+              examplePair: [],
+            },
+          ],
+        },
+        effectSource,
+      ),
+    ).toThrow("must not contain a comparison label");
+
+    expect(() =>
+      validateDraftForRunner(
+        {
+          additionalMeaningsZh: [],
+          examples: [],
+          similarWords: [],
+          confusableWords: [
+            {
+              word: "efect",
+              type: "spelling",
+              differenceZh: "这是常见拼写错误",
+              examplePair: [],
+            },
+          ],
+        },
+        effectSource,
+      ),
+    ).toThrow("must not describe the candidate as an incorrect form");
+
+    expect(() =>
+      validateDraftForRunner(
+        {
+          additionalMeaningsZh: ["影响；结果。"],
+          examples: [],
+          similarWords: [],
+          confusableWords: [],
+        },
+        effectSource,
+      ),
+    ).toThrow("must be unique and not repeat supplied content");
   });
 
   it("parses a valid Gemini response and includes thinking in cost evidence", () => {
@@ -161,7 +266,7 @@ describe("V2 Stage 2 Gemini quality runner", () => {
         },
         modelVersion: "gemini-3.1-flash-lite",
       },
-      "effect",
+      effectSource,
     );
     expect(parsed).toMatchObject({
       modelVersion: "gemini-3.1-flash-lite",
@@ -202,7 +307,7 @@ describe("V2 Stage 2 Gemini quality runner", () => {
           },
           modelVersion: "gemini-3.1-flash-lite",
         },
-        "effect",
+        effectSource,
       );
     } catch (error) {
       caught = error;
@@ -233,7 +338,7 @@ describe("V2 Stage 2 Gemini quality runner", () => {
     };
     let promptBlock;
     try {
-      parseGeminiResponse(blockedBody, "effect");
+      parseGeminiResponse(blockedBody, effectSource);
     } catch (error) {
       promptBlock = error;
     }
@@ -255,7 +360,7 @@ describe("V2 Stage 2 Gemini quality runner", () => {
     };
     let safetyFinish;
     try {
-      parseGeminiResponse(safetyFinishBody, "effect");
+      parseGeminiResponse(safetyFinishBody, effectSource);
     } catch (error) {
       safetyFinish = error;
     }
@@ -287,7 +392,7 @@ describe("V2 Stage 2 Gemini quality runner", () => {
           },
           modelVersion: "gemini-3.1-flash-lite",
         },
-        "effect",
+        effectSource,
       );
     } catch (error) {
       caught = error;
@@ -328,14 +433,14 @@ describe("V2 Stage 2 Gemini quality runner", () => {
       },
       modelVersion: "gemini-3.5-flash",
     };
-    expect(() => parseGeminiResponse(response, "effect")).toThrow(
+    expect(() => parseGeminiResponse(response, effectSource)).toThrow(
       "unexpected model version",
     );
 
     response.modelVersion = "gemini-3.1-flash-lite";
     response.usageMetadata.promptTokenCount = 2_001;
     response.usageMetadata.totalTokenCount = 2_026;
-    expect(() => parseGeminiResponse(response, "effect")).toThrow(
+    expect(() => parseGeminiResponse(response, effectSource)).toThrow(
       "input-token reservation",
     );
   });

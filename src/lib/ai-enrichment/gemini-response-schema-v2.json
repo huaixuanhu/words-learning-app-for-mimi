@@ -1,0 +1,97 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "additionalMeaningsZh": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 3,
+      "items": {
+        "type": "string",
+        "description": "A concise, genuinely additional Chinese meaning not already supplied; omit paraphrases and filler."
+      }
+    },
+    "examples": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 3,
+      "items": {
+        "type": "string",
+        "description": "A correct natural English example using the source word, phrase, or a normal inflection; never an intentionally wrong example."
+      }
+    },
+    "similarWords": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 3,
+      "description": "Together with confusableWords, return at most three learnable candidates in total.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "word": {
+            "type": "string",
+            "description": "One correctly formed standard-English synonym or near-synonym headword or grammatical phrase; no error form, comparison label, or explanation."
+          },
+          "differenceZh": {
+            "type": "string",
+            "description": "A concise Chinese explanation of the genuine usage difference."
+          }
+        },
+        "required": [
+          "word",
+          "differenceZh"
+        ]
+      }
+    },
+    "confusableWords": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 3,
+      "description": "Together with similarWords, return at most three learnable candidates in total.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "word": {
+            "type": "string",
+            "description": "One correctly formed standard-English headword or grammatical phrase genuinely confusable with the source; no misspelling, malformed expression, comparison label, or explanation."
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "spelling",
+              "sound",
+              "usage"
+            ]
+          },
+          "differenceZh": {
+            "type": "string",
+            "description": "A concise Chinese explanation of the genuine difference without teaching the candidate as an error form."
+          },
+          "examplePair": {
+            "type": "array",
+            "minItems": 0,
+            "maxItems": 2,
+            "items": {
+              "type": "string",
+              "description": "Either no examples or one correct source sentence plus one correct candidate sentence; no wrong-form demonstration or correctness label."
+            }
+          }
+        },
+        "required": [
+          "word",
+          "type",
+          "differenceZh",
+          "examplePair"
+        ]
+      }
+    }
+  },
+  "required": [
+    "additionalMeaningsZh",
+    "examples",
+    "similarWords",
+    "confusableWords"
+  ]
+}

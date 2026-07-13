@@ -1,7 +1,7 @@
 # Words Learning App For Mimi V2 Stage 2: AI Quality And Security Gate
 
 Created: 2026-07-13 20:59 AEST
-Last updated: 2026-07-13 21:33 AEST
+Last updated: 2026-07-13 23:00 AEST
 
 Source plan:
 
@@ -39,7 +39,7 @@ Target capability tier: Tier 3.
 
 Working tier: Tier 3.
 
-Status: local gate implemented and first bounded 120-entry evaluation completed on 2026-07-13; 114 drafts passed local validation and 6 were rejected, so the 100% structural threshold and human lexical gate remain open. Evidence: `plan_docs/PLAN_V2_STAGE2_AI_QUALITY_EVIDENCE.md`.
+Status: the first bounded run produced 114 valid and 6 rejected drafts. Completed Stage 2-B produced 120 / 120 locally valid drafts and documented remaining lexical defects. After reviewing concrete cases, the user conditionally accepted the observed error range for supplementary, editable AI drafts with explicit acceptance and a visible model/inaccuracy notice. V2-7 local implementation may proceed under that boundary. Production credential, provider activation, migration, and deployment remain separately approved work.
 
 ## Scope
 
@@ -355,7 +355,7 @@ Rules:
 - The key is not added to `.env.example`, `.env.local`, Vercel, Preview, Production, or source code in Stage 2.
 - A separate Production credential and environment plan is required in V2-7.
 
-## First Execution Result
+## First Execution Result — Historical Gate State
 
 The first fixed-corpus run submitted exactly 120 one-shot requests and observed the pinned `gemini-3.1-flash-lite` model. It produced 114 valid drafts, 6 locally rejected duplicate/self-candidate results, and no provider or network failure. The 95% valid-draft rate is below the provisional 100% structural threshold.
 
@@ -365,16 +365,20 @@ The Production-design reservation helper now rejects a caller-supplied token res
 
 The agent lexical precheck found maximum-filling behavior, malformed/non-learnable candidate values, and selected example-relevance problems. The blank 120-row human review worksheet remains unscored. Full evidence and the proposed next decision are in `plan_docs/PLAN_V2_STAGE2_AI_QUALITY_EVIDENCE.md`.
 
-Consequences:
+Consequences at the time of the first run, superseded by the later Stage 2-B evidence and human tolerance decision:
 
-- Stage 2 is not complete and must not authorize V2-7 Production integration.
+- Stage 2 did not then authorize V2-7 integration.
 - The current Prompt and thresholds are not silently revised after observing the run.
 - Any second paid 120-entry evaluation requires explicit agreement on the Prompt / candidate-contract revision.
+
+Current decision: Stage 2-B is conditionally accepted for V2-7 local editable-draft implementation. This does not authorize a Production credential, Production route activation, migration, or deployment.
 
 ## Planned Files
 
 - `plan_docs/PLAN_V2_STAGE2_AI_QUALITY_SECURITY_GATE.md`
 - `plan_docs/PLAN_V2_STAGE2_AI_QUALITY_EVIDENCE.md`
+- `plan_docs/PLAN_V2_STAGE2_B_AI_QUALITY_REFINEMENT.md`
+- `plan_docs/PLAN_V2_STAGE2_B_AI_QUALITY_EVIDENCE.md`
 - `plan_docs/PLAN_V2_MASTER.md`
 - `src/lib/ai-enrichment/types.ts`
 - `src/lib/ai-enrichment/contract.ts`

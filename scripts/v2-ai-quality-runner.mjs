@@ -1,14 +1,15 @@
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 export const STAGE2_MODEL = "gemini-3.1-flash-lite";
-export const STAGE2_RUNNER_VERSION = "v2-ai-quality-runner-v3";
-export const STAGE2_PROMPT_VERSION = "v2-ai-enrichment-prompt-v1";
-export const STAGE2_SCHEMA_VERSION = "v2-ai-enrichment-draft-v1";
+export const STAGE2_RUNNER_VERSION = "v2-ai-quality-runner-v4";
+export const STAGE2_PROMPT_VERSION = "v2-ai-enrichment-prompt-v2";
+export const STAGE2_SCHEMA_VERSION = "v2-ai-enrichment-draft-v2";
 export const STAGE2_CORPUS_SIZE = 120;
+export const STAGE2_MAX_COMBINED_CANDIDATES = 3;
 export const STAGE2_MAXIMUM_CALLS = 120;
 export const STAGE2_CONCURRENCY = 1;
 export const STAGE2_AUTOMATIC_RETRIES = 0;
@@ -26,14 +27,25 @@ export const STAGE2_RESERVED_ATTEMPT = Object.freeze({
   inputTokens: 2_000,
   outputTokens: 700,
 });
+export const STAGE2_BASELINE_HASHES = Object.freeze({
+  corpus: "97ca46b1ce2ff414c046625e739a5a2fa362243798b88ed3dbb97735554009c8",
+  promptV1: "374595ac60994d6621f83fc2c6e7ea83fd9b39b93c5ed10f6ab84196b0b11c9e",
+  responseSchemaV1:
+    "f341e52ac70cdc712d2a76b9732d1aae7b6ef09afdbe990b561ba9b377662dd5",
+});
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const corpusPath = path.join(root, "test_fixtures/v2-stage2-ai-corpus.json");
 const schemaPath = path.join(
   root,
+  "src/lib/ai-enrichment/gemini-response-schema-v2.json",
+);
+const promptPath = path.join(root, "src/lib/ai-enrichment/prompt-v2.txt");
+const baselineSchemaPath = path.join(
+  root,
   "src/lib/ai-enrichment/gemini-response-schema.json",
 );
-const promptPath = path.join(root, "src/lib/ai-enrichment/prompt-v1.txt");
+const baselinePromptPath = path.join(root, "src/lib/ai-enrichment/prompt-v1.txt");
 const artifactRoot = path.join(root, "local_artifacts/v2-stage2-ai");
 const expectedGroups = Object.freeze({
   academic: 30,
@@ -90,6 +102,97 @@ function boundedTextArray(value, label, minimum, maximum, textMaximum) {
 
 function normalized(value) {
   return value.normalize("NFKC").trim().toLocaleLowerCase("en-US").replace(/\s+/gu, " ");
+}
+
+const candidateSurfacePattern =
+  /^[A-Za-z]+(?:['’-][A-Za-z]+)*(?: [A-Za-z]+(?:['’-][A-Za-z]+)*)*$/u;
+const urlPattern = /(?:https?:\/\/|www\.)/iu;
+const errorFormExplanationPattern =
+  /(?:拼写错误|语法错误|错误的搭配|错误形式|不正确|非标准|不标准|并不标准|此处应(?:使用|改为)|应改为|不可使用|misspell(?:ing|ed)?|ungrammatical|nonstandard|incorrect form)/iu;
+const exampleErrorMarkerPattern =
+  /^(?:(?:correct|incorrect|wrong)\s*[:：-]|[✓✗✘]\s*)/iu;
+
+function normalizedComparableText(value) {
+  return value
+    .normalize("NFKC")
+    .trim()
+    .toLocaleLowerCase("en-US")
+    .replace(/\s+/gu, " ")
+    .replace(/[\s,，;；:：。.!！?？、]+$/gu, "")
+    .trim();
+}
+
+function boundedGeneratedText(value, label, maximum) {
+  const result = boundedText(value, label, maximum);
+  if (urlPattern.test(result)) {
+    throw new Stage2AiQualityError(`${label} must not contain a URL`);
+  }
+  return result;
+}
+
+function uniqueNovelGeneratedTextArray(
+  value,
+  label,
+  minimum,
+  maximum,
+  textMaximum,
+  existing,
+  rejectErrorMarkers = false,
+) {
+  if (!Array.isArray(value) || value.length < minimum || value.length > maximum) {
+    throw new Stage2AiQualityError(`${label} has an invalid item count`);
+  }
+  const seen = new Set(existing.map(normalizedComparableText));
+  return value.map((entry, index) => {
+    const result = boundedGeneratedText(entry, `${label}[${index}]`, textMaximum);
+    if (rejectErrorMarkers && exampleErrorMarkerPattern.test(result)) {
+      throw new Stage2AiQualityError(
+        `${label}[${index}] must not be an error-labelled example`,
+      );
+    }
+    const key = normalizedComparableText(result);
+    if (seen.has(key)) {
+      throw new Stage2AiQualityError(
+        `${label} must be unique and not repeat supplied content`,
+      );
+    }
+    seen.add(key);
+    return result;
+  });
+}
+
+function validateLearnableCandidate(value, label) {
+  const word = boundedGeneratedText(value, label, 80);
+  if (!candidateSurfacePattern.test(word)) {
+    throw new Stage2AiQualityError(
+      `${label} must be one plain standard-English word or phrase`,
+    );
+  }
+  const tokens = normalized(word).split(" ");
+  if (tokens.includes("vs") || tokens.includes("versus")) {
+    throw new Stage2AiQualityError(
+      `${label} must not contain a comparison label`,
+    );
+  }
+  return word;
+}
+
+function validateDifferenceExplanation(value, label) {
+  const result = boundedGeneratedText(value, label, 180);
+  if (errorFormExplanationPattern.test(result)) {
+    throw new Stage2AiQualityError(
+      `${label} must not describe the candidate as an incorrect form`,
+    );
+  }
+  return result;
+}
+
+export function assertStage2BaselineHashes(hashes) {
+  for (const [key, expected] of Object.entries(STAGE2_BASELINE_HASHES)) {
+    if (hashes[key] !== expected) {
+      throw new Stage2AiQualityError(`Stage 2 baseline hash drift: ${key}`);
+    }
+  }
 }
 
 export function validateCorpus(corpus) {
@@ -222,36 +325,64 @@ export function buildGeminiRequest(entry, prompt, responseJsonSchema) {
   };
 }
 
-export function validateDraftForRunner(value, sourceTerm) {
+export function validateDraftForRunner(value, sourceContext) {
   if (!isRecord(value)) {
     throw new Stage2AiQualityError("draft must be an object");
+  }
+  if (
+    !isRecord(sourceContext) ||
+    typeof sourceContext.term !== "string" ||
+    !Array.isArray(sourceContext.meaningsZh) ||
+    !Array.isArray(sourceContext.examples)
+  ) {
+    throw new Stage2AiQualityError("source lexical context is invalid");
   }
   exactKeys(
     value,
     ["additionalMeaningsZh", "examples", "similarWords", "confusableWords"],
     "draft",
   );
-  const additionalMeaningsZh = boundedTextArray(
+  const additionalMeaningsZh = uniqueNovelGeneratedTextArray(
     value.additionalMeaningsZh,
     "additionalMeaningsZh",
     0,
     3,
     80,
+    sourceContext.meaningsZh,
   );
-  const examples = boundedTextArray(value.examples, "examples", 0, 3, 240);
+  const examples = uniqueNovelGeneratedTextArray(
+    value.examples,
+    "examples",
+    0,
+    3,
+    240,
+    sourceContext.examples,
+    true,
+  );
   if (!Array.isArray(value.similarWords) || value.similarWords.length > 3) {
     throw new Stage2AiQualityError("similarWords has an invalid item count");
   }
   if (!Array.isArray(value.confusableWords) || value.confusableWords.length > 3) {
     throw new Stage2AiQualityError("confusableWords has an invalid item count");
   }
-  const seen = new Set([normalized(sourceTerm)]);
+  if (
+    value.similarWords.length + value.confusableWords.length >
+    STAGE2_MAX_COMBINED_CANDIDATES
+  ) {
+    throw new Stage2AiQualityError(
+      `candidate arrays must contain at most ${STAGE2_MAX_COMBINED_CANDIDATES} items combined`,
+    );
+  }
+  const seen = new Set([normalized(sourceContext.term)]);
   const similarWords = value.similarWords.map((suggestion, index) => {
     if (!isRecord(suggestion)) {
       throw new Stage2AiQualityError(`similarWords[${index}] must be an object`);
     }
     exactKeys(suggestion, ["word", "differenceZh"], `similarWords[${index}]`);
-    const word = boundedText(suggestion.word, `similarWords[${index}].word`, 80);
+    const word = validateLearnableCandidate(
+      suggestion.word,
+      `similarWords[${index}].word`,
+    );
     const key = normalized(word);
     if (seen.has(key)) {
       throw new Stage2AiQualityError("candidate words must be unique and not the source term");
@@ -259,10 +390,9 @@ export function validateDraftForRunner(value, sourceTerm) {
     seen.add(key);
     return {
       word,
-      differenceZh: boundedText(
+      differenceZh: validateDifferenceExplanation(
         suggestion.differenceZh,
         `similarWords[${index}].differenceZh`,
-        180,
       ),
     };
   });
@@ -275,7 +405,10 @@ export function validateDraftForRunner(value, sourceTerm) {
       ["word", "type", "differenceZh", "examplePair"],
       `confusableWords[${index}]`,
     );
-    const word = boundedText(suggestion.word, `confusableWords[${index}].word`, 80);
+    const word = validateLearnableCandidate(
+      suggestion.word,
+      `confusableWords[${index}].word`,
+    );
     const key = normalized(word);
     if (seen.has(key)) {
       throw new Stage2AiQualityError("candidate words must be unique and not the source term");
@@ -284,12 +417,14 @@ export function validateDraftForRunner(value, sourceTerm) {
     if (!["spelling", "sound", "usage"].includes(suggestion.type)) {
       throw new Stage2AiQualityError(`confusableWords[${index}].type is unsupported`);
     }
-    const examplePair = boundedTextArray(
+    const examplePair = uniqueNovelGeneratedTextArray(
       suggestion.examplePair,
       `confusableWords[${index}].examplePair`,
       0,
       2,
       240,
+      [],
+      true,
     );
     if (examplePair.length === 1) {
       throw new Stage2AiQualityError("examplePair must be empty or contain two examples");
@@ -297,10 +432,9 @@ export function validateDraftForRunner(value, sourceTerm) {
     return {
       word,
       type: suggestion.type,
-      differenceZh: boundedText(
+      differenceZh: validateDifferenceExplanation(
         suggestion.differenceZh,
         `confusableWords[${index}].differenceZh`,
-        180,
       ),
       examplePair,
     };
@@ -359,7 +493,7 @@ export function classifyProviderError(httpStatus) {
   return "provider_error";
 }
 
-export function parseGeminiResponse(body, sourceTerm) {
+export function parseGeminiResponse(body, sourceContext) {
   if (!isRecord(body)) {
     throw new Stage2AiQualityError("provider response is not an object");
   }
@@ -444,7 +578,7 @@ export function parseGeminiResponse(body, sourceTerm) {
   }
   try {
     return {
-      draft: validateDraftForRunner(parsed, sourceTerm),
+      draft: validateDraftForRunner(parsed, sourceContext),
       usage,
       modelVersion,
       finishReason,
@@ -623,17 +757,47 @@ export function assertLocalSecretBoundary() {
   }
 }
 
+export async function assertLocalSecretFileMode() {
+  let file;
+  try {
+    file = await stat(path.join(root, ".env.stage2.local"));
+  } catch {
+    throw new Stage2AiQualityError(".env.stage2.local is missing");
+  }
+  if ((file.mode & 0o077) !== 0) {
+    throw new Stage2AiQualityError(
+      ".env.stage2.local must not be readable by group or other users",
+    );
+  }
+}
+
 async function loadInputs() {
-  const [corpusText, schemaText, prompt] = await Promise.all([
+  const [
+    corpusText,
+    schemaText,
+    prompt,
+    baselineSchemaText,
+    baselinePrompt,
+  ] = await Promise.all([
     readFile(corpusPath, "utf8"),
     readFile(schemaPath, "utf8"),
     readFile(promptPath, "utf8"),
+    readFile(baselineSchemaPath, "utf8"),
+    readFile(baselinePromptPath, "utf8"),
   ]);
   const corpus = validateCorpus(JSON.parse(corpusText));
   const responseJsonSchema = JSON.parse(schemaText);
   const corpusHash = createHash("sha256").update(corpusText).digest("hex");
   const promptHash = createHash("sha256").update(prompt).digest("hex");
   const responseSchemaHash = createHash("sha256").update(schemaText).digest("hex");
+  const baselineHashes = {
+    corpus: corpusHash,
+    promptV1: createHash("sha256").update(baselinePrompt).digest("hex"),
+    responseSchemaV1: createHash("sha256")
+      .update(baselineSchemaText)
+      .digest("hex"),
+  };
+  assertStage2BaselineHashes(baselineHashes);
   return {
     corpus,
     responseJsonSchema,
@@ -641,6 +805,7 @@ async function loadInputs() {
     corpusHash,
     promptHash,
     responseSchemaHash,
+    baselineHashes,
   };
 }
 
@@ -663,12 +828,14 @@ async function runLive({
   corpusHash,
   promptHash,
   responseSchemaHash,
+  baselineHashes,
 }) {
   const providerCredential = Reflect.get(process.env, "GEMINI_API_KEY");
   if (typeof providerCredential !== "string" || !providerCredential.trim()) {
     throw new Stage2AiQualityError("GEMINI_API_KEY is missing");
   }
   assertLocalSecretBoundary();
+  await assertLocalSecretFileMode();
   await mkdir(artifactRoot, { recursive: true });
   const runDirectory = path.join(artifactRoot, safeRunId());
   await mkdir(runDirectory, { recursive: false });
@@ -713,7 +880,10 @@ async function runLive({
       } else {
         const body = await response.json();
         try {
-          const parsed = parseGeminiResponse(body, entry.term);
+          const parsed = parseGeminiResponse(
+            body,
+            buildProviderLexicalPayload(entry),
+          );
           result = {
             entryId: entry.id,
             term: entry.term,
@@ -819,6 +989,7 @@ async function runLive({
     ...summarizeResults(results, corpusHash, startedAt, finishedAt),
     promptHash,
     responseSchemaHash,
+    baselineHashes,
     stopReason,
   };
   await writeFile(
@@ -848,7 +1019,7 @@ export async function main(args = process.argv.slice(2)) {
       inputs.responseJsonSchema,
     );
     process.stdout.write(
-      `${JSON.stringify({ status: "dry-run", runnerVersion: STAGE2_RUNNER_VERSION, model: STAGE2_MODEL, corpusEntries: inputs.corpus.entries.length, groupCounts: inputs.corpus.groupCounts, corpusHash: inputs.corpusHash, promptVersion: STAGE2_PROMPT_VERSION, promptHash: inputs.promptHash, outputSchemaVersion: STAGE2_SCHEMA_VERSION, responseSchemaHash: inputs.responseSchemaHash, reservedRunCostUsd: Number((reservedAttemptCostUsd() * STAGE2_MAXIMUM_CALLS).toFixed(6)), providerPayloadFields: Object.keys(JSON.parse(firstRequest.contents[0].parts[0].text)), toolsPresent: "tools" in firstRequest })}\n`,
+      `${JSON.stringify({ status: "dry-run", runnerVersion: STAGE2_RUNNER_VERSION, model: STAGE2_MODEL, corpusEntries: inputs.corpus.entries.length, groupCounts: inputs.corpus.groupCounts, corpusHash: inputs.corpusHash, baselineHashes: inputs.baselineHashes, promptVersion: STAGE2_PROMPT_VERSION, promptHash: inputs.promptHash, outputSchemaVersion: STAGE2_SCHEMA_VERSION, responseSchemaHash: inputs.responseSchemaHash, maximumCombinedCandidates: STAGE2_MAX_COMBINED_CANDIDATES, reservedRunCostUsd: Number((reservedAttemptCostUsd() * STAGE2_MAXIMUM_CALLS).toFixed(6)), providerPayloadFields: Object.keys(JSON.parse(firstRequest.contents[0].parts[0].text)), toolsPresent: "tools" in firstRequest })}\n`,
     );
     return;
   }
