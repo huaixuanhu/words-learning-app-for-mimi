@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## 2026-07-14 02:03 AEST
+
+- Completed local V2 Stage 3.1 from the documentation-first child plan `plan_docs/PLAN_V2_STAGE3_1_REVIEW_INTERACTION_CONTEXT_WORD_ACTIONS.md`.
+- Added short guarded card-body tapping for Recognition review answers, retained the compact native `Show answer` / `Hide answer` control, and preserved the first reveal timestamp across later hide/reveal cycles.
+- Applied four calm, text-labelled rating tones—muted terracotta, warm honey, pale olive, and soft sage—without changing rating values, same-session repeats, scheduler calls, or FSRS behavior.
+- Segmented revealed English examples with exact UTF-16 offsets, apostrophe/hyphen support, punctuation preservation, and a Unicode-aware fallback for browsers without `Intl.Segmenter`.
+- Added a responsive example-word action panel: browser-only `Listen`, visibly resting `AI explain`, and a manual `Add to learning` form with editable meaning/example/Track and selected-person duplicate protection including archived entries.
+- Reserved strict `context_explain_v1` public/trusted/result contracts and amended the unexecuted Schema Version 6 draft with expiring operational Cache lineage. Context Cache rows and unreferenced context runs remain outside user backup/restore.
+- Corrected Gemini 3.1 Flash-Lite synchronous Standard prices to US$0.25 / 1M input and US$1.50 / 1M output/thinking tokens. Runner version 5 now reserves US$0.186 for 120 attempts and fails closed above the retained US$0.10 live-evaluation ceiling; no paid call ran.
+- Passed lint, TypeScript, 31 test files / 202 tests with the existing Postgres integration test intentionally skipped, three backup fixture dry-runs, AI dry-run, Next.js Production build, Tier 3 governance preflight, final diff checks, and local browser acceptance.
+- Browser acceptance used a forced-local isolated `localhost:3001` origin. It covered reveal/hide/reveal, nested actions, speech, duplicate rejection, successful manual Active addition, dark/light tones, 320 / 390 / 1200 px layouts, scroll lock, and focus containment with no browser error/warning, error overlay, or horizontal overflow.
+- Did not read or change a credential, call Gemini, connect to or migrate a remote database, alter Production data, change Vercel, deploy, commit, push, or open a pull request. Live V1 remains Schema Version 5.
+- Reason: remove immediate Review friction and make example context useful now while reserving a narrow, server-trusted AI boundary for V2-7.
+
 ## 2026-07-14 00:30 AEST
 
 - Completed local V2 Stage 3 from the documentation-first child plan `plan_docs/PLAN_V2_STAGE3_DATA_MODEL_BACKUP_PARITY.md`.

@@ -1,4 +1,4 @@
--- V2 Stage 3 Schema Version 6 data-model draft.
+-- V2 Stage 3 Schema Version 6 data-model draft, amended by V2 Stage 3.1.
 -- Apply only after db/migrations/0001_initial.sql and
 -- db/migrations/0002_schema5_production_runtime.sql.
 -- Local/static validation is allowed in V2 Stage 3. Any Development / Staging
@@ -424,7 +424,8 @@ create table ai_runs (
   completed_at timestamptz null,
   constraint ai_runs_person_id_id_unique unique (person_id, id),
   constraint ai_runs_person_idempotency_unique unique (person_id, idempotency_key_hash),
-  constraint ai_runs_feature_valid check (feature = 'enrichment_v1'),
+  constraint ai_runs_feature_valid
+    check (feature in ('enrichment_v1', 'context_explain_v1')),
   constraint ai_runs_provider_valid check (provider = 'google-gemini-api'),
   constraint ai_runs_status_valid check (status in ('submitted', 'succeeded', 'rejected', 'failed')),
   constraint ai_runs_structure_status_valid
@@ -539,6 +540,113 @@ create table ai_enrichment_drafts (
     )
 );
 
+-- Operational context explanations are deliberately temporary. They are not a
+-- formal backup domain and must be regenerated from the stored source example.
+create table ai_context_explanation_cache (
+  cache_key_hash text primary key,
+  person_id uuid not null references people(id) on delete restrict,
+  source_vocabulary_item_id uuid not null,
+  ai_run_id uuid not null,
+  source_hash text not null,
+  example_index integer not null,
+  selected_start integer not null,
+  selected_end integer not null,
+  explanation_json jsonb not null,
+  created_at timestamptz not null,
+  expires_at timestamptz not null,
+  constraint ai_context_cache_source_person_fk
+    foreign key (person_id, source_vocabulary_item_id)
+    references vocabulary_items(person_id, id)
+    on delete cascade,
+  constraint ai_context_cache_run_person_fk
+    foreign key (person_id, ai_run_id)
+    references ai_runs(person_id, id)
+    on delete cascade,
+  constraint ai_context_cache_hashes_not_blank
+    check (
+      length(trim(cache_key_hash)) > 0
+      and length(trim(source_hash)) > 0
+    ),
+  constraint ai_context_cache_span_bounded
+    check (
+      example_index between 0 and 127
+      and selected_start >= 0
+      and selected_end > selected_start
+      and selected_end - selected_start <= 120
+    ),
+  constraint ai_context_cache_explanation_shape
+    check (
+      jsonb_typeof(explanation_json) = 'object'
+      and explanation_json ?& array[
+        'suggestedHeadword',
+        'meaningInContextZh',
+        'grammarRoleZh',
+        'contextExplanationZh',
+        'phraseInContext'
+      ]
+      and (
+        explanation_json - array[
+          'suggestedHeadword',
+          'meaningInContextZh',
+          'grammarRoleZh',
+          'contextExplanationZh',
+          'phraseInContext'
+        ]::text[]
+      ) = '{}'::jsonb
+      and jsonb_typeof(explanation_json -> 'suggestedHeadword') = 'string'
+      and length(trim(explanation_json ->> 'suggestedHeadword')) > 0
+      and char_length(explanation_json ->> 'suggestedHeadword') <= 80
+      and jsonb_typeof(explanation_json -> 'meaningInContextZh') = 'string'
+      and length(trim(explanation_json ->> 'meaningInContextZh')) > 0
+      and char_length(explanation_json ->> 'meaningInContextZh') <= 160
+      and jsonb_typeof(explanation_json -> 'grammarRoleZh') = 'string'
+      and length(trim(explanation_json ->> 'grammarRoleZh')) > 0
+      and char_length(explanation_json ->> 'grammarRoleZh') <= 80
+      and jsonb_typeof(explanation_json -> 'contextExplanationZh') = 'string'
+      and length(trim(explanation_json ->> 'contextExplanationZh')) > 0
+      and char_length(explanation_json ->> 'contextExplanationZh') <= 400
+      and (
+        jsonb_typeof(explanation_json -> 'phraseInContext') = 'null'
+        or (
+          jsonb_typeof(explanation_json -> 'phraseInContext') = 'string'
+          and length(trim(explanation_json ->> 'phraseInContext')) > 0
+          and char_length(explanation_json ->> 'phraseInContext') <= 120
+        )
+      )
+    ),
+  constraint ai_context_cache_expiry_valid
+    check (expires_at > created_at)
+);
+
+create or replace function ensure_context_cache_run_valid()
+returns trigger
+language plpgsql
+as $$
+begin
+  if not exists (
+    select 1
+    from ai_runs
+    where person_id = new.person_id
+      and id = new.ai_run_id
+      and source_vocabulary_item_id = new.source_vocabulary_item_id
+      and source_hash = new.source_hash
+      and feature = 'context_explain_v1'
+      and status = 'succeeded'
+      and structure_validation_status = 'valid'
+  ) then
+    raise exception 'A context cache record requires one matching successful context AI run';
+  end if;
+
+  return new;
+end;
+$$;
+
+create trigger ai_context_explanation_cache_run_guard
+before insert or update of person_id, source_vocabulary_item_id, ai_run_id, source_hash
+on ai_context_explanation_cache
+for each row
+execute function ensure_context_cache_run_valid();
+
 create table vocabulary_relations (
   id uuid primary key,
   person_id uuid not null references people(id) on delete restrict,
@@ -571,8 +679,42 @@ create table vocabulary_relations (
     check (
       jsonb_typeof(example_pair) = 'array'
       and jsonb_array_length(example_pair) in (0, 2)
-    )
+  )
 );
+
+create or replace function ensure_enrichment_lineage_run_valid()
+returns trigger
+language plpgsql
+as $$
+begin
+  if not exists (
+    select 1
+    from ai_runs
+    where person_id = new.person_id
+      and id = new.ai_run_id
+      and source_vocabulary_item_id = new.source_vocabulary_item_id
+      and feature = 'enrichment_v1'
+      and status = 'succeeded'
+      and structure_validation_status = 'valid'
+  ) then
+    raise exception 'Enrichment data requires one matching successful enrichment AI run';
+  end if;
+
+  return new;
+end;
+$$;
+
+create trigger ai_enrichment_drafts_run_feature_guard
+before insert or update of person_id, ai_run_id
+on ai_enrichment_drafts
+for each row
+execute function ensure_enrichment_lineage_run_valid();
+
+create trigger vocabulary_relations_run_feature_guard
+before insert or update of person_id, ai_run_id
+on vocabulary_relations
+for each row
+execute function ensure_enrichment_lineage_run_valid();
 
 create table ai_usage_buckets (
   bucket_key text primary key,
@@ -689,6 +831,12 @@ create index ai_runs_cache_key_idx
 
 create index ai_enrichment_drafts_person_source_idx
   on ai_enrichment_drafts(person_id, source_vocabulary_item_id, updated_at desc);
+
+create index ai_context_explanation_cache_expiry_idx
+  on ai_context_explanation_cache(expires_at);
+
+create index ai_context_explanation_cache_person_source_idx
+  on ai_context_explanation_cache(person_id, source_vocabulary_item_id, created_at desc);
 
 create index vocabulary_relations_person_source_idx
   on vocabulary_relations(person_id, source_vocabulary_item_id, created_at desc);

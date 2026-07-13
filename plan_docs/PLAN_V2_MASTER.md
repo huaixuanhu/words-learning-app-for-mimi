@@ -1,7 +1,7 @@
 # Words Learning App For Mimi V2 Master Plan
 
 Created: 2026-07-13 00:16 AEST
-Last updated: 2026-07-14 00:27 AEST
+Last updated: 2026-07-14 01:32 AEST
 
 Source plan:
 - `plan_docs/PLAN_V1_MASTER.md`
@@ -25,6 +25,7 @@ Input evidence:
 Consumer / next stage:
 - `plan_docs/PLAN_V2_STAGE1_PRODUCT_METRIC_DATA_CONTRACT.md`
 - `plan_docs/PLAN_V2_STAGE3_DATA_MODEL_BACKUP_PARITY.md`
+- `plan_docs/PLAN_V2_STAGE3_1_REVIEW_INTERACTION_CONTEXT_WORD_ACTIONS.md`
 - Future derived V2 child plans created in the order defined by this document.
 - `plan_docs/PLAN_VERSION_HOLD_MULTI_USER_CONFIDENTIAL_ISOLATION.md`
 
@@ -37,7 +38,7 @@ Target capability tier: Tier 3. V2 adds a bounded paid AI API（人工智能接�
 
 Working tier: Tier 3.
 
-Status: V2-0 through V2-3 are complete locally. Schema Version 6 and backup version 3 are implemented on branch `V2`; `0003_v2_schema6_data_model.sql` is an unexecuted migration draft. The live V1 database remains Schema Version 5. No V2 user-facing page, remote migration, Production external-service route, credential change, or deployment action has been performed.
+Status: V2-0 through V2-3.1 are complete locally. V2-3.1 is recorded under `plan_docs/PLAN_V2_STAGE3_1_REVIEW_INTERACTION_CONTEXT_WORD_ACTIONS.md`. Schema Version 6 and backup version 3 are implemented on branch `V2`; `0003_v2_schema6_data_model.sql` remains an unexecuted migration draft. The live V1 database remains Schema Version 5. No remote migration, Production external-service route, credential change, or deployment action has been performed.
 
 ## Scope
 
@@ -353,7 +354,7 @@ Accounting rules:
 - Use one server-owned authoritative budget timezone, initially `Australia/Melbourne`, for the global daily reset. A user-editable person timezone cannot reset the global allowance.
 - Reserve and count one request attempt immediately before calling the provider. Invalid or unauthorized requests rejected before that point do not consume an attempt.
 - Once a provider call is submitted, provider `429`, timeout, network ambiguity, safety refusal, invalid Structured Output, and downstream validation failure still consume the request attempt. Reconcile or release unused token / cost reservation when reliable usage evidence permits, but do not restore the request count.
-- The 100 / 200 request values are burst-abuse ceilings, not promised sustainable monthly throughput. At the 2026-07-13 reviewed Gemini 3.1 Flash-Lite price of US$0.125 / 1M input tokens and US$0.75 / 1M output / thinking tokens, the full daily token envelope is approximately US$0.155; a US$2 monthly ceiling represents about 12.9 full-envelope days.
+- The 100 / 200 request values are burst-abuse ceilings, not promised sustainable monthly throughput. The Stage 3.1 official-price recheck found that synchronous Standard `generateContent` uses US$0.25 / 1M input tokens and US$1.50 / 1M output / thinking tokens; US$0.125 / US$0.75 are Batch/Flex rates. The full 400,000 / 140,000 daily token envelope is therefore US$0.31, still below the independent US$0.40 daily ceiling; a US$2 monthly ceiling represents about 6.45 full-envelope days. See `plan_docs/PLAN_V2_STAGE3_1_REVIEW_INTERACTION_CONTEXT_WORD_ACTIONS.md`.
 - App-side cost is an estimate tied to a versioned provider / model / pricing configuration. Missing usage metadata, unknown model version, or stale / missing price configuration fails closed for new calls.
 - The provider Spend Cap and application ledger operate together. Neither an application estimate nor a delayed provider cap alone is presented as an exact billing guarantee.
 
@@ -536,6 +537,16 @@ Status: complete locally on 2026-07-14. Canonical child plan: `plan_docs/PLAN_V2
 - Migrate old rows to Recognition explicitly.
 - Update local / Postgres repositories, API, backups, restore, CSV, fixtures, and tests.
 - Run only local and approved Development / Staging migration rehearsals.
+
+### V2-3.1 Review Interaction And Context Word Actions
+
+Status: complete locally on 2026-07-14. Canonical child plan: `plan_docs/PLAN_V2_STAGE3_1_REVIEW_INTERACTION_CONTEXT_WORD_ACTIONS.md`. No provider, credential, remote database, or deployment action occurred.
+
+- Let card-body pointer interaction reveal/hide the Recognition answer while retaining an accessible explicit control and stable first-reveal timing.
+- Apply a calm four-tone scale to the existing rating choices without changing their FSRS or repeat semantics.
+- Add exact-offset example-token actions, browser `Listen`, and duplicate-guarded manual `Add to learning`.
+- Reserve the strict `context_explain_v1` request/result and temporary Cache contracts while keeping actual AI generation in V2-7.
+- Correct synchronous Standard Gemini price estimates without making another paid call.
 
 ### V2-4 Mobile Foundation And Copy
 

@@ -524,6 +524,32 @@ describe("JSON vocabulary backup", () => {
             createdAt: "2026-07-05T00:05:00.000Z",
             completedAt: "2026-07-05T00:05:01.000Z",
           },
+          {
+            id: "run-context-temporary",
+            personId,
+            sourceVocabularyItemId: "vocab-1",
+            feature: "context_explain_v1",
+            provider: "google-gemini-api",
+            model: "gemini-3.1-flash-lite",
+            modelLabel: "Gemini 3.1 Flash-Lite",
+            promptVersion: "v2-context-explain-v1",
+            sourceHash: "source-hash-context",
+            outputSchemaVersion: "ai-context-explanation-v1",
+            disclosureVersion: "ai-disclosure-v1",
+            idempotencyKeyHash: "context-idempotency",
+            cacheKeyHash: "context-cache",
+            status: "succeeded",
+            structureValidationStatus: "valid",
+            providerResponseId: null,
+            inputTokens: 100,
+            outputTokens: 100,
+            thinkingTokens: 0,
+            totalTokens: 200,
+            latencyMs: 500,
+            estimatedCostUsd: 0.000175,
+            createdAt: "2026-07-05T00:07:00.000Z",
+            completedAt: "2026-07-05T00:07:01.000Z",
+          },
         ],
         aiEnrichmentDrafts: [
           {
@@ -550,6 +576,18 @@ describe("JSON vocabulary backup", () => {
             updatedAt: "2026-07-05T00:05:00.000Z",
             decidedAt: null,
           },
+          {
+            id: "draft-invalid-context-lineage",
+            personId,
+            sourceVocabularyItemId: "vocab-1",
+            aiRunId: "run-context-temporary",
+            status: "accepted",
+            draft: acceptedContent,
+            acceptedContent,
+            createdAt: "2026-07-05T00:07:00.000Z",
+            updatedAt: "2026-07-05T00:08:00.000Z",
+            decidedAt: "2026-07-05T00:08:00.000Z",
+          },
         ],
       },
       {
@@ -559,9 +597,15 @@ describe("JSON vocabulary backup", () => {
     );
 
     expect(backup.data.aiRuns.map((run) => run.id)).toEqual(["run-accepted"]);
+    expect(backup.data.aiRuns.map((run) => run.id)).not.toContain(
+      "run-context-temporary",
+    );
     expect(backup.data.aiEnrichmentDrafts.map((draft) => draft.id)).toEqual([
       "draft-accepted",
     ]);
+    expect(backup.data.aiEnrichmentDrafts.map((draft) => draft.id)).not.toContain(
+      "draft-invalid-context-lineage",
+    );
     expect(backup.metadata.counts).toMatchObject({
       aiRuns: 1,
       aiEnrichmentDrafts: 1,

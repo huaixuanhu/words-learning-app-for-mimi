@@ -65,6 +65,8 @@ V2 Stage 3 extends the local harness to Schema Version 6 and backup wrapper vers
 - Quota buckets, study/AI idempotency rows, Cache, temporary/rejected drafts, and unreferenced AI audit rows are operational data and are not imported from a user backup.
 - `db/migrations/0003_v2_schema6_data_model.sql` and the Schema 6 fixture have passed local/static validation only. No Development, Staging, Preview, or Production migration/import has been executed for Stage 3.
 
+V2 Stage 3.1 later reserves `context_explain_v1` in that same unexecuted `0003` draft and adds `ai_context_explanation_cache`. This table is expiring operational data tied to one exact stored example-token span and a matching successful context run. It has no JSON backup collection or `backup_import_mappings` entity type, and the backup selector excludes context runs plus any formal draft/relation carrying feature-mismatched lineage. Enrichment drafts and vocabulary relations continue requiring a matching succeeded/valid `enrichment_v1` run. Stage 3.1 did not execute SQL remotely.
+
 ## Migration Principle
 
 The browser-local schema uses prefixed string ids such as `person_mimi`, `vocab_*`, `batch_*`, and `review_event_*`. The Postgres draft uses UUID primary keys. A real import must therefore create a deterministic in-memory mapping from each source id to a target UUID during one transaction.

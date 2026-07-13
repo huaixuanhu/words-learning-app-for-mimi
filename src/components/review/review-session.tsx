@@ -4,10 +4,12 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { CheckCircle2, Eye, EyeOff, RotateCcw, Undo2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SimplePanel } from "@/components/simple-panel";
+import { ExampleWordActions } from "@/components/review/example-word-actions";
 import { useMimiSound } from "@/components/sound-provider";
 import { useVocabularyData } from "@/components/vocabulary/use-vocabulary-data";
 import { getSelectedPersonId } from "@/lib/people/repository";
 import { recordReview, resetTodayReviewTask, rollbackReviewEvent } from "@/lib/review/repository";
+import { getNextAnswerRevealState } from "@/lib/review/answer-reveal";
 import { selectReviewQueue } from "@/lib/review/scheduler";
 import { getNextSessionIdsAfterRating, moveReviewAttemptBackToFront } from "@/lib/review/session-queue";
 import { getSelectedReviewSettings } from "@/lib/review/settings";
@@ -31,6 +33,18 @@ type CompletedReview = {
   passedSession: boolean;
 };
 
+const CARD_TOGGLE_IGNORE_SELECTOR =
+  "button, a, input, textarea, select, label, [contenteditable='true'], [data-card-toggle-ignore='true']";
+
+function shouldIgnoreCardToggle(target: EventTarget | null) {
+  if (target instanceof Element && target.closest(CARD_TOGGLE_IGNORE_SELECTOR)) {
+    return true;
+  }
+
+  const selection = typeof window === "undefined" ? null : window.getSelection();
+  return Boolean(selection && !selection.isCollapsed && selection.toString().trim());
+}
+
 export function ReviewSession() {
   const { data, isLoaded, commit } = useVocabularyData();
   const { settings: soundSettings } = useMimiSound();
@@ -45,6 +59,11 @@ export function ReviewSession() {
   const [cardStartedAt, setCardStartedAt] = useState(0);
   const [submittedItemId, setSubmittedItemId] = useState<string | null>(null);
   const submittedItemIdRef = useRef<string | null>(null);
+  const cardPointerStartRef = useRef<{
+    pointerId: number;
+    clientX: number;
+    clientY: number;
+  } | null>(null);
   const [message, setMessage] = useState("");
   const selectedPersonId = getSelectedPersonId(data);
   const recognitionItems = useMemo(() => getRecognitionVocabularyItems(data), [data]);
@@ -96,6 +115,16 @@ export function ReviewSession() {
   const progressPercent = sessionTotal ? Math.round((completedCount / sessionTotal) * 100) : 0;
   const ratingDisabled = !currentItem || !showBack || submittedItemId === currentItem.id;
   const canRollbackPrevious = Boolean(currentItem) && completedReviews.length > 0;
+
+  const toggleAnswer = (eventTimeStamp: number) => {
+    const next = getNextAnswerRevealState(
+      { showBack, cardStartedAt },
+      eventTimeStamp,
+    );
+
+    setShowBack(next.showBack);
+    setCardStartedAt(next.cardStartedAt);
+  };
 
   useEffect(() => {
     if (
@@ -325,10 +354,42 @@ export function ReviewSession() {
                 initial={reduceMotion ? false : { opacity: 0, y: 10 }}
                 animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
                 transition={{ duration: 0.34, ease: [0.22, 1, 0.36, 1] }}
-                className="mimi-card bg-[#fffaf1] p-6 sm:p-8"
+                onPointerDown={(event) => {
+                  if (event.button !== 0 || shouldIgnoreCardToggle(event.target)) {
+                    cardPointerStartRef.current = null;
+                    return;
+                  }
+
+                  cardPointerStartRef.current = {
+                    pointerId: event.pointerId,
+                    clientX: event.clientX,
+                    clientY: event.clientY,
+                  };
+                }}
+                onPointerUp={(event) => {
+                  const start = cardPointerStartRef.current;
+                  cardPointerStartRef.current = null;
+                  if (
+                    event.button !== 0 ||
+                    !start ||
+                    start.pointerId !== event.pointerId ||
+                    Math.hypot(event.clientX - start.clientX, event.clientY - start.clientY) > 8 ||
+                    shouldIgnoreCardToggle(event.target)
+                  ) {
+                    return;
+                  }
+
+                  toggleAnswer(event.timeStamp);
+                }}
+                onPointerCancel={() => {
+                  cardPointerStartRef.current = null;
+                }}
+                className="mimi-card cursor-pointer bg-[#fffaf1] p-6 sm:p-8"
               >
                 <p className="mimi-word-serif text-5xl text-[#203229] sm:text-6xl">{currentItem.surfaceText}</p>
-                <p className="mt-4 text-sm leading-6 text-[#5f6d62]">先安静回忆，再翻开答案。</p>
+                <p className="mt-4 text-sm leading-6 text-[#5f6d62]">
+                  {showBack ? "Tap again to hide." : "Tap the card to reveal."}
+                </p>
 
                 <AnimatePresence mode="wait">
                   {showBack ? (
@@ -357,7 +418,14 @@ export function ReviewSession() {
                           <p className="text-xs font-semibold uppercase text-[#879087]">Example</p>
                           <div className="mt-1 grid gap-1 text-sm leading-6 text-[#5f6d62]">
                             {currentExamples.map((example, index) => (
-                              <p key={`${currentItem.id}-example-${index}`}>{example}</p>
+                              <ExampleWordActions
+                                key={`${currentItem.id}-example-${index}`}
+                                example={example}
+                                exampleIndex={index}
+                                sourceSurfaceText={currentItem.surfaceText}
+                                data={data}
+                                commit={commit}
+                              />
                             ))}
                           </div>
                         </div>
@@ -392,14 +460,11 @@ export function ReviewSession() {
           <>
             <PressableButton
               type="button"
-              onClick={(event) => {
-                setShowBack((current) => !current);
-                setCardStartedAt(showBack ? 0 : event.timeStamp);
-              }}
-              className="mimi-button-secondary mimi-focus-ring mt-4 inline-flex w-full items-center justify-center gap-2 px-4 text-sm font-semibold"
+              onClick={(event) => toggleAnswer(event.timeStamp)}
+              className="mimi-button-secondary mimi-focus-ring mx-auto mt-4 flex min-w-36 items-center justify-center gap-2 px-4 text-sm font-semibold"
             >
               {showBack ? <EyeOff aria-hidden="true" className="size-4" /> : <Eye aria-hidden="true" className="size-4" />}
-              {showBack ? "隐藏答案" : "显示答案"}
+              {showBack ? "Hide answer" : "Show answer"}
             </PressableButton>
             <div className="mt-4 grid gap-2 sm:grid-cols-2">
               {reviewRatings.map((rating) => (
@@ -408,7 +473,7 @@ export function ReviewSession() {
                   type="button"
                   disabled={ratingDisabled}
                   onClick={(event) => void submitRating(rating.value, event.timeStamp)}
-                  className="mimi-focus-ring min-h-14 rounded-md border border-[#d8d1c2] bg-[#fffaf1] px-3 text-sm font-semibold text-[#203229] transition hover:border-[#5f7d66] hover:bg-[#d9e5d5] disabled:cursor-not-allowed disabled:opacity-50"
+                  className={`mimi-rating-button mimi-rating-${rating.value} mimi-focus-ring min-h-14 rounded-md border px-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50`}
                 >
                   <span className="block">{rating.label}</span>
                   <span className="mt-1 block text-xs font-medium text-[#5f6d62]">{rating.interval}</span>
@@ -444,7 +509,7 @@ export function ReviewSession() {
               type="button"
               disabled={ratingDisabled}
               onClick={(event) => void submitRating(rating.value, event.timeStamp)}
-              className="mimi-focus-ring w-full rounded-md border border-[#d8d1c2] bg-[#fffaf1] p-3 text-left transition hover:border-[#5f7d66] hover:bg-[#d9e5d5] disabled:cursor-not-allowed disabled:opacity-50"
+              className={`mimi-rating-button mimi-rating-${rating.value} mimi-focus-ring w-full rounded-md border p-3 text-left disabled:cursor-not-allowed disabled:opacity-50`}
             >
               <p className="font-medium text-[#203229]">{rating.label}</p>
               <p className="text-sm text-[#5f6d62]">{rating.interval}</p>

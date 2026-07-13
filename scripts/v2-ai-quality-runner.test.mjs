@@ -62,7 +62,7 @@ describe("V2 Stage 2 Gemini quality runner", () => {
   });
 
   it("pins Stage 2-B versions and the immutable first-run hashes", () => {
-    expect(STAGE2_RUNNER_VERSION).toBe("v2-ai-quality-runner-v4");
+    expect(STAGE2_RUNNER_VERSION).toBe("v2-ai-quality-runner-v5");
     expect(STAGE2_PROMPT_VERSION).toBe("v2-ai-enrichment-prompt-v2");
     expect(STAGE2_SCHEMA_VERSION).toBe("v2-ai-enrichment-draft-v2");
     expect(STAGE2_MAX_COMBINED_CANDIDATES).toBe(3);
@@ -97,18 +97,19 @@ describe("V2 Stage 2 Gemini quality runner", () => {
     expect(STAGE2_MODEL).toBe("gemini-3.1-flash-lite");
   });
 
-  it("requires an explicit second live confirmation", () => {
+  it("requires an explicit second live confirmation and fails closed above the historical ceiling", () => {
     expect(assertLiveGuards(["--dry-run"])).toEqual({ live: false });
     expect(() =>
-      assertLiveGuards(["--live"], new Date("2026-07-13T10:00:00.000Z")),
+      assertLiveGuards(["--live"], new Date("2026-07-14T10:00:00.000Z")),
     ).toThrow(Stage2AiQualityError);
-    expect(
+    expect(() =>
       assertLiveGuards(
         ["--live", STAGE2_CONFIRMATION_FLAG],
-        new Date("2026-07-13T10:00:00.000Z"),
+        new Date("2026-07-14T10:00:00.000Z"),
       ),
-    ).toMatchObject({ live: true });
-    expect(reservedAttemptCostUsd() * 120).toBeLessThanOrEqual(
+    ).toThrow("reserved run cost exceeds the Stage 2 ceiling");
+    expect(reservedAttemptCostUsd() * 120).toBeCloseTo(0.186, 6);
+    expect(reservedAttemptCostUsd() * 120).toBeGreaterThan(
       STAGE2_MAXIMUM_RESERVED_RUN_COST_USD,
     );
   });
@@ -117,7 +118,7 @@ describe("V2 Stage 2 Gemini quality runner", () => {
     expect(() =>
       assertLiveGuards(
         ["--live", STAGE2_CONFIRMATION_FLAG],
-        new Date("2026-08-13T00:00:00.000Z"),
+        new Date("2026-08-14T00:00:00.000Z"),
       ),
     ).toThrow("pricing evidence is stale");
   });

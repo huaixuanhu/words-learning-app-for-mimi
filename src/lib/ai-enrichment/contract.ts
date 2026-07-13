@@ -22,13 +22,13 @@ export const AI_OUTPUT_SCHEMA_VERSION = "v2-ai-enrichment-draft-v2" as const;
 export const AI_DISCLOSURE_VERSION = "ai-disclosure-v1" as const;
 export const AI_MAX_COMBINED_CANDIDATES = 3 as const;
 
-export const GEMINI_PRICING_2026_07_13: GeminiPricing = Object.freeze({
+export const GEMINI_PRICING_2026_07_14_STANDARD: GeminiPricing = Object.freeze({
   provider: "google-gemini-api",
   model: GEMINI_STAGE2_MODEL,
-  inputUsdPerMillionTokens: 0.125,
-  outputUsdPerMillionTokens: 0.75,
-  checkedAt: "2026-07-13T00:00:00.000Z",
-  staleAfter: "2026-08-13T00:00:00.000Z",
+  inputUsdPerMillionTokens: 0.25,
+  outputUsdPerMillionTokens: 1.5,
+  checkedAt: "2026-07-14T00:00:00.000Z",
+  staleAfter: "2026-08-14T00:00:00.000Z",
 });
 
 export const AI_PRODUCTION_LIMITS: AiProductionLimits = Object.freeze({
@@ -474,7 +474,7 @@ export function isGeminiPricingFresh(pricing: GeminiPricing, now: string | Date)
 
 export function estimateGeminiCostUsd(
   usage: GeminiUsage,
-  pricing: GeminiPricing = GEMINI_PRICING_2026_07_13,
+  pricing: GeminiPricing = GEMINI_PRICING_2026_07_14_STANDARD,
 ) {
   const input =
     (nonNegativeInteger(usage.promptTokenCount, "promptTokenCount") / 1_000_000) *
@@ -489,7 +489,7 @@ export function estimateGeminiCostUsd(
 }
 
 export function buildDefaultAttemptReservation(
-  pricing: GeminiPricing = GEMINI_PRICING_2026_07_13,
+  pricing: GeminiPricing = GEMINI_PRICING_2026_07_14_STANDARD,
   limits: AiProductionLimits = AI_PRODUCTION_LIMITS,
 ): AiAttemptReservation {
   return {
@@ -559,9 +559,9 @@ export function reserveAiProviderAttempt(
   }
   const minimumReservationCost =
     (attempt.inputTokens / 1_000_000) *
-      GEMINI_PRICING_2026_07_13.inputUsdPerMillionTokens +
+      GEMINI_PRICING_2026_07_14_STANDARD.inputUsdPerMillionTokens +
     (attempt.outputTokens / 1_000_000) *
-      GEMINI_PRICING_2026_07_13.outputUsdPerMillionTokens;
+      GEMINI_PRICING_2026_07_14_STANDARD.outputUsdPerMillionTokens;
   if (attempt.estimatedCostUsd + Number.EPSILON < minimumReservationCost) {
     throw new AiEnrichmentContractError(
       "attempt reservation must not understate the configured token cost",

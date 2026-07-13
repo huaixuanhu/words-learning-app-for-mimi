@@ -5,7 +5,7 @@ import {
   AI_PRODUCTION_LIMITS,
   AI_STAGE2_EVALUATION_LIMITS,
   AiEnrichmentContractError,
-  GEMINI_PRICING_2026_07_13,
+  GEMINI_PRICING_2026_07_14_STANDARD,
   GEMINI_STAGE2_MODEL,
   buildDefaultAttemptReservation,
   estimateGeminiCostUsd,
@@ -394,7 +394,7 @@ describe("V2 Stage 2 AI enrichment contract", () => {
       thoughtsTokenCount: 40_000,
       totalTokenCount: 540_000,
     });
-    expect(estimateGeminiCostUsd(usage)).toBeCloseTo(0.155, 9);
+    expect(estimateGeminiCostUsd(usage)).toBeCloseTo(0.31, 9);
   });
 
   it("fails closed when token totals are inconsistent", () => {
@@ -411,14 +411,14 @@ describe("V2 Stage 2 AI enrichment contract", () => {
   it("expires the versioned price configuration", () => {
     expect(
       isGeminiPricingFresh(
-        GEMINI_PRICING_2026_07_13,
+        GEMINI_PRICING_2026_07_14_STANDARD,
         "2026-07-31T00:00:00.000Z",
       ),
     ).toBe(true);
     expect(
       isGeminiPricingFresh(
-        GEMINI_PRICING_2026_07_13,
-        "2026-08-13T00:00:00.000Z",
+        GEMINI_PRICING_2026_07_14_STANDARD,
+        "2026-08-14T00:00:00.000Z",
       ),
     ).toBe(false);
   });
@@ -428,7 +428,7 @@ describe("V2 Stage 2 AI enrichment contract", () => {
     expect(reservation).toEqual({
       inputTokens: 2_000,
       outputTokens: 700,
-      estimatedCostUsd: 0.000775,
+      estimatedCostUsd: 0.00155,
     });
 
     const allowed = reserveAiProviderAttempt({

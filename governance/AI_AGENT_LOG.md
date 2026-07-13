@@ -1,5 +1,27 @@
 # AI Agent Log
 
+## 2026-07-14 02:03 AEST
+
+- Task: execute V2 Stage 3.1 with documentation first, then implement the bounded Review interaction and context-word actions.
+- Plan agreed: yes. The user stated Stage 3 was fully committed and explicitly requested Stage 3.1 documentation followed by implementation. The child plan froze scope, non-scope, exit criteria, safety stops, exact AI context fields, and validation before code changes continued.
+- Working tier: Tier 3. Local plans, components, pure contracts, the still-unexecuted Schema Version 6 draft, tests, and browser-local disposable data were in scope. Credentials, provider calls, paid usage, remote databases, Production data, Vercel, deployment, and GitHub remote actions were outside scope.
+- Changed files:
+  - Stage 3.1 child/master/status/architecture/backup documents, changelog, AGENTS, and this log;
+  - Review card interaction, four rating tones, example-token action panel, browser speech helper, segmentation, duplicate detection, and first-reveal state helper;
+  - strict `context_explain_v1` public/trusted/result contracts and operational Cache record type;
+  - the unexecuted `db/migrations/0003_v2_schema6_data_model.sql` feature/cache amendment and static/backup exclusion tests;
+  - Gemini Standard pricing constants plus Stage 2 runner version 5 fail-closed cost evidence.
+- Reason: remove immediate Review friction and make words inside examples locally useful without letting a later AI route trust browser-owned text, silently save generated content, or enter backups with temporary Cache data.
+- Decisions:
+  - Card tapping accepts only a short primary-pointer gesture on non-interactive content. Drag/selection, nested controls, and marked word actions are excluded; the explicit native answer button remains.
+  - Hiding an answer never resets the first reveal timestamp. Ratings remain available only while the answer is visible, preserving the prior Review rule and all scheduler semantics.
+  - `Listen` uses browser SpeechSynthesis only. Manual example-word additions use `source = manual`, the ordinary creation path, an explicit Track, and duplicate checks including archived selected-person entries.
+  - `AI explain` remains disabled/resting. No fixture is presented as generated output and no AI route exists in this stage.
+  - `context_explain_v1` later accepts only entry id, example index, exact offsets, fixed feature/disclosure version, and an idempotency key; the server must re-read and re-segment the stored example.
+  - Corrected Standard pricing makes the 120-attempt reservation US$0.186. The historical US$0.10 live ceiling is retained, so another batch is rejected until a separate human cost decision.
+- Validation: lint and TypeScript passed; Vitest passed 31 files / 202 tests with 1 existing Postgres integration file / test intentionally skipped; all three backup fixture dry-runs passed; AI dry-run reported runner version 5, 120 unchanged fixtures, no tools, and US$0.186 reserved; Next.js Production build passed. Local browser acceptance passed on an isolated forced-local origin at 320, 390, and 1200 px with no console warning/error, framework overlay, or horizontal overflow. Tier 3 governance preflight and final diff checks passed after document/log synchronization.
+- Safety notes: the localhost server was explicitly forced to `MIMI_STORAGE_RUNTIME=local`; its storage API rejected server persistence before the browser-local fallback, and no remote database connection occurred. The disposable browser test used the separate `localhost:3001` origin so the existing 3000-origin data was not changed. No `.env` value, credential, or token was inspected, printed, changed, copied, or staged. No Gemini/provider call, charge, remote migration/import/restore, Production write, Vercel action, deployment, commit, push, pull request, or merge occurred. Live V1 remains Schema Version 5 and `0003` remains unexecuted.
+
 ## 2026-07-14 00:30 AEST
 
 - Task: execute the next approved V2 stage, Stage 3 Data Model And Backup Parity, with documentation first and local implementation second.

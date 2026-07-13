@@ -1,7 +1,7 @@
 # Words Learning App For Mimi V2 Stage 2: First AI Quality Evidence
 
 Created: 2026-07-13 21:23 AEST
-Last updated: 2026-07-13 22:06 AEST
+Last updated: 2026-07-14 01:32 AEST
 
 Source plan:
 
@@ -109,15 +109,16 @@ The first summary retained exact usage only for the 114 valid drafts:
 | Reported thinking tokens | 0 |
 | Total tokens | 72,020 |
 
-At the checked price, those retained calls account for US$0.034275. The six invalid HTTP 200 responses also consumed tokens, but their usage metadata was lost in the first runner's validation-exception path. Their per-call usage had already passed the 2,000-input / 700-output reservation checks before draft validation failed. The defensible total interval is therefore:
+The original runner recorded US$0.034275 using US$0.125 / US$0.75 Batch/Flex rates. The Stage 3.1 check on 2026-07-14 confirmed that this synchronous REST `generateContent` run must use Standard US$0.25 / US$1.50 pricing. Repricing the retained tokens gives US$0.068550. The six invalid HTTP 200 responses also consumed tokens, but their usage metadata was lost in the first runner's validation-exception path. Their per-call usage had already passed the 2,000-input / 700-output reservation checks before draft validation failed. The corrected defensible interval is therefore:
 
 ```text
-known retained cost                              US$0.034275
-maximum six-call missing reservation            US$0.004650
-bounded total                       US$0.034275 - US$0.038925
+historical runner-recorded retained estimate     US$0.034275
+corrected retained Standard estimate             US$0.068550
+maximum six-call missing Standard reservation    US$0.009300
+corrected bounded total              US$0.068550 - US$0.077850
 ```
 
-This interval replaces any earlier description of US$0.034275 as the complete run cost. Exact provider billing cannot be reconstructed from the saved first-run artifact.
+This corrected interval replaces any current-cost description of US$0.034275 as the complete run cost. The original runner value remains historical evidence. Exact provider billing cannot be reconstructed from the saved first-run artifact.
 
 Recorded latency across all 120 attempts:
 

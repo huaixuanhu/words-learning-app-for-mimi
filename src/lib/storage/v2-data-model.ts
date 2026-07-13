@@ -1,4 +1,8 @@
-import type { AiEnrichmentDraft } from "@/lib/ai-enrichment/types";
+import type {
+  AiContextExplanation,
+  AiEnrichmentDraft,
+  AiFeature,
+} from "@/lib/ai-enrichment/types";
 import type { ReviewProfile } from "@/lib/daily-study/types";
 
 export type DailyStudyDefaultRecord = {
@@ -53,7 +57,7 @@ export type AiRunRecord = {
   id: string;
   personId: string;
   sourceVocabularyItemId: string | null;
-  feature: "enrichment_v1";
+  feature: AiFeature;
   provider: "google-gemini-api";
   model: string;
   modelLabel: string;
@@ -89,6 +93,20 @@ export type AiEnrichmentDraftRecord = {
   createdAt: string;
   updatedAt: string;
   decidedAt: string | null;
+};
+
+export type AiContextExplanationCacheRecord = {
+  cacheKeyHash: string;
+  personId: string;
+  sourceVocabularyItemId: string;
+  aiRunId: string;
+  sourceHash: string;
+  exampleIndex: number;
+  selectedStart: number;
+  selectedEnd: number;
+  result: AiContextExplanation;
+  createdAt: string;
+  expiresAt: string;
 };
 
 export type VocabularyRelationType = "similar" | "spelling" | "sound" | "usage";

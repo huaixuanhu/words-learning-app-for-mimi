@@ -71,6 +71,7 @@ describe("V2 Schema Version 6 data model", () => {
     for (const table of [
       "ai_runs",
       "ai_enrichment_drafts",
+      "ai_context_explanation_cache",
       "vocabulary_relations",
       "ai_usage_buckets",
       "study_command_idempotency",
@@ -80,6 +81,7 @@ describe("V2 Schema Version 6 data model", () => {
     expect(migrationSql).toContain("ensure_ai_run_source_person");
     expect(migrationSql).toContain("provider text not null");
     expect(migrationSql).toContain("provider = 'google-gemini-api'");
+    expect(migrationSql).toContain("feature in ('enrichment_v1', 'context_explain_v1')");
     expect(migrationSql).toContain("ai_runs_lifecycle_consistent");
     expect(migrationSql).toContain(
       "total_tokens::bigint >=",
@@ -87,6 +89,32 @@ describe("V2 Schema Version 6 data model", () => {
     expect(backupSource).toContain("selectFormalBackupData");
     expect(backupSource).not.toContain("aiUsageBuckets:");
     expect(backupSource).not.toContain("studyCommandIdempotency:");
+    expect(backupSource).not.toContain("aiContextExplanationCache:");
+  });
+
+  it("keeps context explanations temporary and tied to one trusted source span", () => {
+    const backupMappingSection = migrationSql.slice(
+      migrationSql.indexOf("alter table backup_import_mappings"),
+      migrationSql.indexOf("create index daily_study_plans_person_date_idx"),
+    );
+
+    expect(migrationSql).toContain("ai_context_cache_span_bounded");
+    expect(migrationSql).toContain("selected_end - selected_start <= 120");
+    expect(migrationSql).toContain("explanation_json ?& array[");
+    expect(migrationSql).toContain(") = '{}'::jsonb");
+    expect(migrationSql).toContain(
+      "char_length(explanation_json ->> 'contextExplanationZh') <= 400",
+    );
+    expect(migrationSql).toContain("ensure_context_cache_run_valid");
+    expect(migrationSql).toContain("source_vocabulary_item_id = new.source_vocabulary_item_id");
+    expect(migrationSql).toContain("feature = 'context_explain_v1'");
+    expect(migrationSql).toContain("status = 'succeeded'");
+    expect(migrationSql).toContain("structure_validation_status = 'valid'");
+    expect(migrationSql).toContain("ai_context_explanation_cache_expiry_idx");
+    expect(migrationSql).toContain("ensure_enrichment_lineage_run_valid");
+    expect(migrationSql).toContain("ai_enrichment_drafts_run_feature_guard");
+    expect(migrationSql).toContain("vocabulary_relations_run_feature_guard");
+    expect(backupMappingSection).not.toContain("'ai_context_explanation_cache'");
   });
 
   it("allows Schema Version 6 backup mappings for every formal domain", () => {

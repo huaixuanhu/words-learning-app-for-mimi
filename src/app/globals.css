@@ -26,6 +26,14 @@
   --mimi-clay: #d9bfa4;
   --mimi-amber: #d7c28d;
   --mimi-rose: #c98f86;
+  --mimi-rating-forgot-bg: #ead8d0;
+  --mimi-rating-forgot-border: #b98272;
+  --mimi-rating-hard-bg: #eee1bd;
+  --mimi-rating-hard-border: #b19451;
+  --mimi-rating-vague-bg: #e3e5c6;
+  --mimi-rating-vague-border: #929c5f;
+  --mimi-rating-remembered-bg: #d9e5d5;
+  --mimi-rating-remembered-border: #6f9475;
   --mimi-border: #d8d1c2;
   --mimi-border-strong: #afbea9;
   --mimi-text: #203229;
@@ -323,6 +331,39 @@ select {
 
 .mimi-button-secondary:active {
   transform: translateY(1px) scale(0.99);
+}
+
+.mimi-rating-button {
+  color: var(--mimi-text);
+  transition:
+    border-color 180ms var(--mimi-ease),
+    box-shadow 180ms var(--mimi-ease),
+    filter 180ms var(--mimi-ease);
+}
+
+.mimi-rating-button:not(:disabled):hover {
+  filter: brightness(1.025) saturate(1.04);
+  box-shadow: 0 12px 24px rgb(31 47 38 / 0.13);
+}
+
+.mimi-rating-forgot {
+  border-color: var(--mimi-rating-forgot-border);
+  background: var(--mimi-rating-forgot-bg);
+}
+
+.mimi-rating-hard {
+  border-color: var(--mimi-rating-hard-border);
+  background: var(--mimi-rating-hard-bg);
+}
+
+.mimi-rating-vague {
+  border-color: var(--mimi-rating-vague-border);
+  background: var(--mimi-rating-vague-bg);
+}
+
+.mimi-rating-remembered {
+  border-color: var(--mimi-rating-remembered-border);
+  background: var(--mimi-rating-remembered-bg);
 }
 
 .mimi-focus-ring {

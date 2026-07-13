@@ -1,7 +1,7 @@
 # Words Learning App For Mimi V2 Stage 3: Data Model And Backup Parity
 
 Created: 2026-07-13 23:41 AEST
-Last updated: 2026-07-14 00:27 AEST
+Last updated: 2026-07-14 02:03 AEST
 
 Source plan:
 
@@ -56,6 +56,17 @@ Status: local implementation complete on 2026-07-14. The user authorized this st
 - JSON backup version 3 round-trips the formal learning subset and continues reading older backup/schema versions. Operational quota, Cache, and idempotency records remain outside user backups.
 - `test_fixtures/v2-stage3-schema6-backup.json` provides a deterministic schema 6 import/restore fixture with both Review Profiles and accepted AI lineage.
 - `db/migrations/0003_v2_schema6_data_model.sql` is a forward-only local draft. It has not been applied to Development, Staging, Preview, or Production.
+
+## Stage 3.1 Child Amendment
+
+`plan_docs/PLAN_V2_STAGE3_1_REVIEW_INTERACTION_CONTEXT_WORD_ACTIONS.md` later amended the still-unexecuted `0003` draft without changing this stage's formal Schema Version 6 snapshot or backup version:
+
+- `ai_runs.feature` also accepts the reserved `context_explain_v1` feature;
+- temporary `ai_context_explanation_cache` rows bind one person/source item, one exact example/token span, one matching succeeded/valid context run, one bounded exact-shape result, and a required expiry;
+- enrichment drafts and vocabulary relations explicitly reject context-run lineage and require a matching succeeded/valid `enrichment_v1` source run;
+- the temporary Cache and unreferenced context run remain operational and excluded from `VocabularyData`, JSON backup/restore, CSV, and backup-import mappings.
+
+The amendment passed local/static tests only. It did not execute the migration or contact a remote database.
 
 ## Decision Summary
 

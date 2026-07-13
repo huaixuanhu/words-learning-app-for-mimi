@@ -1,7 +1,7 @@
 # Words Learning App For Mimi V2 Stage 2: AI Quality And Security Gate
 
 Created: 2026-07-13 20:59 AEST
-Last updated: 2026-07-13 23:00 AEST
+Last updated: 2026-07-14 01:32 AEST
 
 Source plan:
 
@@ -26,6 +26,7 @@ Input evidence:
 Consumer / next stage:
 
 - V2-3 Data Model And Backup Parity.
+- V2-3.1 Review Interaction And Context Word Actions.
 - V2-7 AI Enrichment And Cost Guard.
 - V2-8 Dashboard Insights And Release Gate.
 
@@ -86,8 +87,8 @@ Status: the first bounded run produced 114 valid and 6 rejected drafts. Complete
 - The canonical corpus contains exactly 120 unique entries and covers academic words, polysemy（多义词）, phrases / fixed collocations, spelling confusion, sound confusion, usage confusion, and edge cases.
 - The outbound contract permits only the fixture or server-read lexical fields and rejects raw prompts, provider/model selection, URLs, files, audio, user ids, and unknown fields.
 - The draft contract enforces exact fields, compact arrays, relation enums, text limits, no duplicate candidates, and zero-or-two comparison examples.
-- The current pricing configuration uses US$0.125 per million text-input tokens and US$0.75 per million output / thinking tokens, with a checked-at date and fail-closed stale-price behavior.
-- The full 400,000 input plus 140,000 output / thinking daily reservation is documented as approximately US$0.155 at the checked price.
+- The corrected synchronous Standard pricing configuration uses US$0.25 per million text-input tokens and US$1.50 per million output / thinking tokens, with a checked-at date and fail-closed stale-price behavior.
+- The full 400,000 input plus 140,000 output / thinking daily reservation is documented as US$0.31 at the corrected Standard price.
 - Production-design controls preserve 100 attempts per person, 200 global attempts, concurrency 2, US$0.40 daily estimated cost, and US$2 monthly estimated cost as independent ceilings.
 - Evaluation-only controls prove the maximum 120-call, concurrency-1, no-retry envelope without weakening future Production controls.
 - Dry-run, contract tests, governance preflight, lint, typecheck, full tests, backup fixture checks, build, and secret-boundary checks pass.
@@ -96,7 +97,7 @@ Status: the first bounded run produced 114 valid and 6 rejected drafts. Complete
 
 ## Verified Provider Baseline
 
-Checked on 2026-07-13 against official Google documentation:
+Checked on 2026-07-13 against official Google documentation, with the synchronous Standard price re-checked and corrected on 2026-07-14:
 
 | Area | Stage 2 fact | Implementation consequence |
 | --- | --- | --- |
@@ -104,7 +105,7 @@ Checked on 2026-07-13 against official Google documentation:
 | Alias | `gemini-flash-latest` currently points to Gemini 3.5 Flash and `latest` aliases may be hot-swapped | Do not use the user's example alias in tests or runtime |
 | Structured output | Gemini 3.1 Flash-Lite supports JSON Schema Structured Output | Send a strict response schema and validate again locally |
 | Thinking | Gemini 3.1 Flash-Lite supports `minimal`; minimal does not promise absolutely zero thinking | Set `thinkingLevel = minimal` and account for reported thought tokens |
-| Price | Paid text input US$0.125 / 1M tokens; output including thinking US$0.75 / 1M tokens | Version pricing and calculate from provider usage metadata |
+| Price | Standard synchronous paid text input US$0.25 / 1M tokens; output including thinking US$1.50 / 1M tokens. US$0.125 / US$0.75 are Batch/Flex rates | Version both price and consumption mode; calculate from provider usage metadata |
 | Paid data | Paid prompts / responses are not used to improve Google products; limited safety / legal logging may still occur | Disclose limited retention accurately; do not claim Zero Retention |
 | Billing | Prepay / project caps may have processing latency and account-specific availability | Preserve app-side request, token, cost, concurrency, and Kill Switch controls |
 | Terms | User has confirmed all intended users and intended use satisfy the current age and purpose conditions | Record confirmation; re-check after a material terms or audience change |
@@ -292,22 +293,24 @@ Automated validation can prove structure and accounting. It cannot alone prove C
 
 ### Current price calculation
 
-Checked configuration:
+Corrected Standard synchronous configuration, checked on 2026-07-14:
 
 ```text
-input:  US$0.125 / 1,000,000 tokens
-output: US$0.75  / 1,000,000 tokens, including thinking
+input:  US$0.25 / 1,000,000 tokens
+output: US$1.50 / 1,000,000 tokens, including thinking
 ```
 
 Accepted Production planning envelope:
 
 ```text
-400,000 input tokens  * 0.125 / 1,000,000 = US$0.050
-140,000 output tokens * 0.75  / 1,000,000 = US$0.105
-full reserved day                              US$0.155
+400,000 input tokens  * 0.25 / 1,000,000 = US$0.100
+140,000 output tokens * 1.50 / 1,000,000 = US$0.210
+full reserved day                             US$0.310
 ```
 
-The existing US$0.40 daily and US$2 monthly application limits remain independent conservative ceilings. At this checked price, US$2 represents about 12.9 full reserved daily envelopes. Actual throughput stops at whichever request, token, cost, concurrency, or provider boundary is reached first.
+The existing US$0.40 daily and US$2 monthly application limits remain independent conservative ceilings. At this corrected price, US$2 represents about 6.45 full reserved daily envelopes. Actual throughput stops at whichever request, token, cost, concurrency, or provider boundary is reached first.
+
+The 2026-07-13 runner configuration mistakenly used the separate Batch/Flex rates even though it called synchronous REST `generateContent`. Historical runner-recorded costs remain audit facts, while current estimates are recomputed from retained usage under Standard pricing. Full correction evidence is in `plan_docs/PLAN_V2_STAGE3_1_REVIEW_INTERACTION_CONTEXT_WORD_ACTIONS.md`.
 
 ### Stage 2 evaluation envelope
 
@@ -322,6 +325,7 @@ The existing US$0.40 daily and US$2 monthly application limits remain independen
 - local artifact directory: ignored;
 - key source: ignored `.env.stage2.local` only;
 - live execution requires the exact confirmation flag documented by the runner;
+- the original US$0.10 evaluation cost ceiling is retained; corrected Standard pricing reserves US$0.186 for 120 maximum attempts, so another live batch now fails closed and requires a new human-approved cost boundary;
 - unexpected model id, missing usage metadata, stale price config, invalid corpus size, duplicate corpus term, or missing local artifact boundary stops the run.
 
 ### Future Production envelope retained for V2-7
@@ -359,7 +363,7 @@ Rules:
 
 The first fixed-corpus run submitted exactly 120 one-shot requests and observed the pinned `gemini-3.1-flash-lite` model. It produced 114 valid drafts, 6 locally rejected duplicate/self-candidate results, and no provider or network failure. The 95% valid-draft rate is below the provisional 100% structural threshold.
 
-The first runner retained US$0.034275 of validated-response usage but dropped usage metadata for the six invalid HTTP 200 responses. Because all six had passed the per-call reservation guards, the defensible total-cost interval is US$0.034275–0.038925. Current runner version 3 retains safe accounting context before JSON/draft validation, keeps rejected parsed drafts inside ignored artifacts, accepts only `STOP`, and stops future calls on a provider prompt block, non-`STOP` finish, or missing candidate contract. No second paid call was made for these repairs.
+The first runner recorded US$0.034275 of validated-response usage under the mistakenly selected Batch/Flex rate and dropped usage metadata for the six invalid HTTP 200 responses. Repricing the retained usage at the applicable Standard rate gives US$0.068550; the six-call reservation-backed upper estimate is US$0.077850. Runner version 3 retains safe accounting context before JSON/draft validation, keeps rejected parsed drafts inside ignored artifacts, accepts only `STOP`, and stops future calls on a provider prompt block, non-`STOP` finish, or missing candidate contract. No second paid call was made for those repairs, and the Stage 3.1 price correction makes no provider call.
 
 The Production-design reservation helper now rejects a caller-supplied token reservation that differs from the configured 2,000-input / 700-output envelope or understates its configured cost. This prevents a later internal caller from bypassing monthly cost accounting with a zero or undersized reservation.
 

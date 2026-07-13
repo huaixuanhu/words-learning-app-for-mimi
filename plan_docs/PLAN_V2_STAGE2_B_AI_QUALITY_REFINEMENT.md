@@ -1,7 +1,7 @@
 # Words Learning App For Mimi V2 Stage 2-B: AI Quality Refinement
 
 Created: 2026-07-13 21:47 AEST
-Last updated: 2026-07-13 23:00 AEST
+Last updated: 2026-07-14 01:32 AEST
 
 Source plan:
 
@@ -37,7 +37,7 @@ Current operational tier: Tier 3.
 
 Working tier: Tier 3.
 
-Status: executed and conditionally accepted by the user on 2026-07-13. The unchanged-corpus evaluation produced 120 / 120 locally valid drafts with no provider failure and an estimated US$0.027943 cost. Known lexical inaccuracies are accepted only for supplementary, editable AI drafts with explicit user acceptance and the model/inaccuracy notice frozen in `plan_docs/PLAN_V2_STAGE2_B_AI_QUALITY_EVIDENCE.md`. V2-7 local implementation may proceed; Production activation remains separately approved work.
+Status: executed and conditionally accepted by the user on 2026-07-13. The unchanged-corpus evaluation produced 120 / 120 locally valid drafts with no provider failure. Its runner-recorded US$0.027943 estimate used Batch/Flex pricing; the 2026-07-14 Standard synchronous correction reprices the retained usage to US$0.055886. Known lexical inaccuracies are accepted only for supplementary, editable AI drafts with explicit user acceptance and the model/inaccuracy notice frozen in `plan_docs/PLAN_V2_STAGE2_B_AI_QUALITY_EVIDENCE.md`. V2-7 local implementation may proceed; Production activation remains separately approved work.
 
 ## Scope
 

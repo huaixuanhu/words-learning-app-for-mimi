@@ -1,7 +1,7 @@
 # Words Learning App For Mimi V2 Stage 2-B: Second AI Quality Evidence
 
 Created: 2026-07-13 22:06 AEST
-Last updated: 2026-07-13 23:00 AEST
+Last updated: 2026-07-14 01:32 AEST
 
 Source plan:
 
@@ -119,17 +119,19 @@ Second-run usage was retained for all 120 responses:
 | Candidate-output tokens | 24,555 |
 | Reported thinking tokens | 0 |
 | Total tokens | 100,769 |
-| Estimated cost | US$0.027943 |
+| Historical runner-recorded estimate | US$0.027943 |
+| Corrected Standard estimate | US$0.055886 |
 
 Prompt v2 is longer, so input use increased. Candidate-output use fell 39.27% in total despite six more structurally valid drafts. Candidate-output tokens per valid draft fell from about 354.70 to 204.63.
 
-The first run's cost remains an interval because runner version 1 lost usage for six invalid HTTP 200 responses. The defensible comparison is:
+The first run's cost remains an interval because runner version 1 lost usage for six invalid HTTP 200 responses. On 2026-07-14, Stage 3.1 confirmed that both synchronous `generateContent` runs must use Standard US$0.25 / US$1.50 pricing; the runner had used the separate Batch/Flex rate. The corrected comparison from the retained token evidence is:
 
 | Cost | First run | Second run | Change |
 | --- | ---: | ---: | ---: |
-| Estimated total | US$0.034275–0.038925 | US$0.027943 | 18.47%–28.21% lower |
+| Historical runner estimate | US$0.034275–0.038925 | US$0.027943 | 18.47%–28.21% lower |
+| Corrected Standard estimate | US$0.068550–0.077850 | US$0.055886 | 18.47%–28.21% lower |
 
-Both Stage 2 paid runs together are bounded at an estimated US$0.062218–0.066868. This is usage-based evidence, not a provider invoice.
+Both Stage 2 paid runs together are corrected to a bounded Standard estimate of US$0.124436–0.133736. The historical runner total was US$0.062218–0.066868. These are usage-based estimates, not a provider invoice.
 
 Recorded latency:
 

@@ -120,24 +120,43 @@ export function summarizeVocabularyData(data: VocabularyData): BackupCounts {
 }
 
 export function selectFormalBackupData(data: VocabularyData): VocabularyData {
+  const eligibleEnrichmentRunIds = new Set(
+    data.aiRuns
+      .filter(
+        (run) =>
+          run.feature === "enrichment_v1" &&
+          run.status === "succeeded" &&
+          run.structureValidationStatus === "valid",
+      )
+      .map((run) => run.id),
+  );
   const acceptedDrafts = data.aiEnrichmentDrafts
-    .filter((draft) => draft.status === "accepted" && draft.acceptedContent)
+    .filter(
+      (draft) =>
+        draft.status === "accepted" &&
+        draft.acceptedContent &&
+        eligibleEnrichmentRunIds.has(draft.aiRunId),
+    )
     .map((draft) => ({
       ...draft,
       status: "accepted" as const,
       draft: draft.acceptedContent!,
     }));
+  const acceptedRelations = data.vocabularyRelations.filter((relation) =>
+    eligibleEnrichmentRunIds.has(relation.aiRunId),
+  );
   const referencedRunIds = new Set([
     ...acceptedDrafts.map((draft) => draft.aiRunId),
-    ...data.vocabularyRelations.map((relation) => relation.aiRunId),
+    ...acceptedRelations.map((relation) => relation.aiRunId),
   ]);
 
   return {
     ...data,
     aiRuns: data.aiRuns.filter(
-      (run) => run.status === "succeeded" && referencedRunIds.has(run.id),
+      (run) => eligibleEnrichmentRunIds.has(run.id) && referencedRunIds.has(run.id),
     ),
     aiEnrichmentDrafts: acceptedDrafts,
+    vocabularyRelations: acceptedRelations,
   };
 }
 

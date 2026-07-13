@@ -1,4 +1,9 @@
 export const AI_ENRICHMENT_FEATURES = ["enrichment_v1"] as const;
+export const AI_CONTEXT_EXPLAIN_FEATURES = ["context_explain_v1"] as const;
+export const AI_FEATURES = [
+  ...AI_ENRICHMENT_FEATURES,
+  ...AI_CONTEXT_EXPLAIN_FEATURES,
+] as const;
 export const AI_CONFUSABLE_TYPES = ["spelling", "sound", "usage"] as const;
 export const AI_GENERATION_UNAVAILABLE_REASONS = [
   "kill_switch",
@@ -9,6 +14,8 @@ export const AI_GENERATION_UNAVAILABLE_REASONS = [
 ] as const;
 
 export type AiEnrichmentFeature = (typeof AI_ENRICHMENT_FEATURES)[number];
+export type AiContextExplainFeature = (typeof AI_CONTEXT_EXPLAIN_FEATURES)[number];
+export type AiFeature = (typeof AI_FEATURES)[number];
 export type AiConfusableType = (typeof AI_CONFUSABLE_TYPES)[number];
 export type AiGenerationUnavailableReason =
   (typeof AI_GENERATION_UNAVAILABLE_REASONS)[number];
@@ -24,6 +31,31 @@ export type TrustedAiLexicalPayload = Readonly<{
   term: string;
   meaningsZh: readonly string[];
   examples: readonly string[];
+}>;
+
+export type PublicAiContextExplainRequest = Readonly<{
+  vocabularyEntryId: string;
+  exampleIndex: number;
+  selectedStart: number;
+  selectedEnd: number;
+  feature: AiContextExplainFeature;
+  disclosureVersion: string;
+  idempotencyKey: string;
+}>;
+
+export type TrustedAiContextPayload = Readonly<{
+  sourceTerm: string;
+  sourceMeaningsZh: readonly string[];
+  example: string;
+  selectedText: string;
+}>;
+
+export type AiContextExplanation = Readonly<{
+  suggestedHeadword: string;
+  meaningInContextZh: string;
+  grammarRoleZh: string;
+  contextExplanationZh: string;
+  phraseInContext: string | null;
 }>;
 
 export type SimilarWordSuggestion = Readonly<{

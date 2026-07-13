@@ -5,7 +5,7 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 export const STAGE2_MODEL = "gemini-3.1-flash-lite";
-export const STAGE2_RUNNER_VERSION = "v2-ai-quality-runner-v4";
+export const STAGE2_RUNNER_VERSION = "v2-ai-quality-runner-v5";
 export const STAGE2_PROMPT_VERSION = "v2-ai-enrichment-prompt-v2";
 export const STAGE2_SCHEMA_VERSION = "v2-ai-enrichment-draft-v2";
 export const STAGE2_CORPUS_SIZE = 120;
@@ -18,10 +18,10 @@ export const STAGE2_MAXIMUM_RESERVED_RUN_COST_USD = 0.1;
 export const STAGE2_CONFIRMATION_FLAG = "--i-confirm-120-external-calls";
 export const STAGE2_PRICING = Object.freeze({
   model: STAGE2_MODEL,
-  inputUsdPerMillionTokens: 0.125,
-  outputUsdPerMillionTokens: 0.75,
-  checkedAt: "2026-07-13T00:00:00.000Z",
-  staleAfter: "2026-08-13T00:00:00.000Z",
+  inputUsdPerMillionTokens: 0.25,
+  outputUsdPerMillionTokens: 1.5,
+  checkedAt: "2026-07-14T00:00:00.000Z",
+  staleAfter: "2026-08-14T00:00:00.000Z",
 });
 export const STAGE2_RESERVED_ATTEMPT = Object.freeze({
   inputTokens: 2_000,
