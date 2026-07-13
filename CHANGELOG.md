@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## 2026-07-13 15:40 AEST
+
+- Completed V2 Stage 1 under `plan_docs/PLAN_V2_STAGE1_PRODUCT_METRIC_DATA_CONTRACT.md`, derived explicitly from the accepted V2 master plan.
+- Added isolated pure TypeScript contracts for per-Track daily plans and metrics, database-safe free goals, separate Review / New Words queues, plan-version and cursor guards, immutable creation/reversal facts, legacy unknown review history, and late-Snapshot recommendation recovery.
+- Froze Active `Say it`, `Spell it`, and `Dictation` evidence as one independent Active Review Profile, kept typed answer outcomes separate from all four learner self-ratings, and added server-owned prompt-token / target-revision and Parameter Set boundaries without recording raw answer or audio data.
+- Froze the exact two-gate whole-day reset copy, plan-bound commands, seven-day operational idempotency behavior, same-key/different-payload conflicts, and exclusion of replay records from user backups.
+- Added 22 focused Stage 1 tests covering phrases/fixed collocations as one entry, immutable `Batch imported` rollback, queue separation and large-goal pagination, Recognition/Active isolation, 23/25-hour local days, strict rating evidence, typed-answer normalization, reset copy, and replay expiry.
+- Synchronized the V2 master plan, README, architecture, AGENTS, changelog, and AI log with the completed isolated contract.
+- Kept the current V1 UI, Schema Version 5, repositories, API routes, backups, database, external providers, credentials, and Production behavior unchanged.
+- Reason: establish one executable and non-drifting V2 product/data boundary before persistence, daily-learning UI, Active scheduling, or AI integration begins.
+
 ## 2026-07-13 00:26 AEST
 
 - Added `plan_docs/PLAN_V2_MASTER.md` as the accepted V2 documentation baseline derived from the completed V1 plan, dual-track UI/data work, Recognition FSRS plan, Data Lifecycle policy, live V1 release record, architecture, Mimi feedback, and the user's confirmation.

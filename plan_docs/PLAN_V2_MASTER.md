@@ -1,7 +1,7 @@
 # Words Learning App For Mimi V2 Master Plan
 
 Created: 2026-07-13 00:16 AEST
-Last updated: 2026-07-13 00:16 AEST
+Last updated: 2026-07-13 15:42 AEST
 
 Source plan:
 - `plan_docs/PLAN_V1_MASTER.md`
@@ -23,11 +23,12 @@ Input evidence:
 - Current V1 code and schema behavior recorded in the V1 plans and architecture.
 
 Consumer / next stage:
+- `plan_docs/PLAN_V2_STAGE1_PRODUCT_METRIC_DATA_CONTRACT.md`
 - Future derived V2 child plans created in the order defined by this document.
 - `plan_docs/PLAN_VERSION_HOLD_MULTI_USER_CONFIDENTIAL_ISOLATION.md`
 
 Document nature:
-This is the canonical V2 product and engineering master plan. It is derived from the completed V1 plan and current Production architecture. It does not claim that any V2 feature, schema, external service, migration, or deployment has been implemented.
+This is the canonical V2 product and engineering master plan. It is derived from the completed V1 plan and current Production architecture. V2-1 now has an isolated local executable contract, but no V2 user-facing runtime feature, persisted schema, external service, migration, or deployment has been implemented.
 
 Current operational tier: Tier 3.
 
@@ -35,7 +36,7 @@ Target capability tier: Tier 3. V2 adds a bounded paid AI API（人工智能接�
 
 Working tier: Tier 3.
 
-Status: accepted documentation baseline. No V2 code or live service action has been performed under this plan.
+Status: V2-0 documentation baseline and V2-1 Product, Metric, And Data Contract are complete locally. V2-1 remains disconnected from V1 runtime and Schema Version 5. No V2 runtime integration, persisted schema, external service, credential, migration, or deployment action has been performed.
 
 ## Scope
 
@@ -85,7 +86,7 @@ V2 is complete only when all of the following are true:
 - Both Tracks display real values for the four daily dimensions; unfinished features do not show fake zero values.
 - Review and New Words zones are separate and both honor freely chosen non-negative goals.
 - Recognition and Active states cannot read or overwrite each other's FSRS parameters or history.
-- Active `Say it`, `Spell it`, and `Dictation` work through the accepted first-generation scoring boundary.
+- Active `Say it`, `Spell it`, and `Dictation` work through the accepted self-rating and typed-comparison boundary.
 - Recognition review cards expose an accessible word-playback button without creating a review event.
 - The AI API is present on the formal V2 path and can produce structured, previewable enrichment that the user may accept, edit, reject, or add as a separate learning entry.
 - Before the first external AI call, the UI shows the provider, lexical fields that will be sent, personal fields that will not be sent, limited prompt / response retention, separate usage / technical metadata collection, and the cost / quota boundary; the user must confirm that disclosure, and a material provider / terms / field change requires a new confirmation.
@@ -123,7 +124,7 @@ Each Track presents the same four-value grid:
 
 | UI label | Owner | Accepted definition |
 | --- | --- | --- |
-| `Added today` | System | Vocabulary entries successfully saved through single input or batch import during the selected person's local natural day and assigned to this Track. |
+| `Added today` | System | Vocabulary entries successfully saved through single input, batch import, or an accepted AI `Add to learning` action during the selected person's local natural day and assigned to this Track. |
 | `Suggested review` | System | Distinct entries that already had a valid prior rating for this Review Profile and are suitable for another review today. It excludes New entries and is not truncated by the user's goal. |
 | `Review goal` | User | The number of review entries the user chooses for that Track today. |
 | `New-word goal` | User | The number of New entries the user chooses to study for the first time in that Track today. |
@@ -134,7 +135,7 @@ Counting rule:
 - Distinct actuals are keyed by vocabulary-entry id, not by whitespace-separated token count and not by number of rating attempts.
 - Repeated attempts for the same entry remain visible as attempt information but count once in `Reviewed today` or `Learned today`.
 - `Added today` uses the immutable system creation time or an equivalent creation ledger, not the user-editable study timestamp.
-- The later V2-1 contract must lock whether a hard-deleted or rolled-back entry remains in the historical `Added today` total; the initial recommendation is to preserve the successful-creation count while keeping no deleted lexical content in the ledger.
+- V2-1 locks the historical rule: archive, restore, edit, later Track change, and ordinary hard delete preserve the non-lexical creation fact; a full `Batch imported` rollback appends one immutable action-reversal fact and removes that action from visible historical `Added today` values.
 
 Actual values:
 
@@ -217,8 +218,8 @@ Exam writing and speaking question types remain outside V2. `Say it` is word / p
 - The minimum future state identity is `(person_id, vocabulary_item_id, review_profile)`.
 - Existing V1 review states and events migrate explicitly to `review_profile = recognition`.
 - Active events record `activity_type = say | spell | dictation`.
-- Initial V2 recommendation: the three Active modes share one Active Review Profile while retaining their activity type on each event. Splitting them into three independent profiles requires a later evidence-backed decision.
-- Changing an entry's Track after history exists must not reinterpret old events. A later child plan must choose a guarded fresh-profile transition or a dedicated migration; silent state reuse is forbidden.
+- Accepted V2 behavior: the three Active modes share one Active Review Profile while retaining their activity type on each event. Splitting them into three independent profiles is outside the accepted V2 baseline and would require a later evidence-backed decision.
+- Accepted history-bearing Track transition: the user must choose `Start fresh in the other Track`; old history remains read-only under its original profile, the target profile starts empty, and no parameter, state, or event is copied or reinterpreted. Direct silent state reuse is forbidden.
 
 ## AI Enrichment Contract
 
@@ -502,13 +503,15 @@ Status: accepted and initiated by this document set.
 
 ### V2-1 Product, Metric, And Data Contract
 
+Status: complete locally on 2026-07-13. Canonical child plan: `plan_docs/PLAN_V2_STAGE1_PRODUCT_METRIC_DATA_CONTRACT.md`. The isolated TypeScript contract and focused tests are not connected to V1 runtime or persistence.
+
 - Freeze daily metric queries and edge cases.
 - Freeze phrase / collocation counting as one vocabulary entry.
 - Freeze goal and queue behavior.
 - Freeze reset scope and two-gate confirmation.
 - Freeze Active event evidence and answer normalization.
 - Decide the historical `Added today` behavior after hard delete / batch rollback.
-- Produce schema and API contract diagrams before implementation.
+- Produce schema and API contract diagrams before the isolated local contract implementation.
 
 ### V2-2 AI Quality And Security Gate
 

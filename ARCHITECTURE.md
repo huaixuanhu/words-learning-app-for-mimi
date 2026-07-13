@@ -1,7 +1,7 @@
 # Words Learning App For Mimi Architecture
 
 Created: 2026-07-02 23:30 AEST
-Last updated: 2026-07-13 00:26 AEST
+Last updated: 2026-07-13 15:42 AEST
 
 ## Current State
 
@@ -66,7 +66,7 @@ The local `main` branch now tracks `origin/main`. Remote repository settings hav
 
 ## Current V2 Planning Baseline
 
-The cloud-backed V1 described above is live and remains the current application behavior. On 2026-07-13 the user accepted `plan_docs/PLAN_V2_MASTER.md` as the canonical V2 documentation baseline on branch `V2`. No V2 code, schema migration, external API, paid provider, credential, database, or deployment action has been performed by that documentation decision.
+The cloud-backed V1 described above is live and remains the current application behavior. On 2026-07-13 the user accepted `plan_docs/PLAN_V2_MASTER.md` as the canonical V2 parent plan on branch `V2`, then approved and completed `plan_docs/PLAN_V2_STAGE1_PRODUCT_METRIC_DATA_CONTRACT.md`. Stage 1 has isolated pure TypeScript contract modules and tests under `src/lib/daily-study/`; they are deliberately not connected to V1 UI, storage, API routes, Schema Version 5, or Production. No V2 runtime integration, schema migration, external API, paid provider, credential, database, or deployment action has been performed.
 
 The accepted V2 architecture direction is:
 
@@ -96,8 +96,15 @@ Lexical enrichment
 Key accepted boundaries:
 
 - A `VocabularyItem` counts as one learning entry whether it is a single word, phrase, or fixed collocation.
-- A newly saved entry remains `New` until the first valid rating creates state for its Track-specific Review Profile（复习配置）.
+- `Review goal` and `New-word goal` are independent per person and Review Profile. They accept `0..2,147,483,647`; invalid values are rejected without rounding or silent clamping, while internal queue pages remain bounded to at most 100 entries.
+- Review and New Words are separate zones. Remaining goals use distinct actual entries, and same-session retries do not consume another distinct goal.
+- An append-only, non-lexical creation ledger owns `Added today`: ordinary hard delete preserves the stable item/action fact, while a full `Batch imported` rollback appends one immutable action reversal and removes that action from visible history.
+- A newly saved entry remains `New` until the first valid rating creates state for its Track-specific Review Profile（复习配置）. A legacy V1 state with no retained event uses `historyOrigin = legacy_unknown` and `firstRatedAt = null`; no first-rating timestamp is invented.
+- Daily plans freeze the person timezone, inclusive start, exclusive end, goals, recommendation version, calculation time, and `Suggested review`; `planVersion` separately protects concurrent goal edits.
+- Review and New Words use separate bounded keyset queries. Public requests bind the current plan version and carry only opaque server-issued cursors; the server derives remaining goals from trusted plan/actual data and stops a cursor after the remaining distinct target is selected.
 - Recognition and Active share the FSRS-6 algorithm family but never share parameter sets, state rows, event histories, or rebuild tests.
+- Active typed answers use versioned deterministic normalization and persist the outcome rather than the raw answer. Answer outcome and the learner's four-choice memory rating remain separate evidence. A server-issued prompt token binds the displayed target revision to the eventual rating; `Say it` stores no audio or transcript.
+- Whole-day reset keeps the accepted two visible confirmation gates and becomes one transactional, idempotent command across both profiles. A same-key/different-payload replay is a conflict, and operational replay records stay outside user backups.
 - Recognition pronunciation and first-generation Active Dictation use browser SpeechSynthesis（浏览器文字转语音）without an AI call.
 - Automated Speech Recognition（自动语音识别）, microphone upload, and AI pronunciation scoring are deferred and send no audio in the accepted V2 baseline.
 - The paid AI candidate remains behind an evidence gate, server-only adapter, atomic global quotas, Cache（缓存）, provider billing cap, and Kill Switch（紧急关闭开关）.
@@ -106,7 +113,7 @@ Key accepted boundaries:
 - Before the first outbound AI call, a versioned disclosure must name the provider, outbound lexical fields, excluded personal fields, limited content retention, separate technical / usage metadata, and quota / cost boundary, then require explicit user confirmation.
 - SSO（Single Sign-On，单点登录）and confidential multi-user isolation remain in `plan_docs/PLAN_VERSION_HOLD_MULTI_USER_CONFIDENTIAL_ISOLATION.md` and are not V2 scope.
 
-Schema Version 6 is a candidate, not a completed decision. A derived V2 data-contract plan must inspect local fallback, Postgres, repository, API, backup, restore, export, fixtures, and existing migrations before finalizing the version or SQL shape. Existing executed migrations remain immutable.
+V2-1 freezes the logical data and API contract, including Daily Defaults, versioned Daily Plans, append-only Creation/Reversal Facts, separate Review/New Words keyset queues, profile-scoped review state/event evidence, and strict rating/reset commands. The persisted schema version and exact SQL remain V2-3 decisions because local fallback, Postgres, repository, API, backup, restore, export, fixtures, and migrations must move together. Existing executed migrations remain immutable.
 
 ## Product Goal
 
@@ -696,7 +703,7 @@ Current local validation commands:
 - `npm audit --json`
 - `npm run dev` plus browser smoke check
 
-Current unit tests cover vocabulary normalization, text and JSON import parsing, nullable tag normalization, duplicate candidate handling, repository updates, timestamp preservation, archive/restore, import batch commits, local schema migration to version 5, person-scoped data separation, per-person Recognition / Active review settings, recognition-only queue selection, FSRS scheduler behavior, natural-day due checks, review event/state updates, JSON backup validation, CSV escaping including `learningTrack` / `tags`, invalid backup rejection, broken review-reference rejection, impossible Active review history rejection, backup round trip behavior, Stage 5D / Stage 6B-P1-B SQL static checks, Stage 6B-P1-C runtime / API route contract checks, Stage 6B-P1-D Postgres mapper / route mock / repository static parity checks, Stage 6B-P1-E backup import version 5 mapping / Active review-row rejection checks, and a skipped-by-default Stage 6B-P1-F Postgres repository integration test. Later validation should cover:
+Current unit tests cover vocabulary normalization, text and JSON import parsing, nullable tag normalization, duplicate candidate handling, repository updates, timestamp preservation, archive/restore, import batch commits, local schema migration to version 5, person-scoped data separation, per-person Recognition / Active review settings, recognition-only queue selection, FSRS scheduler behavior, natural-day due checks, review event/state updates, JSON backup validation, CSV escaping including `learningTrack` / `tags`, invalid backup rejection, broken review-reference rejection, impossible Active review history rejection, backup round trip behavior, Stage 5D / Stage 6B-P1-B SQL static checks, Stage 6B-P1-C runtime / API route contract checks, Stage 6B-P1-D Postgres mapper / route mock / repository static parity checks, Stage 6B-P1-E backup import version 5 mapping / Active review-row rejection checks, a skipped-by-default Stage 6B-P1-F Postgres repository integration test, and the isolated V2-1 daily-study contract. V2-1 coverage includes one-entry counting, immutable batch reversal, late-Snapshot recovery, legacy unknown history, 23/25-hour plan windows, freely chosen safe goals, separate bounded queues, Recognition/Active evidence isolation, Active answer normalization, exact reset copy, and replay conflicts. Later validation should cover:
 
 - duplicate card behavior
 - empty deck behavior
@@ -705,7 +712,6 @@ Current unit tests cover vocabulary normalization, text and JSON import parsing,
 - cross-person data separation once Neon persistence is implemented
 - Production database migration dry run once the Production target and Stage 6B execution plan are explicitly approved
 - embedding or FSRS migration safety when those later stages are explicitly approved
-- V2 distinct-entry counting for single words, phrases, and fixed collocations
 - V2 Review Profile isolation and V1-to-Recognition state migration
 - V2 browser pronunciation playback with no review-state side effect
 - V2 AI quota / concurrency / replay / Cache / Kill Switch behavior
@@ -716,7 +722,7 @@ Current unit tests cover vocabulary normalization, text and JSON import parsing,
 
 - `README.md` is the human-facing repository entrance. It explains the product, intended users, current V1 capabilities, accepted V2 direction, basic local setup, major boundaries, and later direction in a form suitable for someone seeing the repository for the first time.
 - `ARCHITECTURE.md` owns system structure, data models, runtime boundaries, edge cases, and validation expectations.
-- `plan_docs/` owns stage scope, decisions, execution gates, and detailed release evidence.
+- `plan_docs/` owns stage scope, decisions, execution gates, and detailed release evidence. `plan_docs/PLAN_V2_STAGE1_PRODUCT_METRIC_DATA_CONTRACT.md` is the canonical source for the completed isolated V2-1 contract; later stage documents must cite it under `Derived from` rather than redefining its rules as peer plans.
 - `CHANGELOG.md` owns chronological change history.
 - `governance/AI_AGENT_LOG.md` owns human-AI execution, validation, and safety records.
 - Historical Preview URLs, deployment ids, migration commands, credential procedures, and provider evidence should stay in their specialized documents instead of accumulating in the README.

@@ -1,5 +1,42 @@
 # AI Agent Log
 
+## 2026-07-13 15:40 AEST
+
+- Task: execute V2 Stage 1 with documentation first, then implement the approved local product, metric, and data contract.
+- Plan agreed: yes. The user stated that the prior work was committed and explicitly authorized V2 Stage 1 with documentation before implementation.
+- Working tier: Tier 3. The repository contains a live private Production app, while this bounded stage changes only local planning documents and isolated pure TypeScript contracts/tests. The `human-ai-governance v0.3.0` workflow kept runtime, persistence, credentials, external services, paid usage, and Production outside the stage.
+- Changed files:
+  - `plan_docs/PLAN_V2_STAGE1_PRODUCT_METRIC_DATA_CONTRACT.md`
+  - `plan_docs/PLAN_V2_MASTER.md`
+  - `src/lib/daily-study/types.ts`
+  - `src/lib/daily-study/contract.ts`
+  - `src/lib/daily-study/contract.test.ts`
+  - `src/lib/daily-study/active-answer.ts`
+  - `src/lib/daily-study/active-answer.test.ts`
+  - `README.md`
+  - `ARCHITECTURE.md`
+  - `AGENTS.md`
+  - `CHANGELOG.md`
+  - `governance/AI_AGENT_LOG.md`
+- Reason: freeze deterministic daily metrics, freely chosen safe goals, separate learning zones, Recognition/Active isolation, Active answer evidence, reset behavior, and future persistence/API boundaries before later V2 stages connect those rules to user data.
+- Implementation:
+  - Wrote the derived Stage 1 plan before code and identified its source, scope, non-scope, consumers, exit criteria, diagrams, compatibility boundary, and stop conditions.
+  - Added append-only non-lexical creation/reversal facts so ordinary deletion preserves `Added today`, while only a known `Batch imported` source action can be reversed.
+  - Added immutable person-day plan windows, independent recommendation/plan versions, late-Snapshot recovery through the day's earliest `previousDueAt`, and honest `legacy_unknown` history with no fabricated timestamp.
+  - Added separate New Words / Review queue projections, trusted keyset cursor payloads, plan-version checks, server-owned remaining-goal calculation, and a hard 100-entry internal page limit.
+  - Added strict Recognition/Active rating evidence, one shared Active Profile for all three activity types, independent Parameter Set ids, deterministic typed-answer normalization, all four learner self-ratings, and opaque prompt-token binding for the displayed target revision.
+  - Added exact reset-copy constants, strict reset/rating/goal commands, and operational idempotency replay/expiry rules.
+- Validation:
+  - Passed: focused V2 Stage 1 Vitest run with 22 tests.
+  - Passed: `npm run governance:preflight` at Tier 3.
+  - Passed: `npm run lint` with no warning or error and `npm run typecheck`.
+  - Passed: full `npm run test` with 133 passed and 1 intentionally skipped database integration test.
+  - Passed: `npm run backup:dry-run:fixture` and `npm run backup:dry-run:schema5-fixture` without changing the current backup contract.
+  - Passed: `npm run build`; Next.js detected the ignored `.env.local` through the normal build path, but no environment value was inspected, printed, or changed.
+  - Passed: final `git diff --check`.
+  - Passed: independent read-only contract reviews that found and prompted fixes for late-Snapshot miscounting, legacy timestamp fabrication, mutable rollback facts, queue plan/goal bypass, cross-profile rating evidence, stale target attribution, and replay expiry; the final bounded re-review found no remaining P1 blocker inside Stage 1.
+- Safety notes: local documentation and isolated pure contract/test files only. No current runtime module imports the new Stage 1 contract. No Schema Version 5 shape, SQL migration, repository, API route, backup format, browser data, remote database, Production data, `.env`, credential, external provider, paid call, GitHub remote, pull request, merge, or deployment was read or changed.
+
 ## 2026-07-13 00:26 AEST
 
 - Task: create the confirmed V2 documentation baseline and synchronize the repository's current project, architecture, changelog, and governance context without beginning implementation.

@@ -22,7 +22,8 @@
 - Current live product: cloud-backed V1 is live behind Production Basic Auth（基础认证）.
 - Canonical V1 launch record: `plan_docs/PLAN_V1_STAGE6B_P1_G_C_5_LIVE_PRODUCTION_EXECUTION.md`.
 - Canonical V2 plan: `plan_docs/PLAN_V2_MASTER.md`.
-- V2 status: documentation baseline accepted on 2026-07-13. No V2 code, schema migration, external API, paid provider, credential, or deployment action has been completed under that plan.
+- Canonical completed V2 Stage 1 child plan: `plan_docs/PLAN_V2_STAGE1_PRODUCT_METRIC_DATA_CONTRACT.md`.
+- V2 status: documentation baseline and the isolated V2 Stage 1 product/metric/data contract were completed locally on 2026-07-13. Stage 1 code under `src/lib/daily-study/` is not connected to V1 UI, storage, API routes, Schema Version 5, or Production. No V2 runtime integration, schema migration, external API, paid provider, credential, or deployment action has been completed.
 - Version-hold plan: `plan_docs/PLAN_VERSION_HOLD_MULTI_USER_CONFIDENTIAL_ISOLATION.md` keeps SSO（Single Sign-On，单点登录）and confidential per-person isolation outside V2.
 - Data lifecycle policy: `plan_docs/PLAN_V1_STAGE8_5_DATA_LIFECYCLE_ENVIRONMENT_STRATEGY.md` remains active for V2 unless a later accepted child plan supersedes a specific part.
 - Current stack: Next.js App Router, TypeScript, Tailwind CSS, ESLint, Vitest, npm, `@neondatabase/serverless`, `dotenv-cli`, `ts-fsrs`, Neon Postgres for the Production runtime, and browser `localStorage` as the local fallback.
@@ -37,6 +38,11 @@
 - Review and new-word goals accept any database-safe non-negative integer; `0` is allowed.
 - Recognition and Active use the same FSRS-6 algorithm family with completely independent parameter sets, state, events, rebuild behavior, and tests.
 - Active V2 modes are `Say it`, `Spell it`, and `Dictation`.
+- All three Active modes share one independent Active Review Profile; activity type remains on each event. Recognition and Active never share a Parameter Set（参数集）, state, event, or rebuild path.
+- A history-bearing Track change requires `Start fresh in the other Track`; old history stays read-only and no state or event is copied.
+- `Added today` uses append-only non-lexical creation and batch-reversal facts. Ordinary hard delete preserves the creation fact; a full `Batch imported` rollback reverses the whole source action.
+- Daily queue requests bind `planId` and `planVersion`; server-owned actuals determine the remaining target, and opaque cursor/prompt tokens prevent clients from choosing internal counts or Active target revisions.
+- Whole-day reset uses the exact accepted two visible gates and a transactional Idempotency Key（幂等键）record outside user backups.
 - Recognition cards will receive a browser SpeechSynthesis（浏览器文字转语音）playback button with no review-state side effect.
 - Automated Speech Recognition（自动语音识别）, microphone upload, AI pronunciation scoring, PTE / IELTS writing question types, exam speaking question types, and external question banks remain outside the accepted V2 baseline.
 - V2 must include the first formal AI enrichment path for extra meanings, examples, similar words, and confusable words, with editable preview and explicit human acceptance.
@@ -144,6 +150,6 @@ npm run build
 npm run dev
 ```
 
-The current V1 unit test suite covers vocabulary normalization, import parsing, local repository behavior, timestamp preservation, archive / restore / hard delete, JSON batch rollback, schema migration, person-scoped data, Recognition review scheduling, reset-today behavior, one-word rollback, per-person settings, review event / state updates, JSON backup validation, CSV escaping, backup round trip, backup import version 5 mapping, Active review-row rejection, static SQL checks, and a skipped-by-default Postgres integration test.
+The current V1 unit test suite covers vocabulary normalization, import parsing, local repository behavior, timestamp preservation, archive / restore / hard delete, JSON batch rollback, schema migration, person-scoped data, Recognition review scheduling, reset-today behavior, one-word rollback, per-person settings, review event / state updates, JSON backup validation, CSV escaping, backup round trip, backup import version 5 mapping, Active review-row rejection, static SQL checks, and a skipped-by-default Postgres integration test. The isolated V2 Stage 1 suite additionally covers distinct-entry metrics, immutable creation/reversal facts, late-Snapshot behavior, legacy unknown history, safe goals, 23/25-hour windows, separate bounded queues, plan/cursor guards, Recognition/Active evidence isolation, typed-answer normalization, exact reset copy, and idempotency replay behavior.
 
 V2 child plans must add focused tests before claiming the new behavior, including distinct-entry counting, free goals, daily snapshots, Track / Review Profile isolation, Active modes, Recognition pronunciation side-effect freedom, AI quota / replay / Cache / degraded mode, outbound-data minimization, structured draft acceptance, mobile responsive acceptance, and final backup / migration parity.

@@ -19,13 +19,13 @@
 - **ADHD-friendly 学习体验**：把任务拆小、保持明确反馈，并允许保守地回退和重新开始。
 - **长期数据可控**：正式学习数据保存在云端数据库，同时保留导出和备份能力。
 
-当前 V1 已作为受保护的私人应用上线。V2 的文档基线已在 `V2` 分支确认，主线包括每日学习分区、独立 Active 练习、手机端改造、学习情况可视化和第一代付费 AI enrichment（AI 词汇补充）。V2 目前仍处于规划阶段，没有实现或部署这些功能。
+当前 V1 已作为受保护的私人应用上线。V2 的文档基线已在 `V2` 分支确认，主线包括每日学习分区、独立 Active 练习、手机端改造、学习情况可视化和第一代付费 AI enrichment（AI 词汇补充）。V2 Stage 1 已完成产品、指标与数据契约，以及未接入 Runtime（运行时）的 TypeScript 契约测试；可见页面、Schema Version 5、外部服务和线上 V1 行为尚未改变。
 
 ## 正式版本
 
 - 访问地址：[words-learning-app-for-mimi.vercel.app](https://words-learning-app-for-mimi.vercel.app)
 - 当前线上版本：cloud-backed V1（云端持久化 V1）
-- 当前开发分支：`V2`；已确认文档基线，尚未开始 V2 程式码实现
+- 当前开发分支：`V2`；V2 Stage 1 契约已在本地实现并通过测试，尚未接入页面、存储或 Production
 - 访问方式：私人 Basic Auth（基础认证）；账号信息不会存放在仓库中
 - 正式数据：Neon Postgres（关系型数据库）
 
@@ -55,6 +55,7 @@
 - 普通界面继续使用简短自然的英文；不可逆操作和重要隐私提示保留中文或双语。
 
 完整范围和阶段顺序见 [V2 Master Plan](./plan_docs/PLAN_V2_MASTER.md)。
+Stage 1 的冻结口径、图示和可执行边界见 [V2 Stage 1 Contract](./plan_docs/PLAN_V2_STAGE1_PRODUCT_METRIC_DATA_CONTRACT.md)。
 
 ## 两条学习轨道
 
@@ -133,6 +134,7 @@ README 面向第一次看到仓库的人。详细架构、历史决策、执行�
 - [Architecture](./ARCHITECTURE.md)：系统结构、数据模型和运行边界
 - [V1 Master Plan](./plan_docs/PLAN_V1_MASTER.md)：V1 总体阶段与范围
 - [V2 Master Plan](./plan_docs/PLAN_V2_MASTER.md)：已确认的 V2 主线、指标、Active、AI、移动端和发布阶段
+- [V2 Stage 1 Contract](./plan_docs/PLAN_V2_STAGE1_PRODUCT_METRIC_DATA_CONTRACT.md)：每日指标、分区目标、重置、Active 证据和未来数据/API 契约
 - [Version-hold Multi-User Isolation](./plan_docs/PLAN_VERSION_HOLD_MULTI_USER_CONFIDENTIAL_ISOLATION.md)：暂缓的 SSO 与多人机密隔离边界
 - [Stage 8 Review Memory Algorithm](./plan_docs/PLAN_V1_STAGE8_REVIEW_MEMORY_ALGORITHM.md)：Recognition FSRS 与 Active 隔离设计
 - [Stage 8.5 Data Lifecycle](./plan_docs/PLAN_V1_STAGE8_5_DATA_LIFECYCLE_ENVIRONMENT_STRATEGY.md)：环境、备份和数据生命周期策略
