@@ -1,5 +1,20 @@
 # CHANGELOG
 
+## 2026-07-13 21:23 AEST
+
+- Implemented the documentation-first V2 Stage 2 Gemini quality and security gate under `plan_docs/PLAN_V2_STAGE2_AI_QUALITY_SECURITY_GATE.md`, with the first-run record in `plan_docs/PLAN_V2_STAGE2_AI_QUALITY_EVIDENCE.md`.
+- Re-verified the current official Gemini model, lifecycle, pricing, billing, Structured Output, thinking, and terms baseline; pinned `gemini-3.1-flash-lite` and removed Datamuse, Free Dictionary, Groq comparison, and `gemini-flash-latest` from the active Stage 2 route.
+- Added provider-neutral AI enrichment contracts for strict public requests, allowlisted lexical payloads, bounded structured drafts, usage/cost accounting, atomic quota reservations, degraded mode, and Kill Switch behavior.
+- Added a fixed 120-entry PTE-oriented fixture corpus, a no-tools Gemini schema/Prompt, and a guarded local runner with concurrency 1, no retries, stale-price rejection, a US$0.10 reserved run ceiling, ignored artifacts, and an explicit paid-call confirmation flag.
+- Stored the user-approved test credential only in ignored `.env.stage2.local`; it remains untracked and was not copied to `.env.local`, Vercel, Preview, Production, source code, logs, or tracked evidence.
+- Completed the approved 120-call fixture run: 114 drafts passed local validation, 6 duplicate/self-candidate drafts were rejected, no provider/network request failed, and the observed model matched the pinned model. The 95% structural rate did not meet the provisional 100% threshold.
+- Corrected the cost record after discovering that runner version 1 dropped usage for the six invalid HTTP 200 responses: the retained US$0.034275 is a lower bound and the reservation-backed total interval is US$0.034275–0.038925.
+- Upgraded the runner locally, without another paid call, so future HTTP 200 responses retain safe usage/model/finish evidence before parsing; rejected parsed drafts stay ignored, and provider blocks, non-`STOP` finishes, or missing candidate contracts stop further calls.
+- Closed an internal quota-bypass path by requiring every Production-design reservation to match the configured per-attempt token envelope and to reserve at least its configured cost.
+- Recorded agent-precheck concerns including maximum-filling behavior, malformed or non-learnable candidate values, and selected example-relevance defects; left the 120-row human lexical worksheet unscored and V2-7 Production integration blocked.
+- Kept the live V1 UI, Schema Version 5, repositories, database, Production data, Basic Auth, Vercel configuration, and deployment unchanged.
+- Reason: test the chosen Gemini route against a reproducible quality and abuse boundary before any user-facing or Production AI integration, and preserve the failed threshold as evidence rather than accepting weak output silently.
+
 ## 2026-07-13 15:40 AEST
 
 - Completed V2 Stage 1 under `plan_docs/PLAN_V2_STAGE1_PRODUCT_METRIC_DATA_CONTRACT.md`, derived explicitly from the accepted V2 master plan.

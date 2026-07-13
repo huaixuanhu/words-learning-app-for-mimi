@@ -1,0 +1,83 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "additionalMeaningsZh": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 3,
+      "items": {
+        "type": "string",
+        "description": "A concise additional Chinese meaning not already supplied."
+      }
+    },
+    "examples": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 3,
+      "items": {
+        "type": "string",
+        "description": "A natural English example using the source word or phrase."
+      }
+    },
+    "similarWords": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "word": {
+            "type": "string",
+            "description": "A useful synonym or near-synonym word or phrase."
+          },
+          "differenceZh": {
+            "type": "string",
+            "description": "A concise Chinese explanation of the usage difference."
+          }
+        },
+        "required": ["word", "differenceZh"]
+      }
+    },
+    "confusableWords": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "word": {
+            "type": "string",
+            "description": "A genuinely useful confusable word or phrase."
+          },
+          "type": {
+            "type": "string",
+            "enum": ["spelling", "sound", "usage"]
+          },
+          "differenceZh": {
+            "type": "string",
+            "description": "A concise Chinese explanation of the difference."
+          },
+          "examplePair": {
+            "type": "array",
+            "minItems": 0,
+            "maxItems": 2,
+            "items": {
+              "type": "string",
+              "description": "Either no examples or a two-sentence contrast pair."
+            }
+          }
+        },
+        "required": ["word", "type", "differenceZh", "examplePair"]
+      }
+    }
+  },
+  "required": [
+    "additionalMeaningsZh",
+    "examples",
+    "similarWords",
+    "confusableWords"
+  ]
+}

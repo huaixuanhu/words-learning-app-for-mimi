@@ -9,6 +9,8 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "ai:quality:dry-run": "node scripts/v2-ai-quality-runner.mjs --dry-run",
+    "ai:quality:live": "dotenv -e .env.stage2.local -- node scripts/v2-ai-quality-runner.mjs --live",
     "db:migrate:dev": "STAGE5F_DATABASE_TARGET=development dotenv -e .env.local -- node scripts/run-sql-migration.mjs db/migrations/0001_initial.sql",
     "db:migrate:schema5:dev": "STAGE5F_DATABASE_TARGET=development dotenv -e .env.local -- node scripts/run-sql-migration.mjs db/migrations/0002_schema5_production_runtime.sql",
     "db:inspect:dev": "STAGE5F_DATABASE_TARGET=development dotenv -e .env.local -- node scripts/inspect-database-schema.mjs",

@@ -1,5 +1,62 @@
 # AI Agent Log
 
+## 2026-07-13 21:23 AEST
+
+- Task: execute V2 Stage 2 with documentation first, then implement and run the agreed fixed-corpus AI quality/security gate.
+- Plan agreed: yes. The user approved Stage 2, changed the corpus to 120 entries, chose paid Gemini, removed Datamuse and Free Dictionary, confirmed the current age/intended-use terms fit the app, reported AUD 20 Prepay with Auto-reload disabled, and explicitly authorized local-only injection of the supplied test credential with no Git or Vercel copy.
+- Working tier: Tier 3. This stage made one bounded paid external evaluation against non-personal fixtures and handled a local secret, while keeping the live application, Production credential boundary, database, and deployment unchanged. The `human-ai-governance v0.3.0` workflow was applied before material actions.
+- Changed files:
+  - `.gitignore`
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `README.md`
+  - `package.json`
+  - `plan_docs/PLAN_V2_MASTER.md`
+  - `plan_docs/PLAN_V2_STAGE2_AI_QUALITY_SECURITY_GATE.md`
+  - `plan_docs/PLAN_V2_STAGE2_AI_QUALITY_EVIDENCE.md`
+  - `scripts/v2-ai-quality-runner.mjs`
+  - `scripts/v2-ai-quality-runner.test.mjs`
+  - `src/lib/ai-enrichment/contract.ts`
+  - `src/lib/ai-enrichment/contract.test.ts`
+  - `src/lib/ai-enrichment/gemini-response-schema.json`
+  - `src/lib/ai-enrichment/prompt-v1.txt`
+  - `src/lib/ai-enrichment/types.ts`
+  - `test_fixtures/v2-stage2-ai-corpus.json`
+  - `CHANGELOG.md`
+  - `governance/AI_AGENT_LOG.md`
+- Ignored local files:
+  - `.env.stage2.local`, containing the test key without displaying, hashing, or recording its value.
+  - `local_artifacts/v2-stage2-ai/2026-07-13T11-14-05-415Z/`, containing the raw valid drafts, aggregate summary, and blank human worksheet.
+- Reason: establish evidence for Gemini lexical quality and prove a bounded request/data/cost design before any V2 Production AI route or credential exists.
+- Provider verification:
+  - Used current official Google documentation to reject the hot-swappable `gemini-flash-latest` alias and pin Stable / GA `gemini-3.1-flash-lite`.
+  - Recorded current paid pricing as US$0.125 / 1M text-input tokens and US$0.75 / 1M output/thinking tokens, with a one-month stale-evidence stop date.
+  - Confirmed Structured Output support and configured minimal thinking, while still accounting for any reported thinking tokens.
+  - Recorded the user's terms/age confirmation and account-specific Prepay/Auto-reload statement without inspecting billing credentials or account settings.
+- Implementation:
+  - Added strict public-request and trusted lexical allowlists so provider-bound data is limited to `term`, `meaningsZh`, and `examples`; person identity, notes, tags, timestamps, ratings, review history, goals, audio, URLs, files, raw prompts, and browser-selected model/tool controls are excluded.
+  - Added exact structured-draft validation, normalized duplicate/self-candidate rejection, bounded fields, relation enums, zero-or-two comparison examples, usage validation, price-staleness checks, atomic quota reservations, and degraded/Kill Switch state.
+  - Added exactly 120 unique fixtures across academic, polysemy, phrase, spelling, sound, and usage groups; reviewer labels and expected relations are not sent to the provider.
+  - Added a dry-run-by-default Node runner with a second live-confirmation flag, pinned model, no tools, concurrency 1, 120-call ceiling, no automatic retry, 700 output-token limit, safe provider error categories, and ignored local evidence.
+  - After the first run exposed an accounting/audit loss, upgraded the runner without another provider call. Runner version 3 retains HTTP 200 usage/model/finish context before JSON/draft validation, keeps rejected parsed drafts under ignored artifacts, adds Prompt/schema hashes, carries terminal/validation categories into future worksheets, and halts on provider Prompt blocks, non-`STOP` finishes, or missing candidate/content contracts.
+  - Re-checked Google's official `GenerateContentResponse` contract: Prompt blocks are reported in `promptFeedback`, while candidate completion/safety state is reported in `finishReason`. Added fail-closed handling for both surfaces.
+  - Required Production-design attempt reservations to match the fixed token envelope and not understate its price, preventing a future internal caller from submitting zero-sized accounting reservations.
+- First live evidence:
+  - Submitted 120 / 120 allowed attempts; valid 114, locally invalid 6, provider/network failed 0, and no stop condition fired.
+  - All retained valid results ended with `STOP`; the observed model was `gemini-3.1-flash-lite`.
+  - Latency was 1,524 ms minimum, 2,001 ms p50, 2,388 ms p95, and 2,876 ms maximum.
+  - Runner version 1 retained 31,584 prompt tokens and 40,436 candidate tokens for valid drafts, with zero reported thinking tokens. It lost usage for six invalid HTTP 200 responses, so US$0.034275 is only the known lower bound; the reservation-backed total is bounded at US$0.034275–0.038925.
+  - The six local rejections shared the safe duplicate/self-candidate validation category. Because version 1 discarded their parsed drafts, their exact duplicate branch cannot be reconstructed.
+  - The 95% structural-validity rate failed the provisional 100% threshold. The agent lexical precheck also found maximum-filling and selected malformed/non-learnable candidate defects. The human worksheet remains blank, so lexical acceptance is unresolved and V2-7 remains blocked.
+- Validation:
+  - Passed: focused Stage 2 Vitest run with 26 tests after final hardening.
+  - Passed: guarded `ai:quality:dry-run` with exactly 120 entries, the expected group counts, pinned model, 120-call envelope, US$0.093 reserved ceiling, only three outbound lexical fields, and no tools.
+  - Passed after final hardening: lint, typecheck, full tests with 159 passed and 1 intentionally skipped database integration test, both backup dry-run fixtures, Production build, Stage 2 dry-run, and diff check.
+  - The first Tier 3 governance attempt reported two required log markers and two false-positive secret-assignment shapes; the markers, documentation example, and environment-variable read expression were corrected before the final rerun.
+  - Passed: final Tier 3 governance preflight after those corrections.
+  - Passed: `.env.stage2.local` is present, ignored, untracked, and restricted to filesystem mode `600`; tracked/workspace source paths and ignored Stage 2 artifacts contain no API-key token pattern.
+- Safety notes: the paid run sent only fixed non-personal fixture terms, existing Chinese meanings, and existing English examples. The secret value was never printed, hashed, logged, staged, committed, or copied to another environment. No Production vocabulary, person data, review history, database query/write, migration, Vercel/Neon setting, Production credential, GitHub remote action, pull request, merge, or deployment occurred. No second paid request was made after the failed gate was identified.
+
 ## 2026-07-13 15:40 AEST
 
 - Task: execute V2 Stage 1 with documentation first, then implement the approved local product, metric, and data contract.

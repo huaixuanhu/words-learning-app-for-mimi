@@ -1,7 +1,7 @@
 # Words Learning App For Mimi V2 Master Plan
 
 Created: 2026-07-13 00:16 AEST
-Last updated: 2026-07-13 15:42 AEST
+Last updated: 2026-07-13 21:23 AEST
 
 Source plan:
 - `plan_docs/PLAN_V1_MASTER.md`
@@ -49,7 +49,7 @@ Status: V2-0 documentation baseline and V2-1 Product, Metric, And Data Contract 
 - Add Active `Say it`, `Spell it`, and `Dictation` modes.
 - Add a user-triggered pronunciation button for Recognition cards through browser SpeechSynthesis（浏览器文字转语音）.
 - Add the first Production-capable AI enrichment flow for extra Chinese meanings, examples, similar words, and confusable words.
-- Use deterministic lexical sources to generate candidates before AI filtering and explanation.
+- Use a pinned paid Gemini model to generate a compact draft, then require strict local validation and human review because V2 no longer depends on an external lexical candidate or dictionary service.
 - Require editable preview and explicit human acceptance before AI-derived content enters formal learning data.
 - Bound AI calls and cost through server-only credentials, strict request shape, atomic quotas, Cache（缓存）, rate limits, provider billing controls, and a Kill Switch（紧急关闭开关）.
 - Refine mobile navigation, task surfaces, import preview, practice cards, dashboard density, and responsive behavior.
@@ -65,7 +65,7 @@ Status: V2-0 documentation baseline and V2-1 Product, Metric, And Data Contract 
 - No PTE / IELTS question bank, external exam corpus, persisted exam-mode switch, writing question type, free-writing assessment, or exam speaking question type.
 - No automated pronunciation score, long recording assessment, microphone upload, or Speech Recognition（语音识别）integration in the accepted V2 baseline. Sending audio to a future multimodal or speech model may be evaluated later, but V2 currently captures and transmits no microphone audio.
 - No AI-generated voice requirement. Browser SpeechSynthesis owns first-generation word playback and dictation playback.
-- No automatic provider failover from Gemini to Groq.
+- No multi-provider routing or automatic provider failover.
 - No Google Search grounding, URL context, code execution, file upload, agent tools, or arbitrary user Prompt（提示词）in the AI route.
 - No analytics, advertising tracking, notification, email, payment, scheduled background job, or PWA（Progressive Web App，渐进式 Web 应用）commitment.
 
@@ -227,23 +227,23 @@ Exam writing and speaking question types remain outside V2. `Say it` is word / p
 
 Accepted current candidate:
 
-- Primary Production candidate: paid `gemini-3.1-flash-lite`.
-- Quality / cost comparison: Groq `openai/gpt-oss-20b`.
-- No Production commitment until the same 50–100 word corpus passes the V2-2 quality and security gate.
+- Sole live Stage 2 candidate: paid `gemini-3.1-flash-lite`.
+- Groq is no longer part of the active Stage 2 comparison or V2 runtime route. A later provider change requires a new evidence-backed child plan; no automatic failover exists.
+- No Production commitment until the fixed 120-entry corpus passes the V2-2 quality and security gate and receives human lexical acceptance.
 - Provider and model id stay behind a server-side adapter and versioned configuration so retirement does not require changing the vocabulary data model.
 - `gemini-2.5-flash-lite` is not the V2 Production target: its published earliest shutdown date is 2026-10-16 and Google's published replacement is `gemini-3.1-flash-lite`.
 - `gemini-3.1-flash-lite` is currently Stable / GA, with a published earliest shutdown date of 2027-05-07. Model abstraction and lifecycle re-checking remain required.
-- If Groq enters a real comparison, re-check the actual account's retention controls. Current documents distinguish default inference non-retention, possible reliability / abuse recording for up to 30 days, retained usage metadata, and account-dependent ZDR（Zero Data Retention，零数据保留）availability.
+- `gemini-flash-latest` is not used: it currently resolves to Gemini 3.5 Flash and the alias may be hot-swapped.
 
-Provider claims and pricing are time-sensitive. The child plan that creates a credential or paid project must re-check current official lifecycle, pricing, terms, rate limits, supported Structured Outputs（结构化输出）, retention controls, and billing controls immediately before action. It must also verify that the intended private learning application fits the current Gemini terms, including the published age and professional / business-purpose conditions, rather than assuming terms compatibility.
+Provider claims and pricing are time-sensitive. V2 Stage 2 re-checked current official lifecycle, pricing, terms, rate limits, Structured Outputs（结构化输出）, retention, and billing controls on 2026-07-13. The user confirmed that all intended users and the intended app use satisfy the current Gemini age and professional / business-purpose conditions. A material audience, terms, provider, or model change requires a new confirmation.
 
 ### Lexical Evidence Pipeline
 
 ```text
 Vocabulary entry
-  -> Datamuse candidate generation
-  -> Free Dictionary API best-effort English evidence
-  -> AI selection and difference explanation
+  -> allowlisted current term / Chinese meanings / examples
+  -> pinned Gemini draft generation with tools disabled
+  -> strict local schema and semantic validation
   -> structured editable draft
   -> human edit / delete / reject / accept
   -> accepted enrichment or separate learning entry
@@ -254,15 +254,15 @@ Candidate categories:
 - `similar`: synonym or near-synonym candidate.
 - `spelling`: visually or orthographically similar candidate.
 - `sound`: pronunciation-similar or homophone candidate.
-- `usage`: meaning or usage pattern likely to be confused. This is an application / AI classification after comparing lexical evidence, not a native Datamuse relation type.
+- `usage`: meaning or usage pattern likely to be confused.
 
 Rules:
 
-- Datamuse proposes candidates; its score is ranking evidence, not a truth score.
-- Free Dictionary API is temporary best-effort evidence. It publishes no accepted rate limit, SLA（服务等级协议）, or clear privacy / data-retention policy for this plan. Its repository's GPL-3.0 code license does not by itself prove that returned definitions and examples may be persisted in bulk. Until a source / license review closes that gap, do not save its original definition text as formal learning content; use it transiently for candidate screening and degrade cleanly on failure or missing phrase coverage.
-- AI selects at most the small accepted number of useful candidates, explains differences, and creates bounded comparison examples.
-- AI does not invent an unsupported dictionary source or mark a candidate as verified when lexical evidence is missing.
-- Datamuse has announced that from 2027-01-01 every request requires an API key and each key is limited to 100,000 requests per day. Its query strings are temporarily logged and discarded at the end of the day after the request. The integration must therefore be server-side, key-ready, cached, and limited to non-sensitive lexical queries even if early testing can run without a key.
+- V2 does not call Datamuse or Free Dictionary and stores no content attributed to either service.
+- Gemini proposes similar and confusable candidates directly, selects only a small useful set, explains differences, and creates bounded comparison examples.
+- A generated candidate is an AI suggestion, not dictionary-verified evidence. The product must not invent a dictionary source or display `verified` wording.
+- Empty candidate arrays are valid. Human preview is mandatory, and unsupported or fabricated candidate rate is a first-class result in the 120-entry gate.
+- A later deterministic lexical source requires a new child plan and cannot be reintroduced silently.
 
 ### Structured Draft
 
@@ -303,9 +303,9 @@ The API response is additionally wrapped in server-owned provenance such as prov
 - The accepted relation stores source entry, target entry, relation type, and AI-run lineage.
 - AI-created entries use their own clear source label. The existing JSON import chip remains exactly `Batch imported`.
 
-### 50–100 Entry Quality Gate
+### 120-Entry Quality Gate
 
-The fixed evaluation corpus should include:
+The fixed project-curated evaluation corpus contains exactly 120 unique non-personal entries and includes:
 
 - common academic words;
 - polysemous words;
@@ -315,6 +315,8 @@ The fixed evaluation corpus should include:
 - pronunciation confusables / homophones;
 - usage confusables;
 - less-common or dictionary-missing edge cases.
+
+It is PTE-oriented academic English, not an official Pearson vocabulary list. Only term, current Chinese meanings, and current examples are sent. Reviewer categories and expected-relation hints stay local.
 
 Blind evaluation records:
 
@@ -350,7 +352,7 @@ Accounting rules:
 - Use one server-owned authoritative budget timezone, initially `Australia/Melbourne`, for the global daily reset. A user-editable person timezone cannot reset the global allowance.
 - Reserve and count one request attempt immediately before calling the provider. Invalid or unauthorized requests rejected before that point do not consume an attempt.
 - Once a provider call is submitted, provider `429`, timeout, network ambiguity, safety refusal, invalid Structured Output, and downstream validation failure still consume the request attempt. Reconcile or release unused token / cost reservation when reliable usage evidence permits, but do not restore the request count.
-- The 100 / 200 request values are burst-abuse ceilings, not promised sustainable monthly throughput. At the current reviewed Gemini 3.1 pricing, the full daily token envelope is approximately US$0.31; a US$2 monthly ceiling therefore allows only about six full-envelope days.
+- The 100 / 200 request values are burst-abuse ceilings, not promised sustainable monthly throughput. At the 2026-07-13 reviewed Gemini 3.1 Flash-Lite price of US$0.125 / 1M input tokens and US$0.75 / 1M output / thinking tokens, the full daily token envelope is approximately US$0.155; a US$2 monthly ceiling represents about 12.9 full-envelope days.
 - App-side cost is an estimate tied to a versioned provider / model / pricing configuration. Missing usage metadata, unknown model version, or stale / missing price configuration fails closed for new calls.
 - The provider Spend Cap and application ledger operate together. Neither an application estimate nor a delayed provider cap alone is presented as an exact billing guarantee.
 
@@ -368,9 +370,9 @@ Accounting rules:
 10. Limit controlled variants such as another example; the browser cannot create arbitrary random Cache keys.
 11. Apply Vercel WAF rate limiting to `/api/ai/*` as an outer shield. WAF is not the global cost ledger.
 12. Keep the provider key server-only, non-public, and Production-scoped; never use a `NEXT_PUBLIC_` variable.
-13. Use a dedicated Gemini project / billing boundary. Use Prepay（预付费）, disable Auto-reload（自动充值）, and set the smallest practical project Spend Cap（消费上限）only when those exact controls are visibly available for the approved account at execution time; do not assume every account exposes the same billing plan or control surface.
+13. Use a dedicated Gemini project / billing boundary. The user reports that the approved account required AUD 20 Prepay（预付费）and has Auto-reload（自动充值）disabled. This bounds provider-side exposure but does not prevent a leaked key from consuming the available balance; application controls remain mandatory. Set a project Spend Cap（消费上限）only when the exact control is visibly available and do not treat delayed provider billing as an exact guarantee.
 14. Keep an environment Kill Switch that disables new generations while preserving cached and deterministic features.
-15. Do not automatically fail over to Groq; provider switching is a reviewed configuration change.
+15. Do not automatically fail over or route to another provider; provider switching is a reviewed configuration change.
 
 ### Minimal AI Audit Ledger
 
@@ -392,7 +394,6 @@ When AI quota, billing, provider, or structure validation is unavailable:
 
 - Recognition and Active scheduling continue.
 - Recognition pronunciation and Active Dictation continue through browser SpeechSynthesis.
-- Datamuse / dictionary results may continue when their own adapters are available and within policy.
 - Valid cached AI drafts / accepted enrichment remain readable.
 - New AI generation shows short calm English copy such as `AI suggestions are resting for now`.
 
@@ -515,12 +516,15 @@ Status: complete locally on 2026-07-13. Canonical child plan: `plan_docs/PLAN_V2
 
 ### V2-2 AI Quality And Security Gate
 
-- Re-verify official provider lifecycle, pricing, privacy, output, and billing controls.
-- Verify intended-use terms, age / professional-purpose conditions, lexical-source licensing, query retention, attribution, and whether original dictionary text may be persisted before any paid project or stored external content.
-- Define the fixed 50–100 entry corpus and human rubric.
-- Implement or script only the separately approved non-Production comparison route.
+Status: first local implementation and bounded run completed on 2026-07-13 under `plan_docs/PLAN_V2_STAGE2_AI_QUALITY_SECURITY_GATE.md`; execution evidence is in `plan_docs/PLAN_V2_STAGE2_AI_QUALITY_EVIDENCE.md`. The run produced 114 valid and 6 locally rejected drafts, so the 100% structural threshold and human lexical acceptance remain open. V2-7 Production integration is not authorized.
+
+- Re-verify official Gemini lifecycle, pricing, privacy, Structured Output, thinking, terms, and billing controls.
+- Record the user's confirmed intended-use / age eligibility and account-specific AUD 20 Prepay plus disabled Auto-reload evidence without inspecting or storing billing credentials.
+- Define the fixed 120-entry corpus and human rubric.
+- Remove Datamuse, Free Dictionary, and active Groq comparison from the accepted V2 path.
+- Implement a guarded non-Production Gemini-only evaluation route with ignored local credentials and artifacts.
 - Prove the request, token, cost, concurrency, Cache, audit, and Kill Switch design before a Production key exists.
-- Select the first Production model from evidence.
+- Keep final lexical acceptance human-owned and keep Production integration in V2-7.
 
 ### V2-3 Data Model And Backup Parity
 
@@ -557,7 +561,7 @@ Status: complete locally on 2026-07-13. Canonical child plan: `plan_docs/PLAN_V2
 ### V2-7 AI Enrichment And Cost Guard
 
 - Implement provider adapters and the accepted Gemini route.
-- Integrate Datamuse and Free Dictionary adapters with Cache and graceful failure.
+- Generate the bounded draft directly with the accepted pinned Gemini model; do not add Datamuse or Free Dictionary adapters.
 - Add structured draft review, edit, reject, accept, and `Add to learning`.
 - Add atomic quotas, usage reconciliation, WAF rule, provider billing cap, Kill Switch, and minimal audit ledger.
 - Run the accepted quality, privacy, cost, abuse, and degraded-mode tests.

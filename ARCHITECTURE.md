@@ -1,7 +1,7 @@
 # Words Learning App For Mimi Architecture
 
 Created: 2026-07-02 23:30 AEST
-Last updated: 2026-07-13 15:42 AEST
+Last updated: 2026-07-13 21:33 AEST
 
 ## Current State
 
@@ -86,9 +86,9 @@ Both Tracks
   -> Today’s progress / Learning rhythm / Memory outlook
 
 Lexical enrichment
-  -> Datamuse candidates
-  -> Free Dictionary best-effort evidence
-  -> bounded paid AI structured draft
+  -> allowlisted current term / meanings / examples
+  -> pinned Gemini 3.1 Flash-Lite structured draft
+  -> strict local validation
   -> human edit / reject / accept
   -> accepted enrichment or separate learning entry
 ```
@@ -107,10 +107,16 @@ Key accepted boundaries:
 - Whole-day reset keeps the accepted two visible confirmation gates and becomes one transactional, idempotent command across both profiles. A same-key/different-payload replay is a conflict, and operational replay records stay outside user backups.
 - Recognition pronunciation and first-generation Active Dictation use browser SpeechSynthesis（浏览器文字转语音）without an AI call.
 - Automated Speech Recognition（自动语音识别）, microphone upload, and AI pronunciation scoring are deferred and send no audio in the accepted V2 baseline.
-- The paid AI candidate remains behind an evidence gate, server-only adapter, atomic global quotas, Cache（缓存）, provider billing cap, and Kill Switch（紧急关闭开关）.
+- The paid AI candidate remains behind an evidence gate, server-only adapter, atomic global quotas, Cache（缓存）, provider billing cap, and Kill Switch（紧急关闭开关）. Stage 2 uses paid `gemini-3.1-flash-lite` as the only live candidate and a fixed 120-entry non-personal corpus; Datamuse, Free Dictionary, Groq comparison, and `gemini-flash-latest` are outside the active V2 route.
 - Initial accepted provider-call ceilings are 100 provider attempts per person per local day and 200 provider attempts across Production per server-owned `Australia/Melbourne` budget day. A submitted provider attempt keeps its request count even when it later fails. Because `person_id` is not authentication, only global request / token / cost / concurrency controls form the hard security boundary.
 - Paid-provider limited safety / abuse / legal retention is acceptable when accurately disclosed; V2 must not claim Zero Retention（零保留）.
 - Before the first outbound AI call, a versioned disclosure must name the provider, outbound lexical fields, excluded personal fields, limited content retention, separate technical / usage metadata, and quota / cost boundary, then require explicit user confirmation.
+- The user confirmed the intended users and app purpose satisfy the current Gemini age / professional-purpose conditions. The user also reports AUD 20 Prepay with Auto-reload disabled; this limits provider-side exposure but does not replace application quotas or prevent a leaked key from consuming the prepaid balance.
+- At the price checked on 2026-07-13, Gemini 3.1 Flash-Lite costs US$0.125 / 1M text-input tokens and US$0.75 / 1M output / thinking tokens. The accepted 400,000 / 140,000 daily reservation is therefore approximately US$0.155 before the independent US$0.40 daily and US$2 monthly app ceilings.
+- Stage 2 keeps its user-approved test credential only in ignored `.env.stage2.local`, never in Git, `.env.local`, Vercel, Preview, Production, logs, or browser code. Its runner pins the stable model, allows at most 120 one-shot calls at concurrency 1, disables tools and retries, and writes raw evidence only to an ignored local directory.
+- The first Stage 2 run submitted all 120 fixed fixtures: 114 drafts passed local validation, 6 duplicate/self-candidate drafts were rejected, and no provider/network failure occurred. The 95% structural rate did not pass the 100% gate. `plan_docs/PLAN_V2_STAGE2_AI_QUALITY_EVIDENCE.md` records the bounded US$0.034275–0.038925 cost interval, agent lexical precheck, blank human worksheet, and the blocked Production decision.
+- Runner version 3 preserves HTTP 200 usage/model/finish context before JSON/draft validation and keeps rejected parsed output only inside ignored artifacts. It accepts only `STOP` and halts future calls on provider Prompt blocks, other finish reasons, or missing candidate/content contracts. Production-design reservations must match the configured per-attempt token envelope and cannot understate cost. These local changes close accounting/audit bypasses without changing the Prompt, making another paid call, or weakening full-draft rejection.
+- Removing external lexical sources means every similar/confusable item is visibly an AI suggestion. Strict validation can prove shape and limits, while final lexical usefulness remains a human review decision.
 - SSO（Single Sign-On，单点登录）and confidential multi-user isolation remain in `plan_docs/PLAN_VERSION_HOLD_MULTI_USER_CONFIDENTIAL_ISOLATION.md` and are not V2 scope.
 
 V2-1 freezes the logical data and API contract, including Daily Defaults, versioned Daily Plans, append-only Creation/Reversal Facts, separate Review/New Words keyset queues, profile-scoped review state/event evidence, and strict rating/reset commands. The persisted schema version and exact SQL remain V2-3 decisions because local fallback, Postgres, repository, API, backup, restore, export, fixtures, and migrations must move together. Existing executed migrations remain immutable.
