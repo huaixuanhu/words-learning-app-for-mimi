@@ -1,7 +1,7 @@
 # Words Learning App For Mimi V2 Master Plan
 
 Created: 2026-07-13 00:16 AEST
-Last updated: 2026-07-13 23:00 AEST
+Last updated: 2026-07-14 00:27 AEST
 
 Source plan:
 - `plan_docs/PLAN_V1_MASTER.md`
@@ -24,11 +24,12 @@ Input evidence:
 
 Consumer / next stage:
 - `plan_docs/PLAN_V2_STAGE1_PRODUCT_METRIC_DATA_CONTRACT.md`
+- `plan_docs/PLAN_V2_STAGE3_DATA_MODEL_BACKUP_PARITY.md`
 - Future derived V2 child plans created in the order defined by this document.
 - `plan_docs/PLAN_VERSION_HOLD_MULTI_USER_CONFIDENTIAL_ISOLATION.md`
 
 Document nature:
-This is the canonical V2 product and engineering master plan. It is derived from the completed V1 plan and current Production architecture. V2-1 now has an isolated local executable contract, but no V2 user-facing runtime feature, persisted schema, external service, migration, or deployment has been implemented.
+This is the canonical V2 product and engineering master plan. It is derived from the completed V1 plan and current Production architecture. V2-1 has an isolated executable contract; V2-2 / 2-B have bounded local AI quality evidence; V2-3 has implemented the local/application Schema Version 6 and backup parity. No V2 user-facing page, remote migration, Production provider route, or deployment has been implemented.
 
 Current operational tier: Tier 3.
 
@@ -36,7 +37,7 @@ Target capability tier: Tier 3. V2 adds a bounded paid AI API（人工智能接�
 
 Working tier: Tier 3.
 
-Status: V2-0 documentation baseline and V2-1 Product, Metric, And Data Contract are complete locally. V2-1 remains disconnected from V1 runtime and Schema Version 5. No V2 runtime integration, persisted schema, external service, credential, migration, or deployment action has been performed.
+Status: V2-0 through V2-3 are complete locally. Schema Version 6 and backup version 3 are implemented on branch `V2`; `0003_v2_schema6_data_model.sql` is an unexecuted migration draft. The live V1 database remains Schema Version 5. No V2 user-facing page, remote migration, Production external-service route, credential change, or deployment action has been performed.
 
 ## Scope
 
@@ -59,7 +60,7 @@ Status: V2-0 documentation baseline and V2-1 Product, Metric, And Data Contract 
 
 ## Non-Scope
 
-- No V2 implementation is authorized by this documentation baseline alone.
+- This parent plan alone does not authorize a later V2 stage, remote migration, provider activation, credential change, or deployment. Completed local child stages retain their own recorded approval and scope.
 - No Production deployment, Production database migration, Production data mutation, credential change, paid-service setup, or provider-account action.
 - No SSO（Single Sign-On，单点登录）, OAuth, public registration, roles, per-person authorization, or confidential multi-tenant isolation. These are held in `plan_docs/PLAN_VERSION_HOLD_MULTI_USER_CONFIDENTIAL_ISOLATION.md`.
 - No PTE / IELTS question bank, external exam corpus, persisted exam-mode switch, writing question type, free-writing assessment, or exam speaking question type.
@@ -448,9 +449,9 @@ Validate at minimum:
 
 Checks include no horizontal scroll, reachable primary actions, readable charts, visible navigation, accessible dialogs, reduced-motion behavior, keyboard use, focus order, touch targets, and no content hidden behind the mobile keyboard or bottom Safe Area.
 
-## Candidate V2 Data Model
+## V2 Data Model
 
-The exact schema version is not locked by this master plan. Schema Version 6 is the current candidate because V2 needs new persisted semantics. The implementation child plan must inspect all local, Postgres, API, backup, restore, and export consumers before choosing the final version.
+V2-3 locks Schema Version 6 as the current local/application snapshot version and JSON backup version 3 as the current wrapper. Versions 1–5 migrate forward locally. Existing executed migrations remain immutable; `db/migrations/0003_v2_schema6_data_model.sql` is the new forward-only draft and has not been applied to any remote environment.
 
 Candidate domains:
 
@@ -527,6 +528,8 @@ Status: the first run produced 114 valid and 6 locally rejected drafts. Complete
 - Keep final lexical acceptance human-owned and keep Production integration in V2-7.
 
 ### V2-3 Data Model And Backup Parity
+
+Status: complete locally on 2026-07-14. Canonical child plan: `plan_docs/PLAN_V2_STAGE3_DATA_MODEL_BACKUP_PARITY.md`. The Schema Version 6 SQL remains an unexecuted draft; live V1 Production remains Schema Version 5.
 
 - Finalize schema version and new migration.
 - Add Review Profile, daily plan, Active evidence, AI lineage, quota, and vocabulary-relation contracts.

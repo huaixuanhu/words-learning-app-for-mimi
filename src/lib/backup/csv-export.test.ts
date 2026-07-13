@@ -21,7 +21,7 @@ describe("vocabulary CSV export", () => {
         rarityScore: 3,
         learningTrack: "active",
         tags: ["PTE", "Writing"],
-        source: "manual",
+        source: "ai_generated",
         timezone: "Australia/Melbourne",
       },
       "2026-07-05T00:01:00.000Z",
@@ -34,6 +34,7 @@ describe("vocabulary CSV export", () => {
     expect(csv).toContain("person_mimi,Mimi");
     expect(csv).toContain('"allocate, ""time"" card"');
     expect(csv).toContain("active,PTE|Writing");
+    expect(csv).toContain("PTE|Writing,ai_generated");
     expect(csv).toContain("分配 时间");
     expect(csv).toContain('"[""分配 时间""]"');
     expect(csv).toContain('"[""Allocate time wisely.""]"');

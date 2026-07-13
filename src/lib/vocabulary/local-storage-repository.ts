@@ -1,6 +1,10 @@
 import type { VocabularyData } from "./types";
-import { createEmptyVocabularyData } from "./repository";
+import {
+  createDailyStudyDefaults,
+  createEmptyVocabularyData,
+} from "./repository";
 import { normalizeReviewSettings } from "@/lib/review/settings";
+import { RECOGNITION_PARAMETER_SET_ID } from "@/lib/review/types";
 import {
   normalizeLearningTrack,
   normalizeOptionalText,
@@ -25,6 +29,13 @@ type LegacyVocabularyData = {
   reviewEvents?: unknown;
   settings?: unknown;
   settingsByPerson?: unknown;
+  dailyStudyDefaults?: unknown;
+  dailyStudyPlans?: unknown;
+  vocabularyCreationFacts?: unknown;
+  vocabularyCreationReversals?: unknown;
+  aiRuns?: unknown;
+  aiEnrichmentDrafts?: unknown;
+  vocabularyRelations?: unknown;
   updatedAt?: unknown;
 };
 
@@ -68,6 +79,95 @@ function migrateSettings(value: unknown, now: string) {
   return normalizeReviewSettings(isObject(value) ? value : undefined, now);
 }
 
+function migrateReviewEvent(value: unknown, personId: string) {
+  if (!isObject(value)) {
+    return value;
+  }
+
+  const reviewProfile = value.reviewProfile === "active" ? "active" : "recognition";
+
+  return {
+    ...value,
+    personId: typeof value.personId === "string" ? value.personId : personId,
+    promptId: typeof value.promptId === "string" ? value.promptId : null,
+    reviewProfile,
+    activityType:
+      typeof value.activityType === "string" ? value.activityType : "recognition_card",
+    answerOutcome:
+      typeof value.answerOutcome === "string" ? value.answerOutcome : "self_rated",
+    answerNormalizationVersion:
+      typeof value.answerNormalizationVersion === "string"
+        ? value.answerNormalizationVersion
+        : null,
+    targetRevision:
+      typeof value.targetRevision === "string" ? value.targetRevision : null,
+    parameterSetId:
+      typeof value.parameterSetId === "string" && value.parameterSetId.trim()
+        ? value.parameterSetId
+        : RECOGNITION_PARAMETER_SET_ID,
+  };
+}
+
+function firstEventByItem(events: VocabularyData["reviewEvents"]) {
+  const earliest = new Map<string, string>();
+
+  for (const event of events) {
+    const key = `${event.personId}\u0000${event.vocabularyItemId}\u0000${event.reviewProfile}`;
+    const current = earliest.get(key);
+
+    if (!current || event.reviewedAt < current) {
+      earliest.set(key, event.reviewedAt);
+    }
+  }
+
+  return earliest;
+}
+
+function migrateReviewState(
+  value: unknown,
+  personId: string,
+  earliestEvents: Map<string, string>,
+) {
+  if (!isObject(value)) {
+    return value;
+  }
+
+  const resolvedPersonId = typeof value.personId === "string" ? value.personId : personId;
+  const reviewProfile = value.reviewProfile === "active" ? "active" : "recognition";
+  const vocabularyItemId =
+    typeof value.vocabularyItemId === "string" ? value.vocabularyItemId : "";
+  const eventKey = `${resolvedPersonId}\u0000${vocabularyItemId}\u0000${reviewProfile}`;
+  const firstRatedAt =
+    typeof value.firstRatedAt === "string"
+      ? value.firstRatedAt
+      : earliestEvents.get(eventKey) ?? null;
+
+  return {
+    ...value,
+    personId: resolvedPersonId,
+    reviewProfile,
+    parameterSetId:
+      typeof value.parameterSetId === "string" && value.parameterSetId.trim()
+        ? value.parameterSetId
+        : RECOGNITION_PARAMETER_SET_ID,
+    firstRatedAt,
+    historyOrigin: firstRatedAt ? "recorded" : "legacy_unknown",
+  };
+}
+
+function createLegacyCreationFacts(items: VocabularyData["items"]) {
+  return items.map((item) => ({
+    creationFactId: `creation_fact_legacy_${item.id}`,
+    personId: item.personId,
+    originalVocabularyItemId: item.id,
+    sourceActionId: item.importBatchId ?? item.id,
+    trackAtCreation: item.learningTrack,
+    sourceKind: item.importBatchId ? ("batch" as const) : ("single" as const),
+    historyOrigin: "legacy_backfill" as const,
+    systemCreatedAt: item.systemCreatedAt,
+  }));
+}
+
 export function migrateVocabularyData(value: unknown, now = new Date().toISOString()): VocabularyData {
   if (!isObject(value)) {
     return createEmptyVocabularyData(now);
@@ -80,92 +180,118 @@ export function migrateVocabularyData(value: unknown, now = new Date().toISOStri
   const reviewEvents = Array.isArray(maybeData.reviewEvents) ? maybeData.reviewEvents : [];
   const updatedAt = typeof maybeData.updatedAt === "string" ? maybeData.updatedAt : now;
 
-  if (maybeData.schemaVersion === 1 || maybeData.schemaVersion === 2) {
-    const person = createDefaultPerson(now);
-    const settings = normalizeReviewSettings(
-      isObject(maybeData.settings) ? (maybeData.settings as Partial<VocabularyData["settingsByPerson"][number]>) : undefined,
-      now,
-    );
-
-    return {
-      schemaVersion: 5,
-      people: [person],
-      selectedPersonId: person.id,
-      items: items.map((item) => migrateItem(item, person.id)) as VocabularyData["items"],
-      importBatches: importBatches.map((batch) =>
-        isObject(batch)
-          ? { ...batch, personId: typeof batch.personId === "string" ? batch.personId : person.id }
-          : batch,
-      ) as VocabularyData["importBatches"],
-      reviewStates: reviewStates.map((state) =>
-        isObject(state) ? { ...state, personId: typeof state.personId === "string" ? state.personId : person.id } : state,
-      ) as VocabularyData["reviewStates"],
-      reviewEvents: reviewEvents.map((event) =>
-        isObject(event) ? { ...event, personId: typeof event.personId === "string" ? event.personId : person.id } : event,
-      ) as VocabularyData["reviewEvents"],
-      settingsByPerson: [
-        {
-          personId: person.id,
-          ...settings,
-        },
-      ],
-      updatedAt,
-    };
-  }
-
-  if (maybeData.schemaVersion === 3 || maybeData.schemaVersion === 4 || maybeData.schemaVersion === 5) {
-    const people = Array.isArray(maybeData.people) && maybeData.people.length
-      ? (maybeData.people as VocabularyData["people"])
-      : [createDefaultPerson(now)];
+  if (
+    maybeData.schemaVersion === 1 ||
+    maybeData.schemaVersion === 2 ||
+    maybeData.schemaVersion === 3 ||
+    maybeData.schemaVersion === 4 ||
+    maybeData.schemaVersion === 5 ||
+    maybeData.schemaVersion === 6
+  ) {
+    const isSinglePersonLegacy = maybeData.schemaVersion === 1 || maybeData.schemaVersion === 2;
+    const people = isSinglePersonLegacy
+      ? [createDefaultPerson(now)]
+      : Array.isArray(maybeData.people) && maybeData.people.length
+        ? (maybeData.people as VocabularyData["people"])
+        : [createDefaultPerson(now)];
     const fallbackPersonId = people[0]?.id ?? DEFAULT_PERSON_ID;
     const selectedPersonId =
+      !isSinglePersonLegacy &&
       typeof maybeData.selectedPersonId === "string" &&
       people.some((person) => person.id === maybeData.selectedPersonId)
         ? maybeData.selectedPersonId
         : fallbackPersonId;
-    const migrated: VocabularyData = {
-      schemaVersion: 5,
-      people,
-      selectedPersonId,
-      items: items.map((item) => migrateItem(item, fallbackPersonId)) as VocabularyData["items"],
-      importBatches: importBatches.map((batch) =>
-        isObject(batch)
-          ? { ...batch, personId: typeof batch.personId === "string" ? batch.personId : fallbackPersonId }
-          : batch,
-      ) as VocabularyData["importBatches"],
-      reviewStates: reviewStates.map((state) =>
-        isObject(state)
-          ? { ...state, personId: typeof state.personId === "string" ? state.personId : fallbackPersonId }
-          : state,
-      ) as VocabularyData["reviewStates"],
-      reviewEvents: reviewEvents.map((event) =>
-        isObject(event)
-          ? { ...event, personId: typeof event.personId === "string" ? event.personId : fallbackPersonId }
-          : event,
-      ) as VocabularyData["reviewEvents"],
-      settingsByPerson: Array.isArray(maybeData.settingsByPerson)
+    const migratedItems = items.map((item) =>
+      migrateItem(item, fallbackPersonId),
+    ) as VocabularyData["items"];
+    const migratedEvents = reviewEvents.map((event) =>
+      migrateReviewEvent(event, fallbackPersonId),
+    ) as VocabularyData["reviewEvents"];
+    const earliestEvents = firstEventByItem(migratedEvents);
+    const migratedStates = reviewStates.map((state) =>
+      migrateReviewState(state, fallbackPersonId, earliestEvents),
+    ) as VocabularyData["reviewStates"];
+    const legacySettings = isSinglePersonLegacy
+      ? [
+          {
+            personId: fallbackPersonId,
+            ...migrateSettings(maybeData.settings, now),
+          },
+        ]
+      : Array.isArray(maybeData.settingsByPerson)
         ? maybeData.settingsByPerson
             .filter(isObject)
             .map((settings) => ({
-              personId: typeof settings.personId === "string" ? settings.personId : fallbackPersonId,
+              personId:
+                typeof settings.personId === "string" ? settings.personId : fallbackPersonId,
               ...migrateSettings(settings, now),
             }))
-        : [],
+        : [];
+    const existingSettings = new Set(legacySettings.map((settings) => settings.personId));
+    const settingsByPerson = [
+      ...legacySettings,
+      ...people
+        .filter((person) => !existingSettings.has(person.id))
+        .map((person) => ({
+          personId: person.id,
+          ...normalizeReviewSettings(undefined, now),
+        })),
+    ];
+    const defaultRows = settingsByPerson.flatMap((settings) =>
+      createDailyStudyDefaults(settings.personId, settings),
+    );
+    const hasSchema6Collections = maybeData.schemaVersion === 6;
+    const migrated: VocabularyData = {
+      schemaVersion: 6,
+      people,
+      selectedPersonId,
+      items: migratedItems,
+      importBatches: importBatches.map((batch) =>
+        isObject(batch)
+          ? {
+              ...batch,
+              personId:
+                typeof batch.personId === "string" ? batch.personId : fallbackPersonId,
+            }
+          : batch,
+      ) as VocabularyData["importBatches"],
+      reviewStates: migratedStates,
+      reviewEvents: migratedEvents,
+      settingsByPerson,
+      dailyStudyDefaults:
+        hasSchema6Collections && Array.isArray(maybeData.dailyStudyDefaults)
+          ? (maybeData.dailyStudyDefaults as VocabularyData["dailyStudyDefaults"])
+          : defaultRows,
+      dailyStudyPlans:
+        hasSchema6Collections && Array.isArray(maybeData.dailyStudyPlans)
+          ? (maybeData.dailyStudyPlans as VocabularyData["dailyStudyPlans"])
+          : [],
+      vocabularyCreationFacts:
+        hasSchema6Collections && Array.isArray(maybeData.vocabularyCreationFacts)
+          ? (maybeData.vocabularyCreationFacts as VocabularyData["vocabularyCreationFacts"])
+          : createLegacyCreationFacts(migratedItems),
+      vocabularyCreationReversals:
+        hasSchema6Collections && Array.isArray(maybeData.vocabularyCreationReversals)
+          ? (maybeData.vocabularyCreationReversals as VocabularyData["vocabularyCreationReversals"])
+          : [],
+      aiRuns:
+        hasSchema6Collections && Array.isArray(maybeData.aiRuns)
+          ? (maybeData.aiRuns as VocabularyData["aiRuns"])
+          : [],
+      aiEnrichmentDrafts:
+        hasSchema6Collections && Array.isArray(maybeData.aiEnrichmentDrafts)
+          ? (maybeData.aiEnrichmentDrafts as VocabularyData["aiEnrichmentDrafts"])
+          : [],
+      vocabularyRelations:
+        hasSchema6Collections && Array.isArray(maybeData.vocabularyRelations)
+          ? (maybeData.vocabularyRelations as VocabularyData["vocabularyRelations"])
+          : [],
       updatedAt,
     };
-    const selectedId = getSelectedPersonId(migrated);
-    const existingSettings = new Set(migrated.settingsByPerson.map((settings) => settings.personId));
-    const missingSettings = migrated.people
-      .filter((person) => !existingSettings.has(person.id))
-      .map((person) => ({
-        personId: person.id,
-        ...normalizeReviewSettings(undefined, now),
-      }));
 
     return {
       ...migrated,
-      selectedPersonId: selectedId,
-      settingsByPerson: [...migrated.settingsByPerson, ...missingSettings],
+      selectedPersonId: getSelectedPersonId(migrated),
     };
   }
 

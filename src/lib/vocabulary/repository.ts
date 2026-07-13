@@ -25,11 +25,60 @@ import {
   normalizeTextList,
   normalizeVocabularyTags,
 } from "./normalize";
+import type { VocabularyCreationRecord } from "@/lib/storage/v2-data-model";
 
-export const VOCABULARY_SCHEMA_VERSION = 5;
+export const VOCABULARY_SCHEMA_VERSION = 6;
+
+export function createDailyStudyDefaults(
+  personId: string,
+  settings: ReturnType<typeof createDefaultReviewSettings>,
+) {
+  return [
+    {
+      personId,
+      reviewProfile: "recognition" as const,
+      reviewGoal: settings.recognitionSessionLimit,
+      newWordGoal: 0,
+      timezone: settings.timezone,
+      updatedAt: settings.updatedAt,
+    },
+    {
+      personId,
+      reviewProfile: "active" as const,
+      reviewGoal: settings.activeSessionLimit,
+      newWordGoal: 0,
+      timezone: settings.timezone,
+      updatedAt: settings.updatedAt,
+    },
+  ];
+}
+
+export function buildVocabularyCreationRecord(
+  item: VocabularyItem,
+  input: Pick<NewVocabularyInput, "sourceActionId"> = {},
+  historyOrigin: VocabularyCreationRecord["historyOrigin"] = "recorded",
+): VocabularyCreationRecord {
+  const sourceKind = item.source === "ai_generated"
+    ? "ai_add_to_learning"
+    : item.importBatchId
+      ? "batch"
+      : "single";
+
+  return {
+    creationFactId: makeId("creation_fact"),
+    personId: item.personId,
+    originalVocabularyItemId: item.id,
+    sourceActionId: input.sourceActionId ?? item.importBatchId ?? item.id,
+    trackAtCreation: item.learningTrack,
+    sourceKind,
+    historyOrigin,
+    systemCreatedAt: item.systemCreatedAt,
+  };
+}
 
 export function createEmptyVocabularyData(now = new Date().toISOString()): VocabularyData {
   const person = createDefaultPerson(now);
+  const settings = createDefaultReviewSettings(now);
 
   return {
     schemaVersion: VOCABULARY_SCHEMA_VERSION,
@@ -42,9 +91,16 @@ export function createEmptyVocabularyData(now = new Date().toISOString()): Vocab
     settingsByPerson: [
       {
         personId: person.id,
-        ...createDefaultReviewSettings(now),
+        ...settings,
       },
     ],
+    dailyStudyDefaults: createDailyStudyDefaults(person.id, settings),
+    dailyStudyPlans: [],
+    vocabularyCreationFacts: [],
+    vocabularyCreationReversals: [],
+    aiRuns: [],
+    aiEnrichmentDrafts: [],
+    vocabularyRelations: [],
     updatedAt: now,
   };
 }
@@ -153,11 +209,13 @@ export function addVocabularyItem(
 ) {
   const personId = input.personId ?? getSelectedPersonId(data);
   const item = buildVocabularyItem({ ...input, personId }, now);
+  const creationFact = buildVocabularyCreationRecord(item, input);
 
   return {
     data: {
       ...data,
       items: [item, ...data.items],
+      vocabularyCreationFacts: [creationFact, ...data.vocabularyCreationFacts],
       updatedAt: now,
     },
     item,
@@ -178,6 +236,26 @@ export function updateVocabularyItem(
   }
 
   const currentItem = data.items[itemIndex];
+  const nextLearningTrack =
+    input.learningTrack === undefined
+      ? currentItem.learningTrack
+      : normalizeLearningTrack(input.learningTrack);
+  const hasReviewHistory =
+    data.reviewStates.some(
+      (state) =>
+        state.personId === selectedPersonId && state.vocabularyItemId === currentItem.id,
+    ) ||
+    data.reviewEvents.some(
+      (event) =>
+        event.personId === selectedPersonId && event.vocabularyItemId === currentItem.id,
+    );
+
+  if (nextLearningTrack !== currentItem.learningTrack && hasReviewHistory) {
+    throw new Error(
+      "This word already has study history. Start it fresh in the other Track instead.",
+    );
+  }
+
   const surfaceText =
     input.surfaceText === undefined ? currentItem.surfaceText : cleanSurfaceText(input.surfaceText);
   const meaningFields =
@@ -214,8 +292,7 @@ export function updateVocabularyItem(
     notes: input.notes === undefined ? currentItem.notes : normalizeOptionalText(input.notes),
     rarityScore:
       input.rarityScore === undefined ? currentItem.rarityScore : normalizeRarityScore(input.rarityScore),
-    learningTrack:
-      input.learningTrack === undefined ? currentItem.learningTrack : normalizeLearningTrack(input.learningTrack),
+    learningTrack: nextLearningTrack,
     tags: input.tags === undefined ? currentItem.tags : normalizeVocabularyTags(input.tags),
     createdAt: input.createdAt ?? currentItem.createdAt,
     timezone: input.timezone ?? currentItem.timezone,
@@ -295,6 +372,22 @@ export function deleteVocabularyItem(data: VocabularyData, id: string, now = new
         (event) =>
           !(event.vocabularyItemId === id && event.personId === selectedPersonId),
       ),
+      aiRuns: data.aiRuns.map((run) =>
+        run.personId === selectedPersonId && run.sourceVocabularyItemId === id
+          ? { ...run, sourceVocabularyItemId: null }
+          : run,
+      ),
+      aiEnrichmentDrafts: data.aiEnrichmentDrafts.filter(
+        (draft) =>
+          !(draft.personId === selectedPersonId && draft.sourceVocabularyItemId === id),
+      ),
+      vocabularyRelations: data.vocabularyRelations.filter(
+        (relation) =>
+          !(
+            relation.personId === selectedPersonId &&
+            (relation.sourceVocabularyItemId === id || relation.targetVocabularyItemId === id)
+          ),
+      ),
       updatedAt: now,
     },
     item,
@@ -322,6 +415,22 @@ export function rollbackImportBatch(data: VocabularyData, batchId: string, now =
   const deletedReviewEventsCount = data.reviewEvents.filter(
     (event) => event.personId === selectedPersonId && itemIds.has(event.vocabularyItemId),
   ).length;
+  const alreadyReversed = data.vocabularyCreationReversals.some(
+    (reversal) =>
+      reversal.personId === selectedPersonId &&
+      reversal.sourceActionId === batchId &&
+      reversal.reason === "batch_rollback",
+  );
+  const hasBatchCreationFacts = data.vocabularyCreationFacts.some(
+    (fact) =>
+      fact.personId === selectedPersonId &&
+      fact.sourceActionId === batchId &&
+      fact.sourceKind === "batch",
+  );
+
+  if (alreadyReversed) {
+    throw new Error(`Import batch already rolled back: ${batchId}`);
+  }
 
   return {
     data: {
@@ -337,6 +446,40 @@ export function rollbackImportBatch(data: VocabularyData, batchId: string, now =
       ),
       reviewEvents: data.reviewEvents.filter(
         (event) => !(event.personId === selectedPersonId && itemIds.has(event.vocabularyItemId)),
+      ),
+      vocabularyCreationReversals: hasBatchCreationFacts
+        ? [
+            {
+              reversalFactId: makeId("creation_reversal"),
+              personId: selectedPersonId,
+              sourceActionId: batchId,
+              reason: "batch_rollback" as const,
+              reversedAt: now,
+            },
+            ...data.vocabularyCreationReversals,
+          ]
+        : data.vocabularyCreationReversals,
+      aiRuns: data.aiRuns.map((run) =>
+        run.personId === selectedPersonId &&
+        run.sourceVocabularyItemId !== null &&
+        itemIds.has(run.sourceVocabularyItemId)
+          ? { ...run, sourceVocabularyItemId: null }
+          : run,
+      ),
+      aiEnrichmentDrafts: data.aiEnrichmentDrafts.filter(
+        (draft) =>
+          !(
+            draft.personId === selectedPersonId &&
+            itemIds.has(draft.sourceVocabularyItemId)
+          ),
+      ),
+      vocabularyRelations: data.vocabularyRelations.filter(
+        (relation) =>
+          !(
+            relation.personId === selectedPersonId &&
+            (itemIds.has(relation.sourceVocabularyItemId) ||
+              itemIds.has(relation.targetVocabularyItemId))
+          ),
       ),
       updatedAt: now,
     },
@@ -391,12 +534,16 @@ export function commitImportCandidates(
       now,
     ),
   );
+  const creationFacts = items.map((item) =>
+    buildVocabularyCreationRecord(item, { sourceActionId: batch.id }),
+  );
 
   return {
     data: {
       ...data,
       importBatches: [batch, ...data.importBatches],
       items: [...items, ...data.items],
+      vocabularyCreationFacts: [...creationFacts, ...data.vocabularyCreationFacts],
       updatedAt: now,
     },
     batch,
@@ -422,6 +569,7 @@ export function addPerson(
   now = new Date().toISOString(),
 ): { data: VocabularyData; person: Person } {
   const person = buildPerson(input, data.people, now);
+  const settings = createDefaultReviewSettings(now);
 
   return {
     data: {
@@ -431,9 +579,13 @@ export function addPerson(
       settingsByPerson: [
         {
           personId: person.id,
-          ...createDefaultReviewSettings(now),
+          ...settings,
         },
         ...data.settingsByPerson,
+      ],
+      dailyStudyDefaults: [
+        ...createDailyStudyDefaults(person.id, settings),
+        ...data.dailyStudyDefaults,
       ],
       updatedAt: now,
     },

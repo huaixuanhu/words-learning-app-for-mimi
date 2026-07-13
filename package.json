@@ -19,6 +19,7 @@
     "db:test:repository:dev": "MIMI_POSTGRES_INTEGRATION=1 MIMI_STORAGE_RUNTIME=postgres-preview STAGE5F_DATABASE_TARGET=development dotenv -e .env.local -- vitest run src/lib/storage/postgres/repository.integration.test.ts",
     "backup:dry-run:fixture": "node scripts/backup-import-postgres.mjs --fixture --dry-run",
     "backup:dry-run:schema5-fixture": "node scripts/backup-import-postgres.mjs --schema5-fixture --dry-run",
+    "backup:dry-run:schema6-fixture": "node scripts/backup-import-postgres.mjs --schema6-fixture --dry-run",
     "db:cleanup-smoke:dev": "STAGE5F_DATABASE_TARGET=development dotenv -e .env.local -- node scripts/backup-import-postgres.mjs --cleanup-smoke",
     "db:import-fixture-trial:dev": "STAGE5F_DATABASE_TARGET=development dotenv -e .env.local -- node scripts/backup-import-postgres.mjs --fixture --trial-rollback",
     "db:import-schema5-fixture-trial:dev": "STAGE5F_DATABASE_TARGET=development dotenv -e .env.local -- node scripts/backup-import-postgres.mjs --schema5-fixture --trial-rollback",

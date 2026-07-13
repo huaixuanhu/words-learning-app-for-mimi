@@ -1,11 +1,11 @@
 # Local Backup To Postgres Migration Mapping
 
 Created: 2026-07-05 01:08 AEST
-Last updated: 2026-07-10 23:56 AEST
+Last updated: 2026-07-14 00:34 AEST
 
 Source plan:
 
-- `plan_docs/PLAN_V1_MASTER.md`
+- `plan_docs/PLAN_V2_STAGE3_DATA_MODEL_BACKUP_PARITY.md`
 
 Derived from:
 
@@ -14,10 +14,12 @@ Derived from:
 - `plan_docs/PLAN_V1_STAGE5C_LOCAL_PERSON_ADAPTER.md`
 - `plan_docs/PLAN_V1_STAGE5D_DURABLE_STORAGE_READINESS.md`
 - `plan_docs/PLAN_V1_STAGE8_5_DATA_LIFECYCLE_ENVIRONMENT_STRATEGY.md`
+- `plan_docs/PLAN_V2_MASTER.md`
+- `plan_docs/PLAN_V2_STAGE1_PRODUCT_METRIC_DATA_CONTRACT.md`
 
 Scope:
 
-- Map schema version 3 through 5 JSON backup（JSON 备份）data into the future Neon Postgres（关系型数据库）schema.
+- Map schema version 3 through 6 JSON backup（JSON 备份）data into the current V2 Postgres（关系型数据库）draft.
 - Preserve person separation through `person_id`.
 - Define validation and rollback expectations before a remote migration（迁移）is executed.
 - Document the Stage 5L dry-run and rollback-trial harness.
@@ -54,11 +56,20 @@ Stage 6B-P1-E extends the harness for schema version 5:
 - Stage 6B-P1-F has executed schema version 5 `--trial-rollback`, guarded fixture `--commit`, and cleanup against the approved non-production development database after applying `db/migrations/0002_schema5_production_runtime.sql`.
 - Formal user backup import or Production import still requires a separately confirmed target, fresh backup file, expected counts, rollback plan, and explicit human approval.
 
+V2 Stage 3 extends the local harness to Schema Version 6 and backup wrapper version 3:
+
+- `npm run backup:dry-run:schema6-fixture` runs without database access.
+- `test_fixtures/v2-stage3-schema6-backup.json` covers both Review Profiles, daily defaults/plans, a deleted-item creation tombstone, a batch reversal, and one accepted AI run/draft/relation chain.
+- Schema versions 3–5 normalize forward to version 6 by deriving Recognition-only review evidence, two daily defaults per person, and legacy creation facts without inventing Active history or a first-rating time.
+- Schema Version 6 remaps every formal id and retains creation facts even when the original vocabulary item has already been deleted.
+- Quota buckets, study/AI idempotency rows, Cache, temporary/rejected drafts, and unreferenced AI audit rows are operational data and are not imported from a user backup.
+- `db/migrations/0003_v2_schema6_data_model.sql` and the Schema 6 fixture have passed local/static validation only. No Development, Staging, Preview, or Production migration/import has been executed for Stage 3.
+
 ## Migration Principle
 
 The browser-local schema uses prefixed string ids such as `person_mimi`, `vocab_*`, `batch_*`, and `review_event_*`. The Postgres draft uses UUID primary keys. A real import must therefore create a deterministic in-memory mapping from each source id to a target UUID during one transaction.
 
-Current JSON backup is a workspace-level backup and can contain multiple people. A future import can either restore the whole workspace or restore one selected person after explicit user choice. For a workspace restore, create one `backup_imports` row per target person so person-scoped import history and `backup_import_mappings` stay aligned.
+Current JSON backup wrapper version 3 contains a Schema Version 6 workspace and can contain multiple people. The reader also accepts older supported wrappers/data versions and normalizes them before planning. A future import can either restore the whole workspace or restore one selected person after explicit user choice. For a workspace restore, create one `backup_imports` row per target person so person-scoped import history and `backup_import_mappings` stay aligned.
 
 ## Required Preflight
 
@@ -113,7 +124,7 @@ Current JSON backup is a workspace-level backup and can contain multiple people.
   - `rarityScore` must be null or between 1 and 5
   - `archivedAt` must agree with `status`
 
-V1 backup import must not create review state or review event rows for Active Vocabulary. Active rows can be stored in `vocabulary_items` and mapped in `backup_import_mappings`, but their future scheduling state must be separate V2 data.
+Schema version 3–5 backup import must not create review state or review event rows for Active Vocabulary. Schema Version 6 may carry Active evidence only when its independent profile, activity, outcome, target revision, and parameter-set constraints are valid.
 
 ### review_states
 
@@ -123,8 +134,12 @@ V1 backup import must not create review state or review event rows for Active Vo
   - `id` -> generated UUID, stored in `backup_import_mappings`
   - `personId` -> mapped `people.id`
   - `vocabularyItemId` -> mapped `vocabulary_items.id` for the same person
-  - uniqueness is enforced by `(person_id, vocabulary_item_id)`
-  - schema version 4 / 5 imports reject rows whose mapped item has `learningTrack: "active"`
+  - `reviewProfile` -> `review_profile`
+  - `parameterSetId` -> `parameter_set_id`
+  - `firstRatedAt` -> `first_rated_at`
+  - `historyOrigin` -> `history_origin`
+  - uniqueness is enforced by `(person_id, vocabulary_item_id, review_profile)`
+  - schema version 3–5 rows normalize to Recognition with `recognition-fsrs-v1`; earliest retained evidence supplies `firstRatedAt`, otherwise origin remains `legacy_unknown`
 
 ### review_events
 
@@ -135,7 +150,8 @@ V1 backup import must not create review state or review event rows for Active Vo
   - `personId` -> mapped `people.id`
   - `vocabularyItemId` -> mapped `vocabulary_items.id` for the same person
   - rating and interval values must pass database checks
-  - schema version 4 / 5 imports reject rows whose mapped item has `learningTrack: "active"`
+  - `promptId`, `reviewProfile`, `activityType`, `answerOutcome`, `answerNormalizationVersion`, `targetRevision`, and `parameterSetId` map to their snake_case evidence columns
+  - schema version 3–5 rows normalize to Recognition `recognition_card` / `self_rated` evidence and reject review rows targeting Active items
 
 ### review_settings
 
@@ -148,6 +164,43 @@ V1 backup import must not create review state or review event rows for Active Vo
   - `sessionLimit` -> `session_limit`, synchronized to the Recognition daily limit
   - `timezone` -> `timezone`
   - `updatedAt` -> `updated_at`
+
+### daily_study_defaults and daily_study_plans
+
+- Source: `data.dailyStudyDefaults[]` and `data.dailyStudyPlans[]`
+- Target: matching snake_case tables
+- Mapping:
+  - generated UUID mappings are retained for daily plans; defaults use the mapped person plus profile key
+  - every person has one Recognition and one Active default
+  - plan person/profile/date uniqueness, timezone, inclusive/exclusive day window, goal values, recommendation values, and versions are validated before insert
+  - schema versions 3–5 derive defaults from legacy settings and have no historical daily plans
+
+### vocabulary_creation_facts and vocabulary_creation_reversals
+
+- Source: `data.vocabularyCreationFacts[]` and `data.vocabularyCreationReversals[]`
+- Target: matching append-only tables
+- Mapping:
+  - source action, original item id, Track at creation, source kind, timestamp, and fact origin remain immutable evidence
+  - an original item id is remapped independently even when no live vocabulary row remains
+  - reversal source action must match a creation action for the same person and is unique per reason
+  - schema versions 3–5 derive `legacy_backfill` facts from retained items; no reversal is invented
+
+### ai_runs and ai_enrichment_drafts
+
+- Source: only backup-retained `data.aiRuns[]` and accepted `data.aiEnrichmentDrafts[]`
+- Target: `ai_runs` and `ai_enrichment_drafts`
+- Mapping:
+  - person, optional source item, run/draft ids, versioned provider/model lineage, bounded usage, lifecycle state, and accepted structured fields map directly after validation
+  - every restored run must be succeeded and referenced by accepted formal data
+  - temporary, rejected, failed, or unreferenced operational rows are absent from the user backup
+
+### vocabulary_relations
+
+- Source: `data.vocabularyRelations[]`
+- Target: `vocabulary_relations`
+- Mapping:
+  - source item, target item, AI run, relation type, Chinese difference, and example pairs are remapped within one person
+  - both vocabulary endpoints and the accepted AI lineage must exist before insert
 
 ### backup_imports
 
@@ -180,8 +233,12 @@ Before commit, a future migration script should check:
 - `import_batches` count equals `data.importBatches.length`
 - `review_states` count equals `data.reviewStates.length`
 - `review_events` count equals `data.reviewEvents.length`
-- `review_settings` count equals `data.settingsByPerson.length`
-- `backup_import_mappings` count covers every remapped source id
+  - `review_settings` count equals `data.settingsByPerson.length`
+  - `daily_study_defaults` count equals `data.dailyStudyDefaults.length`
+  - `daily_study_plans` count equals `data.dailyStudyPlans.length`
+  - creation fact/reversal counts equal their formal backup collections, including tombstones
+  - retained AI run/draft and vocabulary-relation counts equal their formal backup collections
+  - `backup_import_mappings` count covers every remapped source id
 
 ## Failure Behavior
 

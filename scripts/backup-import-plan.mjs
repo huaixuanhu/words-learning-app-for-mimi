@@ -1,21 +1,40 @@
 import { randomUUID } from "node:crypto";
 
 export const BACKUP_FORMAT = "mimi-pte-vocabulary-backup";
-export const BACKUP_VERSION = 1;
+export const BACKUP_VERSION = 3;
 export const BACKUP_APP_NAME = "words-learning-app-for-mimi";
 export const STAGE5L_FIXTURE_FILE_NAME = "stage5l-fixture-backup.json";
 export const STAGE6B_P1E_SCHEMA5_FIXTURE_FILE_NAME = "stage6b-p1e-schema5-backup.json";
+export const V2_STAGE3_SCHEMA6_FIXTURE_FILE_NAME = "v2-stage3-schema6-backup.json";
 
-const SUPPORTED_SCHEMA_VERSIONS = new Set([3, 4, 5]);
-const SUPPORTED_SCHEMA_VERSION_LABEL = "3, 4, or 5";
+const SUPPORTED_BACKUP_VERSIONS = new Set([1, 2, 3]);
+const SUPPORTED_SCHEMA_VERSIONS = new Set([3, 4, 5, 6]);
+const SUPPORTED_SCHEMA_VERSION_LABEL = "3, 4, 5, or 6";
 const DEFAULT_ACTIVE_SESSION_LIMIT = 8;
-const VOCABULARY_SOURCES = new Set(["manual", "txt_file", "pasted_text", "json_file", "json_paste"]);
+const VOCABULARY_SOURCES = new Set([
+  "manual",
+  "txt_file",
+  "pasted_text",
+  "json_file",
+  "json_paste",
+  "ai_generated",
+]);
 const VOCABULARY_STATUSES = new Set(["new", "archived"]);
 const IMPORT_SOURCE_TYPES = new Set(["txt_file", "pasted_text", "json_file", "json_paste"]);
 const LEARNING_TRACKS = new Set(["recognition", "active"]);
 const VOCABULARY_TAGS = new Set(["PTE", "IELTS", "Listening", "Writing", "Spelling Risk"]);
 const REVIEW_STATUSES = new Set(["learning", "review"]);
 const REVIEW_RATINGS = new Set(["forgot", "hard", "vague", "remembered"]);
+const REVIEW_ACTIVITY_TYPES = new Set(["recognition_card", "say", "spell", "dictation"]);
+const ANSWER_OUTCOMES = new Set([
+  "self_rated",
+  "exact",
+  "normalized_match",
+  "different",
+  "revealed_without_answer",
+]);
+const CREATION_SOURCE_KINDS = new Set(["single", "batch", "ai_add_to_learning"]);
+const RELATION_TYPES = new Set(["similar", "spelling", "sound", "usage"]);
 
 export class BackupImportPlanError extends Error {
   constructor(errors) {
@@ -102,7 +121,7 @@ function actualCounts(data) {
     (item) => item.status === "archived" || Boolean(item.archivedAt),
   ).length;
 
-  return {
+  const counts = {
     people: data.people.length,
     items: data.items.length,
     activeItems: data.items.length - archivedItems,
@@ -111,6 +130,20 @@ function actualCounts(data) {
     reviewStates: data.reviewStates.length,
     reviewEvents: data.reviewEvents.length,
   };
+
+  if (data.schemaVersion >= 6) {
+    Object.assign(counts, {
+      dailyStudyDefaults: data.dailyStudyDefaults.length,
+      dailyStudyPlans: data.dailyStudyPlans.length,
+      vocabularyCreationFacts: data.vocabularyCreationFacts.length,
+      vocabularyCreationReversals: data.vocabularyCreationReversals.length,
+      aiRuns: data.aiRuns.length,
+      aiEnrichmentDrafts: data.aiEnrichmentDrafts.length,
+      vocabularyRelations: data.vocabularyRelations.length,
+    });
+  }
+
+  return counts;
 }
 
 function compareCounts(metadataCounts, counts, errors) {
@@ -266,6 +299,7 @@ function validateReviewState(
   reviewStateItems,
   vocabularyItemTracks,
   blockActiveReviewRows,
+  requiresV2Fields,
   errors,
 ) {
   const label = `reviewStates[${index}]`;
@@ -291,10 +325,15 @@ function validateReviewState(
   if (blockActiveReviewRows && vocabularyItemTracks.get(itemKey) === "active") {
     errors.push(`${label}.vocabularyItemId references an Active item`);
   }
-  if (reviewStateItems.has(itemKey)) {
-    errors.push(`${label}.vocabularyItemId must be unique per person`);
+  const stateKey = requiresV2Fields ? `${itemKey}:${state.reviewProfile}` : itemKey;
+  if (reviewStateItems.has(stateKey)) {
+    errors.push(
+      requiresV2Fields
+        ? `${label}.vocabularyItemId and reviewProfile must be unique per person`
+        : `${label}.vocabularyItemId must be unique per person`,
+    );
   }
-  reviewStateItems.add(itemKey);
+  reviewStateItems.add(stateKey);
   if (!REVIEW_STATUSES.has(String(state.status))) {
     errors.push(`${label}.status is unsupported`);
   }
@@ -317,6 +356,35 @@ function validateReviewState(
       errors.push(`${label}.${key} must be a number or null`);
     }
   }
+
+  if (requiresV2Fields) {
+    if (!LEARNING_TRACKS.has(String(state.reviewProfile))) {
+      errors.push(`${label}.reviewProfile is unsupported`);
+    }
+    if (!isString(state.parameterSetId) || !state.parameterSetId.trim()) {
+      errors.push(`${label}.parameterSetId must be a non-blank string`);
+    }
+    if (!isStringOrNull(state.firstRatedAt)) {
+      errors.push(`${label}.firstRatedAt must be a string or null`);
+    } else if (state.firstRatedAt !== null && !isValidDateString(state.firstRatedAt)) {
+      errors.push(`${label}.firstRatedAt must be a valid date string or null`);
+    }
+    if (state.historyOrigin !== "recorded" && state.historyOrigin !== "legacy_unknown") {
+      errors.push(`${label}.historyOrigin is unsupported`);
+    }
+    if (
+      (state.historyOrigin === "recorded" && !isValidDateString(state.firstRatedAt)) ||
+      (state.historyOrigin === "legacy_unknown" && state.firstRatedAt !== null)
+    ) {
+      errors.push(`${label}.firstRatedAt does not match historyOrigin`);
+    }
+    if (
+      (state.reviewProfile === "recognition" && state.parameterSetId !== "recognition-fsrs-v1") ||
+      (state.reviewProfile === "active" && state.parameterSetId === "recognition-fsrs-v1")
+    ) {
+      errors.push(`${label}.parameterSetId does not match reviewProfile`);
+    }
+  }
 }
 
 function validateReviewEvent(
@@ -326,6 +394,7 @@ function validateReviewEvent(
   vocabularyItems,
   vocabularyItemTracks,
   blockActiveReviewRows,
+  requiresV2Fields,
   errors,
 ) {
   const label = `reviewEvents[${index}]`;
@@ -369,6 +438,62 @@ function validateReviewEvent(
   if (!isNonNegativeInteger(event.elapsedMs)) {
     errors.push(`${label}.elapsedMs must be a non-negative integer`);
   }
+
+  if (requiresV2Fields) {
+    if (!isStringOrNull(event.promptId)) {
+      errors.push(`${label}.promptId must be a string or null`);
+    }
+    if (!LEARNING_TRACKS.has(String(event.reviewProfile))) {
+      errors.push(`${label}.reviewProfile is unsupported`);
+    }
+    if (!REVIEW_ACTIVITY_TYPES.has(String(event.activityType))) {
+      errors.push(`${label}.activityType is unsupported`);
+    }
+    if (!ANSWER_OUTCOMES.has(String(event.answerOutcome))) {
+      errors.push(`${label}.answerOutcome is unsupported`);
+    }
+    if (!isStringOrNull(event.answerNormalizationVersion)) {
+      errors.push(`${label}.answerNormalizationVersion must be a string or null`);
+    }
+    if (!isStringOrNull(event.targetRevision)) {
+      errors.push(`${label}.targetRevision must be a string or null`);
+    }
+    if (!isString(event.parameterSetId) || !event.parameterSetId.trim()) {
+      errors.push(`${label}.parameterSetId must be a non-blank string`);
+    }
+    if (isNonNegativeInteger(event.elapsedMs) && event.elapsedMs > 90_000_000) {
+      errors.push(`${label}.elapsedMs is outside the accepted range`);
+    }
+
+    const isRecognitionEvidence =
+      event.reviewProfile === "recognition" &&
+      event.activityType === "recognition_card" &&
+      event.answerOutcome === "self_rated" &&
+      event.answerNormalizationVersion === null &&
+      event.targetRevision === null &&
+      event.parameterSetId === "recognition-fsrs-v1";
+    const isActiveSayEvidence =
+      event.reviewProfile === "active" &&
+      event.activityType === "say" &&
+      event.answerOutcome === "self_rated" &&
+      event.answerNormalizationVersion === null &&
+      isString(event.targetRevision) &&
+      Boolean(event.targetRevision.trim()) &&
+      event.parameterSetId !== "recognition-fsrs-v1";
+    const isActiveTypedEvidence =
+      event.reviewProfile === "active" &&
+      (event.activityType === "spell" || event.activityType === "dictation") &&
+      event.answerOutcome !== "self_rated" &&
+      ANSWER_OUTCOMES.has(String(event.answerOutcome)) &&
+      event.answerNormalizationVersion === "active-answer-v1" &&
+      isString(event.targetRevision) &&
+      Boolean(event.targetRevision.trim()) &&
+      event.parameterSetId !== "recognition-fsrs-v1";
+
+    if (!isRecognitionEvidence && !isActiveSayEvidence && !isActiveTypedEvidence) {
+      errors.push(`${label} evidence fields are inconsistent`);
+    }
+  }
 }
 
 function validateReviewSettings(settings, index, people, requiresDualLimits, errors) {
@@ -395,6 +520,285 @@ function validateReviewSettings(settings, index, people, requiresDualLimits, err
   }
 }
 
+function validateDailyStudyDefault(record, index, people, errors) {
+  const label = `dailyStudyDefaults[${index}]`;
+  if (!isRecord(record)) {
+    errors.push(`${label} must be an object`);
+    return;
+  }
+  requireString(record, "personId", label, errors);
+  requireString(record, "timezone", label, errors);
+  requireDateString(record, "updatedAt", label, errors);
+  if (!people.has(record.personId)) {
+    errors.push(`${label}.personId does not match a person`);
+  }
+  if (!LEARNING_TRACKS.has(String(record.reviewProfile))) {
+    errors.push(`${label}.reviewProfile is unsupported`);
+  }
+  for (const key of ["reviewGoal", "newWordGoal"]) {
+    if (!isNonNegativeInteger(record[key]) || record[key] > 2_147_483_647) {
+      errors.push(`${label}.${key} must be a non-negative database integer`);
+    }
+  }
+  if (isString(record.timezone) && !record.timezone.trim()) {
+    errors.push(`${label}.timezone must not be blank`);
+  }
+}
+
+function validateDailyStudyPlan(record, index, people, errors) {
+  const label = `dailyStudyPlans[${index}]`;
+  if (!isRecord(record)) {
+    errors.push(`${label} must be an object`);
+    return;
+  }
+  for (const key of ["id", "personId", "localDate", "timezone", "recommendationVersion"]) {
+    requireString(record, key, label, errors);
+  }
+  for (const key of ["dayStartsAt", "dayEndsAt", "calculatedAt", "updatedAt"]) {
+    requireDateString(record, key, label, errors);
+  }
+  if (!people.has(record.personId)) {
+    errors.push(`${label}.personId does not match a person`);
+  }
+  if (!LEARNING_TRACKS.has(String(record.reviewProfile))) {
+    errors.push(`${label}.reviewProfile is unsupported`);
+  }
+  for (const key of ["suggestedReview", "reviewGoal", "newWordGoal"]) {
+    if (!isNonNegativeInteger(record[key]) || record[key] > 2_147_483_647) {
+      errors.push(`${label}.${key} must be a non-negative database integer`);
+    }
+  }
+  if (!isPositiveInteger(record.planVersion)) {
+    errors.push(`${label}.planVersion must be a positive integer`);
+  }
+  if (
+    isValidDateString(record.dayStartsAt) &&
+    isValidDateString(record.dayEndsAt) &&
+    Date.parse(record.dayEndsAt) <= Date.parse(record.dayStartsAt)
+  ) {
+    errors.push(`${label} day window is invalid`);
+  }
+  if (isString(record.recommendationVersion) && !record.recommendationVersion.trim()) {
+    errors.push(`${label}.recommendationVersion must not be blank`);
+  }
+}
+
+function validateCreationFact(record, index, people, errors) {
+  const label = `vocabularyCreationFacts[${index}]`;
+  if (!isRecord(record)) {
+    errors.push(`${label} must be an object`);
+    return;
+  }
+  for (const key of [
+    "creationFactId",
+    "personId",
+    "originalVocabularyItemId",
+    "sourceActionId",
+  ]) {
+    requireString(record, key, label, errors);
+    if (isString(record[key]) && !record[key].trim()) {
+      errors.push(`${label}.${key} must not be blank`);
+    }
+  }
+  requireDateString(record, "systemCreatedAt", label, errors);
+  if (!people.has(record.personId)) {
+    errors.push(`${label}.personId does not match a person`);
+  }
+  if (!LEARNING_TRACKS.has(String(record.trackAtCreation))) {
+    errors.push(`${label}.trackAtCreation is unsupported`);
+  }
+  if (!CREATION_SOURCE_KINDS.has(String(record.sourceKind))) {
+    errors.push(`${label}.sourceKind is unsupported`);
+  }
+  if (record.historyOrigin !== "recorded" && record.historyOrigin !== "legacy_backfill") {
+    errors.push(`${label}.historyOrigin is unsupported`);
+  }
+}
+
+function validateCreationReversal(record, index, people, errors) {
+  const label = `vocabularyCreationReversals[${index}]`;
+  if (!isRecord(record)) {
+    errors.push(`${label} must be an object`);
+    return;
+  }
+  for (const key of ["reversalFactId", "personId", "sourceActionId"]) {
+    requireString(record, key, label, errors);
+  }
+  requireDateString(record, "reversedAt", label, errors);
+  if (!people.has(record.personId)) {
+    errors.push(`${label}.personId does not match a person`);
+  }
+  if (record.reason !== "batch_rollback") {
+    errors.push(`${label}.reason is unsupported`);
+  }
+}
+
+function validateAiDraftContent(value, label, errors) {
+  if (!isRecord(value)) {
+    errors.push(`${label} must be an object`);
+    return;
+  }
+  for (const key of ["additionalMeaningsZh", "examples"]) {
+    if (!isStringArray(value[key])) {
+      errors.push(`${label}.${key} must be an array of strings`);
+    }
+  }
+  if (!Array.isArray(value.similarWords)) {
+    errors.push(`${label}.similarWords must be an array`);
+  } else {
+    value.similarWords.forEach((entry, index) => {
+      if (!isRecord(entry) || !isString(entry.word) || !isString(entry.differenceZh)) {
+        errors.push(`${label}.similarWords[${index}] is invalid`);
+      }
+    });
+  }
+  if (!Array.isArray(value.confusableWords)) {
+    errors.push(`${label}.confusableWords must be an array`);
+  } else {
+    value.confusableWords.forEach((entry, index) => {
+      if (
+        !isRecord(entry) ||
+        !isString(entry.word) ||
+        !isString(entry.differenceZh) ||
+        !["spelling", "sound", "usage"].includes(entry.type) ||
+        !isStringArray(entry.examplePair) ||
+        ![0, 2].includes(Array.isArray(entry.examplePair) ? entry.examplePair.length : -1)
+      ) {
+        errors.push(`${label}.confusableWords[${index}] is invalid`);
+      }
+    });
+  }
+}
+
+function validateAiRun(record, index, people, vocabularyItems, errors) {
+  const label = `aiRuns[${index}]`;
+  if (!isRecord(record)) {
+    errors.push(`${label} must be an object`);
+    return;
+  }
+  for (const key of [
+    "id",
+    "personId",
+    "model",
+    "modelLabel",
+    "promptVersion",
+    "sourceHash",
+    "outputSchemaVersion",
+    "disclosureVersion",
+    "idempotencyKeyHash",
+    "cacheKeyHash",
+  ]) {
+    requireString(record, key, label, errors);
+    if (isString(record[key]) && !record[key].trim()) {
+      errors.push(`${label}.${key} must not be blank`);
+    }
+  }
+  requireDateString(record, "createdAt", label, errors);
+  requireDateString(record, "completedAt", label, errors);
+  if (!people.has(record.personId)) {
+    errors.push(`${label}.personId does not match a person`);
+  }
+  if (
+    record.sourceVocabularyItemId !== null &&
+    !vocabularyItems.has(`${record.personId}:${record.sourceVocabularyItemId}`)
+  ) {
+    errors.push(`${label}.sourceVocabularyItemId does not match an item`);
+  }
+  if (record.feature !== "enrichment_v1" || record.provider !== "google-gemini-api") {
+    errors.push(`${label} provider or feature is unsupported`);
+  }
+  if (record.status !== "succeeded" || record.structureValidationStatus !== "valid") {
+    errors.push(`${label} must be a succeeded, structurally valid retained run`);
+  }
+  if (!isStringOrNull(record.providerResponseId)) {
+    errors.push(`${label}.providerResponseId must be a string or null`);
+  }
+  for (const key of ["inputTokens", "outputTokens", "thinkingTokens", "totalTokens", "latencyMs"]) {
+    if (!isNonNegativeInteger(record[key]) || record[key] > 2_147_483_647) {
+      errors.push(`${label}.${key} must be a non-negative database integer`);
+    }
+  }
+  if (
+    isNonNegativeInteger(record.inputTokens) &&
+    isNonNegativeInteger(record.outputTokens) &&
+    isNonNegativeInteger(record.thinkingTokens) &&
+    isNonNegativeInteger(record.totalTokens) &&
+    record.totalTokens < record.inputTokens + record.outputTokens + record.thinkingTokens
+  ) {
+    errors.push(`${label}.totalTokens is inconsistent`);
+  }
+  if (!isFiniteNumber(record.estimatedCostUsd) || record.estimatedCostUsd < 0) {
+    errors.push(`${label}.estimatedCostUsd must be a non-negative number`);
+  }
+}
+
+function validateAiEnrichmentDraft(record, index, people, vocabularyItems, aiRuns, errors) {
+  const label = `aiEnrichmentDrafts[${index}]`;
+  if (!isRecord(record)) {
+    errors.push(`${label} must be an object`);
+    return;
+  }
+  for (const key of ["id", "personId", "sourceVocabularyItemId", "aiRunId"]) {
+    requireString(record, key, label, errors);
+  }
+  for (const key of ["createdAt", "updatedAt", "decidedAt"]) {
+    requireDateString(record, key, label, errors);
+  }
+  if (!people.has(record.personId)) {
+    errors.push(`${label}.personId does not match a person`);
+  }
+  if (!vocabularyItems.has(`${record.personId}:${record.sourceVocabularyItemId}`)) {
+    errors.push(`${label}.sourceVocabularyItemId does not match an item`);
+  }
+  if (!aiRuns.has(`${record.personId}:${record.aiRunId}`)) {
+    errors.push(`${label}.aiRunId does not match a retained run`);
+  }
+  if (record.status !== "accepted") {
+    errors.push(`${label}.status must be accepted in a user backup`);
+  }
+  validateAiDraftContent(record.draft, `${label}.draft`, errors);
+  validateAiDraftContent(record.acceptedContent, `${label}.acceptedContent`, errors);
+}
+
+function validateVocabularyRelation(record, index, people, vocabularyItems, aiRuns, errors) {
+  const label = `vocabularyRelations[${index}]`;
+  if (!isRecord(record)) {
+    errors.push(`${label} must be an object`);
+    return;
+  }
+  for (const key of [
+    "id",
+    "personId",
+    "sourceVocabularyItemId",
+    "targetVocabularyItemId",
+    "differenceZh",
+    "aiRunId",
+  ]) {
+    requireString(record, key, label, errors);
+  }
+  requireDateString(record, "createdAt", label, errors);
+  if (!people.has(record.personId)) {
+    errors.push(`${label}.personId does not match a person`);
+  }
+  for (const key of ["sourceVocabularyItemId", "targetVocabularyItemId"]) {
+    if (!vocabularyItems.has(`${record.personId}:${record[key]}`)) {
+      errors.push(`${label}.${key} does not match an item`);
+    }
+  }
+  if (record.sourceVocabularyItemId === record.targetVocabularyItemId) {
+    errors.push(`${label} must reference two different items`);
+  }
+  if (!RELATION_TYPES.has(String(record.relationType))) {
+    errors.push(`${label}.relationType is unsupported`);
+  }
+  if (!isStringArray(record.examplePair) || ![0, 2].includes(record.examplePair?.length ?? -1)) {
+    errors.push(`${label}.examplePair must be empty or contain two strings`);
+  }
+  if (!aiRuns.has(`${record.personId}:${record.aiRunId}`)) {
+    errors.push(`${label}.aiRunId does not match a retained run`);
+  }
+}
+
 function validateBackup(backup) {
   const errors = [];
 
@@ -404,8 +808,8 @@ function validateBackup(backup) {
   if (backup.format !== BACKUP_FORMAT) {
     errors.push(`format must be ${BACKUP_FORMAT}`);
   }
-  if (backup.backupVersion !== BACKUP_VERSION) {
-    errors.push(`backupVersion must be ${BACKUP_VERSION}`);
+  if (!SUPPORTED_BACKUP_VERSIONS.has(backup.backupVersion)) {
+    errors.push("backupVersion must be 1, 2, or 3");
   }
   if (!isRecord(backup.metadata)) {
     errors.push("metadata must be an object");
@@ -463,6 +867,21 @@ function validateBackup(backup) {
   if (!Array.isArray(data.settingsByPerson)) {
     errors.push("data.settingsByPerson must be an array");
   }
+  if (data.schemaVersion === 6) {
+    for (const key of [
+      "dailyStudyDefaults",
+      "dailyStudyPlans",
+      "vocabularyCreationFacts",
+      "vocabularyCreationReversals",
+      "aiRuns",
+      "aiEnrichmentDrafts",
+      "vocabularyRelations",
+    ]) {
+      if (!Array.isArray(data[key])) {
+        errors.push(`data.${key} must be an array`);
+      }
+    }
+  }
   if (!isString(data.selectedPersonId)) {
     errors.push("data.selectedPersonId must be a string");
   }
@@ -517,7 +936,8 @@ function validateBackup(backup) {
       vocabularyItems,
       reviewStateItems,
       vocabularyItemTracks,
-      data.schemaVersion >= 4,
+      data.schemaVersion >= 4 && data.schemaVersion < 6,
+      data.schemaVersion === 6,
       errors,
     ),
   );
@@ -534,7 +954,8 @@ function validateBackup(backup) {
       people,
       vocabularyItems,
       vocabularyItemTracks,
-      data.schemaVersion >= 4,
+      data.schemaVersion >= 4 && data.schemaVersion < 6,
+      data.schemaVersion === 6,
       errors,
     ),
   );
@@ -558,6 +979,150 @@ function validateBackup(backup) {
     }
   }
 
+  if (data.schemaVersion === 6) {
+    data.dailyStudyDefaults.forEach((record, index) =>
+      validateDailyStudyDefault(record, index, people, errors),
+    );
+    const dailyDefaultKeys = data.dailyStudyDefaults
+      .filter(isRecord)
+      .map((record) => `${record.personId}:${record.reviewProfile}`);
+    requireUnique(dailyDefaultKeys, "dailyStudyDefaults person/profile pair", errors);
+    for (const personId of people) {
+      for (const reviewProfile of LEARNING_TRACKS) {
+        if (!dailyDefaultKeys.includes(`${personId}:${reviewProfile}`)) {
+          errors.push(`dailyStudyDefaults missing ${reviewProfile} defaults for ${personId}`);
+        }
+      }
+    }
+
+    data.dailyStudyPlans.forEach((record, index) =>
+      validateDailyStudyPlan(record, index, people, errors),
+    );
+    requireUnique(
+      data.dailyStudyPlans
+        .filter(isRecord)
+        .map((record) => `${record.personId}:${record.reviewProfile}:${record.localDate}`),
+      "dailyStudyPlans person/profile/date tuple",
+      errors,
+    );
+    requireUnique(
+      data.dailyStudyPlans.filter(isRecord).map((record) => `${record.personId}:${record.id}`),
+      "dailyStudyPlans person/id pair",
+      errors,
+    );
+
+    data.vocabularyCreationFacts.forEach((record, index) =>
+      validateCreationFact(record, index, people, errors),
+    );
+    requireUnique(
+      data.vocabularyCreationFacts
+        .filter(isRecord)
+        .map(
+          (record) =>
+            `${record.personId}:${record.sourceActionId}:${record.originalVocabularyItemId}`,
+        ),
+      "vocabularyCreationFacts stable tuple",
+      errors,
+    );
+    requireUnique(
+      data.vocabularyCreationFacts
+        .filter(isRecord)
+        .map((record) => `${record.personId}:${record.creationFactId}`),
+      "vocabularyCreationFacts person/id pair",
+      errors,
+    );
+    const creationKindByAction = new Map();
+    for (const record of data.vocabularyCreationFacts.filter(isRecord)) {
+      const key = `${record.personId}:${record.sourceActionId}`;
+      const previousKind = creationKindByAction.get(key);
+      if (previousKind && previousKind !== record.sourceKind) {
+        errors.push(`vocabularyCreationFacts mix source kinds for ${key}`);
+      }
+      creationKindByAction.set(key, record.sourceKind);
+    }
+
+    data.vocabularyCreationReversals.forEach((record, index) =>
+      validateCreationReversal(record, index, people, errors),
+    );
+    requireUnique(
+      data.vocabularyCreationReversals
+        .filter(isRecord)
+        .map((record) => `${record.personId}:${record.sourceActionId}:${record.reason}`),
+      "vocabularyCreationReversals stable tuple",
+      errors,
+    );
+    requireUnique(
+      data.vocabularyCreationReversals
+        .filter(isRecord)
+        .map((record) => `${record.personId}:${record.reversalFactId}`),
+      "vocabularyCreationReversals person/id pair",
+      errors,
+    );
+    for (const record of data.vocabularyCreationReversals.filter(isRecord)) {
+      if (creationKindByAction.get(`${record.personId}:${record.sourceActionId}`) !== "batch") {
+        errors.push(
+          `vocabularyCreationReversals action is not a known batch: ${record.personId}:${record.sourceActionId}`,
+        );
+      }
+    }
+
+    const aiRunKeys = data.aiRuns
+      .filter(isRecord)
+      .map((record) => `${record.personId}:${record.id}`);
+    requireUnique(aiRunKeys, "aiRuns person/id pair", errors);
+    const aiRuns = new Set(aiRunKeys);
+    requireUnique(
+      data.aiRuns
+        .filter(isRecord)
+        .map((record) => `${record.personId}:${record.idempotencyKeyHash}`),
+      "aiRuns person/idempotencyKeyHash pair",
+      errors,
+    );
+    data.aiRuns.forEach((record, index) =>
+      validateAiRun(record, index, people, vocabularyItems, errors),
+    );
+
+    data.aiEnrichmentDrafts.forEach((record, index) =>
+      validateAiEnrichmentDraft(record, index, people, vocabularyItems, aiRuns, errors),
+    );
+    requireUnique(
+      data.aiEnrichmentDrafts
+        .filter(isRecord)
+        .map((record) => `${record.personId}:${record.id}`),
+      "aiEnrichmentDrafts person/id pair",
+      errors,
+    );
+
+    data.vocabularyRelations.forEach((record, index) =>
+      validateVocabularyRelation(record, index, people, vocabularyItems, aiRuns, errors),
+    );
+    requireUnique(
+      data.vocabularyRelations
+        .filter(isRecord)
+        .map((record) => `${record.personId}:${record.id}`),
+      "vocabularyRelations person/id pair",
+      errors,
+    );
+    requireUnique(
+      data.vocabularyRelations
+        .filter(isRecord)
+        .map(
+          (record) =>
+            `${record.personId}:${record.sourceVocabularyItemId}:${record.targetVocabularyItemId}:${record.relationType}`,
+        ),
+      "vocabularyRelations stable tuple",
+      errors,
+    );
+
+    requireUnique(
+      data.reviewEvents
+        .filter((event) => isRecord(event) && isString(event.promptId))
+        .map((event) => `${event.personId}:${event.promptId}`),
+      "reviewEvents person/promptId pair",
+      errors,
+    );
+  }
+
   if (isRecord(metadata.counts)) {
     compareCounts(metadata.counts, actualCounts(data), errors);
   }
@@ -568,11 +1133,16 @@ function validateBackup(backup) {
 }
 
 function mapSourceIds(records, personMap, uuidFactory) {
+  return mapSourceIdsBy(records, personMap, "id", uuidFactory);
+}
+
+function mapSourceIdsBy(records, personMap, idKey, uuidFactory) {
   const result = new Map();
   for (const record of records) {
     const personId = personMap.get(record.personId);
-    result.set(`${record.personId}:${record.id}`, {
-      sourceId: record.id,
+    const sourceId = record[idKey];
+    result.set(`${record.personId}:${sourceId}`, {
+      sourceId,
       sourcePersonId: record.personId,
       targetId: uuidFactory(),
       targetPersonId: personId,
@@ -655,6 +1225,66 @@ function normalizeReviewSettingsForImport(settings) {
   };
 }
 
+function normalizeDailyStudyDefaultsForImport(data) {
+  if (data.schemaVersion === 6) {
+    return data.dailyStudyDefaults;
+  }
+
+  return data.settingsByPerson.flatMap((settings) => {
+    const normalized = normalizeReviewSettingsForImport(settings);
+
+    return [
+      {
+        personId: settings.personId,
+        reviewProfile: "recognition",
+        reviewGoal: normalized.recognitionSessionLimit,
+        newWordGoal: 0,
+        timezone: normalized.timezone,
+        updatedAt: normalized.updatedAt,
+      },
+      {
+        personId: settings.personId,
+        reviewProfile: "active",
+        reviewGoal: normalized.activeSessionLimit,
+        newWordGoal: 0,
+        timezone: normalized.timezone,
+        updatedAt: normalized.updatedAt,
+      },
+    ];
+  });
+}
+
+function normalizeCreationFactsForImport(data) {
+  if (data.schemaVersion === 6) {
+    return data.vocabularyCreationFacts;
+  }
+
+  return data.items.map((item) => ({
+    creationFactId: `legacy_creation_fact:${item.id}`,
+    personId: item.personId,
+    originalVocabularyItemId: item.id,
+    sourceActionId: item.importBatchId ?? item.id,
+    trackAtCreation: normalizeLearningTrackForImport(item, data.schemaVersion),
+    sourceKind: item.importBatchId ? "batch" : "single",
+    historyOrigin: "legacy_backfill",
+    systemCreatedAt: item.systemCreatedAt,
+  }));
+}
+
+function earliestReviewEventByItem(data) {
+  const result = new Map();
+
+  for (const event of data.reviewEvents) {
+    const key = `${event.personId}:${event.vocabularyItemId}`;
+    const previous = result.get(key);
+    if (!previous || Date.parse(event.reviewedAt) < Date.parse(previous)) {
+      result.set(key, event.reviewedAt);
+    }
+  }
+
+  return result;
+}
+
 export function buildBackupImportPlan(backup, options = {}) {
   validateBackup(backup);
 
@@ -663,11 +1293,68 @@ export function buildBackupImportPlan(backup, options = {}) {
   const sourceFileName = options.sourceFileName ?? null;
   const notes = options.notes ?? "Stage 5L fixture import trial";
   const { metadata, data } = backup;
+  const sourceDailyStudyDefaults = normalizeDailyStudyDefaultsForImport(data);
+  const sourceDailyStudyPlans = data.schemaVersion === 6 ? data.dailyStudyPlans : [];
+  const sourceCreationFacts = normalizeCreationFactsForImport(data);
+  const sourceCreationReversals =
+    data.schemaVersion === 6 ? data.vocabularyCreationReversals : [];
+  const sourceAiRuns = data.schemaVersion === 6 ? data.aiRuns : [];
+  const sourceAiEnrichmentDrafts = data.schemaVersion === 6 ? data.aiEnrichmentDrafts : [];
+  const sourceVocabularyRelations = data.schemaVersion === 6 ? data.vocabularyRelations : [];
+  const earliestReviewEvents = earliestReviewEventByItem(data);
   const personMap = new Map(data.people.map((person) => [person.id, uuidFactory()]));
   const importBatchMap = mapSourceIds(data.importBatches, personMap, uuidFactory);
   const vocabularyItemMap = mapSourceIds(data.items, personMap, uuidFactory);
   const reviewStateMap = mapSourceIds(data.reviewStates, personMap, uuidFactory);
   const reviewEventMap = mapSourceIds(data.reviewEvents, personMap, uuidFactory);
+  const dailyStudyPlanMap = mapSourceIds(sourceDailyStudyPlans, personMap, uuidFactory);
+  const creationFactMap = mapSourceIdsBy(
+    sourceCreationFacts,
+    personMap,
+    "creationFactId",
+    uuidFactory,
+  );
+  const creationReversalMap = mapSourceIdsBy(
+    sourceCreationReversals,
+    personMap,
+    "reversalFactId",
+    uuidFactory,
+  );
+  const aiRunMap = mapSourceIds(sourceAiRuns, personMap, uuidFactory);
+  const aiEnrichmentDraftMap = mapSourceIds(
+    sourceAiEnrichmentDrafts,
+    personMap,
+    uuidFactory,
+  );
+  const vocabularyRelationMap = mapSourceIds(
+    sourceVocabularyRelations,
+    personMap,
+    uuidFactory,
+  );
+  const originalVocabularyItemMap = new Map(vocabularyItemMap);
+  const sourceActionMap = new Map();
+
+  for (const fact of sourceCreationFacts) {
+    const originalKey = `${fact.personId}:${fact.originalVocabularyItemId}`;
+    if (!originalVocabularyItemMap.has(originalKey)) {
+      originalVocabularyItemMap.set(originalKey, {
+        sourceId: fact.originalVocabularyItemId,
+        sourcePersonId: fact.personId,
+        targetId: uuidFactory(),
+        targetPersonId: lookup(personMap, fact.personId, "creation fact person"),
+      });
+    }
+
+    const actionKey = `${fact.personId}:${fact.sourceActionId}`;
+    if (!sourceActionMap.has(actionKey)) {
+      const importedBatch = importBatchMap.get(actionKey);
+      const importedItem = originalVocabularyItemMap.get(actionKey);
+      sourceActionMap.set(
+        actionKey,
+        importedBatch?.targetId ?? importedItem?.targetId ?? uuidFactory(),
+      );
+    }
+  }
   const backupImportByPerson = new Map(
     data.people.map((person) => [person.id, uuidFactory()]),
   );
@@ -728,11 +1415,25 @@ export function buildBackupImportPlan(backup, options = {}) {
     reviewStates: data.reviewStates.map((state) => {
       const mapping = lookup(reviewStateMap, `${state.personId}:${state.id}`, "review state");
       const item = lookup(vocabularyItemMap, `${state.personId}:${state.vocabularyItemId}`, "review state item");
+      const firstRatedAt =
+        data.schemaVersion === 6
+          ? state.firstRatedAt
+          : (earliestReviewEvents.get(`${state.personId}:${state.vocabularyItemId}`) ?? null);
 
       return {
         id: mapping.targetId,
         personId: mapping.targetPersonId,
         vocabularyItemId: item.targetId,
+        reviewProfile: data.schemaVersion === 6 ? state.reviewProfile : "recognition",
+        parameterSetId:
+          data.schemaVersion === 6 ? state.parameterSetId : "recognition-fsrs-v1",
+        firstRatedAt,
+        historyOrigin:
+          data.schemaVersion === 6
+            ? state.historyOrigin
+            : firstRatedAt
+              ? "recorded"
+              : "legacy_unknown",
         status: state.status,
         dueAt: state.dueAt,
         lastReviewedAt: state.lastReviewedAt,
@@ -752,6 +1453,18 @@ export function buildBackupImportPlan(backup, options = {}) {
         id: mapping.targetId,
         personId: mapping.targetPersonId,
         vocabularyItemId: item.targetId,
+        promptId:
+          data.schemaVersion === 6 && event.promptId
+            ? uuidFactory()
+            : null,
+        reviewProfile: data.schemaVersion === 6 ? event.reviewProfile : "recognition",
+        activityType: data.schemaVersion === 6 ? event.activityType : "recognition_card",
+        answerOutcome: data.schemaVersion === 6 ? event.answerOutcome : "self_rated",
+        answerNormalizationVersion:
+          data.schemaVersion === 6 ? event.answerNormalizationVersion : null,
+        targetRevision: data.schemaVersion === 6 ? event.targetRevision : null,
+        parameterSetId:
+          data.schemaVersion === 6 ? event.parameterSetId : "recognition-fsrs-v1",
         reviewedAt: event.reviewedAt,
         rating: event.rating,
         previousDueAt: event.previousDueAt,
@@ -771,6 +1484,149 @@ export function buildBackupImportPlan(backup, options = {}) {
         activeSessionLimit: normalizedSettings.activeSessionLimit,
         timezone: normalizedSettings.timezone,
         updatedAt: normalizedSettings.updatedAt,
+      };
+    }),
+    dailyStudyDefaults: sourceDailyStudyDefaults.map((record) => ({
+      personId: lookup(personMap, record.personId, "daily defaults person"),
+      reviewProfile: record.reviewProfile,
+      reviewGoal: record.reviewGoal,
+      newWordGoal: record.newWordGoal,
+      timezone: record.timezone,
+      updatedAt: record.updatedAt,
+    })),
+    dailyStudyPlans: sourceDailyStudyPlans.map((record) => {
+      const mapping = lookup(
+        dailyStudyPlanMap,
+        `${record.personId}:${record.id}`,
+        "daily study plan",
+      );
+
+      return {
+        id: mapping.targetId,
+        personId: mapping.targetPersonId,
+        reviewProfile: record.reviewProfile,
+        localDate: record.localDate,
+        timezone: record.timezone,
+        dayStartsAt: record.dayStartsAt,
+        dayEndsAt: record.dayEndsAt,
+        suggestedReview: record.suggestedReview,
+        reviewGoal: record.reviewGoal,
+        newWordGoal: record.newWordGoal,
+        planVersion: record.planVersion,
+        recommendationVersion: record.recommendationVersion,
+        calculatedAt: record.calculatedAt,
+        updatedAt: record.updatedAt,
+      };
+    }),
+    vocabularyCreationFacts: sourceCreationFacts.map((record) => {
+      const mapping = lookup(
+        creationFactMap,
+        `${record.personId}:${record.creationFactId}`,
+        "vocabulary creation fact",
+      );
+      const originalItem = lookup(
+        originalVocabularyItemMap,
+        `${record.personId}:${record.originalVocabularyItemId}`,
+        "creation fact original item",
+      );
+
+      return {
+        id: mapping.targetId,
+        personId: mapping.targetPersonId,
+        originalVocabularyItemId: originalItem.targetId,
+        sourceActionId: lookup(
+          sourceActionMap,
+          `${record.personId}:${record.sourceActionId}`,
+          "creation fact source action",
+        ),
+        trackAtCreation: record.trackAtCreation,
+        sourceKind: record.sourceKind,
+        historyOrigin: record.historyOrigin,
+        systemCreatedAt: record.systemCreatedAt,
+      };
+    }),
+    vocabularyCreationReversals: sourceCreationReversals.map((record) => {
+      const mapping = lookup(
+        creationReversalMap,
+        `${record.personId}:${record.reversalFactId}`,
+        "vocabulary creation reversal",
+      );
+
+      return {
+        id: mapping.targetId,
+        personId: mapping.targetPersonId,
+        sourceActionId: lookup(
+          sourceActionMap,
+          `${record.personId}:${record.sourceActionId}`,
+          "creation reversal source action",
+        ),
+        reason: record.reason,
+        reversedAt: record.reversedAt,
+      };
+    }),
+    aiRuns: sourceAiRuns.map((record) => {
+      const mapping = lookup(aiRunMap, `${record.personId}:${record.id}`, "AI run");
+      const sourceItem = record.sourceVocabularyItemId
+        ? lookup(
+            vocabularyItemMap,
+            `${record.personId}:${record.sourceVocabularyItemId}`,
+            "AI run source item",
+          )
+        : null;
+
+      return {
+        ...record,
+        id: mapping.targetId,
+        personId: mapping.targetPersonId,
+        sourceVocabularyItemId: sourceItem?.targetId ?? null,
+      };
+    }),
+    aiEnrichmentDrafts: sourceAiEnrichmentDrafts.map((record) => {
+      const mapping = lookup(
+        aiEnrichmentDraftMap,
+        `${record.personId}:${record.id}`,
+        "AI enrichment draft",
+      );
+      const sourceItem = lookup(
+        vocabularyItemMap,
+        `${record.personId}:${record.sourceVocabularyItemId}`,
+        "AI enrichment source item",
+      );
+      const aiRun = lookup(aiRunMap, `${record.personId}:${record.aiRunId}`, "AI draft run");
+
+      return {
+        ...record,
+        id: mapping.targetId,
+        personId: mapping.targetPersonId,
+        sourceVocabularyItemId: sourceItem.targetId,
+        aiRunId: aiRun.targetId,
+      };
+    }),
+    vocabularyRelations: sourceVocabularyRelations.map((record) => {
+      const mapping = lookup(
+        vocabularyRelationMap,
+        `${record.personId}:${record.id}`,
+        "vocabulary relation",
+      );
+      const sourceItem = lookup(
+        vocabularyItemMap,
+        `${record.personId}:${record.sourceVocabularyItemId}`,
+        "relation source item",
+      );
+      const targetItem = lookup(
+        vocabularyItemMap,
+        `${record.personId}:${record.targetVocabularyItemId}`,
+        "relation target item",
+      );
+      const aiRun = lookup(aiRunMap, `${record.personId}:${record.aiRunId}`, "relation AI run");
+
+      return {
+        ...record,
+        id: mapping.targetId,
+        personId: mapping.targetPersonId,
+        sourceVocabularyItemId: sourceItem.targetId,
+        targetVocabularyItemId: targetItem.targetId,
+        aiRunId: aiRun.targetId,
       };
     }),
     backupImports: data.people.map((person) => {
@@ -877,6 +1733,105 @@ export function buildBackupImportPlan(backup, options = {}) {
       }),
     );
   }
+  for (const defaults of sourceDailyStudyDefaults) {
+    const targetPersonId = lookup(personMap, defaults.personId, "daily defaults mapping");
+    rows.backupImportMappings.push(
+      createMappingRow({
+        uuidFactory,
+        importedAt,
+        backupImportByPerson,
+        targetPersonId,
+        sourcePersonId: defaults.personId,
+        entityType: "daily_study_default",
+        sourceId: `${defaults.personId}:${defaults.reviewProfile}`,
+        targetId: targetPersonId,
+      }),
+    );
+  }
+  for (const mapping of dailyStudyPlanMap.values()) {
+    rows.backupImportMappings.push(
+      createMappingRow({
+        uuidFactory,
+        importedAt,
+        backupImportByPerson,
+        targetPersonId: mapping.targetPersonId,
+        sourcePersonId: mapping.sourcePersonId,
+        entityType: "daily_study_plan",
+        sourceId: mapping.sourceId,
+        targetId: mapping.targetId,
+      }),
+    );
+  }
+  for (const mapping of creationFactMap.values()) {
+    rows.backupImportMappings.push(
+      createMappingRow({
+        uuidFactory,
+        importedAt,
+        backupImportByPerson,
+        targetPersonId: mapping.targetPersonId,
+        sourcePersonId: mapping.sourcePersonId,
+        entityType: "vocabulary_creation_fact",
+        sourceId: mapping.sourceId,
+        targetId: mapping.targetId,
+      }),
+    );
+  }
+  for (const mapping of creationReversalMap.values()) {
+    rows.backupImportMappings.push(
+      createMappingRow({
+        uuidFactory,
+        importedAt,
+        backupImportByPerson,
+        targetPersonId: mapping.targetPersonId,
+        sourcePersonId: mapping.sourcePersonId,
+        entityType: "vocabulary_creation_reversal",
+        sourceId: mapping.sourceId,
+        targetId: mapping.targetId,
+      }),
+    );
+  }
+  for (const mapping of aiRunMap.values()) {
+    rows.backupImportMappings.push(
+      createMappingRow({
+        uuidFactory,
+        importedAt,
+        backupImportByPerson,
+        targetPersonId: mapping.targetPersonId,
+        sourcePersonId: mapping.sourcePersonId,
+        entityType: "ai_run",
+        sourceId: mapping.sourceId,
+        targetId: mapping.targetId,
+      }),
+    );
+  }
+  for (const mapping of aiEnrichmentDraftMap.values()) {
+    rows.backupImportMappings.push(
+      createMappingRow({
+        uuidFactory,
+        importedAt,
+        backupImportByPerson,
+        targetPersonId: mapping.targetPersonId,
+        sourcePersonId: mapping.sourcePersonId,
+        entityType: "ai_enrichment_draft",
+        sourceId: mapping.sourceId,
+        targetId: mapping.targetId,
+      }),
+    );
+  }
+  for (const mapping of vocabularyRelationMap.values()) {
+    rows.backupImportMappings.push(
+      createMappingRow({
+        uuidFactory,
+        importedAt,
+        backupImportByPerson,
+        targetPersonId: mapping.targetPersonId,
+        sourcePersonId: mapping.sourcePersonId,
+        entityType: "vocabulary_relation",
+        sourceId: mapping.sourceId,
+        targetId: mapping.targetId,
+      }),
+    );
+  }
 
   return {
     mode: "workspace",
@@ -892,6 +1847,13 @@ export function buildBackupImportPlan(backup, options = {}) {
       reviewStates: rows.reviewStates.length,
       reviewEvents: rows.reviewEvents.length,
       reviewSettings: rows.reviewSettings.length,
+      dailyStudyDefaults: rows.dailyStudyDefaults.length,
+      dailyStudyPlans: rows.dailyStudyPlans.length,
+      vocabularyCreationFacts: rows.vocabularyCreationFacts.length,
+      vocabularyCreationReversals: rows.vocabularyCreationReversals.length,
+      aiRuns: rows.aiRuns.length,
+      aiEnrichmentDrafts: rows.aiEnrichmentDrafts.length,
+      vocabularyRelations: rows.vocabularyRelations.length,
       backupImports: rows.backupImports.length,
       backupImportMappings: rows.backupImportMappings.length,
     },
@@ -1171,6 +2133,341 @@ export function createStage6BP1ESchema5FixtureBackup() {
     metadata: {
       appName: BACKUP_APP_NAME,
       exportedAt: reviewedAt,
+      timezone: "Australia/Melbourne",
+      schemaVersion: data.schemaVersion,
+      counts: actualCounts(data),
+    },
+    data,
+  };
+}
+
+export function createV2Stage3Schema6FixtureBackup() {
+  const createdAt = "2026-07-13T10:00:00.000Z";
+  const reviewedAt = "2026-07-13T10:15:00.000Z";
+  const activeReviewedAt = "2026-07-13T10:20:00.000Z";
+  const dueAt = "2026-07-14T00:00:00.000Z";
+  const personId = "person_v2_stage3_schema6_fixture";
+  const recognitionItemId = "vocab_v2_stage3_adapt";
+  const activeItemId = "vocab_v2_stage3_adopt";
+  const aiRunId = "ai_run_v2_stage3_adapt";
+  const acceptedDraft = {
+    additionalMeaningsZh: ["适应"],
+    examples: ["It takes time to adapt to a new routine."],
+    similarWords: [],
+    confusableWords: [
+      {
+        word: "adopt",
+        type: "spelling",
+        differenceZh: "adapt 表示适应，adopt 表示采纳或收养。",
+        examplePair: ["We adapt to change.", "We adopt a new policy."],
+      },
+    ],
+  };
+  const data = {
+    schemaVersion: 6,
+    people: [
+      {
+        id: personId,
+        displayName: "V2 Stage 3 Schema 6 Fixture",
+        slug: "v2-stage3-schema6-fixture",
+        isActive: true,
+        createdAt,
+        updatedAt: createdAt,
+      },
+    ],
+    selectedPersonId: personId,
+    items: [
+      {
+        id: recognitionItemId,
+        personId,
+        surfaceText: "adapt",
+        normalizedText: "adapt",
+        meaningZh: "适应",
+        meaningsZh: ["适应"],
+        example: "It takes time to adapt to a new routine.",
+        examples: ["It takes time to adapt to a new routine."],
+        notes: "",
+        rarityScore: 2,
+        learningTrack: "recognition",
+        tags: ["PTE"],
+        source: "manual",
+        importBatchId: null,
+        status: "new",
+        createdAt,
+        systemCreatedAt: createdAt,
+        updatedAt: createdAt,
+        timezone: "Australia/Melbourne",
+        archivedAt: null,
+      },
+      {
+        id: activeItemId,
+        personId,
+        surfaceText: "adopt",
+        normalizedText: "adopt",
+        meaningZh: "采纳；收养",
+        meaningsZh: ["采纳", "收养"],
+        example: "We adopted a new policy.",
+        examples: ["We adopted a new policy."],
+        notes: "Added from an accepted AI suggestion.",
+        rarityScore: null,
+        learningTrack: "active",
+        tags: ["PTE", "Spelling Risk"],
+        source: "ai_generated",
+        importBatchId: null,
+        status: "new",
+        createdAt,
+        systemCreatedAt: createdAt,
+        updatedAt: createdAt,
+        timezone: "Australia/Melbourne",
+        archivedAt: null,
+      },
+    ],
+    importBatches: [],
+    reviewStates: [
+      {
+        id: "review_state_v2_stage3_adapt",
+        personId,
+        vocabularyItemId: recognitionItemId,
+        reviewProfile: "recognition",
+        parameterSetId: "recognition-fsrs-v1",
+        firstRatedAt: reviewedAt,
+        historyOrigin: "recorded",
+        status: "review",
+        dueAt,
+        lastReviewedAt: reviewedAt,
+        reviewCount: 1,
+        lapseCount: 0,
+        intervalMinutes: 1440,
+        difficulty: 4.1,
+        stability: 1.2,
+        updatedAt: reviewedAt,
+      },
+      {
+        id: "review_state_v2_stage3_adopt",
+        personId,
+        vocabularyItemId: activeItemId,
+        reviewProfile: "active",
+        parameterSetId: "active-fsrs-v1",
+        firstRatedAt: activeReviewedAt,
+        historyOrigin: "recorded",
+        status: "learning",
+        dueAt,
+        lastReviewedAt: activeReviewedAt,
+        reviewCount: 1,
+        lapseCount: 0,
+        intervalMinutes: 1440,
+        difficulty: 5.2,
+        stability: 0.9,
+        updatedAt: activeReviewedAt,
+      },
+    ],
+    reviewEvents: [
+      {
+        id: "review_event_v2_stage3_adapt",
+        promptId: "prompt_v2_stage3_adapt",
+        personId,
+        vocabularyItemId: recognitionItemId,
+        reviewProfile: "recognition",
+        activityType: "recognition_card",
+        answerOutcome: "self_rated",
+        answerNormalizationVersion: null,
+        targetRevision: null,
+        parameterSetId: "recognition-fsrs-v1",
+        reviewedAt,
+        rating: "remembered",
+        previousDueAt: null,
+        nextDueAt: dueAt,
+        previousIntervalMinutes: null,
+        nextIntervalMinutes: 1440,
+        elapsedMs: 4200,
+      },
+      {
+        id: "review_event_v2_stage3_adopt",
+        promptId: "prompt_v2_stage3_adopt",
+        personId,
+        vocabularyItemId: activeItemId,
+        reviewProfile: "active",
+        activityType: "dictation",
+        answerOutcome: "exact",
+        answerNormalizationVersion: "active-answer-v1",
+        targetRevision: "adopt:v1",
+        parameterSetId: "active-fsrs-v1",
+        reviewedAt: activeReviewedAt,
+        rating: "remembered",
+        previousDueAt: null,
+        nextDueAt: dueAt,
+        previousIntervalMinutes: null,
+        nextIntervalMinutes: 1440,
+        elapsedMs: 6100,
+      },
+    ],
+    settingsByPerson: [
+      {
+        personId,
+        sessionLimit: 20,
+        recognitionSessionLimit: 20,
+        activeSessionLimit: 10,
+        timezone: "Australia/Melbourne",
+        updatedAt: createdAt,
+      },
+    ],
+    dailyStudyDefaults: [
+      {
+        personId,
+        reviewProfile: "recognition",
+        reviewGoal: 20,
+        newWordGoal: 8,
+        timezone: "Australia/Melbourne",
+        updatedAt: createdAt,
+      },
+      {
+        personId,
+        reviewProfile: "active",
+        reviewGoal: 10,
+        newWordGoal: 4,
+        timezone: "Australia/Melbourne",
+        updatedAt: createdAt,
+      },
+    ],
+    dailyStudyPlans: [
+      {
+        id: "daily_plan_v2_stage3_recognition",
+        personId,
+        reviewProfile: "recognition",
+        localDate: "2026-07-13",
+        timezone: "Australia/Melbourne",
+        dayStartsAt: "2026-07-12T14:00:00.000Z",
+        dayEndsAt: "2026-07-13T14:00:00.000Z",
+        suggestedReview: 13,
+        reviewGoal: 20,
+        newWordGoal: 8,
+        planVersion: 1,
+        recommendationVersion: "suggested-review-v1",
+        calculatedAt: createdAt,
+        updatedAt: createdAt,
+      },
+      {
+        id: "daily_plan_v2_stage3_active",
+        personId,
+        reviewProfile: "active",
+        localDate: "2026-07-13",
+        timezone: "Australia/Melbourne",
+        dayStartsAt: "2026-07-12T14:00:00.000Z",
+        dayEndsAt: "2026-07-13T14:00:00.000Z",
+        suggestedReview: 5,
+        reviewGoal: 10,
+        newWordGoal: 4,
+        planVersion: 1,
+        recommendationVersion: "suggested-review-v1",
+        calculatedAt: createdAt,
+        updatedAt: createdAt,
+      },
+    ],
+    vocabularyCreationFacts: [
+      {
+        creationFactId: "creation_fact_v2_stage3_adapt",
+        personId,
+        originalVocabularyItemId: recognitionItemId,
+        sourceActionId: recognitionItemId,
+        trackAtCreation: "recognition",
+        sourceKind: "single",
+        historyOrigin: "recorded",
+        systemCreatedAt: createdAt,
+      },
+      {
+        creationFactId: "creation_fact_v2_stage3_adopt",
+        personId,
+        originalVocabularyItemId: activeItemId,
+        sourceActionId: "ai_add_action_v2_stage3",
+        trackAtCreation: "active",
+        sourceKind: "ai_add_to_learning",
+        historyOrigin: "recorded",
+        systemCreatedAt: createdAt,
+      },
+      {
+        creationFactId: "creation_fact_v2_stage3_deleted_batch_item",
+        personId,
+        originalVocabularyItemId: "deleted_batch_item_v2_stage3",
+        sourceActionId: "batch_action_v2_stage3",
+        trackAtCreation: "recognition",
+        sourceKind: "batch",
+        historyOrigin: "recorded",
+        systemCreatedAt: createdAt,
+      },
+    ],
+    vocabularyCreationReversals: [
+      {
+        reversalFactId: "reversal_fact_v2_stage3_batch",
+        personId,
+        sourceActionId: "batch_action_v2_stage3",
+        reason: "batch_rollback",
+        reversedAt: reviewedAt,
+      },
+    ],
+    aiRuns: [
+      {
+        id: aiRunId,
+        personId,
+        sourceVocabularyItemId: recognitionItemId,
+        feature: "enrichment_v1",
+        provider: "google-gemini-api",
+        model: "gemini-3.1-flash-lite",
+        modelLabel: "Gemini 3.1 Flash-Lite",
+        promptVersion: "v2-stage2b-prompt-v2",
+        sourceHash: "source-hash-fixture",
+        outputSchemaVersion: "ai-enrichment-v2",
+        disclosureVersion: "ai-disclosure-v1",
+        idempotencyKeyHash: "idempotency-hash-fixture",
+        cacheKeyHash: "cache-hash-fixture",
+        status: "succeeded",
+        structureValidationStatus: "valid",
+        providerResponseId: "fixture-response-id",
+        inputTokens: 100,
+        outputTokens: 180,
+        thinkingTokens: 0,
+        totalTokens: 280,
+        latencyMs: 900,
+        estimatedCostUsd: 0.000082,
+        createdAt,
+        completedAt: reviewedAt,
+      },
+    ],
+    aiEnrichmentDrafts: [
+      {
+        id: "ai_draft_v2_stage3_adapt",
+        personId,
+        sourceVocabularyItemId: recognitionItemId,
+        aiRunId,
+        status: "accepted",
+        draft: acceptedDraft,
+        acceptedContent: acceptedDraft,
+        createdAt,
+        updatedAt: reviewedAt,
+        decidedAt: reviewedAt,
+      },
+    ],
+    vocabularyRelations: [
+      {
+        id: "relation_v2_stage3_adapt_adopt",
+        personId,
+        sourceVocabularyItemId: recognitionItemId,
+        targetVocabularyItemId: activeItemId,
+        relationType: "spelling",
+        differenceZh: "adapt 表示适应，adopt 表示采纳或收养。",
+        examplePair: ["We adapt to change.", "We adopt a new policy."],
+        aiRunId,
+        createdAt: reviewedAt,
+      },
+    ],
+    updatedAt: activeReviewedAt,
+  };
+
+  return {
+    format: BACKUP_FORMAT,
+    backupVersion: BACKUP_VERSION,
+    metadata: {
+      appName: BACKUP_APP_NAME,
+      exportedAt: activeReviewedAt,
       timezone: "Australia/Melbourne",
       schemaVersion: data.schemaVersion,
       counts: actualCounts(data),

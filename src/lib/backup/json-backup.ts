@@ -10,13 +10,34 @@ import {
   type VocabularyBackupFile,
 } from "./types";
 
-const VOCABULARY_SOURCES = new Set(["manual", "txt_file", "pasted_text", "json_file", "json_paste"]);
+const VOCABULARY_SOURCES = new Set([
+  "manual",
+  "txt_file",
+  "pasted_text",
+  "json_file",
+  "json_paste",
+  "ai_generated",
+]);
 const VOCABULARY_STATUSES = new Set(["new", "archived"]);
 const IMPORT_SOURCE_TYPES = new Set(["txt_file", "pasted_text", "json_file", "json_paste"]);
 const LEARNING_TRACKS = new Set(["recognition", "active"]);
 const VOCABULARY_TAGS = new Set(["PTE", "IELTS", "Listening", "Writing", "Spelling Risk"]);
 const REVIEW_STATUSES = new Set(["learning", "review"]);
 const REVIEW_RATINGS = new Set(["forgot", "hard", "vague", "remembered"]);
+const REVIEW_PROFILES = new Set(["recognition", "active"]);
+const REVIEW_ACTIVITY_TYPES = new Set(["recognition_card", "say", "spell", "dictation"]);
+const ANSWER_OUTCOMES = new Set([
+  "self_rated",
+  "exact",
+  "normalized_match",
+  "different",
+  "revealed_without_answer",
+]);
+const CREATION_SOURCE_KINDS = new Set(["single", "batch", "ai_add_to_learning"]);
+const AI_RUN_STATUSES = new Set(["submitted", "succeeded", "rejected", "failed"]);
+const AI_STRUCTURE_STATUSES = new Set(["pending", "valid", "invalid", "unavailable"]);
+const VOCABULARY_RELATION_TYPES = new Set(["similar", "spelling", "sound", "usage"]);
+const MAX_DATABASE_INTEGER = 2_147_483_647;
 
 type BackupOptions = {
   exportedAt?: string;
@@ -51,6 +72,30 @@ function isNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
 }
 
+function isValidDateString(value: unknown): value is string {
+  return isString(value) && Number.isFinite(Date.parse(value));
+}
+
+function isValidLocalDate(value: unknown): value is string {
+  if (!isString(value) || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return false;
+  }
+
+  const parsed = new Date(`${value}T00:00:00.000Z`);
+  return Number.isFinite(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
+}
+
+function validateDateField(
+  value: Record<string, unknown>,
+  key: string,
+  label: string,
+  errors: string[],
+) {
+  if (!isValidDateString(value[key])) {
+    errors.push(`${label}.${key} must be a valid date string`);
+  }
+}
+
 export function summarizeVocabularyData(data: VocabularyData): BackupCounts {
   const archivedItems = data.items.filter(
     (item) => item.status === "archived" || Boolean(item.archivedAt),
@@ -64,6 +109,35 @@ export function summarizeVocabularyData(data: VocabularyData): BackupCounts {
     importBatches: data.importBatches.length,
     reviewStates: data.reviewStates.length,
     reviewEvents: data.reviewEvents.length,
+    dailyStudyDefaults: data.dailyStudyDefaults.length,
+    dailyStudyPlans: data.dailyStudyPlans.length,
+    vocabularyCreationFacts: data.vocabularyCreationFacts.length,
+    vocabularyCreationReversals: data.vocabularyCreationReversals.length,
+    aiRuns: data.aiRuns.length,
+    aiEnrichmentDrafts: data.aiEnrichmentDrafts.length,
+    vocabularyRelations: data.vocabularyRelations.length,
+  };
+}
+
+export function selectFormalBackupData(data: VocabularyData): VocabularyData {
+  const acceptedDrafts = data.aiEnrichmentDrafts
+    .filter((draft) => draft.status === "accepted" && draft.acceptedContent)
+    .map((draft) => ({
+      ...draft,
+      status: "accepted" as const,
+      draft: draft.acceptedContent!,
+    }));
+  const referencedRunIds = new Set([
+    ...acceptedDrafts.map((draft) => draft.aiRunId),
+    ...data.vocabularyRelations.map((relation) => relation.aiRunId),
+  ]);
+
+  return {
+    ...data,
+    aiRuns: data.aiRuns.filter(
+      (run) => run.status === "succeeded" && referencedRunIds.has(run.id),
+    ),
+    aiEnrichmentDrafts: acceptedDrafts,
   };
 }
 
@@ -73,6 +147,7 @@ export function createVocabularyBackup(
 ): VocabularyBackupFile {
   const exportedAt = options.exportedAt ?? new Date().toISOString();
   const timezone = options.timezone ?? getSelectedReviewSettings(data).timezone;
+  const formalData = selectFormalBackupData(data);
 
   return {
     format: BACKUP_FORMAT,
@@ -81,10 +156,10 @@ export function createVocabularyBackup(
       appName: BACKUP_APP_NAME,
       exportedAt,
       timezone,
-      schemaVersion: data.schemaVersion,
-      counts: summarizeVocabularyData(data),
+      schemaVersion: formalData.schemaVersion,
+      counts: summarizeVocabularyData(formalData),
     },
-    data,
+    data: formalData,
   };
 }
 
@@ -226,6 +301,7 @@ function validateReviewState(
   index: number,
   errors: string[],
   requiresPersonId: boolean,
+  requiresV2Fields: boolean,
 ) {
   if (!isRecord(value)) {
     errors.push(`reviewStates[${index}] must be an object`);
@@ -257,6 +333,46 @@ function validateReviewState(
       errors.push(`reviewStates[${index}].${key} must be a number or null`);
     }
   }
+
+  if (requiresV2Fields) {
+    for (const key of ["dueAt", "updatedAt"]) {
+      validateDateField(value, key, `reviewStates[${index}]`, errors);
+    }
+    if (value.lastReviewedAt !== null && !isValidDateString(value.lastReviewedAt)) {
+      errors.push(`reviewStates[${index}].lastReviewedAt must be a valid date string or null`);
+    }
+    if (!REVIEW_PROFILES.has(String(value.reviewProfile))) {
+      errors.push(`reviewStates[${index}].reviewProfile is unsupported`);
+    }
+
+    if (!isString(value.parameterSetId) || !value.parameterSetId.trim()) {
+      errors.push(`reviewStates[${index}].parameterSetId must be a non-blank string`);
+    }
+
+    if (!isStringOrNull(value.firstRatedAt)) {
+      errors.push(`reviewStates[${index}].firstRatedAt must be a string or null`);
+    } else if (value.firstRatedAt !== null && !isValidDateString(value.firstRatedAt)) {
+      errors.push(`reviewStates[${index}].firstRatedAt must be a valid date string or null`);
+    }
+
+    if (value.historyOrigin !== "recorded" && value.historyOrigin !== "legacy_unknown") {
+      errors.push(`reviewStates[${index}].historyOrigin is unsupported`);
+    }
+
+    if (
+      (value.historyOrigin === "recorded" && !isString(value.firstRatedAt)) ||
+      (value.historyOrigin === "legacy_unknown" && value.firstRatedAt !== null)
+    ) {
+      errors.push(`reviewStates[${index}].firstRatedAt does not match historyOrigin`);
+    }
+
+    if (
+      (value.reviewProfile === "recognition" && value.parameterSetId !== "recognition-fsrs-v1") ||
+      (value.reviewProfile === "active" && value.parameterSetId === "recognition-fsrs-v1")
+    ) {
+      errors.push(`reviewStates[${index}].parameterSetId does not match reviewProfile`);
+    }
+  }
 }
 
 function validateReviewEvent(
@@ -264,6 +380,7 @@ function validateReviewEvent(
   index: number,
   errors: string[],
   requiresPersonId: boolean,
+  requiresV2Fields: boolean,
 ) {
   if (!isRecord(value)) {
     errors.push(`reviewEvents[${index}] must be an object`);
@@ -293,9 +410,71 @@ function validateReviewEvent(
       errors.push(`reviewEvents[${index}].${key} must be a number`);
     }
   }
+
+  if (requiresV2Fields) {
+    for (const key of ["reviewedAt", "nextDueAt"]) {
+      validateDateField(value, key, `reviewEvents[${index}]`, errors);
+    }
+    if (value.previousDueAt !== null && !isValidDateString(value.previousDueAt)) {
+      errors.push(`reviewEvents[${index}].previousDueAt must be a valid date string or null`);
+    }
+    if (!isStringOrNull(value.promptId)) {
+      errors.push(`reviewEvents[${index}].promptId must be a string or null`);
+    }
+    if (!REVIEW_PROFILES.has(String(value.reviewProfile))) {
+      errors.push(`reviewEvents[${index}].reviewProfile is unsupported`);
+    }
+    if (!REVIEW_ACTIVITY_TYPES.has(String(value.activityType))) {
+      errors.push(`reviewEvents[${index}].activityType is unsupported`);
+    }
+    if (!ANSWER_OUTCOMES.has(String(value.answerOutcome))) {
+      errors.push(`reviewEvents[${index}].answerOutcome is unsupported`);
+    }
+    if (!isStringOrNull(value.answerNormalizationVersion)) {
+      errors.push(`reviewEvents[${index}].answerNormalizationVersion must be a string or null`);
+    }
+    if (!isStringOrNull(value.targetRevision)) {
+      errors.push(`reviewEvents[${index}].targetRevision must be a string or null`);
+    }
+    if (!isString(value.parameterSetId) || !value.parameterSetId.trim()) {
+      errors.push(`reviewEvents[${index}].parameterSetId must be a non-blank string`);
+    }
+    if (isNumber(value.elapsedMs) && (value.elapsedMs < 0 || value.elapsedMs > 90_000_000)) {
+      errors.push(`reviewEvents[${index}].elapsedMs is outside the accepted range`);
+    }
+
+    const recognitionEvidence =
+      value.reviewProfile === "recognition" &&
+      value.activityType === "recognition_card" &&
+      value.answerOutcome === "self_rated" &&
+      value.answerNormalizationVersion === null &&
+      value.targetRevision === null &&
+      value.parameterSetId === "recognition-fsrs-v1";
+    const activeSayEvidence =
+      value.reviewProfile === "active" &&
+      value.activityType === "say" &&
+      value.answerOutcome === "self_rated" &&
+      value.answerNormalizationVersion === null &&
+      isString(value.targetRevision) &&
+      Boolean(value.targetRevision.trim()) &&
+      value.parameterSetId !== "recognition-fsrs-v1";
+    const activeTypedEvidence =
+      value.reviewProfile === "active" &&
+      (value.activityType === "spell" || value.activityType === "dictation") &&
+      value.answerOutcome !== "self_rated" &&
+      ANSWER_OUTCOMES.has(String(value.answerOutcome)) &&
+      value.answerNormalizationVersion === "active-answer-v1" &&
+      isString(value.targetRevision) &&
+      Boolean(value.targetRevision.trim()) &&
+      value.parameterSetId !== "recognition-fsrs-v1";
+
+    if (!recognitionEvidence && !activeSayEvidence && !activeTypedEvidence) {
+      errors.push(`reviewEvents[${index}] evidence fields are inconsistent`);
+    }
+  }
 }
 
-function validateCounts(value: unknown, errors: string[]) {
+function validateCounts(value: unknown, errors: string[], requiresV2Fields: boolean) {
   if (!isRecord(value)) {
     errors.push("metadata.counts must be an object");
     return;
@@ -309,6 +488,22 @@ function validateCounts(value: unknown, errors: string[]) {
 
   if (value.people !== undefined && !isNumber(value.people)) {
     errors.push("metadata.counts.people must be a number");
+  }
+
+  if (requiresV2Fields) {
+    for (const key of [
+      "dailyStudyDefaults",
+      "dailyStudyPlans",
+      "vocabularyCreationFacts",
+      "vocabularyCreationReversals",
+      "aiRuns",
+      "aiEnrichmentDrafts",
+      "vocabularyRelations",
+    ]) {
+      if (!isNumber(value[key])) {
+        errors.push(`metadata.counts.${key} must be a number`);
+      }
+    }
   }
 }
 
@@ -381,6 +576,522 @@ function validateSettingsByPerson(value: unknown, errors: string[], requiresDual
   });
 }
 
+function isNonNegativeDatabaseInteger(value: unknown) {
+  return Number.isInteger(value) && Number(value) >= 0 && Number(value) <= MAX_DATABASE_INTEGER;
+}
+
+function validateDailyStudyDefault(value: unknown, index: number, errors: string[]) {
+  const label = `dailyStudyDefaults[${index}]`;
+  if (!isRecord(value)) {
+    errors.push(`${label} must be an object`);
+    return;
+  }
+
+  for (const key of ["personId", "timezone", "updatedAt"]) {
+    if (!isString(value[key])) {
+      errors.push(`${label}.${key} must be a string`);
+    }
+  }
+  validateDateField(value, "updatedAt", label, errors);
+  if (!REVIEW_PROFILES.has(String(value.reviewProfile))) {
+    errors.push(`${label}.reviewProfile is unsupported`);
+  }
+  for (const key of ["reviewGoal", "newWordGoal"]) {
+    if (!isNonNegativeDatabaseInteger(value[key])) {
+      errors.push(`${label}.${key} must be a non-negative database integer`);
+    }
+  }
+}
+
+function validateDailyStudyPlan(value: unknown, index: number, errors: string[]) {
+  const label = `dailyStudyPlans[${index}]`;
+  if (!isRecord(value)) {
+    errors.push(`${label} must be an object`);
+    return;
+  }
+
+  for (const key of [
+    "id",
+    "personId",
+    "localDate",
+    "timezone",
+    "dayStartsAt",
+    "dayEndsAt",
+    "recommendationVersion",
+    "calculatedAt",
+    "updatedAt",
+  ]) {
+    if (!isString(value[key])) {
+      errors.push(`${label}.${key} must be a string`);
+    } else if (!value[key].trim()) {
+      errors.push(`${label}.${key} must not be blank`);
+    }
+  }
+  if (!isValidLocalDate(value.localDate)) {
+    errors.push(`${label}.localDate must be a valid YYYY-MM-DD date`);
+  }
+  for (const key of ["dayStartsAt", "dayEndsAt", "calculatedAt", "updatedAt"]) {
+    validateDateField(value, key, label, errors);
+  }
+  if (!REVIEW_PROFILES.has(String(value.reviewProfile))) {
+    errors.push(`${label}.reviewProfile is unsupported`);
+  }
+  for (const key of ["suggestedReview", "reviewGoal", "newWordGoal"]) {
+    if (!isNonNegativeDatabaseInteger(value[key])) {
+      errors.push(`${label}.${key} must be a non-negative database integer`);
+    }
+  }
+  if (!Number.isInteger(value.planVersion) || Number(value.planVersion) < 1) {
+    errors.push(`${label}.planVersion must be a positive integer`);
+  }
+  if (
+    isString(value.dayStartsAt) &&
+    isString(value.dayEndsAt) &&
+    Date.parse(value.dayEndsAt) <= Date.parse(value.dayStartsAt)
+  ) {
+    errors.push(`${label} day window is invalid`);
+  }
+}
+
+function validateCreationFact(value: unknown, index: number, errors: string[]) {
+  const label = `vocabularyCreationFacts[${index}]`;
+  if (!isRecord(value)) {
+    errors.push(`${label} must be an object`);
+    return;
+  }
+  for (const key of [
+    "creationFactId",
+    "personId",
+    "originalVocabularyItemId",
+    "sourceActionId",
+    "systemCreatedAt",
+  ]) {
+    if (!isString(value[key])) {
+      errors.push(`${label}.${key} must be a string`);
+    }
+  }
+  validateDateField(value, "systemCreatedAt", label, errors);
+  if (!REVIEW_PROFILES.has(String(value.trackAtCreation))) {
+    errors.push(`${label}.trackAtCreation is unsupported`);
+  }
+  if (!CREATION_SOURCE_KINDS.has(String(value.sourceKind))) {
+    errors.push(`${label}.sourceKind is unsupported`);
+  }
+  if (value.historyOrigin !== "recorded" && value.historyOrigin !== "legacy_backfill") {
+    errors.push(`${label}.historyOrigin is unsupported`);
+  }
+}
+
+function validateCreationReversal(value: unknown, index: number, errors: string[]) {
+  const label = `vocabularyCreationReversals[${index}]`;
+  if (!isRecord(value)) {
+    errors.push(`${label} must be an object`);
+    return;
+  }
+  for (const key of ["reversalFactId", "personId", "sourceActionId", "reversedAt"]) {
+    if (!isString(value[key])) {
+      errors.push(`${label}.${key} must be a string`);
+    }
+  }
+  validateDateField(value, "reversedAt", label, errors);
+  if (value.reason !== "batch_rollback") {
+    errors.push(`${label}.reason is unsupported`);
+  }
+}
+
+function validateAiDraftContent(value: unknown, label: string, errors: string[]) {
+  if (!isRecord(value)) {
+    errors.push(`${label} must be an object`);
+    return;
+  }
+  if (!isStringArray(value.additionalMeaningsZh)) {
+    errors.push(`${label}.additionalMeaningsZh must be an array`);
+  }
+  if (!isStringArray(value.examples)) {
+    errors.push(`${label}.examples must be an array`);
+  }
+  if (!Array.isArray(value.similarWords)) {
+    errors.push(`${label}.similarWords must be an array`);
+  } else {
+    value.similarWords.forEach((entry, index) => {
+      if (!isRecord(entry) || !isString(entry.word) || !isString(entry.differenceZh)) {
+        errors.push(`${label}.similarWords[${index}] is invalid`);
+      }
+    });
+  }
+  if (!Array.isArray(value.confusableWords)) {
+    errors.push(`${label}.confusableWords must be an array`);
+  } else {
+    value.confusableWords.forEach((entry, index) => {
+      if (
+        !isRecord(entry) ||
+        !isString(entry.word) ||
+        !isString(entry.differenceZh) ||
+        !["spelling", "sound", "usage"].includes(String(entry.type)) ||
+        !isStringArray(entry.examplePair) ||
+        ![0, 2].includes(Array.isArray(entry.examplePair) ? entry.examplePair.length : -1)
+      ) {
+        errors.push(`${label}.confusableWords[${index}] is invalid`);
+      }
+    });
+  }
+}
+
+function validateAiRun(value: unknown, index: number, errors: string[]) {
+  const label = `aiRuns[${index}]`;
+  if (!isRecord(value)) {
+    errors.push(`${label} must be an object`);
+    return;
+  }
+  for (const key of [
+    "id",
+    "personId",
+    "model",
+    "modelLabel",
+    "promptVersion",
+    "sourceHash",
+    "outputSchemaVersion",
+    "disclosureVersion",
+    "idempotencyKeyHash",
+    "cacheKeyHash",
+    "createdAt",
+  ]) {
+    if (!isString(value[key])) {
+      errors.push(`${label}.${key} must be a string`);
+    } else if (!value[key].trim()) {
+      errors.push(`${label}.${key} must not be blank`);
+    }
+  }
+  if (!isStringOrNull(value.sourceVocabularyItemId)) {
+    errors.push(`${label}.sourceVocabularyItemId must be a string or null`);
+  }
+  if (value.feature !== "enrichment_v1" || value.provider !== "google-gemini-api") {
+    errors.push(`${label} provider or feature is unsupported`);
+  }
+  if (!AI_RUN_STATUSES.has(String(value.status))) {
+    errors.push(`${label}.status is unsupported`);
+  }
+  if (!AI_STRUCTURE_STATUSES.has(String(value.structureValidationStatus))) {
+    errors.push(`${label}.structureValidationStatus is unsupported`);
+  }
+  if (!isStringOrNull(value.providerResponseId) || !isStringOrNull(value.completedAt)) {
+    errors.push(`${label} nullable lineage fields are invalid`);
+  }
+  validateDateField(value, "createdAt", label, errors);
+  validateDateField(value, "completedAt", label, errors);
+  for (const key of [
+    "inputTokens",
+    "outputTokens",
+    "thinkingTokens",
+    "totalTokens",
+    "latencyMs",
+  ]) {
+    if (!isNonNegativeDatabaseInteger(value[key])) {
+      errors.push(`${label}.${key} must be a non-negative database integer`);
+    }
+  }
+  if (
+    isNonNegativeDatabaseInteger(value.inputTokens) &&
+    isNonNegativeDatabaseInteger(value.outputTokens) &&
+    isNonNegativeDatabaseInteger(value.thinkingTokens) &&
+    isNonNegativeDatabaseInteger(value.totalTokens) &&
+    Number(value.totalTokens) <
+      Number(value.inputTokens) + Number(value.outputTokens) + Number(value.thinkingTokens)
+  ) {
+    errors.push(`${label}.totalTokens is inconsistent`);
+  }
+  if (typeof value.estimatedCostUsd !== "number" || !Number.isFinite(value.estimatedCostUsd) || value.estimatedCostUsd < 0) {
+    errors.push(`${label}.estimatedCostUsd must be a non-negative number`);
+  }
+}
+
+function validateAiEnrichmentDraft(value: unknown, index: number, errors: string[]) {
+  const label = `aiEnrichmentDrafts[${index}]`;
+  if (!isRecord(value)) {
+    errors.push(`${label} must be an object`);
+    return;
+  }
+  for (const key of [
+    "id",
+    "personId",
+    "sourceVocabularyItemId",
+    "aiRunId",
+    "createdAt",
+    "updatedAt",
+  ]) {
+    if (!isString(value[key])) {
+      errors.push(`${label}.${key} must be a string`);
+    }
+  }
+  for (const key of ["createdAt", "updatedAt", "decidedAt"]) {
+    validateDateField(value, key, label, errors);
+  }
+  if (value.status !== "accepted") {
+    errors.push(`${label}.status must be accepted in a user backup`);
+  }
+  if (!isString(value.decidedAt)) {
+    errors.push(`${label}.decidedAt must be a string for accepted content`);
+  }
+  validateAiDraftContent(value.draft, `${label}.draft`, errors);
+  validateAiDraftContent(value.acceptedContent, `${label}.acceptedContent`, errors);
+}
+
+function validateVocabularyRelation(value: unknown, index: number, errors: string[]) {
+  const label = `vocabularyRelations[${index}]`;
+  if (!isRecord(value)) {
+    errors.push(`${label} must be an object`);
+    return;
+  }
+  for (const key of [
+    "id",
+    "personId",
+    "sourceVocabularyItemId",
+    "targetVocabularyItemId",
+    "differenceZh",
+    "aiRunId",
+    "createdAt",
+  ]) {
+    if (!isString(value[key])) {
+      errors.push(`${label}.${key} must be a string`);
+    }
+  }
+  validateDateField(value, "createdAt", label, errors);
+  if (!VOCABULARY_RELATION_TYPES.has(String(value.relationType))) {
+    errors.push(`${label}.relationType is unsupported`);
+  }
+  if (!isStringArray(value.examplePair) || ![0, 2].includes(Array.isArray(value.examplePair) ? value.examplePair.length : -1)) {
+    errors.push(`${label}.examplePair must be empty or contain two strings`);
+  }
+  if (value.sourceVocabularyItemId === value.targetVocabularyItemId) {
+    errors.push(`${label} must reference two different items`);
+  }
+}
+
+function validateSchema6References(
+  value: Record<string, unknown>,
+  personIds: Set<unknown>,
+  itemTrackByKey: Map<string, unknown>,
+  errors: string[],
+) {
+  const itemKeys = new Set(itemTrackByKey.keys());
+  const seenDefaults = new Set<string>();
+  const seenPlans = new Set<string>();
+  const seenPlanIds = new Set<string>();
+  const seenStates = new Set<string>();
+  const seenStateIds = new Set<string>();
+  const seenEventIds = new Set<string>();
+  const seenPromptIds = new Set<string>();
+  const seenCreationKeys = new Set<string>();
+  const seenCreationIds = new Set<string>();
+  const creationKindByAction = new Map<string, string>();
+  const seenReversalKeys = new Set<string>();
+  const seenReversalIds = new Set<string>();
+  const runKeys = new Set<string>();
+  const succeededRunKeys = new Set<string>();
+  const seenRunIdempotencyKeys = new Set<string>();
+  const seenDraftIds = new Set<string>();
+  const seenRelationIds = new Set<string>();
+  const seenRelationKeys = new Set<string>();
+
+  const requirePerson = (record: Record<string, unknown>, label: string) => {
+    if (isString(record.personId) && !personIds.has(record.personId)) {
+      errors.push(`${label}.personId does not match a person`);
+    }
+  };
+
+  if (Array.isArray(value.dailyStudyDefaults)) {
+    value.dailyStudyDefaults.filter(isRecord).forEach((record, index) => {
+      const label = `dailyStudyDefaults[${index}]`;
+      requirePerson(record, label);
+      const key = `${record.personId}:${record.reviewProfile}`;
+      if (seenDefaults.has(key)) {
+        errors.push(`${label} duplicates a person/profile default`);
+      }
+      seenDefaults.add(key);
+    });
+    for (const personId of personIds) {
+      if (!isString(personId)) {
+        continue;
+      }
+      for (const reviewProfile of REVIEW_PROFILES) {
+        if (!seenDefaults.has(`${personId}:${reviewProfile}`)) {
+          errors.push(`dailyStudyDefaults missing ${reviewProfile} defaults for ${personId}`);
+        }
+      }
+    }
+  }
+
+  if (Array.isArray(value.dailyStudyPlans)) {
+    value.dailyStudyPlans.filter(isRecord).forEach((record, index) => {
+      const label = `dailyStudyPlans[${index}]`;
+      requirePerson(record, label);
+      const key = `${record.personId}:${record.reviewProfile}:${record.localDate}`;
+      if (seenPlans.has(key)) {
+        errors.push(`${label} duplicates a person/profile/date plan`);
+      }
+      seenPlans.add(key);
+      const idKey = `${record.personId}:${record.id}`;
+      if (seenPlanIds.has(idKey)) {
+        errors.push(`${label}.id is duplicated for the person`);
+      }
+      seenPlanIds.add(idKey);
+    });
+  }
+
+  if (Array.isArray(value.reviewStates)) {
+    value.reviewStates.filter(isRecord).forEach((record, index) => {
+      const key = `${record.personId}:${record.vocabularyItemId}:${record.reviewProfile}`;
+      if (seenStates.has(key)) {
+        errors.push(`reviewStates[${index}] duplicates a person/item/profile state`);
+      }
+      seenStates.add(key);
+      const idKey = `${record.personId}:${record.id}`;
+      if (seenStateIds.has(idKey)) {
+        errors.push(`reviewStates[${index}].id is duplicated for the person`);
+      }
+      seenStateIds.add(idKey);
+    });
+  }
+
+  if (Array.isArray(value.reviewEvents)) {
+    value.reviewEvents.filter(isRecord).forEach((record, index) => {
+      const idKey = `${record.personId}:${record.id}`;
+      if (seenEventIds.has(idKey)) {
+        errors.push(`reviewEvents[${index}].id is duplicated for the person`);
+      }
+      seenEventIds.add(idKey);
+      if (isString(record.promptId)) {
+        const key = `${record.personId}:${record.promptId}`;
+        if (seenPromptIds.has(key)) {
+          errors.push(`reviewEvents[${index}].promptId is duplicated for the person`);
+        }
+        seenPromptIds.add(key);
+      }
+    });
+  }
+
+  if (Array.isArray(value.vocabularyCreationFacts)) {
+    value.vocabularyCreationFacts.filter(isRecord).forEach((record, index) => {
+      const label = `vocabularyCreationFacts[${index}]`;
+      requirePerson(record, label);
+      const stableKey = `${record.personId}:${record.sourceActionId}:${record.originalVocabularyItemId}`;
+      if (seenCreationKeys.has(stableKey)) {
+        errors.push(`${label} duplicates a stable creation key`);
+      }
+      seenCreationKeys.add(stableKey);
+      const idKey = `${record.personId}:${record.creationFactId}`;
+      if (seenCreationIds.has(idKey)) {
+        errors.push(`${label}.creationFactId is duplicated for the person`);
+      }
+      seenCreationIds.add(idKey);
+      const actionKey = `${record.personId}:${record.sourceActionId}`;
+      const previousKind = creationKindByAction.get(actionKey);
+      if (previousKind && previousKind !== record.sourceKind) {
+        errors.push(`${label} mixes source kinds within one action`);
+      }
+      if (isString(record.sourceKind)) {
+        creationKindByAction.set(actionKey, record.sourceKind);
+      }
+    });
+  }
+
+  if (Array.isArray(value.vocabularyCreationReversals)) {
+    value.vocabularyCreationReversals.filter(isRecord).forEach((record, index) => {
+      const label = `vocabularyCreationReversals[${index}]`;
+      requirePerson(record, label);
+      const actionKey = `${record.personId}:${record.sourceActionId}`;
+      if (creationKindByAction.get(actionKey) !== "batch") {
+        errors.push(`${label} does not reference a known batch action`);
+      }
+      const stableKey = `${actionKey}:${record.reason}`;
+      if (seenReversalKeys.has(stableKey)) {
+        errors.push(`${label} duplicates an action reversal`);
+      }
+      seenReversalKeys.add(stableKey);
+      const idKey = `${record.personId}:${record.reversalFactId}`;
+      if (seenReversalIds.has(idKey)) {
+        errors.push(`${label}.reversalFactId is duplicated for the person`);
+      }
+      seenReversalIds.add(idKey);
+    });
+  }
+
+  if (Array.isArray(value.aiRuns)) {
+    value.aiRuns.filter(isRecord).forEach((record, index) => {
+      const label = `aiRuns[${index}]`;
+      requirePerson(record, label);
+      const key = `${record.personId}:${record.id}`;
+      if (runKeys.has(key)) {
+        errors.push(`${label}.id is duplicated for the person`);
+      }
+      runKeys.add(key);
+      const idempotencyKey = `${record.personId}:${record.idempotencyKeyHash}`;
+      if (seenRunIdempotencyKeys.has(idempotencyKey)) {
+        errors.push(`${label}.idempotencyKeyHash is duplicated for the person`);
+      }
+      seenRunIdempotencyKeys.add(idempotencyKey);
+      if (record.status === "succeeded") {
+        succeededRunKeys.add(key);
+      } else {
+        errors.push(`${label} must be succeeded when retained in a user backup`);
+      }
+      if (isString(record.sourceVocabularyItemId)) {
+        const itemKey = `${record.personId}:${record.sourceVocabularyItemId}`;
+        if (!itemKeys.has(itemKey)) {
+          errors.push(`${label}.sourceVocabularyItemId does not match an item`);
+        }
+      }
+    });
+  }
+
+  if (Array.isArray(value.aiEnrichmentDrafts)) {
+    value.aiEnrichmentDrafts.filter(isRecord).forEach((record, index) => {
+      const label = `aiEnrichmentDrafts[${index}]`;
+      requirePerson(record, label);
+      const itemKey = `${record.personId}:${record.sourceVocabularyItemId}`;
+      const runKey = `${record.personId}:${record.aiRunId}`;
+      const idKey = `${record.personId}:${record.id}`;
+      if (seenDraftIds.has(idKey)) {
+        errors.push(`${label}.id is duplicated for the person`);
+      }
+      seenDraftIds.add(idKey);
+      if (!itemKeys.has(itemKey)) {
+        errors.push(`${label}.sourceVocabularyItemId does not match an item`);
+      }
+      if (!succeededRunKeys.has(runKey)) {
+        errors.push(`${label}.aiRunId does not match a succeeded retained run`);
+      }
+    });
+  }
+
+  if (Array.isArray(value.vocabularyRelations)) {
+    value.vocabularyRelations.filter(isRecord).forEach((record, index) => {
+      const label = `vocabularyRelations[${index}]`;
+      requirePerson(record, label);
+      const idKey = `${record.personId}:${record.id}`;
+      if (seenRelationIds.has(idKey)) {
+        errors.push(`${label}.id is duplicated for the person`);
+      }
+      seenRelationIds.add(idKey);
+      const stableKey = `${record.personId}:${record.sourceVocabularyItemId}:${record.targetVocabularyItemId}:${record.relationType}`;
+      if (seenRelationKeys.has(stableKey)) {
+        errors.push(`${label} duplicates a source/target/type relation`);
+      }
+      seenRelationKeys.add(stableKey);
+      for (const field of ["sourceVocabularyItemId", "targetVocabularyItemId"]) {
+        const itemKey = `${record.personId}:${record[field]}`;
+        if (!itemKeys.has(itemKey)) {
+          errors.push(`${label}.${field} does not match an item`);
+        }
+      }
+      const runKey = `${record.personId}:${record.aiRunId}`;
+      if (!runKeys.has(runKey)) {
+        errors.push(`${label}.aiRunId does not match a retained run`);
+      }
+    });
+  }
+}
+
 function validateBackupData(value: unknown, errors: string[]) {
   if (!isRecord(value)) {
     errors.push("data must be an object");
@@ -391,14 +1102,20 @@ function validateBackupData(value: unknown, errors: string[]) {
     value.schemaVersion !== 2 &&
     value.schemaVersion !== 3 &&
     value.schemaVersion !== 4 &&
-    value.schemaVersion !== 5
+    value.schemaVersion !== 5 &&
+    value.schemaVersion !== 6
   ) {
-    errors.push("data.schemaVersion must be 2, 3, 4, or 5");
+    errors.push("data.schemaVersion must be 2, 3, 4, 5, or 6");
   }
   const requiresPersonId =
-    value.schemaVersion === 3 || value.schemaVersion === 4 || value.schemaVersion === 5;
-  const requiresTrackFields = value.schemaVersion === 4 || value.schemaVersion === 5;
-  const requiresTextListFields = value.schemaVersion === 5;
+    value.schemaVersion === 3 ||
+    value.schemaVersion === 4 ||
+    value.schemaVersion === 5 ||
+    value.schemaVersion === 6;
+  const requiresTrackFields =
+    value.schemaVersion === 4 || value.schemaVersion === 5 || value.schemaVersion === 6;
+  const requiresTextListFields = value.schemaVersion === 5 || value.schemaVersion === 6;
+  const requiresV2Fields = value.schemaVersion === 6;
 
   if (requiresPersonId) {
     if (!Array.isArray(value.people)) {
@@ -432,7 +1149,7 @@ function validateBackupData(value: unknown, errors: string[]) {
     errors.push("data.reviewStates must be an array");
   } else {
     value.reviewStates.forEach((state, index) =>
-      validateReviewState(state, index, errors, requiresPersonId),
+      validateReviewState(state, index, errors, requiresPersonId, requiresV2Fields),
     );
   }
 
@@ -440,7 +1157,7 @@ function validateBackupData(value: unknown, errors: string[]) {
     errors.push("data.reviewEvents must be an array");
   } else {
     value.reviewEvents.forEach((event, index) =>
-      validateReviewEvent(event, index, errors, requiresPersonId),
+      validateReviewEvent(event, index, errors, requiresPersonId, requiresV2Fields),
     );
   }
 
@@ -448,6 +1165,56 @@ function validateBackupData(value: unknown, errors: string[]) {
     validateSettingsByPerson(value.settingsByPerson, errors, requiresTrackFields);
   } else {
     validateSettings(value.settings, errors, requiresTrackFields);
+  }
+
+  if (requiresV2Fields) {
+    if (!Array.isArray(value.dailyStudyDefaults)) {
+      errors.push("data.dailyStudyDefaults must be an array");
+    } else {
+      value.dailyStudyDefaults.forEach((entry, index) =>
+        validateDailyStudyDefault(entry, index, errors),
+      );
+    }
+    if (!Array.isArray(value.dailyStudyPlans)) {
+      errors.push("data.dailyStudyPlans must be an array");
+    } else {
+      value.dailyStudyPlans.forEach((entry, index) =>
+        validateDailyStudyPlan(entry, index, errors),
+      );
+    }
+    if (!Array.isArray(value.vocabularyCreationFacts)) {
+      errors.push("data.vocabularyCreationFacts must be an array");
+    } else {
+      value.vocabularyCreationFacts.forEach((entry, index) =>
+        validateCreationFact(entry, index, errors),
+      );
+    }
+    if (!Array.isArray(value.vocabularyCreationReversals)) {
+      errors.push("data.vocabularyCreationReversals must be an array");
+    } else {
+      value.vocabularyCreationReversals.forEach((entry, index) =>
+        validateCreationReversal(entry, index, errors),
+      );
+    }
+    if (!Array.isArray(value.aiRuns)) {
+      errors.push("data.aiRuns must be an array");
+    } else {
+      value.aiRuns.forEach((entry, index) => validateAiRun(entry, index, errors));
+    }
+    if (!Array.isArray(value.aiEnrichmentDrafts)) {
+      errors.push("data.aiEnrichmentDrafts must be an array");
+    } else {
+      value.aiEnrichmentDrafts.forEach((entry, index) =>
+        validateAiEnrichmentDraft(entry, index, errors),
+      );
+    }
+    if (!Array.isArray(value.vocabularyRelations)) {
+      errors.push("data.vocabularyRelations must be an array");
+    } else {
+      value.vocabularyRelations.forEach((entry, index) =>
+        validateVocabularyRelation(entry, index, errors),
+      );
+    }
   }
 
   if (!isString(value.updatedAt)) {
@@ -494,7 +1261,12 @@ function validateBackupData(value: unknown, errors: string[]) {
           errors.push(`reviewStates[${index}].vocabularyItemId does not match an item`);
         }
 
-        if (requiresTrackFields && isString(itemKey) && itemTrackByKey.get(itemKey) === "active") {
+        if (
+          requiresTrackFields &&
+          !requiresV2Fields &&
+          isString(itemKey) &&
+          itemTrackByKey.get(itemKey) === "active"
+        ) {
           errors.push(`reviewStates[${index}].vocabularyItemId references an Active item`);
         }
       });
@@ -511,10 +1283,19 @@ function validateBackupData(value: unknown, errors: string[]) {
           errors.push(`reviewEvents[${index}].vocabularyItemId does not match an item`);
         }
 
-        if (requiresTrackFields && isString(itemKey) && itemTrackByKey.get(itemKey) === "active") {
+        if (
+          requiresTrackFields &&
+          !requiresV2Fields &&
+          isString(itemKey) &&
+          itemTrackByKey.get(itemKey) === "active"
+        ) {
           errors.push(`reviewEvents[${index}].vocabularyItemId references an Active item`);
         }
       });
+    }
+
+    if (requiresV2Fields) {
+      validateSchema6References(value, personIds, itemTrackByKey, errors);
     }
   }
 }
@@ -533,8 +1314,8 @@ export function parseVocabularyBackupValue(value: unknown, now = new Date().toIS
     errors.push(`format must be ${BACKUP_FORMAT}`);
   }
 
-  if (value.backupVersion !== 1 && value.backupVersion !== BACKUP_VERSION) {
-    errors.push(`backupVersion must be 1 or ${BACKUP_VERSION}`);
+  if (value.backupVersion !== 1 && value.backupVersion !== 2 && value.backupVersion !== BACKUP_VERSION) {
+    errors.push(`backupVersion must be 1, 2, or ${BACKUP_VERSION}`);
   }
 
   if (!isRecord(value.metadata)) {
@@ -556,15 +1337,67 @@ export function parseVocabularyBackupValue(value: unknown, now = new Date().toIS
       value.metadata.schemaVersion !== 2 &&
       value.metadata.schemaVersion !== 3 &&
       value.metadata.schemaVersion !== 4 &&
-      value.metadata.schemaVersion !== 5
+      value.metadata.schemaVersion !== 5 &&
+      value.metadata.schemaVersion !== 6
     ) {
-      errors.push("metadata.schemaVersion must be 2, 3, 4, or 5");
+      errors.push("metadata.schemaVersion must be 2, 3, 4, 5, or 6");
     }
 
-    validateCounts(value.metadata.counts, errors);
+    validateCounts(value.metadata.counts, errors, value.metadata.schemaVersion === 6);
   }
 
   validateBackupData(value.data, errors);
+
+  if (
+    isRecord(value.metadata) &&
+    isRecord(value.data) &&
+    value.metadata.schemaVersion !== value.data.schemaVersion
+  ) {
+    errors.push("metadata.schemaVersion must match data.schemaVersion");
+  }
+
+  if (
+    isRecord(value.metadata) &&
+    isRecord(value.metadata.counts) &&
+    isRecord(value.data) &&
+    value.data.schemaVersion === 6
+  ) {
+    const collectionKeys = [
+      "items",
+      "importBatches",
+      "reviewStates",
+      "reviewEvents",
+      "dailyStudyDefaults",
+      "dailyStudyPlans",
+      "vocabularyCreationFacts",
+      "vocabularyCreationReversals",
+      "aiRuns",
+      "aiEnrichmentDrafts",
+      "vocabularyRelations",
+    ] as const;
+    for (const key of collectionKeys) {
+      const expected = Array.isArray(value.data[key]) ? value.data[key].length : -1;
+      if (value.metadata.counts[key] !== expected) {
+        errors.push(`metadata.counts.${key} does not match data`);
+      }
+    }
+    const peopleCount = Array.isArray(value.data.people) ? value.data.people.length : -1;
+    if (value.metadata.counts.people !== peopleCount) {
+      errors.push("metadata.counts.people does not match data");
+    }
+    const archivedItems = Array.isArray(value.data.items)
+      ? value.data.items.filter(
+          (item) =>
+            isRecord(item) && (item.status === "archived" || Boolean(item.archivedAt)),
+        ).length
+      : -1;
+    if (value.metadata.counts.archivedItems !== archivedItems) {
+      errors.push("metadata.counts.archivedItems does not match data");
+    }
+    if (value.metadata.counts.activeItems !== (Array.isArray(value.data.items) ? value.data.items.length - archivedItems : -1)) {
+      errors.push("metadata.counts.activeItems does not match data");
+    }
+  }
 
   if (errors.length) {
     return {

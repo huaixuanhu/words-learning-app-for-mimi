@@ -1,7 +1,7 @@
 # Words Learning App For Mimi Architecture
 
 Created: 2026-07-02 23:30 AEST
-Last updated: 2026-07-13 23:00 AEST
+Last updated: 2026-07-14 00:27 AEST
 
 ## Current State
 
@@ -66,7 +66,7 @@ The local `main` branch now tracks `origin/main`. Remote repository settings hav
 
 ## Current V2 Planning Baseline
 
-The cloud-backed V1 described above is live and remains the current application behavior. On 2026-07-13 the user accepted `plan_docs/PLAN_V2_MASTER.md` as the canonical V2 parent plan on branch `V2`, then approved and completed `plan_docs/PLAN_V2_STAGE1_PRODUCT_METRIC_DATA_CONTRACT.md`. Stage 1 has isolated pure TypeScript contract modules and tests under `src/lib/daily-study/`; they are deliberately not connected to V1 UI, storage, API routes, Schema Version 5, or Production. No V2 runtime integration, schema migration, external API, paid provider, credential, database, or deployment action has been performed.
+The cloud-backed V1 described above is live and remains the current user-facing behavior. On branch `V2`, Stage 1 completed the isolated daily-study contract, Stage 2 / 2-B completed the bounded Gemini quality evidence, and Stage 3 completed the local/application Schema Version 6 plus backup version 3 data layer. Stage 3 touches local fallback, repository snapshots, backup/restore planning, fixtures, and an unexecuted SQL migration draft. It adds no V2 page or provider route. The live V1 database remains Schema Version 5; no remote V2 migration, credential change, Production data write, or deployment has been performed.
 
 The accepted V2 architecture direction is:
 
@@ -122,7 +122,9 @@ Key accepted boundaries:
 - Removing external lexical sources means every similar/confusable item is visibly an AI suggestion. Strict validation can prove shape and limits, while final lexical usefulness remains a human review decision.
 - SSO（Single Sign-On，单点登录）and confidential multi-user isolation remain in `plan_docs/PLAN_VERSION_HOLD_MULTI_USER_CONFIDENTIAL_ISOLATION.md` and are not V2 scope.
 
-V2-1 freezes the logical data and API contract, including Daily Defaults, versioned Daily Plans, append-only Creation/Reversal Facts, separate Review/New Words keyset queues, profile-scoped review state/event evidence, and strict rating/reset commands. The persisted schema version and exact SQL remain V2-3 decisions because local fallback, Postgres, repository, API, backup, restore, export, fixtures, and migrations must move together. Existing executed migrations remain immutable.
+V2-1 freezes the logical data and API contract, including Daily Defaults, versioned Daily Plans, append-only Creation/Reversal Facts, separate Review/New Words keyset queues, profile-scoped review state/event evidence, and strict rating/reset commands.
+
+V2-3 implements that persisted boundary as Schema Version 6 and JSON backup version 3. Versions 1–5 migrate forward locally; legacy review rows become Recognition history, and a missing retained first event remains `legacy_unknown` without an invented time. The new snapshot includes daily defaults/plans, immutable creation/reversal facts, profile-aware review evidence, accepted AI lineage/drafts, and vocabulary relations. Operational quota, Cache, and idempotency records stay outside user backups. Existing `0001` / `0002` migrations remain immutable; `db/migrations/0003_v2_schema6_data_model.sql` is a forward-only draft that has not been executed remotely.
 
 ## Product Goal
 
@@ -265,7 +267,7 @@ Current route: `/settings`. It can save separate Recognition / Active daily limi
 
 ### Storage Adapter
 
-Development storage currently uses browser `localStorage`（本地浏览器存储）through `src/lib/vocabulary/local-storage-repository.ts`. The local migration path upgrades schema version 1 / 2 / 3 / 4 vocabulary data to schema version 5 by adding review data, `people`, `selectedPersonId`, person-scoped learning records, per-person settings, `learningTrack`, nullable `tags`, `meaningsZh`, `examples`, and separate Recognition / Active limits. Existing vocabulary items default to `learningTrack: "recognition"` and `tags: null`; `meaningsZh` and `examples` are derived from legacy `meaningZh` / `example` strings when present. Stage 8 FSRS does not add schema version 6; it uses the existing neutral `difficulty`, `stability`, `intervalMinutes`, `dueAt`, `reviewCount`, and `lapseCount` fields. Production storage should use a Postgres provider suitable for Vercel deployment, specifically the accepted Neon Postgres path through Vercel Marketplace.
+Development storage can use browser `localStorage`（本地浏览器存储）through `src/lib/vocabulary/local-storage-repository.ts`. On branch `V2`, the local migration path upgrades schema versions 1–5 to Schema Version 6. It retains the earlier person-scoped vocabulary/settings and dual-track fields, then adds daily defaults/plans, creation/reversal facts, explicit Review Profiles and Parameter Sets（参数集）, first-rating evidence, accepted AI lineage/drafts, and vocabulary relations. Existing vocabulary items still default to `learningTrack: "recognition"` when the older source lacks a Track. Existing V1 review rows migrate only to Recognition; no Active history is inferred. The live Production runtime continues using Postgres Schema Version 5 until a later approved migration and release stage.
 
 Stage 5B storage decision:
 

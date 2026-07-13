@@ -1,0 +1,348 @@
+{
+  "format": "mimi-pte-vocabulary-backup",
+  "backupVersion": 3,
+  "metadata": {
+    "appName": "words-learning-app-for-mimi",
+    "exportedAt": "2026-07-13T10:20:00.000Z",
+    "timezone": "Australia/Melbourne",
+    "schemaVersion": 6,
+    "counts": {
+      "people": 1,
+      "items": 2,
+      "activeItems": 2,
+      "archivedItems": 0,
+      "importBatches": 0,
+      "reviewStates": 2,
+      "reviewEvents": 2,
+      "dailyStudyDefaults": 2,
+      "dailyStudyPlans": 2,
+      "vocabularyCreationFacts": 3,
+      "vocabularyCreationReversals": 1,
+      "aiRuns": 1,
+      "aiEnrichmentDrafts": 1,
+      "vocabularyRelations": 1
+    }
+  },
+  "data": {
+    "schemaVersion": 6,
+    "people": [
+      {
+        "id": "person_v2_stage3_schema6_fixture",
+        "displayName": "V2 Stage 3 Schema 6 Fixture",
+        "slug": "v2-stage3-schema6-fixture",
+        "isActive": true,
+        "createdAt": "2026-07-13T10:00:00.000Z",
+        "updatedAt": "2026-07-13T10:00:00.000Z"
+      }
+    ],
+    "selectedPersonId": "person_v2_stage3_schema6_fixture",
+    "items": [
+      {
+        "id": "vocab_v2_stage3_adapt",
+        "personId": "person_v2_stage3_schema6_fixture",
+        "surfaceText": "adapt",
+        "normalizedText": "adapt",
+        "meaningZh": "适应",
+        "meaningsZh": ["适应"],
+        "example": "It takes time to adapt to a new routine.",
+        "examples": ["It takes time to adapt to a new routine."],
+        "notes": "",
+        "rarityScore": 2,
+        "learningTrack": "recognition",
+        "tags": ["PTE"],
+        "source": "manual",
+        "importBatchId": null,
+        "status": "new",
+        "createdAt": "2026-07-13T10:00:00.000Z",
+        "systemCreatedAt": "2026-07-13T10:00:00.000Z",
+        "updatedAt": "2026-07-13T10:00:00.000Z",
+        "timezone": "Australia/Melbourne",
+        "archivedAt": null
+      },
+      {
+        "id": "vocab_v2_stage3_adopt",
+        "personId": "person_v2_stage3_schema6_fixture",
+        "surfaceText": "adopt",
+        "normalizedText": "adopt",
+        "meaningZh": "采纳；收养",
+        "meaningsZh": ["采纳", "收养"],
+        "example": "We adopted a new policy.",
+        "examples": ["We adopted a new policy."],
+        "notes": "Added from an accepted AI suggestion.",
+        "rarityScore": null,
+        "learningTrack": "active",
+        "tags": ["PTE", "Spelling Risk"],
+        "source": "ai_generated",
+        "importBatchId": null,
+        "status": "new",
+        "createdAt": "2026-07-13T10:00:00.000Z",
+        "systemCreatedAt": "2026-07-13T10:00:00.000Z",
+        "updatedAt": "2026-07-13T10:00:00.000Z",
+        "timezone": "Australia/Melbourne",
+        "archivedAt": null
+      }
+    ],
+    "importBatches": [],
+    "reviewStates": [
+      {
+        "id": "review_state_v2_stage3_adapt",
+        "personId": "person_v2_stage3_schema6_fixture",
+        "vocabularyItemId": "vocab_v2_stage3_adapt",
+        "reviewProfile": "recognition",
+        "parameterSetId": "recognition-fsrs-v1",
+        "firstRatedAt": "2026-07-13T10:15:00.000Z",
+        "historyOrigin": "recorded",
+        "status": "review",
+        "dueAt": "2026-07-14T00:00:00.000Z",
+        "lastReviewedAt": "2026-07-13T10:15:00.000Z",
+        "reviewCount": 1,
+        "lapseCount": 0,
+        "intervalMinutes": 1440,
+        "difficulty": 4.1,
+        "stability": 1.2,
+        "updatedAt": "2026-07-13T10:15:00.000Z"
+      },
+      {
+        "id": "review_state_v2_stage3_adopt",
+        "personId": "person_v2_stage3_schema6_fixture",
+        "vocabularyItemId": "vocab_v2_stage3_adopt",
+        "reviewProfile": "active",
+        "parameterSetId": "active-fsrs-v1",
+        "firstRatedAt": "2026-07-13T10:20:00.000Z",
+        "historyOrigin": "recorded",
+        "status": "learning",
+        "dueAt": "2026-07-14T00:00:00.000Z",
+        "lastReviewedAt": "2026-07-13T10:20:00.000Z",
+        "reviewCount": 1,
+        "lapseCount": 0,
+        "intervalMinutes": 1440,
+        "difficulty": 5.2,
+        "stability": 0.9,
+        "updatedAt": "2026-07-13T10:20:00.000Z"
+      }
+    ],
+    "reviewEvents": [
+      {
+        "id": "review_event_v2_stage3_adapt",
+        "promptId": "prompt_v2_stage3_adapt",
+        "personId": "person_v2_stage3_schema6_fixture",
+        "vocabularyItemId": "vocab_v2_stage3_adapt",
+        "reviewProfile": "recognition",
+        "activityType": "recognition_card",
+        "answerOutcome": "self_rated",
+        "answerNormalizationVersion": null,
+        "targetRevision": null,
+        "parameterSetId": "recognition-fsrs-v1",
+        "reviewedAt": "2026-07-13T10:15:00.000Z",
+        "rating": "remembered",
+        "previousDueAt": null,
+        "nextDueAt": "2026-07-14T00:00:00.000Z",
+        "previousIntervalMinutes": null,
+        "nextIntervalMinutes": 1440,
+        "elapsedMs": 4200
+      },
+      {
+        "id": "review_event_v2_stage3_adopt",
+        "promptId": "prompt_v2_stage3_adopt",
+        "personId": "person_v2_stage3_schema6_fixture",
+        "vocabularyItemId": "vocab_v2_stage3_adopt",
+        "reviewProfile": "active",
+        "activityType": "dictation",
+        "answerOutcome": "exact",
+        "answerNormalizationVersion": "active-answer-v1",
+        "targetRevision": "adopt:v1",
+        "parameterSetId": "active-fsrs-v1",
+        "reviewedAt": "2026-07-13T10:20:00.000Z",
+        "rating": "remembered",
+        "previousDueAt": null,
+        "nextDueAt": "2026-07-14T00:00:00.000Z",
+        "previousIntervalMinutes": null,
+        "nextIntervalMinutes": 1440,
+        "elapsedMs": 6100
+      }
+    ],
+    "settingsByPerson": [
+      {
+        "personId": "person_v2_stage3_schema6_fixture",
+        "sessionLimit": 20,
+        "recognitionSessionLimit": 20,
+        "activeSessionLimit": 10,
+        "timezone": "Australia/Melbourne",
+        "updatedAt": "2026-07-13T10:00:00.000Z"
+      }
+    ],
+    "dailyStudyDefaults": [
+      {
+        "personId": "person_v2_stage3_schema6_fixture",
+        "reviewProfile": "recognition",
+        "reviewGoal": 20,
+        "newWordGoal": 8,
+        "timezone": "Australia/Melbourne",
+        "updatedAt": "2026-07-13T10:00:00.000Z"
+      },
+      {
+        "personId": "person_v2_stage3_schema6_fixture",
+        "reviewProfile": "active",
+        "reviewGoal": 10,
+        "newWordGoal": 4,
+        "timezone": "Australia/Melbourne",
+        "updatedAt": "2026-07-13T10:00:00.000Z"
+      }
+    ],
+    "dailyStudyPlans": [
+      {
+        "id": "daily_plan_v2_stage3_recognition",
+        "personId": "person_v2_stage3_schema6_fixture",
+        "reviewProfile": "recognition",
+        "localDate": "2026-07-13",
+        "timezone": "Australia/Melbourne",
+        "dayStartsAt": "2026-07-12T14:00:00.000Z",
+        "dayEndsAt": "2026-07-13T14:00:00.000Z",
+        "suggestedReview": 13,
+        "reviewGoal": 20,
+        "newWordGoal": 8,
+        "planVersion": 1,
+        "recommendationVersion": "suggested-review-v1",
+        "calculatedAt": "2026-07-13T10:00:00.000Z",
+        "updatedAt": "2026-07-13T10:00:00.000Z"
+      },
+      {
+        "id": "daily_plan_v2_stage3_active",
+        "personId": "person_v2_stage3_schema6_fixture",
+        "reviewProfile": "active",
+        "localDate": "2026-07-13",
+        "timezone": "Australia/Melbourne",
+        "dayStartsAt": "2026-07-12T14:00:00.000Z",
+        "dayEndsAt": "2026-07-13T14:00:00.000Z",
+        "suggestedReview": 5,
+        "reviewGoal": 10,
+        "newWordGoal": 4,
+        "planVersion": 1,
+        "recommendationVersion": "suggested-review-v1",
+        "calculatedAt": "2026-07-13T10:00:00.000Z",
+        "updatedAt": "2026-07-13T10:00:00.000Z"
+      }
+    ],
+    "vocabularyCreationFacts": [
+      {
+        "creationFactId": "creation_fact_v2_stage3_adapt",
+        "personId": "person_v2_stage3_schema6_fixture",
+        "originalVocabularyItemId": "vocab_v2_stage3_adapt",
+        "sourceActionId": "vocab_v2_stage3_adapt",
+        "trackAtCreation": "recognition",
+        "sourceKind": "single",
+        "historyOrigin": "recorded",
+        "systemCreatedAt": "2026-07-13T10:00:00.000Z"
+      },
+      {
+        "creationFactId": "creation_fact_v2_stage3_adopt",
+        "personId": "person_v2_stage3_schema6_fixture",
+        "originalVocabularyItemId": "vocab_v2_stage3_adopt",
+        "sourceActionId": "ai_add_action_v2_stage3",
+        "trackAtCreation": "active",
+        "sourceKind": "ai_add_to_learning",
+        "historyOrigin": "recorded",
+        "systemCreatedAt": "2026-07-13T10:00:00.000Z"
+      },
+      {
+        "creationFactId": "creation_fact_v2_stage3_deleted_batch_item",
+        "personId": "person_v2_stage3_schema6_fixture",
+        "originalVocabularyItemId": "deleted_batch_item_v2_stage3",
+        "sourceActionId": "batch_action_v2_stage3",
+        "trackAtCreation": "recognition",
+        "sourceKind": "batch",
+        "historyOrigin": "recorded",
+        "systemCreatedAt": "2026-07-13T10:00:00.000Z"
+      }
+    ],
+    "vocabularyCreationReversals": [
+      {
+        "reversalFactId": "reversal_fact_v2_stage3_batch",
+        "personId": "person_v2_stage3_schema6_fixture",
+        "sourceActionId": "batch_action_v2_stage3",
+        "reason": "batch_rollback",
+        "reversedAt": "2026-07-13T10:15:00.000Z"
+      }
+    ],
+    "aiRuns": [
+      {
+        "id": "ai_run_v2_stage3_adapt",
+        "personId": "person_v2_stage3_schema6_fixture",
+        "sourceVocabularyItemId": "vocab_v2_stage3_adapt",
+        "feature": "enrichment_v1",
+        "provider": "google-gemini-api",
+        "model": "gemini-3.1-flash-lite",
+        "modelLabel": "Gemini 3.1 Flash-Lite",
+        "promptVersion": "v2-stage2b-prompt-v2",
+        "sourceHash": "source-hash-fixture",
+        "outputSchemaVersion": "ai-enrichment-v2",
+        "disclosureVersion": "ai-disclosure-v1",
+        "idempotencyKeyHash": "idempotency-hash-fixture",
+        "cacheKeyHash": "cache-hash-fixture",
+        "status": "succeeded",
+        "structureValidationStatus": "valid",
+        "providerResponseId": "fixture-response-id",
+        "inputTokens": 100,
+        "outputTokens": 180,
+        "thinkingTokens": 0,
+        "totalTokens": 280,
+        "latencyMs": 900,
+        "estimatedCostUsd": 0.000082,
+        "createdAt": "2026-07-13T10:00:00.000Z",
+        "completedAt": "2026-07-13T10:15:00.000Z"
+      }
+    ],
+    "aiEnrichmentDrafts": [
+      {
+        "id": "ai_draft_v2_stage3_adapt",
+        "personId": "person_v2_stage3_schema6_fixture",
+        "sourceVocabularyItemId": "vocab_v2_stage3_adapt",
+        "aiRunId": "ai_run_v2_stage3_adapt",
+        "status": "accepted",
+        "draft": {
+          "additionalMeaningsZh": ["适应"],
+          "examples": ["It takes time to adapt to a new routine."],
+          "similarWords": [],
+          "confusableWords": [
+            {
+              "word": "adopt",
+              "type": "spelling",
+              "differenceZh": "adapt 表示适应，adopt 表示采纳或收养。",
+              "examplePair": ["We adapt to change.", "We adopt a new policy."]
+            }
+          ]
+        },
+        "acceptedContent": {
+          "additionalMeaningsZh": ["适应"],
+          "examples": ["It takes time to adapt to a new routine."],
+          "similarWords": [],
+          "confusableWords": [
+            {
+              "word": "adopt",
+              "type": "spelling",
+              "differenceZh": "adapt 表示适应，adopt 表示采纳或收养。",
+              "examplePair": ["We adapt to change.", "We adopt a new policy."]
+            }
+          ]
+        },
+        "createdAt": "2026-07-13T10:00:00.000Z",
+        "updatedAt": "2026-07-13T10:15:00.000Z",
+        "decidedAt": "2026-07-13T10:15:00.000Z"
+      }
+    ],
+    "vocabularyRelations": [
+      {
+        "id": "relation_v2_stage3_adapt_adopt",
+        "personId": "person_v2_stage3_schema6_fixture",
+        "sourceVocabularyItemId": "vocab_v2_stage3_adapt",
+        "targetVocabularyItemId": "vocab_v2_stage3_adopt",
+        "relationType": "spelling",
+        "differenceZh": "adapt 表示适应，adopt 表示采纳或收养。",
+        "examplePair": ["We adapt to change.", "We adopt a new policy."],
+        "aiRunId": "ai_run_v2_stage3_adapt",
+        "createdAt": "2026-07-13T10:15:00.000Z"
+      }
+    ],
+    "updatedAt": "2026-07-13T10:20:00.000Z"
+  }
+}

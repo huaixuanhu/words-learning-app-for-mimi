@@ -205,6 +205,30 @@ def read_changed_text(root: Path, relative_path: str) -> str | None:
         return None
 
 
+def read_added_text(root: Path, relative_path: str) -> str | None:
+    """Return added lines for tracked files and full text for untracked files."""
+    status = run_git(root, ["status", "--porcelain=v1", "--", relative_path])
+    if status.returncode == 0 and any(
+        line.startswith("??") for line in status.stdout.splitlines()
+    ):
+        return read_changed_text(root, relative_path)
+
+    added_lines: list[str] = []
+    for args in (
+        ["diff", "--unified=0", "--", relative_path],
+        ["diff", "--cached", "--unified=0", "--", relative_path],
+    ):
+        result = run_git(root, args)
+        if result.returncode != 0:
+            continue
+        added_lines.extend(
+            line[1:]
+            for line in result.stdout.splitlines()
+            if line.startswith("+") and not line.startswith("+++")
+        )
+    return "\n".join(added_lines)
+
+
 def latest_entry(text: str) -> LatestEntry | None:
     matches = list(TIMESTAMP_HEADING_RE.finditer(text))
     if not matches:
@@ -344,7 +368,7 @@ def scan_risky_side_effects(root: Path, paths: set[str]) -> list[str]:
             continue
         if path == "governance/preflight.py" or ".test." in file_path.name:
             continue
-        text = read_changed_text(root, path)
+        text = read_added_text(root, path)
         if text is None:
             continue
         for pattern in RISKY_SIDE_EFFECT_PATTERNS:

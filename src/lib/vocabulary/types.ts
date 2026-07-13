@@ -1,6 +1,21 @@
 import type { PersonReviewSettings, ReviewEvent, ReviewState } from "@/lib/review/types";
+import type {
+  AiEnrichmentDraftRecord,
+  AiRunRecord,
+  DailyStudyDefaultRecord,
+  DailyStudyPlanRecord,
+  VocabularyCreationRecord,
+  VocabularyCreationReversalRecord,
+  VocabularyRelationRecord,
+} from "@/lib/storage/v2-data-model";
 
-export type VocabularySource = "manual" | "txt_file" | "pasted_text" | "json_file" | "json_paste";
+export type VocabularySource =
+  | "manual"
+  | "txt_file"
+  | "pasted_text"
+  | "json_file"
+  | "json_paste"
+  | "ai_generated";
 
 export type VocabularyStatus = "new" | "archived";
 
@@ -75,7 +90,7 @@ export type ImportCandidate = {
 };
 
 export type VocabularyData = {
-  schemaVersion: 5;
+  schemaVersion: 6;
   people: Person[];
   selectedPersonId: string;
   items: VocabularyItem[];
@@ -83,6 +98,13 @@ export type VocabularyData = {
   reviewStates: ReviewState[];
   reviewEvents: ReviewEvent[];
   settingsByPerson: PersonReviewSettings[];
+  dailyStudyDefaults: DailyStudyDefaultRecord[];
+  dailyStudyPlans: DailyStudyPlanRecord[];
+  vocabularyCreationFacts: VocabularyCreationRecord[];
+  vocabularyCreationReversals: VocabularyCreationReversalRecord[];
+  aiRuns: AiRunRecord[];
+  aiEnrichmentDrafts: AiEnrichmentDraftRecord[];
+  vocabularyRelations: VocabularyRelationRecord[];
   updatedAt: string;
 };
 
@@ -99,6 +121,7 @@ export type NewVocabularyInput = {
   learningTrack?: LearningTrack;
   tags?: VocabularyTag[] | null;
   source: VocabularySource;
+  sourceActionId?: string;
   importBatchId?: string | null;
   createdAt?: string;
   systemCreatedAt?: string;

@@ -95,12 +95,32 @@ export function updateReviewSettings(
   };
   nextSettings.sessionLimit = nextSettings.recognitionSessionLimit;
   const hasSettings = data.settingsByPerson.some((settings) => settings.personId === personId);
+  const defaultsByProfile = new Map(
+    data.dailyStudyDefaults
+      .filter((defaults) => defaults.personId === personId)
+      .map((defaults) => [defaults.reviewProfile, defaults]),
+  );
+  const nextDailyDefaults = (["recognition", "active"] as const).map((reviewProfile) => ({
+    personId,
+    reviewProfile,
+    reviewGoal:
+      reviewProfile === "recognition"
+        ? nextSettings.recognitionSessionLimit
+        : nextSettings.activeSessionLimit,
+    newWordGoal: defaultsByProfile.get(reviewProfile)?.newWordGoal ?? 0,
+    timezone: nextSettings.timezone,
+    updatedAt: now,
+  }));
 
   return {
     ...data,
     settingsByPerson: hasSettings
       ? data.settingsByPerson.map((settings) => (settings.personId === personId ? nextSettings : settings))
       : [nextSettings, ...data.settingsByPerson],
+    dailyStudyDefaults: [
+      ...nextDailyDefaults,
+      ...data.dailyStudyDefaults.filter((defaults) => defaults.personId !== personId),
+    ],
     updatedAt: now,
   };
 }

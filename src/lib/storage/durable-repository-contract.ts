@@ -74,7 +74,14 @@ export type BackupImportMapping = Readonly<{
     | "import_batch"
     | "review_state"
     | "review_event"
-    | "review_settings";
+    | "review_settings"
+    | "daily_study_default"
+    | "daily_study_plan"
+    | "vocabulary_creation_fact"
+    | "vocabulary_creation_reversal"
+    | "ai_run"
+    | "ai_enrichment_draft"
+    | "vocabulary_relation";
   sourceId: string;
   targetId: string;
 }>;
@@ -84,7 +91,7 @@ export type BackupImportMode = "workspace" | "selected_person";
 export type BackupImportPlan = Readonly<{
   mode: BackupImportMode;
   targetPersonId?: string;
-  sourceSchemaVersion: 2 | 3 | 4 | 5;
+  sourceSchemaVersion: 2 | 3 | 4 | 5 | 6;
   backupData: unknown;
 }>;
 
@@ -98,6 +105,13 @@ export type BackupImportResult = Readonly<{
     reviewStates: number;
     reviewEvents: number;
     reviewSettings: number;
+    dailyStudyDefaults: number;
+    dailyStudyPlans: number;
+    vocabularyCreationFacts: number;
+    vocabularyCreationReversals: number;
+    aiRuns: number;
+    aiEnrichmentDrafts: number;
+    vocabularyRelations: number;
   };
 }>;
 

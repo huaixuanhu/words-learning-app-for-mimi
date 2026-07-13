@@ -1,5 +1,21 @@
 # CHANGELOG
 
+## 2026-07-14 00:30 AEST
+
+- Completed local V2 Stage 3 from the documentation-first child plan `plan_docs/PLAN_V2_STAGE3_DATA_MODEL_BACKUP_PARITY.md`.
+- Locked Schema Version 6 for branch `V2` snapshots and backup version 3 for JSON backups while retaining forward migration from schema versions 1–5.
+- Added the forward-only `db/migrations/0003_v2_schema6_data_model.sql` draft for daily defaults/plans, immutable creation/reversal facts, profile-aware review evidence, accepted AI lineage/drafts, vocabulary relations, and operational quota/idempotency tables.
+- Migrated legacy review history honestly to Recognition: earliest retained events supply `firstRatedAt`; missing evidence stays `legacy_unknown` with no invented timestamp or Active history.
+- Added creation facts to successful single/batch additions, preserved creation tombstones after hard delete, and recorded valid whole-batch `Batch imported` reversals.
+- Updated local and Postgres repository snapshots, mappers, settings compatibility, scheduler/review writes, API route mocks, backup validation/export, guarded Postgres import planning, and CSV compatibility for `ai_generated` entries.
+- Added a deterministic Schema Version 6 fixture containing Recognition and Active evidence, daily plans, a deleted-item creation tombstone, one reversal, and one accepted Gemini lineage/draft/relation chain.
+- Synchronized `db/LOCAL_BACKUP_TO_POSTGRES.md` with Schema Version 6 remapping, legacy derivation, accepted-AI inclusion, operational-data exclusion, and the unexecuted remote boundary.
+- Kept operational quota, Cache, idempotency, temporary/rejected AI drafts, and unreferenced AI audit rows outside user backup/restore.
+- Refined the Tier 3 preflight side-effect scan to inspect newly added executable lines (and full untracked files), preventing unchanged `DELETE FROM` statements in a touched repository from becoming false positives while retaining detection for newly introduced destructive SQL.
+- Passed lint, TypeScript typecheck, 182 tests with 1 intentional Postgres integration skip, all three backup fixture dry-runs, Next.js Production build, and final diff checks.
+- Did not connect to or migrate Development, Staging, Preview, or Production; the live V1 database remains Schema Version 5. No credential, provider call, Vercel change, deployment, GitHub push, or persistent remote-data write occurred.
+- Reason: make the accepted Stage 1 daily/Review Profile contract and Stage 2 accepted-AI lineage representable and recoverable before any V2 user-facing engine is built.
+
 ## 2026-07-13 23:00 AEST
 
 - Recorded the user's qualitative review of concrete Stage 2-B cases and conditional acceptance of the observed error range for supplementary, editable Gemini drafts.

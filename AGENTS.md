@@ -24,7 +24,8 @@
 - Canonical V2 plan: `plan_docs/PLAN_V2_MASTER.md`.
 - Canonical completed V2 Stage 1 child plan: `plan_docs/PLAN_V2_STAGE1_PRODUCT_METRIC_DATA_CONTRACT.md`.
 - Canonical V2 Stage 2 gate and evidence: `plan_docs/PLAN_V2_STAGE2_AI_QUALITY_SECURITY_GATE.md`, `plan_docs/PLAN_V2_STAGE2_AI_QUALITY_EVIDENCE.md`, `plan_docs/PLAN_V2_STAGE2_B_AI_QUALITY_REFINEMENT.md`, and `plan_docs/PLAN_V2_STAGE2_B_AI_QUALITY_EVIDENCE.md`.
-- V2 status: the isolated Stage 1 contract and local Stage 2 AI gate were implemented on 2026-07-13. The first Stage 2 test produced 114 valid and 6 locally rejected drafts; the Stage 2-B rerun produced 120 / 120 locally valid drafts with lower candidate saturation/cost and no provider failure. After reviewing concrete cases, the user conditionally accepted the remaining error range for supplementary, editable AI drafts. V2-7 local implementation may proceed with explicit review/acceptance and the model/inaccuracy notice; Production credential, route activation, migration, and deployment remain separately approved work. These stages are not connected to V1 UI, storage, API routes, Schema Version 5, or Production.
+- Canonical completed V2 Stage 3 child plan: `plan_docs/PLAN_V2_STAGE3_DATA_MODEL_BACKUP_PARITY.md`.
+- V2 status: Stage 1, Stage 2 / 2-B, and Stage 3 are complete locally. Stage 3 advances branch `V2` local/application snapshots to Schema Version 6 and JSON backup version 3, adds repository/backup parity and the unexecuted `0003_v2_schema6_data_model.sql` draft, and retains the accepted AI draft boundary. No V2 user-facing page or Production provider route exists. The live V1 database remains Schema Version 5; remote migration, credential change, route activation, and deployment remain separately approved work.
 - Version-hold plan: `plan_docs/PLAN_VERSION_HOLD_MULTI_USER_CONFIDENTIAL_ISOLATION.md` keeps SSO（Single Sign-On，单点登录）and confidential per-person isolation outside V2.
 - Data lifecycle policy: `plan_docs/PLAN_V1_STAGE8_5_DATA_LIFECYCLE_ENVIRONMENT_STRATEGY.md` remains active for V2 unless a later accepted child plan supersedes a specific part.
 - Current stack: Next.js App Router, TypeScript, Tailwind CSS, ESLint, Vitest, npm, `@neondatabase/serverless`, `dotenv-cli`, `ts-fsrs`, Neon Postgres for the Production runtime, and browser `localStorage` as the local fallback.
@@ -56,7 +57,7 @@
 - Per-person AI limits are fairness controls; only global controls are a security boundary because `person_id` is selectable.
 - Paid-provider limited safety / abuse / legal retention is accepted when disclosed accurately. Do not claim Zero Retention（零保留）.
 - The first Stage 2 fixture-only external call was explicitly approved and used the versioned provider/data/cost boundary. Before any future Production AI call, require the corresponding in-product disclosure and a separately approved Production credential and route.
-- The exact V2 schema version remains a child-plan decision; Version 6 is only the current candidate. Existing executed migrations must not be rewritten.
+- V2-3 locks Schema Version 6 for current local/application snapshots and backup version 3 for JSON backups. Existing executed migrations must not be rewritten; `0003_v2_schema6_data_model.sql` remains unexecuted until a separate environment-specific approval.
 
 ## Runtime And Environment
 
@@ -150,10 +151,11 @@ npm run db:inspect:dev
 npm run db:inspect:schema5:dev
 npm run backup:dry-run:fixture
 npm run backup:dry-run:schema5-fixture
+npm run backup:dry-run:schema6-fixture
 npm run build
 npm run dev
 ```
 
-The current V1 unit test suite covers vocabulary normalization, import parsing, local repository behavior, timestamp preservation, archive / restore / hard delete, JSON batch rollback, schema migration, person-scoped data, Recognition review scheduling, reset-today behavior, one-word rollback, per-person settings, review event / state updates, JSON backup validation, CSV escaping, backup round trip, backup import version 5 mapping, Active review-row rejection, static SQL checks, and a skipped-by-default Postgres integration test. The isolated V2 Stage 1 suite additionally covers distinct-entry metrics, immutable creation/reversal facts, late-Snapshot behavior, legacy unknown history, safe goals, 23/25-hour windows, separate bounded queues, plan/cursor guards, Recognition/Active evidence isolation, typed-answer normalization, exact reset copy, and idempotency replay behavior. The isolated V2 Stage 2 suite covers the 120-entry corpus contract, lexical allowlist, strict draft/usage validation, price staleness, exact non-understated cost reservations, quota decisions, degraded/Kill Switch state, explicit live guards, provider block/non-`STOP` handling, safe rejected-response accounting, and review worksheet generation.
+The current V1 unit test suite covers vocabulary normalization, import parsing, local repository behavior, timestamp preservation, archive / restore / hard delete, JSON batch rollback, person-scoped data, Recognition review scheduling, reset-today behavior, one-word rollback, settings, review event/state updates, JSON backup validation, CSV escaping, backup round trip, older backup import mapping, static SQL checks, and a skipped-by-default Postgres integration test. V2 Stage 1 covers distinct-entry metrics, creation/reversal facts, late-Snapshot behavior, safe goals, separate queues, profile evidence, typed-answer normalization, reset copy, and replay behavior. V2 Stage 2 covers the 120-entry AI corpus and bounded quality/security contracts. V2 Stage 3 covers schema versions 1–5 migrating to 6, honest legacy review evidence, creation tombstones and batch reversal, profile-aware local/Postgres snapshots, backup version 3 formal-data round trips, operational-data exclusion, schema 6 import remapping/counts, `ai_generated` CSV compatibility, and static `0003` migration constraints.
 
 V2 child plans must add focused tests before claiming the new behavior, including distinct-entry counting, free goals, daily snapshots, Track / Review Profile isolation, Active modes, Recognition pronunciation side-effect freedom, AI quota / replay / Cache / degraded mode, outbound-data minimization, structured draft acceptance, mobile responsive acceptance, and final backup / migration parity.

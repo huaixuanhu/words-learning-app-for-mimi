@@ -8,8 +8,10 @@ import {
   buildBackupImportPlanFromText,
   createStage5LFixtureBackup,
   createStage6BP1ESchema5FixtureBackup,
+  createV2Stage3Schema6FixtureBackup,
   STAGE5L_FIXTURE_FILE_NAME,
   STAGE6B_P1E_SCHEMA5_FIXTURE_FILE_NAME,
+  V2_STAGE3_SCHEMA6_FIXTURE_FILE_NAME,
 } from "./backup-import-plan.mjs";
 
 const SMOKE_PERSON_ID = "00000000-0000-4000-8000-0000000005f1";
@@ -22,11 +24,14 @@ function usage() {
     "Usage:",
     "  node scripts/backup-import-postgres.mjs --fixture --dry-run",
     "  node scripts/backup-import-postgres.mjs --schema5-fixture --dry-run",
+    "  node scripts/backup-import-postgres.mjs --schema6-fixture --dry-run",
     "  node scripts/backup-import-postgres.mjs --cleanup-smoke",
     "  node scripts/backup-import-postgres.mjs --fixture --trial-rollback",
     "  node scripts/backup-import-postgres.mjs --schema5-fixture --trial-rollback",
+    "  node scripts/backup-import-postgres.mjs --schema6-fixture --trial-rollback",
     "  node scripts/backup-import-postgres.mjs --fixture --commit --i-confirm-development-import",
     "  node scripts/backup-import-postgres.mjs --schema5-fixture --commit --i-confirm-development-import",
+    "  node scripts/backup-import-postgres.mjs --schema6-fixture --commit --i-confirm-development-import",
     "  node scripts/backup-import-postgres.mjs --cleanup-fixture",
     "  node scripts/backup-import-postgres.mjs --cleanup-stage5n-ui-smoke",
     "  node scripts/backup-import-postgres.mjs --file <backup.json> --dry-run",
@@ -72,6 +77,12 @@ async function readBackupInput() {
       backup: createStage6BP1ESchema5FixtureBackup(),
     };
   }
+  if (hasArg("--schema6-fixture")) {
+    return {
+      sourceFileName: V2_STAGE3_SCHEMA6_FIXTURE_FILE_NAME,
+      backup: createV2Stage3Schema6FixtureBackup(),
+    };
+  }
 
   const filePath = readArgValue("--file");
 
@@ -97,6 +108,13 @@ async function countCoreRows(client) {
         (select count(*)::int from review_states) as review_states,
         (select count(*)::int from review_events) as review_events,
         (select count(*)::int from review_settings) as review_settings,
+        (select count(*)::int from daily_study_defaults) as daily_study_defaults,
+        (select count(*)::int from daily_study_plans) as daily_study_plans,
+        (select count(*)::int from vocabulary_creation_facts) as vocabulary_creation_facts,
+        (select count(*)::int from vocabulary_creation_reversals) as vocabulary_creation_reversals,
+        (select count(*)::int from ai_runs) as ai_runs,
+        (select count(*)::int from ai_enrichment_drafts) as ai_enrichment_drafts,
+        (select count(*)::int from vocabulary_relations) as vocabulary_relations,
         (select count(*)::int from backup_imports) as backup_imports,
         (select count(*)::int from backup_import_mappings) as backup_import_mappings
     `,
@@ -119,6 +137,13 @@ async function countSmokeRows(client) {
         (select count(*)::int from review_states where person_id = $1) as review_states,
         (select count(*)::int from review_events where person_id = $1) as review_events,
         (select count(*)::int from review_settings where person_id = $1) as review_settings,
+        (select count(*)::int from daily_study_defaults where person_id = $1) as daily_study_defaults,
+        (select count(*)::int from daily_study_plans where person_id = $1) as daily_study_plans,
+        (select count(*)::int from vocabulary_creation_facts where person_id = $1) as vocabulary_creation_facts,
+        (select count(*)::int from vocabulary_creation_reversals where person_id = $1) as vocabulary_creation_reversals,
+        (select count(*)::int from ai_runs where person_id = $1) as ai_runs,
+        (select count(*)::int from ai_enrichment_drafts where person_id = $1) as ai_enrichment_drafts,
+        (select count(*)::int from vocabulary_relations where person_id = $1) as vocabulary_relations,
         (select count(*)::int from backup_imports where person_id = $1) as backup_imports,
         (select count(*)::int from backup_import_mappings where person_id = $1) as backup_import_mappings
     `,
@@ -146,8 +171,15 @@ async function cleanupSmokeRows(client) {
     const statements = [
       ["backup_import_mappings", `${action} from backup_import_mappings where person_id = $1`, [SMOKE_PERSON_ID]],
       ["backup_imports", `${action} from backup_imports where person_id = $1`, [SMOKE_PERSON_ID]],
+      ["vocabulary_relations", `${action} from vocabulary_relations where person_id = $1`, [SMOKE_PERSON_ID]],
+      ["ai_enrichment_drafts", `${action} from ai_enrichment_drafts where person_id = $1`, [SMOKE_PERSON_ID]],
+      ["ai_runs", `${action} from ai_runs where person_id = $1`, [SMOKE_PERSON_ID]],
       ["review_events", `${action} from review_events where person_id = $1`, [SMOKE_PERSON_ID]],
       ["review_states", `${action} from review_states where person_id = $1`, [SMOKE_PERSON_ID]],
+      ["vocabulary_creation_reversals", `${action} from vocabulary_creation_reversals where person_id = $1`, [SMOKE_PERSON_ID]],
+      ["vocabulary_creation_facts", `${action} from vocabulary_creation_facts where person_id = $1`, [SMOKE_PERSON_ID]],
+      ["daily_study_plans", `${action} from daily_study_plans where person_id = $1`, [SMOKE_PERSON_ID]],
+      ["daily_study_defaults", `${action} from daily_study_defaults where person_id = $1`, [SMOKE_PERSON_ID]],
       ["vocabulary_items", `${action} from vocabulary_items where person_id = $1`, [SMOKE_PERSON_ID]],
       ["import_batches", `${action} from import_batches where person_id = $1`, [SMOKE_PERSON_ID]],
       ["review_settings", `${action} from review_settings where person_id = $1`, [SMOKE_PERSON_ID]],
@@ -188,8 +220,15 @@ async function cleanupRowsForPersonSlug(client, slug) {
       removed: {
         backup_import_mappings: 0,
         backup_imports: 0,
+        vocabulary_relations: 0,
+        ai_enrichment_drafts: 0,
+        ai_runs: 0,
         review_events: 0,
         review_states: 0,
+        vocabulary_creation_reversals: 0,
+        vocabulary_creation_facts: 0,
+        daily_study_plans: 0,
+        daily_study_defaults: 0,
         vocabulary_items: 0,
         import_batches: 0,
         review_settings: 0,
@@ -206,8 +245,15 @@ async function cleanupRowsForPersonSlug(client, slug) {
     const statements = [
       ["backup_import_mappings", `${action} from backup_import_mappings where person_id = any($1::uuid[])`, [personIds]],
       ["backup_imports", `${action} from backup_imports where person_id = any($1::uuid[])`, [personIds]],
+      ["vocabulary_relations", `${action} from vocabulary_relations where person_id = any($1::uuid[])`, [personIds]],
+      ["ai_enrichment_drafts", `${action} from ai_enrichment_drafts where person_id = any($1::uuid[])`, [personIds]],
+      ["ai_runs", `${action} from ai_runs where person_id = any($1::uuid[])`, [personIds]],
       ["review_events", `${action} from review_events where person_id = any($1::uuid[])`, [personIds]],
       ["review_states", `${action} from review_states where person_id = any($1::uuid[])`, [personIds]],
+      ["vocabulary_creation_reversals", `${action} from vocabulary_creation_reversals where person_id = any($1::uuid[])`, [personIds]],
+      ["vocabulary_creation_facts", `${action} from vocabulary_creation_facts where person_id = any($1::uuid[])`, [personIds]],
+      ["daily_study_plans", `${action} from daily_study_plans where person_id = any($1::uuid[])`, [personIds]],
+      ["daily_study_defaults", `${action} from daily_study_defaults where person_id = any($1::uuid[])`, [personIds]],
       ["vocabulary_items", `${action} from vocabulary_items where person_id = any($1::uuid[])`, [personIds]],
       ["import_batches", `${action} from import_batches where person_id = any($1::uuid[])`, [personIds]],
       ["review_settings", `${action} from review_settings where person_id = any($1::uuid[])`, [personIds]],
@@ -243,6 +289,13 @@ async function countStage5NUiSmokeRows(client) {
         (select count(*)::int from review_states where person_id in (select id from people where slug = $1)) as review_states,
         (select count(*)::int from review_events where person_id in (select id from people where slug = $1)) as review_events,
         (select count(*)::int from review_settings where person_id in (select id from people where slug = $1)) as review_settings,
+        (select count(*)::int from daily_study_defaults where person_id in (select id from people where slug = $1)) as daily_study_defaults,
+        (select count(*)::int from daily_study_plans where person_id in (select id from people where slug = $1)) as daily_study_plans,
+        (select count(*)::int from vocabulary_creation_facts where person_id in (select id from people where slug = $1)) as vocabulary_creation_facts,
+        (select count(*)::int from vocabulary_creation_reversals where person_id in (select id from people where slug = $1)) as vocabulary_creation_reversals,
+        (select count(*)::int from ai_runs where person_id in (select id from people where slug = $1)) as ai_runs,
+        (select count(*)::int from ai_enrichment_drafts where person_id in (select id from people where slug = $1)) as ai_enrichment_drafts,
+        (select count(*)::int from vocabulary_relations where person_id in (select id from people where slug = $1)) as vocabulary_relations,
         (select count(*)::int from backup_imports where person_id in (select id from people where slug = $1)) as backup_imports,
         (select count(*)::int from backup_import_mappings where person_id in (select id from people where slug = $1)) as backup_import_mappings
     `,
@@ -269,6 +322,13 @@ function assertStage5NUiSmokeShape(counts) {
     review_states: 0,
     review_events: 0,
     review_settings: 1,
+    daily_study_defaults: 2,
+    daily_study_plans: 0,
+    vocabulary_creation_facts: 1,
+    vocabulary_creation_reversals: 0,
+    ai_runs: 0,
+    ai_enrichment_drafts: 0,
+    vocabulary_relations: 0,
     backup_imports: 0,
     backup_import_mappings: 0,
   };
@@ -292,6 +352,16 @@ async function cleanupStage5NUiSmokeRows(client) {
     const action = "delete";
     const removed = {};
     const statements = [
+      [
+        "vocabulary_creation_facts",
+        `${action} from vocabulary_creation_facts where person_id in (select id from people where slug = $1)`,
+        [STAGE5N_UI_SMOKE_PERSON_SLUG],
+      ],
+      [
+        "daily_study_defaults",
+        `${action} from daily_study_defaults where person_id in (select id from people where slug = $1)`,
+        [STAGE5N_UI_SMOKE_PERSON_SLUG],
+      ],
       [
         "vocabulary_items",
         `${action} from vocabulary_items where person_id in (select id from people where slug = $1) and normalized_text = $2`,
@@ -447,6 +517,10 @@ async function insertPlanRows(client, rows) {
           id,
           person_id,
           vocabulary_item_id,
+          review_profile,
+          parameter_set_id,
+          first_rated_at,
+          history_origin,
           status,
           due_at,
           last_reviewed_at,
@@ -457,12 +531,19 @@ async function insertPlanRows(client, rows) {
           stability,
           updated_at
         )
-        values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        values (
+          $1, $2, $3, $4, $5, $6, $7,
+          $8, $9, $10, $11, $12, $13, $14, $15, $16
+        )
       `,
       [
         state.id,
         state.personId,
         state.vocabularyItemId,
+        state.reviewProfile,
+        state.parameterSetId,
+        state.firstRatedAt,
+        state.historyOrigin,
         state.status,
         state.dueAt,
         state.lastReviewedAt,
@@ -483,6 +564,13 @@ async function insertPlanRows(client, rows) {
           id,
           person_id,
           vocabulary_item_id,
+          prompt_id,
+          review_profile,
+          activity_type,
+          answer_outcome,
+          answer_normalization_version,
+          target_revision,
+          parameter_set_id,
           reviewed_at,
           rating,
           previous_due_at,
@@ -491,12 +579,22 @@ async function insertPlanRows(client, rows) {
           next_interval_minutes,
           elapsed_ms
         )
-        values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        values (
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+          $11, $12, $13, $14, $15, $16, $17
+        )
       `,
       [
         event.id,
         event.personId,
         event.vocabularyItemId,
+        event.promptId,
+        event.reviewProfile,
+        event.activityType,
+        event.answerOutcome,
+        event.answerNormalizationVersion,
+        event.targetRevision,
+        event.parameterSetId,
         event.reviewedAt,
         event.rating,
         event.previousDueAt,
@@ -528,6 +626,249 @@ async function insertPlanRows(client, rows) {
         settings.activeSessionLimit,
         settings.timezone,
         settings.updatedAt,
+      ],
+    );
+  }
+
+  for (const defaults of rows.dailyStudyDefaults) {
+    await client.query(
+      `
+        insert into daily_study_defaults (
+          person_id,
+          review_profile,
+          review_goal,
+          new_word_goal,
+          timezone,
+          updated_at
+        )
+        values ($1, $2, $3, $4, $5, $6)
+      `,
+      [
+        defaults.personId,
+        defaults.reviewProfile,
+        defaults.reviewGoal,
+        defaults.newWordGoal,
+        defaults.timezone,
+        defaults.updatedAt,
+      ],
+    );
+  }
+
+  for (const plan of rows.dailyStudyPlans) {
+    await client.query(
+      `
+        insert into daily_study_plans (
+          id,
+          person_id,
+          review_profile,
+          local_date,
+          timezone,
+          day_starts_at,
+          day_ends_at,
+          suggested_review,
+          review_goal,
+          new_word_goal,
+          plan_version,
+          recommendation_version,
+          calculated_at,
+          updated_at
+        )
+        values (
+          $1, $2, $3, $4, $5, $6, $7,
+          $8, $9, $10, $11, $12, $13, $14
+        )
+      `,
+      [
+        plan.id,
+        plan.personId,
+        plan.reviewProfile,
+        plan.localDate,
+        plan.timezone,
+        plan.dayStartsAt,
+        plan.dayEndsAt,
+        plan.suggestedReview,
+        plan.reviewGoal,
+        plan.newWordGoal,
+        plan.planVersion,
+        plan.recommendationVersion,
+        plan.calculatedAt,
+        plan.updatedAt,
+      ],
+    );
+  }
+
+  for (const fact of rows.vocabularyCreationFacts) {
+    await client.query(
+      `
+        insert into vocabulary_creation_facts (
+          id,
+          person_id,
+          original_vocabulary_item_id,
+          source_action_id,
+          track_at_creation,
+          source_kind,
+          history_origin,
+          system_created_at
+        )
+        values ($1, $2, $3, $4, $5, $6, $7, $8)
+      `,
+      [
+        fact.id,
+        fact.personId,
+        fact.originalVocabularyItemId,
+        fact.sourceActionId,
+        fact.trackAtCreation,
+        fact.sourceKind,
+        fact.historyOrigin,
+        fact.systemCreatedAt,
+      ],
+    );
+  }
+
+  for (const reversal of rows.vocabularyCreationReversals) {
+    await client.query(
+      `
+        insert into vocabulary_creation_reversals (
+          id,
+          person_id,
+          source_action_id,
+          reason,
+          reversed_at
+        )
+        values ($1, $2, $3, $4, $5)
+      `,
+      [
+        reversal.id,
+        reversal.personId,
+        reversal.sourceActionId,
+        reversal.reason,
+        reversal.reversedAt,
+      ],
+    );
+  }
+
+  for (const run of rows.aiRuns) {
+    await client.query(
+      `
+        insert into ai_runs (
+          id,
+          person_id,
+          source_vocabulary_item_id,
+          feature,
+          provider,
+          model,
+          model_label,
+          prompt_version,
+          source_hash,
+          output_schema_version,
+          disclosure_version,
+          idempotency_key_hash,
+          cache_key_hash,
+          status,
+          structure_validation_status,
+          provider_response_id,
+          input_tokens,
+          output_tokens,
+          thinking_tokens,
+          total_tokens,
+          latency_ms,
+          estimated_cost_usd,
+          created_at,
+          completed_at
+        )
+        values (
+          $1, $2, $3, $4, $5, $6, $7, $8,
+          $9, $10, $11, $12, $13, $14, $15, $16,
+          $17, $18, $19, $20, $21, $22, $23, $24
+        )
+      `,
+      [
+        run.id,
+        run.personId,
+        run.sourceVocabularyItemId,
+        run.feature,
+        run.provider,
+        run.model,
+        run.modelLabel,
+        run.promptVersion,
+        run.sourceHash,
+        run.outputSchemaVersion,
+        run.disclosureVersion,
+        run.idempotencyKeyHash,
+        run.cacheKeyHash,
+        run.status,
+        run.structureValidationStatus,
+        run.providerResponseId,
+        run.inputTokens,
+        run.outputTokens,
+        run.thinkingTokens,
+        run.totalTokens,
+        run.latencyMs,
+        run.estimatedCostUsd,
+        run.createdAt,
+        run.completedAt,
+      ],
+    );
+  }
+
+  for (const draft of rows.aiEnrichmentDrafts) {
+    await client.query(
+      `
+        insert into ai_enrichment_drafts (
+          id,
+          person_id,
+          source_vocabulary_item_id,
+          ai_run_id,
+          status,
+          draft_json,
+          accepted_content_json,
+          created_at,
+          updated_at,
+          decided_at
+        )
+        values ($1, $2, $3, $4, $5, $6::jsonb, $7::jsonb, $8, $9, $10)
+      `,
+      [
+        draft.id,
+        draft.personId,
+        draft.sourceVocabularyItemId,
+        draft.aiRunId,
+        draft.status,
+        JSON.stringify(draft.draft),
+        JSON.stringify(draft.acceptedContent),
+        draft.createdAt,
+        draft.updatedAt,
+        draft.decidedAt,
+      ],
+    );
+  }
+
+  for (const relation of rows.vocabularyRelations) {
+    await client.query(
+      `
+        insert into vocabulary_relations (
+          id,
+          person_id,
+          source_vocabulary_item_id,
+          target_vocabulary_item_id,
+          relation_type,
+          difference_zh,
+          example_pair,
+          ai_run_id,
+          created_at
+        )
+        values ($1, $2, $3, $4, $5, $6, $7::jsonb, $8, $9)
+      `,
+      [
+        relation.id,
+        relation.personId,
+        relation.sourceVocabularyItemId,
+        relation.targetVocabularyItemId,
+        relation.relationType,
+        relation.differenceZh,
+        JSON.stringify(relation.examplePair),
+        relation.aiRunId,
+        relation.createdAt,
       ],
     );
   }
@@ -599,8 +940,15 @@ async function countPlanRows(client, rows) {
         (select count(*)::int from review_states where id = any($4::uuid[])) as review_states,
         (select count(*)::int from review_events where id = any($5::uuid[])) as review_events,
         (select count(*)::int from review_settings where person_id = any($1::uuid[])) as review_settings,
-        (select count(*)::int from backup_imports where id = any($6::uuid[])) as backup_imports,
-        (select count(*)::int from backup_import_mappings where id = any($7::uuid[])) as backup_import_mappings
+        (select count(*)::int from daily_study_defaults where person_id = any($1::uuid[])) as daily_study_defaults,
+        (select count(*)::int from daily_study_plans where id = any($6::uuid[])) as daily_study_plans,
+        (select count(*)::int from vocabulary_creation_facts where id = any($7::uuid[])) as vocabulary_creation_facts,
+        (select count(*)::int from vocabulary_creation_reversals where id = any($8::uuid[])) as vocabulary_creation_reversals,
+        (select count(*)::int from ai_runs where id = any($9::uuid[])) as ai_runs,
+        (select count(*)::int from ai_enrichment_drafts where id = any($10::uuid[])) as ai_enrichment_drafts,
+        (select count(*)::int from vocabulary_relations where id = any($11::uuid[])) as vocabulary_relations,
+        (select count(*)::int from backup_imports where id = any($12::uuid[])) as backup_imports,
+        (select count(*)::int from backup_import_mappings where id = any($13::uuid[])) as backup_import_mappings
     `,
     [
       rows.people.map((row) => row.id),
@@ -608,6 +956,12 @@ async function countPlanRows(client, rows) {
       rows.vocabularyItems.map((row) => row.id),
       rows.reviewStates.map((row) => row.id),
       rows.reviewEvents.map((row) => row.id),
+      rows.dailyStudyPlans.map((row) => row.id),
+      rows.vocabularyCreationFacts.map((row) => row.id),
+      rows.vocabularyCreationReversals.map((row) => row.id),
+      rows.aiRuns.map((row) => row.id),
+      rows.aiEnrichmentDrafts.map((row) => row.id),
+      rows.vocabularyRelations.map((row) => row.id),
       rows.backupImports.map((row) => row.id),
       rows.backupImportMappings.map((row) => row.id),
     ],
@@ -632,6 +986,13 @@ async function runFixtureTrialRollback(client, plan) {
     review_states: plan.counts.reviewStates,
     review_events: plan.counts.reviewEvents,
     review_settings: plan.counts.reviewSettings,
+    daily_study_defaults: plan.counts.dailyStudyDefaults,
+    daily_study_plans: plan.counts.dailyStudyPlans,
+    vocabulary_creation_facts: plan.counts.vocabularyCreationFacts,
+    vocabulary_creation_reversals: plan.counts.vocabularyCreationReversals,
+    ai_runs: plan.counts.aiRuns,
+    ai_enrichment_drafts: plan.counts.aiEnrichmentDrafts,
+    vocabulary_relations: plan.counts.vocabularyRelations,
     backup_imports: plan.counts.backupImports,
     backup_import_mappings: plan.counts.backupImportMappings,
   };
@@ -651,6 +1012,13 @@ async function runFixtureTrialRollback(client, plan) {
       review_states: 0,
       review_events: 0,
       review_settings: 0,
+      daily_study_defaults: 0,
+      daily_study_plans: 0,
+      vocabulary_creation_facts: 0,
+      vocabulary_creation_reversals: 0,
+      ai_runs: 0,
+      ai_enrichment_drafts: 0,
+      vocabulary_relations: 0,
       backup_imports: 0,
       backup_import_mappings: 0,
     });
@@ -694,6 +1062,13 @@ async function commitPlanRows(client, plan) {
       review_states: plan.counts.reviewStates,
       review_events: plan.counts.reviewEvents,
       review_settings: plan.counts.reviewSettings,
+      daily_study_defaults: plan.counts.dailyStudyDefaults,
+      daily_study_plans: plan.counts.dailyStudyPlans,
+      vocabulary_creation_facts: plan.counts.vocabularyCreationFacts,
+      vocabulary_creation_reversals: plan.counts.vocabularyCreationReversals,
+      ai_runs: plan.counts.aiRuns,
+      ai_enrichment_drafts: plan.counts.aiEnrichmentDrafts,
+      vocabulary_relations: plan.counts.vocabularyRelations,
       backup_imports: plan.counts.backupImports,
       backup_import_mappings: plan.counts.backupImportMappings,
     });
@@ -752,7 +1127,7 @@ const backupInput = await readBackupInput();
 const plan = backupInput?.backup
   ? buildBackupImportPlan(backupInput.backup, {
       sourceFileName: backupInput.sourceFileName,
-      notes: hasArg("--fixture") || hasArg("--schema5-fixture")
+      notes: hasArg("--fixture") || hasArg("--schema5-fixture") || hasArg("--schema6-fixture")
         ? "Stage fixture import for development verification."
         : "User backup import for development verification.",
     })

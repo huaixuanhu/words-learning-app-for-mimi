@@ -1,4 +1,9 @@
-import type { ReviewEvent, ReviewRating, ReviewState } from "./types";
+import {
+  RECOGNITION_PARAMETER_SET_ID,
+  type ReviewEvent,
+  type ReviewRating,
+  type ReviewState,
+} from "./types";
 import type { VocabularyData } from "@/lib/vocabulary/types";
 import { makeId } from "@/lib/vocabulary/repository";
 import { getSelectedPersonId } from "@/lib/people/repository";
@@ -15,7 +20,10 @@ export function getReviewState(data: VocabularyData, vocabularyItemId: string) {
   const personId = getSelectedPersonId(data);
 
   return data.reviewStates.find(
-    (state) => state.personId === personId && state.vocabularyItemId === vocabularyItemId,
+    (state) =>
+      state.personId === personId &&
+      state.vocabularyItemId === vocabularyItemId &&
+      state.reviewProfile === "recognition",
   );
 }
 
@@ -50,6 +58,14 @@ function rebuildStateFromEvents(
       id: state?.id ?? previousState?.id ?? makeId("review_state"),
       personId,
       vocabularyItemId,
+      reviewProfile: "recognition",
+      parameterSetId: RECOGNITION_PARAMETER_SET_ID,
+      firstRatedAt:
+        previousState?.historyOrigin === "legacy_unknown"
+          ? null
+          : state?.firstRatedAt ?? previousState?.firstRatedAt ?? event.reviewedAt,
+      historyOrigin:
+        previousState?.historyOrigin === "legacy_unknown" ? "legacy_unknown" : "recorded",
       status: scheduled.status,
       dueAt: scheduled.dueAt,
       lastReviewedAt: event.reviewedAt,
@@ -69,7 +85,9 @@ export function resetTodayReviewTask(data: VocabularyData, now = new Date().toIS
   const todayKey = getLocalDateKey(now, timezone);
   const todayEvents = data.reviewEvents.filter(
     (event) =>
-      event.personId === personId && getLocalDateKey(event.reviewedAt, timezone) === todayKey,
+      event.reviewProfile === "recognition" &&
+      event.personId === personId &&
+      getLocalDateKey(event.reviewedAt, timezone) === todayKey,
   );
   const affectedItemIds = new Set(todayEvents.map((event) => event.vocabularyItemId));
 
@@ -83,17 +101,31 @@ export function resetTodayReviewTask(data: VocabularyData, now = new Date().toIS
 
   const remainingEvents = data.reviewEvents.filter(
     (event) =>
-      !(event.personId === personId && getLocalDateKey(event.reviewedAt, timezone) === todayKey),
+      !(
+        event.reviewProfile === "recognition" &&
+        event.personId === personId &&
+        getLocalDateKey(event.reviewedAt, timezone) === todayKey
+      ),
   );
   const previousStateByItemId = new Map(
     data.reviewStates
-      .filter((state) => state.personId === personId && affectedItemIds.has(state.vocabularyItemId))
+      .filter(
+        (state) =>
+          state.reviewProfile === "recognition" &&
+          state.personId === personId &&
+          affectedItemIds.has(state.vocabularyItemId),
+      )
       .map((state) => [state.vocabularyItemId, state]),
   );
   const rebuiltStates = Array.from(affectedItemIds)
     .map((vocabularyItemId) => {
       const earlierEvents = remainingEvents
-        .filter((event) => event.personId === personId && event.vocabularyItemId === vocabularyItemId)
+        .filter(
+          (event) =>
+            event.reviewProfile === "recognition" &&
+            event.personId === personId &&
+            event.vocabularyItemId === vocabularyItemId,
+        )
         .sort(sortReviewEventsByReviewedAt);
 
       return rebuildStateFromEvents(
@@ -112,7 +144,12 @@ export function resetTodayReviewTask(data: VocabularyData, now = new Date().toIS
       reviewStates: [
         ...rebuiltStates,
         ...data.reviewStates.filter(
-          (state) => !(state.personId === personId && affectedItemIds.has(state.vocabularyItemId)),
+          (state) =>
+            !(
+              state.reviewProfile === "recognition" &&
+              state.personId === personId &&
+              affectedItemIds.has(state.vocabularyItemId)
+            ),
         ),
       ],
       updatedAt: now,
@@ -129,7 +166,10 @@ export function rollbackReviewEvent(
 ) {
   const personId = getSelectedPersonId(data);
   const event = data.reviewEvents.find(
-    (candidate) => candidate.id === reviewEventId && candidate.personId === personId,
+    (candidate) =>
+      candidate.id === reviewEventId &&
+      candidate.personId === personId &&
+      candidate.reviewProfile === "recognition",
   );
 
   if (!event) {
@@ -140,12 +180,17 @@ export function rollbackReviewEvent(
     (candidate) => !(candidate.id === reviewEventId && candidate.personId === personId),
   );
   const previousState = data.reviewStates.find(
-    (state) => state.personId === personId && state.vocabularyItemId === event.vocabularyItemId,
+    (state) =>
+      state.personId === personId &&
+      state.vocabularyItemId === event.vocabularyItemId &&
+      state.reviewProfile === "recognition",
   );
   const earlierEvents = remainingEvents
     .filter(
       (candidate) =>
-        candidate.personId === personId && candidate.vocabularyItemId === event.vocabularyItemId,
+        candidate.reviewProfile === "recognition" &&
+        candidate.personId === personId &&
+        candidate.vocabularyItemId === event.vocabularyItemId,
     )
     .sort(sortReviewEventsByReviewedAt);
   const rebuiltState = rebuildStateFromEvents(
@@ -163,7 +208,11 @@ export function rollbackReviewEvent(
         ...(rebuiltState ? [rebuiltState] : []),
         ...data.reviewStates.filter(
           (state) =>
-            !(state.personId === personId && state.vocabularyItemId === event.vocabularyItemId),
+            !(
+              state.reviewProfile === "recognition" &&
+              state.personId === personId &&
+              state.vocabularyItemId === event.vocabularyItemId
+            ),
         ),
       ],
       updatedAt: now,
@@ -197,6 +246,14 @@ export function recordReview(
     id: previousState?.id ?? makeId("review_state"),
     personId,
     vocabularyItemId: input.vocabularyItemId,
+    reviewProfile: "recognition",
+    parameterSetId: RECOGNITION_PARAMETER_SET_ID,
+    firstRatedAt:
+      previousState?.historyOrigin === "legacy_unknown"
+        ? null
+        : previousState?.firstRatedAt ?? now,
+    historyOrigin:
+      previousState?.historyOrigin === "legacy_unknown" ? "legacy_unknown" : "recorded",
     status: scheduled.status,
     dueAt: scheduled.dueAt,
     lastReviewedAt: now,
@@ -207,10 +264,17 @@ export function recordReview(
     stability: scheduled.stability,
     updatedAt: now,
   };
-  const event = {
+  const event: ReviewEvent = {
     id: makeId("review_event"),
+    promptId: null,
     personId,
     vocabularyItemId: input.vocabularyItemId,
+    reviewProfile: "recognition",
+    activityType: "recognition_card",
+    answerOutcome: "self_rated",
+    answerNormalizationVersion: null,
+    targetRevision: null,
+    parameterSetId: RECOGNITION_PARAMETER_SET_ID,
     reviewedAt: now,
     rating: input.rating,
     previousDueAt: previousState?.dueAt ?? null,

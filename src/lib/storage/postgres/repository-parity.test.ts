@@ -40,4 +40,26 @@ describe("Postgres repository parity source", () => {
     expect(repositorySource).toContain("scheduleNextReview");
     expect(repositorySource).toContain("getLocalDateKey(context.now, settings.timezone)");
   });
+
+  it("returns the complete formal Schema Version 6 snapshot", () => {
+    expect(repositorySource).toContain("schemaVersion: 6");
+    for (const domain of [
+      "dailyStudyDefaults",
+      "dailyStudyPlans",
+      "vocabularyCreationFacts",
+      "vocabularyCreationReversals",
+      "aiRuns",
+      "aiEnrichmentDrafts",
+      "vocabularyRelations",
+    ]) {
+      expect(repositorySource).toContain(domain);
+    }
+  });
+
+  it("writes creation facts atomically and protects history-bearing Track changes", () => {
+    expect(repositorySource).toContain("insertVocabularyCreationFact");
+    expect(repositorySource).toContain("vocabularyItemHasReviewHistory");
+    expect(repositorySource).toContain("Start it fresh in the other Track instead");
+    expect(repositorySource).toContain("insert into vocabulary_creation_reversals");
+  });
 });

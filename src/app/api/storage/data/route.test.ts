@@ -33,7 +33,7 @@ const basicAuthorization = `Basic ${Buffer.from(`${basicAuthUser}:${basicAuthPas
 
 const personId = "11111111-1111-4111-8111-111111111111";
 const fakeData: VocabularyData = {
-  schemaVersion: 5,
+  schemaVersion: 6,
   people: [],
   selectedPersonId: personId,
   items: [],
@@ -41,6 +41,13 @@ const fakeData: VocabularyData = {
   reviewStates: [],
   reviewEvents: [],
   settingsByPerson: [],
+  dailyStudyDefaults: [],
+  dailyStudyPlans: [],
+  vocabularyCreationFacts: [],
+  vocabularyCreationReversals: [],
+  aiRuns: [],
+  aiEnrichmentDrafts: [],
+  vocabularyRelations: [],
   updatedAt: "2026-07-09T00:00:00.000Z",
 };
 

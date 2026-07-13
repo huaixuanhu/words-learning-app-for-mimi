@@ -1,7 +1,7 @@
 import type { VocabularyData } from "@/lib/vocabulary/types";
 
 export const BACKUP_FORMAT = "mimi-pte-vocabulary-backup";
-export const BACKUP_VERSION = 2;
+export const BACKUP_VERSION = 3;
 export const BACKUP_APP_NAME = "words-learning-app-for-mimi";
 
 export type BackupCounts = {
@@ -12,6 +12,13 @@ export type BackupCounts = {
   importBatches: number;
   reviewStates: number;
   reviewEvents: number;
+  dailyStudyDefaults: number;
+  dailyStudyPlans: number;
+  vocabularyCreationFacts: number;
+  vocabularyCreationReversals: number;
+  aiRuns: number;
+  aiEnrichmentDrafts: number;
+  vocabularyRelations: number;
 };
 
 export type VocabularyBackupMetadata = {

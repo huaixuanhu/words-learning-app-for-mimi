@@ -12,18 +12,32 @@ import type {
 } from "@/lib/storage/durable-repository-contract";
 import { getPostgresPool, type PostgresQueryable, withPostgresTransaction } from "./client";
 import {
+  mapAiEnrichmentDraftRow,
+  mapAiRunRow,
+  mapDailyStudyDefaultRow,
+  mapDailyStudyPlanRow,
   mapImportBatchRow,
   mapPersonRow,
   mapReviewEventRow,
   mapReviewSettingsRow,
   mapReviewStateRow,
+  mapVocabularyCreationFactRow,
+  mapVocabularyCreationReversalRow,
   mapVocabularyItemRow,
+  mapVocabularyRelationRow,
+  type AiEnrichmentDraftRow,
+  type AiRunRow,
+  type DailyStudyDefaultRow,
+  type DailyStudyPlanRow,
   type ImportBatchRow,
   type PersonRow,
   type ReviewEventRow,
   type ReviewSettingsRow,
   type ReviewStateRow,
+  type VocabularyCreationFactRow,
+  type VocabularyCreationReversalRow,
   type VocabularyItemRow,
+  type VocabularyRelationRow,
 } from "./mappers";
 import { createDefaultReviewSettings, normalizeReviewSettings } from "@/lib/review/settings";
 import {
@@ -31,7 +45,12 @@ import {
   scheduleNextReview,
   selectReviewQueue,
 } from "@/lib/review/scheduler";
-import type { PersonReviewSettings, ReviewEvent, ReviewState } from "@/lib/review/types";
+import {
+  RECOGNITION_PARAMETER_SET_ID,
+  type PersonReviewSettings,
+  type ReviewEvent,
+  type ReviewState,
+} from "@/lib/review/types";
 import {
   cleanSurfaceText,
   normalizeLearningTrack,
@@ -42,7 +61,12 @@ import {
   normalizeSurfaceText,
 } from "@/lib/vocabulary/normalize";
 import { buildPerson, type NewPersonInput } from "@/lib/people/repository";
-import { buildVocabularyItem, createEmptyVocabularyData } from "@/lib/vocabulary/repository";
+import {
+  buildVocabularyCreationRecord,
+  buildVocabularyItem,
+  createDailyStudyDefaults,
+  createEmptyVocabularyData,
+} from "@/lib/vocabulary/repository";
 import type {
   ImportBatchInput,
   ImportCandidate,
@@ -240,6 +264,10 @@ async function getReviewState(
         id,
         person_id,
         vocabulary_item_id,
+        review_profile,
+        parameter_set_id,
+        first_rated_at,
+        history_origin,
         status,
         due_at,
         last_reviewed_at,
@@ -250,7 +278,9 @@ async function getReviewState(
         stability,
         updated_at
       from review_states
-      where person_id = $1 and vocabulary_item_id = $2
+      where person_id = $1
+        and vocabulary_item_id = $2
+        and review_profile = 'recognition'
       limit 1
     `,
     [context.personId, vocabularyItemId],
@@ -268,6 +298,10 @@ async function listReviewStates(queryable: PostgresQueryable, context: PersonSco
         id,
         person_id,
         vocabulary_item_id,
+        review_profile,
+        parameter_set_id,
+        first_rated_at,
+        history_origin,
         status,
         due_at,
         last_reviewed_at,
@@ -294,8 +328,15 @@ async function listReviewEvents(queryable: PostgresQueryable, context: PersonSco
     `
       select
         id,
+        prompt_id,
         person_id,
         vocabulary_item_id,
+        review_profile,
+        activity_type,
+        answer_outcome,
+        answer_normalization_version,
+        target_revision,
+        parameter_set_id,
         reviewed_at,
         rating,
         previous_due_at,
@@ -342,22 +383,244 @@ async function getReviewSettings(queryable: PostgresQueryable, context: PersonSc
   };
 }
 
+async function listDailyStudyDefaults(
+  queryable: PostgresQueryable,
+  context: PersonScopedContext,
+) {
+  assertPersonContext(context);
+  const result = await queryable.query<DailyStudyDefaultRow>(
+    `
+      select person_id, review_profile, review_goal, new_word_goal, timezone, updated_at
+      from daily_study_defaults
+      where person_id = $1
+      order by review_profile asc
+    `,
+    [context.personId],
+  );
+
+  return result.rows.map(mapDailyStudyDefaultRow);
+}
+
+async function listDailyStudyPlans(
+  queryable: PostgresQueryable,
+  context: PersonScopedContext,
+) {
+  assertPersonContext(context);
+  const result = await queryable.query<DailyStudyPlanRow>(
+    `
+      select
+        id,
+        person_id,
+        review_profile,
+        local_date,
+        timezone,
+        day_starts_at,
+        day_ends_at,
+        suggested_review,
+        review_goal,
+        new_word_goal,
+        plan_version,
+        recommendation_version,
+        calculated_at,
+        updated_at
+      from daily_study_plans
+      where person_id = $1
+      order by local_date desc, review_profile asc
+    `,
+    [context.personId],
+  );
+
+  return result.rows.map(mapDailyStudyPlanRow);
+}
+
+async function listVocabularyCreationFacts(
+  queryable: PostgresQueryable,
+  context: PersonScopedContext,
+) {
+  assertPersonContext(context);
+  const result = await queryable.query<VocabularyCreationFactRow>(
+    `
+      select
+        id,
+        person_id,
+        original_vocabulary_item_id,
+        source_action_id,
+        track_at_creation,
+        source_kind,
+        history_origin,
+        system_created_at
+      from vocabulary_creation_facts
+      where person_id = $1
+      order by system_created_at desc, id desc
+    `,
+    [context.personId],
+  );
+
+  return result.rows.map(mapVocabularyCreationFactRow);
+}
+
+async function listVocabularyCreationReversals(
+  queryable: PostgresQueryable,
+  context: PersonScopedContext,
+) {
+  assertPersonContext(context);
+  const result = await queryable.query<VocabularyCreationReversalRow>(
+    `
+      select id, person_id, source_action_id, reason, reversed_at
+      from vocabulary_creation_reversals
+      where person_id = $1
+      order by reversed_at desc, id desc
+    `,
+    [context.personId],
+  );
+
+  return result.rows.map(mapVocabularyCreationReversalRow);
+}
+
+async function listAiRuns(queryable: PostgresQueryable, context: PersonScopedContext) {
+  assertPersonContext(context);
+  const result = await queryable.query<AiRunRow>(
+    `
+      select
+        id,
+        person_id,
+        source_vocabulary_item_id,
+        feature,
+        provider,
+        model,
+        model_label,
+        prompt_version,
+        source_hash,
+        output_schema_version,
+        disclosure_version,
+        idempotency_key_hash,
+        cache_key_hash,
+        status,
+        structure_validation_status,
+        provider_response_id,
+        input_tokens,
+        output_tokens,
+        thinking_tokens,
+        total_tokens,
+        latency_ms,
+        estimated_cost_usd,
+        created_at,
+        completed_at
+      from ai_runs
+      where person_id = $1
+      order by created_at desc, id desc
+    `,
+    [context.personId],
+  );
+
+  return result.rows.map(mapAiRunRow);
+}
+
+async function listAiEnrichmentDrafts(
+  queryable: PostgresQueryable,
+  context: PersonScopedContext,
+) {
+  assertPersonContext(context);
+  const result = await queryable.query<AiEnrichmentDraftRow>(
+    `
+      select
+        id,
+        person_id,
+        source_vocabulary_item_id,
+        ai_run_id,
+        status,
+        draft_json,
+        accepted_content_json,
+        created_at,
+        updated_at,
+        decided_at
+      from ai_enrichment_drafts
+      where person_id = $1
+      order by updated_at desc, id desc
+    `,
+    [context.personId],
+  );
+
+  return result.rows.map(mapAiEnrichmentDraftRow);
+}
+
+async function listVocabularyRelations(
+  queryable: PostgresQueryable,
+  context: PersonScopedContext,
+) {
+  assertPersonContext(context);
+  const result = await queryable.query<VocabularyRelationRow>(
+    `
+      select
+        id,
+        person_id,
+        source_vocabulary_item_id,
+        target_vocabulary_item_id,
+        relation_type,
+        difference_zh,
+        example_pair,
+        ai_run_id,
+        created_at
+      from vocabulary_relations
+      where person_id = $1
+      order by created_at desc, id desc
+    `,
+    [context.personId],
+  );
+
+  return result.rows.map(mapVocabularyRelationRow);
+}
+
+async function listSchema6FormalData(
+  queryable: PostgresQueryable,
+  context: PersonScopedContext,
+) {
+  const [
+    dailyStudyDefaults,
+    dailyStudyPlans,
+    vocabularyCreationFacts,
+    vocabularyCreationReversals,
+    aiRuns,
+    aiEnrichmentDrafts,
+    vocabularyRelations,
+  ] = await Promise.all([
+    listDailyStudyDefaults(queryable, context),
+    listDailyStudyPlans(queryable, context),
+    listVocabularyCreationFacts(queryable, context),
+    listVocabularyCreationReversals(queryable, context),
+    listAiRuns(queryable, context),
+    listAiEnrichmentDrafts(queryable, context),
+    listVocabularyRelations(queryable, context),
+  ]);
+
+  return {
+    dailyStudyDefaults,
+    dailyStudyPlans,
+    vocabularyCreationFacts,
+    vocabularyCreationReversals,
+    aiRuns,
+    aiEnrichmentDrafts,
+    vocabularyRelations,
+  };
+}
+
 async function buildVocabularyDataSnapshot(
   queryable: PostgresQueryable,
   context: PersonScopedContext,
   now: string,
 ): Promise<VocabularyData> {
   const person = await selectPerson(queryable, context.personId);
-  const [items, importBatches, reviewStates, reviewEvents, settings] = await Promise.all([
+  const [items, importBatches, reviewStates, reviewEvents, settings, schema6] = await Promise.all([
     listVocabularyItems(queryable, context, "all"),
     listImportBatches(queryable, context),
     listReviewStates(queryable, context),
     listReviewEvents(queryable, context),
     getReviewSettings(queryable, context),
+    listSchema6FormalData(queryable, context),
   ]);
 
   return {
-    schemaVersion: 5,
+    schemaVersion: 6,
     people: [person],
     selectedPersonId: context.personId,
     items,
@@ -365,6 +628,7 @@ async function buildVocabularyDataSnapshot(
     reviewStates,
     reviewEvents,
     settingsByPerson: [settings],
+    ...schema6,
     updatedAt: now,
   };
 }
@@ -387,12 +651,13 @@ export async function getPostgresVocabularyDataSnapshot(
   const perPersonData = await Promise.all(
     people.map(async (person) => {
       const context = { personId: person.id };
-      const [items, importBatches, reviewStates, reviewEvents, settings] = await Promise.all([
+      const [items, importBatches, reviewStates, reviewEvents, settings, schema6] = await Promise.all([
         listVocabularyItems(queryable, context, "all"),
         listImportBatches(queryable, context),
         listReviewStates(queryable, context),
         listReviewEvents(queryable, context),
         getReviewSettings(queryable, context),
+        listSchema6FormalData(queryable, context),
       ]);
 
       return {
@@ -401,12 +666,13 @@ export async function getPostgresVocabularyDataSnapshot(
         reviewStates,
         reviewEvents,
         settings,
+        schema6,
       };
     }),
   );
 
   return {
-    schemaVersion: 5,
+    schemaVersion: 6,
     people,
     selectedPersonId: selected,
     items: perPersonData.flatMap((entry) => entry.items),
@@ -414,6 +680,19 @@ export async function getPostgresVocabularyDataSnapshot(
     reviewStates: perPersonData.flatMap((entry) => entry.reviewStates),
     reviewEvents: perPersonData.flatMap((entry) => entry.reviewEvents),
     settingsByPerson: perPersonData.map((entry) => entry.settings),
+    dailyStudyDefaults: perPersonData.flatMap((entry) => entry.schema6.dailyStudyDefaults),
+    dailyStudyPlans: perPersonData.flatMap((entry) => entry.schema6.dailyStudyPlans),
+    vocabularyCreationFacts: perPersonData.flatMap(
+      (entry) => entry.schema6.vocabularyCreationFacts,
+    ),
+    vocabularyCreationReversals: perPersonData.flatMap(
+      (entry) => entry.schema6.vocabularyCreationReversals,
+    ),
+    aiRuns: perPersonData.flatMap((entry) => entry.schema6.aiRuns),
+    aiEnrichmentDrafts: perPersonData.flatMap((entry) => entry.schema6.aiEnrichmentDrafts),
+    vocabularyRelations: perPersonData.flatMap(
+      (entry) => entry.schema6.vocabularyRelations,
+    ),
     updatedAt: now,
   };
 }
@@ -465,6 +744,30 @@ export async function createPostgresPerson(
         settings.updatedAt,
       ],
     );
+
+    for (const defaults of createDailyStudyDefaults(person.id, settings)) {
+      await client.query(
+        `
+          insert into daily_study_defaults (
+            person_id,
+            review_profile,
+            review_goal,
+            new_word_goal,
+            timezone,
+            updated_at
+          )
+          values ($1, $2, $3, $4, $5, $6)
+        `,
+        [
+          defaults.personId,
+          defaults.reviewProfile,
+          defaults.reviewGoal,
+          defaults.newWordGoal,
+          defaults.timezone,
+          defaults.updatedAt,
+        ],
+      );
+    }
 
     return mapPersonRow(result.rows[0]);
   });
@@ -549,6 +852,44 @@ async function insertVocabularyItem(
   );
 
   return mapVocabularyItemRow(result.rows[0]);
+}
+
+async function insertVocabularyCreationFact(
+  queryable: PostgresQueryable,
+  item: VocabularyItem,
+  sourceActionId?: string,
+) {
+  const fact = {
+    ...buildVocabularyCreationRecord(item, { sourceActionId }),
+    creationFactId: randomUUID(),
+  };
+  assertDatabaseUuid(fact.sourceActionId, "sourceActionId");
+
+  await queryable.query(
+    `
+      insert into vocabulary_creation_facts (
+        id,
+        person_id,
+        original_vocabulary_item_id,
+        source_action_id,
+        track_at_creation,
+        source_kind,
+        history_origin,
+        system_created_at
+      )
+      values ($1, $2, $3, $4, $5, $6, $7, $8)
+    `,
+    [
+      fact.creationFactId,
+      fact.personId,
+      fact.originalVocabularyItemId,
+      fact.sourceActionId,
+      fact.trackAtCreation,
+      fact.sourceKind,
+      fact.historyOrigin,
+      fact.systemCreatedAt,
+    ],
+  );
 }
 
 function buildPostgresVocabularyItem(
@@ -691,6 +1032,32 @@ async function updateVocabularyItem(
   return mapVocabularyItemRow(result.rows[0]);
 }
 
+async function vocabularyItemHasReviewHistory(
+  queryable: PostgresQueryable,
+  context: PersonScopedContext,
+  vocabularyItemId: string,
+) {
+  assertPersonContext(context);
+  assertDatabaseUuid(vocabularyItemId, "vocabularyItemId");
+
+  const result = await queryable.query<{ has_review_history: boolean }>(
+    `
+      select exists (
+        select 1
+        from review_states
+        where person_id = $1 and vocabulary_item_id = $2
+        union all
+        select 1
+        from review_events
+        where person_id = $1 and vocabulary_item_id = $2
+      ) as has_review_history
+    `,
+    [context.personId, vocabularyItemId],
+  );
+
+  return result.rows[0]?.has_review_history ?? false;
+}
+
 async function setVocabularyArchiveState(
   queryable: PostgresQueryable,
   context: TimestampedPersonContext,
@@ -813,6 +1180,18 @@ async function rollbackImportBatch(
       [context.personId, importBatchId],
     );
     const itemIds = itemResult.rows.map((row) => row.id);
+    const creationFactResult = await client.query<{ exists: boolean }>(
+      `
+        select exists (
+          select 1
+          from vocabulary_creation_facts
+          where person_id = $1
+            and source_action_id = $2
+            and source_kind = 'batch'
+        ) as exists
+      `,
+      [context.personId, importBatchId],
+    );
     const reviewStateCountResult = await client.query<{ count: number }>(
       `
         select count(*)::int as count
@@ -829,6 +1208,22 @@ async function rollbackImportBatch(
       `,
       [context.personId, itemIds],
     );
+
+    if (creationFactResult.rows[0]?.exists) {
+      await client.query(
+        `
+          insert into vocabulary_creation_reversals (
+            id,
+            person_id,
+            source_action_id,
+            reason,
+            reversed_at
+          )
+          values ($1, $2, $3, 'batch_rollback', $4)
+        `,
+        [randomUUID(), context.personId, importBatchId, context.now],
+      );
+    }
 
     await client.query(
       `
@@ -877,6 +1272,14 @@ function rebuildReviewStateFromEvents(
       id: state?.id ?? previousState?.id ?? randomUUID(),
       personId,
       vocabularyItemId,
+      reviewProfile: "recognition",
+      parameterSetId: RECOGNITION_PARAMETER_SET_ID,
+      firstRatedAt:
+        previousState?.historyOrigin === "legacy_unknown"
+          ? null
+          : state?.firstRatedAt ?? previousState?.firstRatedAt ?? event.reviewedAt,
+      historyOrigin:
+        previousState?.historyOrigin === "legacy_unknown" ? "legacy_unknown" : "recorded",
       status: scheduled.status,
       dueAt: scheduled.dueAt,
       lastReviewedAt: event.reviewedAt,
@@ -897,6 +1300,10 @@ async function upsertReviewState(queryable: PostgresQueryable, state: ReviewStat
         id,
         person_id,
         vocabulary_item_id,
+        review_profile,
+        parameter_set_id,
+        first_rated_at,
+        history_origin,
         status,
         due_at,
         last_reviewed_at,
@@ -907,9 +1314,15 @@ async function upsertReviewState(queryable: PostgresQueryable, state: ReviewStat
         stability,
         updated_at
       )
-      values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-      on conflict (person_id, vocabulary_item_id)
+      values (
+        $1, $2, $3, $4, $5, $6, $7, $8,
+        $9, $10, $11, $12, $13, $14, $15, $16
+      )
+      on conflict (person_id, vocabulary_item_id, review_profile)
       do update set
+        parameter_set_id = excluded.parameter_set_id,
+        first_rated_at = excluded.first_rated_at,
+        history_origin = excluded.history_origin,
         status = excluded.status,
         due_at = excluded.due_at,
         last_reviewed_at = excluded.last_reviewed_at,
@@ -923,6 +1336,10 @@ async function upsertReviewState(queryable: PostgresQueryable, state: ReviewStat
         id,
         person_id,
         vocabulary_item_id,
+        review_profile,
+        parameter_set_id,
+        first_rated_at,
+        history_origin,
         status,
         due_at,
         last_reviewed_at,
@@ -937,6 +1354,10 @@ async function upsertReviewState(queryable: PostgresQueryable, state: ReviewStat
       state.id,
       state.personId,
       state.vocabularyItemId,
+      state.reviewProfile,
+      state.parameterSetId,
+      state.firstRatedAt,
+      state.historyOrigin,
       state.status,
       state.dueAt,
       state.lastReviewedAt,
@@ -964,8 +1385,15 @@ async function listReviewEventsForVocabularyItem(
     `
       select
         id,
+        prompt_id,
         person_id,
         vocabulary_item_id,
+        review_profile,
+        activity_type,
+        answer_outcome,
+        answer_normalization_version,
+        target_revision,
+        parameter_set_id,
         reviewed_at,
         rating,
         previous_due_at,
@@ -974,7 +1402,9 @@ async function listReviewEventsForVocabularyItem(
         next_interval_minutes,
         elapsed_ms
       from review_events
-      where person_id = $1 and vocabulary_item_id = $2
+      where person_id = $1
+        and vocabulary_item_id = $2
+        and review_profile = 'recognition'
       order by reviewed_at asc, id asc
     `,
     [context.personId, vocabularyItemId],
@@ -993,7 +1423,9 @@ async function resetTodayReview(
     const todayKey = getLocalDateKey(context.now, settings.timezone);
     const events = await listReviewEvents(client, context);
     const todayEvents = events.filter(
-      (event) => getLocalDateKey(event.reviewedAt, settings.timezone) === todayKey,
+      (event) =>
+        event.reviewProfile === "recognition" &&
+        getLocalDateKey(event.reviewedAt, settings.timezone) === todayKey,
     );
     const affectedItemIds = Array.from(new Set(todayEvents.map((event) => event.vocabularyItemId)));
 
@@ -1023,7 +1455,9 @@ async function resetTodayReview(
     await client.query(
       `
         delete from review_states
-        where person_id = $1 and vocabulary_item_id = any($2::uuid[])
+        where person_id = $1
+          and vocabulary_item_id = any($2::uuid[])
+          and review_profile = 'recognition'
       `,
       [context.personId, affectedItemIds],
     );
@@ -1033,6 +1467,7 @@ async function resetTodayReview(
         .filter(
           (event) =>
             event.vocabularyItemId === vocabularyItemId &&
+            event.reviewProfile === "recognition" &&
             getLocalDateKey(event.reviewedAt, settings.timezone) !== todayKey,
         )
         .sort(sortReviewEventsByReviewedAt);
@@ -1067,8 +1502,15 @@ async function rollbackReviewEvent(
       `
         select
           id,
+          prompt_id,
           person_id,
           vocabulary_item_id,
+          review_profile,
+          activity_type,
+          answer_outcome,
+          answer_normalization_version,
+          target_revision,
+          parameter_set_id,
           reviewed_at,
           rating,
           previous_due_at,
@@ -1077,7 +1519,7 @@ async function rollbackReviewEvent(
           next_interval_minutes,
           elapsed_ms
         from review_events
-        where person_id = $1 and id = $2
+        where person_id = $1 and id = $2 and review_profile = 'recognition'
         limit 1
       `,
       [context.personId, reviewEventId],
@@ -1106,7 +1548,9 @@ async function rollbackReviewEvent(
     await client.query(
       `
         delete from review_states
-        where person_id = $1 and vocabulary_item_id = $2
+        where person_id = $1
+          and vocabulary_item_id = $2
+          and review_profile = 'recognition'
       `,
       [context.personId, event.vocabularyItemId],
     );
@@ -1183,6 +1627,40 @@ async function updateReviewSettings(
   return mapReviewSettingsRow(result.rows[0]);
 }
 
+async function syncDailyDefaultsFromReviewSettings(
+  queryable: PostgresQueryable,
+  settings: PersonReviewSettings,
+) {
+  for (const defaults of createDailyStudyDefaults(settings.personId, settings)) {
+    await queryable.query(
+      `
+        insert into daily_study_defaults (
+          person_id,
+          review_profile,
+          review_goal,
+          new_word_goal,
+          timezone,
+          updated_at
+        )
+        values ($1, $2, $3, $4, $5, $6)
+        on conflict (person_id, review_profile)
+        do update set
+          review_goal = excluded.review_goal,
+          timezone = excluded.timezone,
+          updated_at = excluded.updated_at
+      `,
+      [
+        defaults.personId,
+        defaults.reviewProfile,
+        defaults.reviewGoal,
+        defaults.newWordGoal,
+        defaults.timezone,
+        defaults.updatedAt,
+      ],
+    );
+  }
+}
+
 export async function ensurePostgresSmokePerson(now = new Date().toISOString()) {
   const queryable = getPostgresPool();
   const personResult = await queryable.query<PersonRow>(
@@ -1248,7 +1726,11 @@ export function createPostgresRepository(): DurableRepositoryPort {
         assertPersonContext(context);
         const item = buildPostgresVocabularyItem(context, input);
 
-        return insertVocabularyItem(queryable, item);
+        return withPostgresTransaction(async (client) => {
+          const inserted = await insertVocabularyItem(client, item);
+          await insertVocabularyCreationFact(client, inserted, input.sourceActionId);
+          return inserted;
+        });
       },
       updateItem: async (context, vocabularyItemId, input) => {
         const currentItem = await selectVocabularyItem(queryable, context, vocabularyItemId);
@@ -1258,6 +1740,15 @@ export function createPostgresRepository(): DurableRepositoryPort {
         }
 
         const nextItem = buildUpdatedVocabularyItem(currentItem, context, input);
+
+        if (
+          nextItem.learningTrack !== currentItem.learningTrack &&
+          (await vocabularyItemHasReviewHistory(queryable, context, vocabularyItemId))
+        ) {
+          throw new Error(
+            "This word already has study history. Start it fresh in the other Track instead.",
+          );
+        }
 
         return updateVocabularyItem(queryable, context, vocabularyItemId, nextItem);
       },
@@ -1337,7 +1828,9 @@ export function createPostgresRepository(): DurableRepositoryPort {
               timezone: context.timezone,
             });
 
-            items.push(await insertVocabularyItem(client, item));
+            const inserted = await insertVocabularyItem(client, item);
+            await insertVocabularyCreationFact(client, inserted, batch.id);
+            items.push(inserted);
           }
 
           return { batch, items };
@@ -1365,7 +1858,7 @@ export function createPostgresRepository(): DurableRepositoryPort {
           getReviewSettings(queryable, context),
         ]);
         const data: VocabularyData = {
-          schemaVersion: 5,
+          schemaVersion: 6,
           people: [person],
           selectedPersonId: context.personId,
           items,
@@ -1373,6 +1866,13 @@ export function createPostgresRepository(): DurableRepositoryPort {
           reviewStates: states,
           reviewEvents: [],
           settingsByPerson: [settings],
+          dailyStudyDefaults: [],
+          dailyStudyPlans: [],
+          vocabularyCreationFacts: [],
+          vocabularyCreationReversals: [],
+          aiRuns: [],
+          aiEnrichmentDrafts: [],
+          vocabularyRelations: [],
           updatedAt: context.now,
         };
 
@@ -1400,10 +1900,23 @@ export function createPostgresRepository(): DurableRepositoryPort {
             command.elapsedMs === null || command.elapsedMs === undefined
               ? 0
               : Math.max(0, Math.round(command.elapsedMs));
+          if (elapsedMs > 90_000_000) {
+            throw new Error("elapsedMs must not exceed 90000000");
+          }
           const nextState: ReviewState = {
             id: previousState?.id ?? randomUUID(),
             personId: command.personId,
             vocabularyItemId: command.vocabularyItemId,
+            reviewProfile: "recognition",
+            parameterSetId: RECOGNITION_PARAMETER_SET_ID,
+            firstRatedAt:
+              previousState?.historyOrigin === "legacy_unknown"
+                ? null
+                : previousState?.firstRatedAt ?? command.reviewedAt,
+            historyOrigin:
+              previousState?.historyOrigin === "legacy_unknown"
+                ? "legacy_unknown"
+                : "recorded",
             status: scheduled.status,
             dueAt: scheduled.dueAt,
             lastReviewedAt: command.reviewedAt,
@@ -1418,8 +1931,15 @@ export function createPostgresRepository(): DurableRepositoryPort {
             `
               insert into review_events (
                 id,
+                prompt_id,
                 person_id,
                 vocabulary_item_id,
+                review_profile,
+                activity_type,
+                answer_outcome,
+                answer_normalization_version,
+                target_revision,
+                parameter_set_id,
                 reviewed_at,
                 rating,
                 previous_due_at,
@@ -1428,11 +1948,21 @@ export function createPostgresRepository(): DurableRepositoryPort {
                 next_interval_minutes,
                 elapsed_ms
               )
-              values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+              values (
+                $1, $2, $3, $4, $5, $6, $7, $8, $9,
+                $10, $11, $12, $13, $14, $15, $16, $17
+              )
               returning
                 id,
+                prompt_id,
                 person_id,
                 vocabulary_item_id,
+                review_profile,
+                activity_type,
+                answer_outcome,
+                answer_normalization_version,
+                target_revision,
+                parameter_set_id,
                 reviewed_at,
                 rating,
                 previous_due_at,
@@ -1443,8 +1973,15 @@ export function createPostgresRepository(): DurableRepositoryPort {
             `,
             [
               randomUUID(),
+              null,
               command.personId,
               command.vocabularyItemId,
+              "recognition",
+              "recognition_card",
+              "self_rated",
+              null,
+              null,
+              RECOGNITION_PARAMETER_SET_ID,
               command.reviewedAt,
               command.rating,
               previousState?.dueAt ?? null,
@@ -1454,67 +1991,11 @@ export function createPostgresRepository(): DurableRepositoryPort {
               elapsedMs,
             ],
           );
-          const stateResult = await client.query<ReviewStateRow>(
-            `
-              insert into review_states (
-                id,
-                person_id,
-                vocabulary_item_id,
-                status,
-                due_at,
-                last_reviewed_at,
-                review_count,
-                lapse_count,
-                interval_minutes,
-                difficulty,
-                stability,
-                updated_at
-              )
-              values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-              on conflict (person_id, vocabulary_item_id)
-              do update set
-                status = excluded.status,
-                due_at = excluded.due_at,
-                last_reviewed_at = excluded.last_reviewed_at,
-                review_count = excluded.review_count,
-                lapse_count = excluded.lapse_count,
-                interval_minutes = excluded.interval_minutes,
-                difficulty = excluded.difficulty,
-                stability = excluded.stability,
-                updated_at = excluded.updated_at
-              returning
-                id,
-                person_id,
-                vocabulary_item_id,
-                status,
-                due_at,
-                last_reviewed_at,
-                review_count,
-                lapse_count,
-                interval_minutes,
-                difficulty,
-                stability,
-                updated_at
-            `,
-            [
-              nextState.id,
-              nextState.personId,
-              nextState.vocabularyItemId,
-              nextState.status,
-              nextState.dueAt,
-              nextState.lastReviewedAt,
-              nextState.reviewCount,
-              nextState.lapseCount,
-              nextState.intervalMinutes,
-              nextState.difficulty,
-              nextState.stability,
-              nextState.updatedAt,
-            ],
-          );
+          const state = await upsertReviewState(client, nextState);
 
           return {
             event: mapReviewEventRow(eventResult.rows[0]),
-            state: mapReviewStateRow(stateResult.rows[0]),
+            state,
           };
         });
       },
@@ -1524,11 +2005,18 @@ export function createPostgresRepository(): DurableRepositoryPort {
     },
     reviewSettings: {
       getSettings: (context) => getReviewSettings(queryable, context),
-      updateSettings: (context, input) => updateReviewSettings(queryable, context, input),
+      updateSettings: (context, input) =>
+        withPostgresTransaction(async (client) => {
+          const settings = await updateReviewSettings(client, context, input);
+          await syncDailyDefaultsFromReviewSettings(client, settings);
+          return settings;
+        }),
     },
     backup: {
       importBackup: async () => {
-        throw new Error("Postgres backup import is not implemented in Stage 5I");
+        throw new Error(
+          "Direct runtime backup import is disabled. Use the guarded backup import script after separate environment approval.",
+        );
       },
     },
   };

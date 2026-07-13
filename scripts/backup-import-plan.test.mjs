@@ -6,8 +6,10 @@ import {
   buildBackupImportPlanFromText,
   createStage5LFixtureBackup,
   createStage6BP1ESchema5FixtureBackup,
+  createV2Stage3Schema6FixtureBackup,
   STAGE5L_FIXTURE_FILE_NAME,
   STAGE6B_P1E_SCHEMA5_FIXTURE_FILE_NAME,
+  V2_STAGE3_SCHEMA6_FIXTURE_FILE_NAME,
 } from "./backup-import-plan.mjs";
 
 function createUuidFactory() {
@@ -44,8 +46,15 @@ describe("Stage 5L backup import plan", () => {
       reviewStates: 1,
       reviewEvents: 1,
       reviewSettings: 1,
+      dailyStudyDefaults: 2,
+      dailyStudyPlans: 0,
+      vocabularyCreationFacts: 1,
+      vocabularyCreationReversals: 0,
+      aiRuns: 0,
+      aiEnrichmentDrafts: 0,
+      vocabularyRelations: 0,
       backupImports: 1,
-      backupImportMappings: 6,
+      backupImportMappings: 9,
     });
   });
 
@@ -63,8 +72,15 @@ describe("Stage 5L backup import plan", () => {
       reviewStates: 1,
       reviewEvents: 1,
       reviewSettings: 1,
+      dailyStudyDefaults: 2,
+      dailyStudyPlans: 0,
+      vocabularyCreationFacts: 1,
+      vocabularyCreationReversals: 0,
+      aiRuns: 0,
+      aiEnrichmentDrafts: 0,
+      vocabularyRelations: 0,
       backupImports: 1,
-      backupImportMappings: 6,
+      backupImportMappings: 9,
     });
     expect(plan.rows.people[0]).toMatchObject({
       id: "00000000-0000-4000-8000-000000000001",
@@ -86,7 +102,7 @@ describe("Stage 5L backup import plan", () => {
       {
         sourcePersonId: "person_stage5l_fixture",
         targetPersonId: "00000000-0000-4000-8000-000000000001",
-        backupImportId: "00000000-0000-4000-8000-000000000006",
+        backupImportId: "00000000-0000-4000-8000-000000000007",
         itemCount: 1,
         reviewEventCount: 1,
       },
@@ -117,8 +133,15 @@ describe("Stage 5L backup import plan", () => {
       reviewStates: 1,
       reviewEvents: 1,
       reviewSettings: 1,
+      dailyStudyDefaults: 2,
+      dailyStudyPlans: 0,
+      vocabularyCreationFacts: 2,
+      vocabularyCreationReversals: 0,
+      aiRuns: 0,
+      aiEnrichmentDrafts: 0,
+      vocabularyRelations: 0,
       backupImports: 1,
-      backupImportMappings: 7,
+      backupImportMappings: 11,
     });
     expect(plan.rows.importBatches[0]).toMatchObject({
       sourceType: "json_paste",
@@ -153,6 +176,70 @@ describe("Stage 5L backup import plan", () => {
       recognitionSessionLimit: 18,
       activeSessionLimit: 6,
     });
+  });
+
+  it("remaps every formal Schema Version 6 domain without operational records", async () => {
+    const text = await readFile(
+      new URL("../test_fixtures/v2-stage3-schema6-backup.json", import.meta.url),
+      "utf8",
+    );
+    expect(JSON.parse(text)).toEqual(createV2Stage3Schema6FixtureBackup());
+    const plan = buildBackupImportPlanFromText(text, {
+      sourceFileName: V2_STAGE3_SCHEMA6_FIXTURE_FILE_NAME,
+      importedAt: "2026-07-13T11:00:00.000Z",
+      uuidFactory: createUuidFactory(),
+    });
+
+    expect(plan.sourceSchemaVersion).toBe(6);
+    expect(plan.counts).toEqual({
+      people: 1,
+      importBatches: 0,
+      vocabularyItems: 2,
+      reviewStates: 2,
+      reviewEvents: 2,
+      reviewSettings: 1,
+      dailyStudyDefaults: 2,
+      dailyStudyPlans: 2,
+      vocabularyCreationFacts: 3,
+      vocabularyCreationReversals: 1,
+      aiRuns: 1,
+      aiEnrichmentDrafts: 1,
+      vocabularyRelations: 1,
+      backupImports: 1,
+      backupImportMappings: 19,
+    });
+    expect(plan.rows.reviewStates.map((row) => row.reviewProfile)).toEqual([
+      "recognition",
+      "active",
+    ]);
+    expect(plan.rows.reviewEvents[1]).toMatchObject({
+      reviewProfile: "active",
+      activityType: "dictation",
+      answerOutcome: "exact",
+      parameterSetId: "active-fsrs-v1",
+    });
+    expect(plan.rows.dailyStudyDefaults).toHaveLength(2);
+    expect(plan.rows.dailyStudyPlans).toHaveLength(2);
+    expect(plan.rows.vocabularyCreationFacts).toHaveLength(3);
+    expect(plan.rows.vocabularyCreationReversals[0].sourceActionId).toBe(
+      plan.rows.vocabularyCreationFacts[2].sourceActionId,
+    );
+    expect(
+      plan.rows.vocabularyItems.some(
+        (item) => item.id === plan.rows.vocabularyCreationFacts[2].originalVocabularyItemId,
+      ),
+    ).toBe(false);
+    expect(plan.rows.aiEnrichmentDrafts[0]).toMatchObject({
+      status: "accepted",
+      aiRunId: plan.rows.aiRuns[0].id,
+    });
+    expect(plan.rows.vocabularyRelations[0]).toMatchObject({
+      sourceVocabularyItemId: plan.rows.vocabularyItems[0].id,
+      targetVocabularyItemId: plan.rows.vocabularyItems[1].id,
+      aiRunId: plan.rows.aiRuns[0].id,
+    });
+    expect(plan.rows).not.toHaveProperty("aiUsageBuckets");
+    expect(plan.rows).not.toHaveProperty("studyCommandIdempotency");
   });
 
   it("rejects metadata count mismatches", () => {
@@ -216,5 +303,15 @@ describe("Stage 5L backup import plan", () => {
         "reviewEvents[0].vocabularyItemId references an Active item",
       );
     }
+  });
+
+  it("keeps prior-profile history after a Schema Version 6 Track transition", () => {
+    const backup = createV2Stage3Schema6FixtureBackup();
+    backup.data.items[0].learningTrack = "active";
+    const plan = buildBackupImportPlan(backup, { uuidFactory: createUuidFactory() });
+
+    expect(plan.rows.vocabularyItems[0].learningTrack).toBe("active");
+    expect(plan.rows.reviewStates[0].reviewProfile).toBe("recognition");
+    expect(plan.rows.reviewEvents[0].reviewProfile).toBe("recognition");
   });
 });

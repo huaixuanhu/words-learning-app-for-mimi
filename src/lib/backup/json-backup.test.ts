@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { addVocabularyItem, createEmptyVocabularyData } from "@/lib/vocabulary/repository";
 import {
   createVocabularyBackup,
@@ -46,6 +48,10 @@ function createSampleData() {
         id: "review-state-1",
         personId,
         vocabularyItemId: "vocab-1",
+        reviewProfile: "recognition" as const,
+        parameterSetId: "recognition-fsrs-v1",
+        firstRatedAt: "2026-07-05T00:10:00.000Z",
+        historyOrigin: "recorded" as const,
         status: "review" as const,
         dueAt: "2026-07-06T00:00:00.000Z",
         lastReviewedAt: "2026-07-05T00:10:00.000Z",
@@ -60,8 +66,15 @@ function createSampleData() {
     reviewEvents: [
       {
         id: "review-event-1",
+        promptId: null,
         personId,
         vocabularyItemId: "vocab-1",
+        reviewProfile: "recognition" as const,
+        activityType: "recognition_card" as const,
+        answerOutcome: "self_rated" as const,
+        answerNormalizationVersion: null,
+        targetRevision: null,
+        parameterSetId: "recognition-fsrs-v1",
         reviewedAt: "2026-07-05T00:10:00.000Z",
         rating: "hard" as const,
         previousDueAt: null,
@@ -99,7 +112,7 @@ describe("JSON vocabulary backup", () => {
       appName: "words-learning-app-for-mimi",
       exportedAt: "2026-07-05T00:20:00.000Z",
       timezone: "Australia/Melbourne",
-      schemaVersion: 5,
+      schemaVersion: 6,
     });
     expect(backup.metadata.counts).toEqual({
       people: 1,
@@ -109,6 +122,13 @@ describe("JSON vocabulary backup", () => {
       importBatches: 1,
       reviewStates: 1,
       reviewEvents: 1,
+      dailyStudyDefaults: 2,
+      dailyStudyPlans: 0,
+      vocabularyCreationFacts: 1,
+      vocabularyCreationReversals: 0,
+      aiRuns: 0,
+      aiEnrichmentDrafts: 0,
+      vocabularyRelations: 0,
     });
   });
 
@@ -126,7 +146,7 @@ describe("JSON vocabulary backup", () => {
       return;
     }
 
-    expect(parsed.data.schemaVersion).toBe(5);
+    expect(parsed.data.schemaVersion).toBe(6);
     expect(parsed.data.people).toHaveLength(1);
     expect(parsed.data.items[0]?.id).toBe("vocab-1");
     expect(parsed.data.items[0]?.personId).toBe("person_mimi");
@@ -182,7 +202,7 @@ describe("JSON vocabulary backup", () => {
     expect(parsed.data.reviewEvents).toHaveLength(0);
   });
 
-  it("restores schema version 2 backups by migrating them to version 5", () => {
+  it("restores schema version 2 backups by migrating them to version 6", () => {
     const parsed = parseVocabularyBackupText(
       JSON.stringify({
         format: "mimi-pte-vocabulary-backup",
@@ -241,7 +261,7 @@ describe("JSON vocabulary backup", () => {
       return;
     }
 
-    expect(parsed.data.schemaVersion).toBe(5);
+    expect(parsed.data.schemaVersion).toBe(6);
     expect(parsed.data.items[0]?.personId).toBe("person_mimi");
     expect(parsed.data.items[0]?.learningTrack).toBe("recognition");
     expect(parsed.data.items[0]?.tags).toBeNull();
@@ -250,6 +270,11 @@ describe("JSON vocabulary backup", () => {
     expect(parsed.data.settingsByPerson[0]?.sessionLimit).toBe(10);
     expect(parsed.data.settingsByPerson[0]?.recognitionSessionLimit).toBe(10);
     expect(parsed.data.settingsByPerson[0]?.activeSessionLimit).toBe(8);
+    expect(parsed.data.dailyStudyDefaults).toHaveLength(2);
+    expect(parsed.data.vocabularyCreationFacts[0]).toMatchObject({
+      originalVocabularyItemId: "vocab-legacy",
+      historyOrigin: "legacy_backfill",
+    });
   });
 
   it("rejects malformed JSON and unsupported backup shapes", () => {
@@ -313,7 +338,7 @@ describe("JSON vocabulary backup", () => {
     expect(parsed.errors).toContain("reviewEvents[0].vocabularyItemId does not match an item");
   });
 
-  it("rejects Active vocabulary review state and review events in V1 backups", () => {
+  it("round-trips profile-isolated Active review evidence in Schema Version 6", () => {
     const active = addVocabularyItem(
       createEmptyVocabularyData("2026-07-05T00:00:00.000Z"),
       {
@@ -337,6 +362,10 @@ describe("JSON vocabulary backup", () => {
             id: "review-state-active",
             personId,
             vocabularyItemId: "vocab-active",
+            reviewProfile: "active",
+            parameterSetId: "active-fsrs-v1",
+            firstRatedAt: "2026-07-05T00:10:00.000Z",
+            historyOrigin: "recorded",
             status: "review",
             dueAt: "2026-07-06T00:00:00.000Z",
             lastReviewedAt: "2026-07-05T00:10:00.000Z",
@@ -351,8 +380,15 @@ describe("JSON vocabulary backup", () => {
         reviewEvents: [
           {
             id: "review-event-active",
+            promptId: "prompt-active-1",
             personId,
             vocabularyItemId: "vocab-active",
+            reviewProfile: "active",
+            activityType: "dictation",
+            answerOutcome: "exact",
+            answerNormalizationVersion: "active-answer-v1",
+            targetRevision: "articulate:v1",
+            parameterSetId: "active-fsrs-v1",
             reviewedAt: "2026-07-05T00:10:00.000Z",
             rating: "remembered",
             previousDueAt: null,
@@ -370,13 +406,189 @@ describe("JSON vocabulary backup", () => {
     );
     const parsed = parseVocabularyBackupText(JSON.stringify(backup));
 
-    expect(parsed.ok).toBe(false);
+    expect(parsed.ok).toBe(true);
 
-    if (parsed.ok) {
+    if (!parsed.ok) {
       return;
     }
 
-    expect(parsed.errors).toContain("reviewStates[0].vocabularyItemId references an Active item");
-    expect(parsed.errors).toContain("reviewEvents[0].vocabularyItemId references an Active item");
+    expect(parsed.data.reviewStates[0]).toMatchObject({
+      reviewProfile: "active",
+      parameterSetId: "active-fsrs-v1",
+    });
+    expect(parsed.data.reviewEvents[0]).toMatchObject({
+      reviewProfile: "active",
+      activityType: "dictation",
+      answerOutcome: "exact",
+    });
+  });
+
+  it("round-trips the fixed Schema Version 6 formal-data fixture", () => {
+    const fixture = readFileSync(
+      join(process.cwd(), "test_fixtures", "v2-stage3-schema6-backup.json"),
+      "utf8",
+    );
+    const firstParse = parseVocabularyBackupText(fixture, "2026-07-13T11:00:00.000Z");
+
+    expect(firstParse.ok).toBe(true);
+    if (!firstParse.ok) {
+      return;
+    }
+
+    const serialized = serializeVocabularyBackup(firstParse.data, {
+      exportedAt: "2026-07-13T11:05:00.000Z",
+      timezone: "Australia/Melbourne",
+    });
+    const secondParse = parseVocabularyBackupText(serialized, "2026-07-13T11:06:00.000Z");
+
+    expect(secondParse.ok).toBe(true);
+    if (!secondParse.ok) {
+      return;
+    }
+
+    expect(secondParse.data.dailyStudyDefaults).toHaveLength(2);
+    expect(secondParse.data.dailyStudyPlans).toHaveLength(2);
+    expect(secondParse.data.vocabularyCreationFacts).toHaveLength(3);
+    expect(secondParse.data.vocabularyCreationReversals).toHaveLength(1);
+    expect(secondParse.data.aiRuns).toHaveLength(1);
+    expect(secondParse.data.aiEnrichmentDrafts).toEqual([
+      expect.objectContaining({ status: "accepted" }),
+    ]);
+    expect(secondParse.data.vocabularyRelations).toEqual([
+      expect.objectContaining({ relationType: "spelling" }),
+    ]);
+  });
+
+  it("exports accepted AI content while excluding temporary and failed records", () => {
+    const data = createSampleData();
+    const personId = data.selectedPersonId;
+    const acceptedContent = {
+      additionalMeaningsZh: ["划拨"],
+      examples: ["Allocate the work fairly."],
+      similarWords: [],
+      confusableWords: [],
+    };
+    const backup = createVocabularyBackup(
+      {
+        ...data,
+        aiRuns: [
+          {
+            id: "run-accepted",
+            personId,
+            sourceVocabularyItemId: "vocab-1",
+            feature: "enrichment_v1",
+            provider: "google-gemini-api",
+            model: "gemini-3.1-flash-lite",
+            modelLabel: "Gemini 3.1 Flash-Lite",
+            promptVersion: "v2-stage2b-prompt-v2",
+            sourceHash: "source-hash",
+            outputSchemaVersion: "ai-enrichment-v2",
+            disclosureVersion: "ai-disclosure-v1",
+            idempotencyKeyHash: "accepted-idempotency",
+            cacheKeyHash: "accepted-cache",
+            status: "succeeded",
+            structureValidationStatus: "valid",
+            providerResponseId: null,
+            inputTokens: 100,
+            outputTokens: 100,
+            thinkingTokens: 0,
+            totalTokens: 200,
+            latencyMs: 500,
+            estimatedCostUsd: 0.00005,
+            createdAt: "2026-07-05T00:04:00.000Z",
+            completedAt: "2026-07-05T00:04:01.000Z",
+          },
+          {
+            id: "run-failed",
+            personId,
+            sourceVocabularyItemId: "vocab-1",
+            feature: "enrichment_v1",
+            provider: "google-gemini-api",
+            model: "gemini-3.1-flash-lite",
+            modelLabel: "Gemini 3.1 Flash-Lite",
+            promptVersion: "v2-stage2b-prompt-v2",
+            sourceHash: "source-hash-failed",
+            outputSchemaVersion: "ai-enrichment-v2",
+            disclosureVersion: "ai-disclosure-v1",
+            idempotencyKeyHash: "failed-idempotency",
+            cacheKeyHash: "failed-cache",
+            status: "failed",
+            structureValidationStatus: "unavailable",
+            providerResponseId: null,
+            inputTokens: 100,
+            outputTokens: 0,
+            thinkingTokens: 0,
+            totalTokens: 100,
+            latencyMs: 500,
+            estimatedCostUsd: 0.00001,
+            createdAt: "2026-07-05T00:05:00.000Z",
+            completedAt: "2026-07-05T00:05:01.000Z",
+          },
+        ],
+        aiEnrichmentDrafts: [
+          {
+            id: "draft-accepted",
+            personId,
+            sourceVocabularyItemId: "vocab-1",
+            aiRunId: "run-accepted",
+            status: "accepted",
+            draft: acceptedContent,
+            acceptedContent,
+            createdAt: "2026-07-05T00:04:00.000Z",
+            updatedAt: "2026-07-05T00:06:00.000Z",
+            decidedAt: "2026-07-05T00:06:00.000Z",
+          },
+          {
+            id: "draft-temporary",
+            personId,
+            sourceVocabularyItemId: "vocab-1",
+            aiRunId: "run-failed",
+            status: "draft",
+            draft: acceptedContent,
+            acceptedContent: null,
+            createdAt: "2026-07-05T00:05:00.000Z",
+            updatedAt: "2026-07-05T00:05:00.000Z",
+            decidedAt: null,
+          },
+        ],
+      },
+      {
+        exportedAt: "2026-07-05T00:20:00.000Z",
+        timezone: "Australia/Melbourne",
+      },
+    );
+
+    expect(backup.data.aiRuns.map((run) => run.id)).toEqual(["run-accepted"]);
+    expect(backup.data.aiEnrichmentDrafts.map((draft) => draft.id)).toEqual([
+      "draft-accepted",
+    ]);
+    expect(backup.metadata.counts).toMatchObject({
+      aiRuns: 1,
+      aiEnrichmentDrafts: 1,
+    });
+  });
+
+  it("preserves read-only history from the previous Track after an explicit transition", () => {
+    const data = createSampleData();
+    const serialized = serializeVocabularyBackup(
+      {
+        ...data,
+        items: data.items.map((item) => ({ ...item, learningTrack: "active" as const })),
+      },
+      {
+        exportedAt: "2026-07-05T00:20:00.000Z",
+        timezone: "Australia/Melbourne",
+      },
+    );
+    const parsed = parseVocabularyBackupText(serialized);
+
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) {
+      return;
+    }
+
+    expect(parsed.data.items[0]?.learningTrack).toBe("active");
+    expect(parsed.data.reviewStates[0]?.reviewProfile).toBe("recognition");
+    expect(parsed.data.reviewEvents[0]?.reviewProfile).toBe("recognition");
   });
 });

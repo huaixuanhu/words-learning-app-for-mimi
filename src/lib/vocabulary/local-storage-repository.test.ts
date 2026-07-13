@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { migrateVocabularyData } from "./local-storage-repository";
 
 describe("local storage vocabulary migration", () => {
-  it("migrates schema version 1 data to version 5 without dropping vocabulary", () => {
+  it("migrates schema version 1 data to version 6 without dropping vocabulary", () => {
     const migrated = migrateVocabularyData(
       {
         schemaVersion: 1,
@@ -42,7 +42,7 @@ describe("local storage vocabulary migration", () => {
       "2026-07-04T01:00:00.000Z",
     );
 
-    expect(migrated.schemaVersion).toBe(5);
+    expect(migrated.schemaVersion).toBe(6);
     expect(migrated.people).toHaveLength(1);
     expect(migrated.selectedPersonId).toBe("person_mimi");
     expect(migrated.items).toHaveLength(1);
@@ -61,9 +61,16 @@ describe("local storage vocabulary migration", () => {
       recognitionSessionLimit: 24,
       activeSessionLimit: 8,
     });
+    expect(migrated.dailyStudyDefaults).toHaveLength(2);
+    expect(migrated.vocabularyCreationFacts[0]).toMatchObject({
+      originalVocabularyItemId: "vocab-1",
+      sourceActionId: "vocab-1",
+      trackAtCreation: "recognition",
+      historyOrigin: "legacy_backfill",
+    });
   });
 
-  it("migrates schema version 4 meaning and example strings into version 5 arrays", () => {
+  it("migrates schema version 4 meaning and example strings into version 6 arrays", () => {
     const migrated = migrateVocabularyData(
       {
         schemaVersion: 4,
@@ -109,12 +116,12 @@ describe("local storage vocabulary migration", () => {
       "2026-07-04T01:00:00.000Z",
     );
 
-    expect(migrated.schemaVersion).toBe(5);
+    expect(migrated.schemaVersion).toBe(6);
     expect(migrated.items[0]?.meaningsZh).toEqual(["连贯的"]);
     expect(migrated.items[0]?.examples).toEqual(["Write a coherent paragraph."]);
   });
 
-  it("keeps schema version 5 after Stage 8 review algorithm fields", () => {
+  it("migrates schema version 5 review fields into an explicit Recognition profile", () => {
     const migrated = migrateVocabularyData(
       {
         schemaVersion: 5,
@@ -170,25 +177,42 @@ describe("local storage vocabulary migration", () => {
             updatedAt: "2026-07-04T00:00:00.000Z",
           },
         ],
-        reviewEvents: [],
+        reviewEvents: [
+          {
+            id: "review-event-1",
+            personId: "person_mimi",
+            vocabularyItemId: "vocab-1",
+            reviewedAt: "2026-07-03T23:00:00.000Z",
+            rating: "remembered",
+            previousDueAt: null,
+            nextDueAt: "2026-07-07T00:00:00.000Z",
+            previousIntervalMinutes: null,
+            nextIntervalMinutes: 4320,
+            elapsedMs: 1000,
+          },
+        ],
         settingsByPerson: [],
         updatedAt: "2026-07-04T00:00:00.000Z",
       },
       "2026-07-04T01:00:00.000Z",
     );
 
-    expect(migrated.schemaVersion).toBe(5);
+    expect(migrated.schemaVersion).toBe(6);
     expect(migrated.reviewStates[0]).toMatchObject({
+      reviewProfile: "recognition",
+      parameterSetId: "recognition-fsrs-v1",
+      firstRatedAt: "2026-07-03T23:00:00.000Z",
+      historyOrigin: "recorded",
       difficulty: 2.11810397,
       stability: 2.3065,
     });
   });
 
-  it("returns an empty version 5 shape for invalid data", () => {
+  it("returns an empty version 6 shape for invalid data", () => {
     const migrated = migrateVocabularyData("not-json", "2026-07-04T01:00:00.000Z");
 
     expect(migrated).toMatchObject({
-      schemaVersion: 5,
+      schemaVersion: 6,
       selectedPersonId: "person_mimi",
       items: [],
       importBatches: [],
@@ -196,5 +220,6 @@ describe("local storage vocabulary migration", () => {
       reviewEvents: [],
     });
     expect(migrated.people).toHaveLength(1);
+    expect(migrated.dailyStudyDefaults).toHaveLength(2);
   });
 });

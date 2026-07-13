@@ -1,5 +1,27 @@
 # AI Agent Log
 
+## 2026-07-14 00:30 AEST
+
+- Task: execute the next approved V2 stage, Stage 3 Data Model And Backup Parity, with documentation first and local implementation second.
+- Plan agreed: yes. After committing the prior stage, the user explicitly requested the next stage. The material data-model scope was written in `plan_docs/PLAN_V2_STAGE3_DATA_MODEL_BACKUP_PARITY.md` before implementation and kept remote execution separately gated.
+- Working tier: Tier 3. Local source, SQL draft, fixtures, tests, plans, and governance documents were in scope. Credentials, external services, paid calls, remote databases, persistent user data, Vercel, deployment, and GitHub remote actions were outside scope.
+- Changed files:
+  - Schema Version 6 vocabulary/review/daily-study/AI lineage contracts and local migration;
+  - local and Postgres repository snapshots, mappers, settings compatibility, and Recognition evidence writes;
+  - forward-only `db/migrations/0003_v2_schema6_data_model.sql` draft;
+  - JSON backup version 3, CSV compatibility, guarded backup-import planning/scripts, and schema 6 fixture;
+  - focused repository, review, migration, mapper, backup, API route, SQL, and fixture tests;
+  - V2 Stage 3/master plans, backup-to-Postgres mapping, README, architecture, AGENTS, changelog, this log, and a governance preflight precision fix.
+- Reason: make the accepted Stage 1 daily/Review Profile contract and Stage 2 accepted-AI lineage representable and recoverable before any V2 user-facing engine is built, while keeping the local safety gate accurate for changed SQL-bearing repositories.
+- Decisions:
+  - Existing review rows migrate only to Recognition with `recognition-fsrs-v1`; no Active row or parameter value is fabricated.
+  - Earliest retained event time becomes `firstRatedAt`; absent retained evidence remains `legacy_unknown` and null.
+  - Ordinary hard delete preserves non-lexical creation history; a known full `Batch imported` rollback appends one source-action reversal.
+  - Formal accepted AI lineage/drafts/relations can enter backup version 3. Operational quotas, idempotency, Cache, temporary/rejected drafts, and unreferenced audit rows do not.
+  - Runtime direct Postgres backup import stays disabled; the guarded script and a separate environment approval own later execution.
+- Validation: lint passed; TypeScript typecheck passed; Vitest passed 25 files / 182 tests with 1 Postgres integration file / 1 test intentionally skipped; schema 3, schema 5, and schema 6 backup dry-runs passed; the schema 6 plan produced 19 mappings; Next.js Production build passed; final governance and diff checks passed.
+- Safety notes: the Postgres repository still contains existing person-scoped transactional delete operations for explicit hard delete, batch rollback, reset-today, and one-event rollback. Stage 3 narrows review-state deletions to Recognition and adds a reversal fact before a known batch deletion; none of these SQL statements was executed. The preflight now scans added executable lines instead of flagging unchanged destructive terms in any touched file. No `.env` value was printed or changed; no provider call, charge, remote database connection, migration, import, restore, Production write, credential change, Vercel action, deployment, commit, push, or pull request was performed. The live V1 database remains Schema Version 5 and `0003` remains an unexecuted local draft.
+
 ## 2026-07-13 23:00 AEST
 
 - Task: record the user's Stage 2-B tolerance decision and freeze the small model/inaccuracy notice for the future V2-7 AI-draft UI.

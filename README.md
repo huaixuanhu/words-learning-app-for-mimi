@@ -19,13 +19,13 @@
 - **ADHD-friendly 学习体验**：把任务拆小、保持明确反馈，并允许保守地回退和重新开始。
 - **长期数据可控**：正式学习数据保存在云端数据库，同时保留导出和备份能力。
 
-当前 V1 已作为受保护的私人应用上线。V2 的文档基线已在 `V2` 分支确认，主线包括每日学习分区、独立 Active 练习、手机端改造、学习情况可视化和第一代付费 AI enrichment（AI 词汇补充）。V2 Stage 1 已完成产品、指标与数据契约；Stage 2-B 的相同 120 条第二轮测试已从首轮 114 / 120 提升到 120 / 120 自动结构有效，并减少候选堆填和费用。用户查看具体案例后，已接受其作为可编辑补充草稿时的误差范围；V2-7 本地实现可以继续，Production 接入仍需独立审批。可见页面、Schema Version 5 和线上 V1 行为尚未改变。
+当前 V1 已作为受保护的私人应用上线。V2 的文档基线已在 `V2` 分支确认，主线包括每日学习分区、独立 Active 练习、手机端改造、学习情况可视化和第一代付费 AI enrichment（AI 词汇补充）。Stage 1 已完成产品、指标与数据契约；Stage 2-B 的相同 120 条第二轮测试已从首轮 114 / 120 提升到 120 / 120 自动结构有效，并获得“可编辑补充草稿”范围内的有条件接受；Stage 3 已在本地完成 Schema Version 6（数据结构第 6 版）、backup version 3（备份格式第 3 版）、仓储层和导入恢复的一致性改造。可见页面和线上 V1 行为尚未改变，线上数据库仍是 Schema Version 5。
 
 ## 正式版本
 
 - 访问地址：[words-learning-app-for-mimi.vercel.app](https://words-learning-app-for-mimi.vercel.app)
 - 当前线上版本：cloud-backed V1（云端持久化 V1）
-- 当前开发分支：`V2`；Stage 1 契约和 Stage 2-B 本地 AI 证据已完成，AI 草稿质量获得有条件接受，尚未接入页面、存储或 Production
+- 当前开发分支：`V2`；Stage 1–3 已完成本地契约、AI 质量证据与 Schema Version 6 数据层，尚未接入 V2 页面、远程迁移或 Production
 - 访问方式：私人 Basic Auth（基础认证）；账号信息不会存放在仓库中
 - 正式数据：Neon Postgres（关系型数据库）
 
@@ -55,7 +55,7 @@
 - 普通界面继续使用简短自然的英文；不可逆操作和重要隐私提示保留中文或双语。
 
 完整范围和阶段顺序见 [V2 Master Plan](./plan_docs/PLAN_V2_MASTER.md)。
-Stage 1 的冻结口径、图示和可执行边界见 [V2 Stage 1 Contract](./plan_docs/PLAN_V2_STAGE1_PRODUCT_METRIC_DATA_CONTRACT.md)。Stage 2 的安全边界、首次测试和第二轮结论见 [V2 Stage 2 Gate](./plan_docs/PLAN_V2_STAGE2_AI_QUALITY_SECURITY_GATE.md)、[V2 Stage 2 Evidence](./plan_docs/PLAN_V2_STAGE2_AI_QUALITY_EVIDENCE.md)、[V2 Stage 2-B Refinement](./plan_docs/PLAN_V2_STAGE2_B_AI_QUALITY_REFINEMENT.md) 和 [V2 Stage 2-B Evidence](./plan_docs/PLAN_V2_STAGE2_B_AI_QUALITY_EVIDENCE.md)。
+Stage 1 的冻结口径、图示和可执行边界见 [V2 Stage 1 Contract](./plan_docs/PLAN_V2_STAGE1_PRODUCT_METRIC_DATA_CONTRACT.md)。Stage 2 的安全边界、首次测试和第二轮结论见 [V2 Stage 2 Gate](./plan_docs/PLAN_V2_STAGE2_AI_QUALITY_SECURITY_GATE.md)、[V2 Stage 2 Evidence](./plan_docs/PLAN_V2_STAGE2_AI_QUALITY_EVIDENCE.md)、[V2 Stage 2-B Refinement](./plan_docs/PLAN_V2_STAGE2_B_AI_QUALITY_REFINEMENT.md) 和 [V2 Stage 2-B Evidence](./plan_docs/PLAN_V2_STAGE2_B_AI_QUALITY_EVIDENCE.md)。Stage 3 的数据、迁移草案、备份范围和远程执行边界见 [V2 Stage 3 Data Model](./plan_docs/PLAN_V2_STAGE3_DATA_MODEL_BACKUP_PARITY.md)。
 
 ## 两条学习轨道
 
@@ -102,6 +102,9 @@ npm run governance:preflight
 npm run lint
 npm run typecheck
 npm run test
+npm run backup:dry-run:fixture
+npm run backup:dry-run:schema5-fixture
+npm run backup:dry-run:schema6-fixture
 npm run build
 ```
 
@@ -120,6 +123,7 @@ npm run build
 - 当前产品面向私人熟人小组，不是公开注册服务。
 - Production 不接收 Development / Preview 的测试数据。
 - Active Vocabulary 在当前线上 V1 中没有调度行为；其独立练习属于已确认但尚未实现的 V2。
+- `V2` 分支已把本地快照和 JSON backup 升级到 Schema Version 6 / backup version 3；`db/migrations/0003_v2_schema6_data_model.sql` 尚未连接或执行到任何远程数据库，线上 V1 继续使用 Schema Version 5。
 - V2 计划使用受硬额度保护的付费 Gemini API；当前 Stage 2 固定测试 `gemini-3.1-flash-lite`，使用 120 条非个人测试词条，并已从路线中移除 Datamuse、Free Dictionary、Groq 对比和会热切换的 `gemini-flash-latest`。当前线上 V1 尚未调用任何 AI 服务。
 - 首次付费 AI 外发前会显示并要求确认：服务商、将发送的词汇字段、不会发送的个人字段、有限内容保留、单独的技术 / 用量 metadata（元数据）及费用边界；界面不宣称 Zero Retention（零保留）。
 - Stage 2 的本地测试密钥只放在被 Git 忽略的专用环境文件中，不进入 Vercel、Preview、Production 或浏览器。正式 V2 接入仍需新的 Production-only（仅生产环境）密钥与审批。
@@ -141,6 +145,7 @@ README 面向第一次看到仓库的人。详细架构、历史决策、执行�
 - [V2 Stage 2 Evidence](./plan_docs/PLAN_V2_STAGE2_AI_QUALITY_EVIDENCE.md)：首次 120 条测试结果、限制和后续决策
 - [V2 Stage 2-B Refinement](./plan_docs/PLAN_V2_STAGE2_B_AI_QUALITY_REFINEMENT.md)：Prompt v2、本地质量规则和一次性第二轮评估边界
 - [V2 Stage 2-B Evidence](./plan_docs/PLAN_V2_STAGE2_B_AI_QUALITY_EVIDENCE.md)：第二轮 120 条结果、首轮对比、剩余缺陷和有条件接受结论
+- [V2 Stage 3 Data Model](./plan_docs/PLAN_V2_STAGE3_DATA_MODEL_BACKUP_PARITY.md)：Schema Version 6、备份范围、迁移草案和环境执行边界
 - [Version-hold Multi-User Isolation](./plan_docs/PLAN_VERSION_HOLD_MULTI_USER_CONFIDENTIAL_ISOLATION.md)：暂缓的 SSO 与多人机密隔离边界
 - [Stage 8 Review Memory Algorithm](./plan_docs/PLAN_V1_STAGE8_REVIEW_MEMORY_ALGORITHM.md)：Recognition FSRS 与 Active 隔离设计
 - [Stage 8.5 Data Lifecycle](./plan_docs/PLAN_V1_STAGE8_5_DATA_LIFECYCLE_ENVIRONMENT_STRATEGY.md)：环境、备份和数据生命周期策略

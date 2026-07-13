@@ -92,7 +92,9 @@ function getReviewStateByVocabularyId(data: VocabularyData) {
 
   return new Map(
     data.reviewStates
-      .filter((state) => state.personId === personId)
+      .filter(
+        (state) => state.personId === personId && state.reviewProfile === "recognition",
+      )
       .map((state) => [state.vocabularyItemId, state]),
   );
 }

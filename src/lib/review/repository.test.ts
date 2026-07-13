@@ -101,6 +101,44 @@ describe("review repository", () => {
     expect(second.data.reviewEvents).toHaveLength(2);
   });
 
+  it("keeps an unknown legacy first-rating boundary honest after a new review", () => {
+    const data = addReviewableWord();
+    const withLegacyState = {
+      ...data,
+      reviewStates: [
+        {
+          id: "legacy-state",
+          personId: "person_mimi",
+          vocabularyItemId: "vocab-1",
+          reviewProfile: "recognition" as const,
+          parameterSetId: "recognition-fsrs-v1",
+          firstRatedAt: null,
+          historyOrigin: "legacy_unknown" as const,
+          status: "review" as const,
+          dueAt: "2026-07-04T00:00:00.000Z",
+          lastReviewedAt: "2026-07-03T00:00:00.000Z",
+          reviewCount: 2,
+          lapseCount: 0,
+          intervalMinutes: 1440,
+          difficulty: 4,
+          stability: 1,
+          updatedAt: "2026-07-03T00:00:00.000Z",
+        },
+      ],
+    };
+
+    const reviewed = recordReview(
+      withLegacyState,
+      { vocabularyItemId: "vocab-1", rating: "remembered" },
+      "2026-07-04T01:00:00.000Z",
+    );
+
+    expect(reviewed.state).toMatchObject({
+      firstRatedAt: null,
+      historyOrigin: "legacy_unknown",
+    });
+  });
+
   it("does not review archived vocabulary", () => {
     const archived = archiveVocabularyItem(
       addReviewableWord(),

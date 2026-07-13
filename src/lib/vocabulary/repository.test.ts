@@ -42,6 +42,13 @@ describe("vocabulary repository", () => {
       createdAt: "2026-07-03T14:00:00.000Z",
       systemCreatedAt: "2026-07-04T00:01:00.000Z",
     });
+    expect(added.data.vocabularyCreationFacts[0]).toMatchObject({
+      originalVocabularyItemId: "vocab-1",
+      sourceActionId: "vocab-1",
+      trackAtCreation: "recognition",
+      sourceKind: "single",
+      historyOrigin: "recorded",
+    });
 
     const updated = updateVocabularyItem(
       added.data,
@@ -141,6 +148,7 @@ describe("vocabulary repository", () => {
     expect(deleted.data.items).toHaveLength(0);
     expect(deleted.data.reviewStates).toHaveLength(0);
     expect(deleted.data.reviewEvents).toHaveLength(0);
+    expect(deleted.data.vocabularyCreationFacts).toHaveLength(1);
   });
 
   it("rolls back a JSON import batch and removes related review data", () => {
@@ -189,5 +197,61 @@ describe("vocabulary repository", () => {
     expect(rolledBack.data.importBatches).toHaveLength(0);
     expect(rolledBack.data.reviewStates).toHaveLength(0);
     expect(rolledBack.data.reviewEvents).toHaveLength(0);
+    expect(rolledBack.data.vocabularyCreationFacts).toHaveLength(2);
+    expect(rolledBack.data.vocabularyCreationReversals).toEqual([
+      expect.objectContaining({
+        sourceActionId: "batch-json-1",
+        reason: "batch_rollback",
+      }),
+    ]);
+  });
+
+  it("blocks a direct Track change after review history exists", () => {
+    const added = addVocabularyItem(
+      createEmptyVocabularyData("2026-07-04T00:00:00.000Z"),
+      {
+        id: "vocab-history",
+        surfaceText: "allocate",
+        learningTrack: "recognition",
+        source: "manual",
+        timezone: "Australia/Melbourne",
+      },
+      "2026-07-04T00:01:00.000Z",
+    );
+    const reviewed = recordReview(
+      added.data,
+      { vocabularyItemId: "vocab-history", rating: "remembered" },
+      "2026-07-04T00:02:00.000Z",
+    );
+
+    expect(() =>
+      updateVocabularyItem(
+        reviewed.data,
+        "vocab-history",
+        { learningTrack: "active" },
+        "2026-07-04T00:03:00.000Z",
+      ),
+    ).toThrow("Start it fresh in the other Track");
+  });
+
+  it("removes an empty import batch without inventing a reversal fact", () => {
+    const committed = commitImportCandidates(
+      createEmptyVocabularyData("2026-07-04T00:00:00.000Z"),
+      { id: "empty-batch", sourceType: "pasted_text", fileName: null },
+      [],
+      [],
+      "Australia/Melbourne",
+      "2026-07-04T00:01:00.000Z",
+    );
+
+    const rolledBack = rollbackImportBatch(
+      committed.data,
+      "empty-batch",
+      "2026-07-04T00:02:00.000Z",
+    );
+
+    expect(rolledBack.deletedItemsCount).toBe(0);
+    expect(rolledBack.data.vocabularyCreationFacts).toHaveLength(0);
+    expect(rolledBack.data.vocabularyCreationReversals).toHaveLength(0);
   });
 });
