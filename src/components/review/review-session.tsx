@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SimplePanel } from "@/components/simple-panel";
 import { ExampleWordActions } from "@/components/review/example-word-actions";
 import { useMimiSound } from "@/components/sound-provider";
+import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import { useVocabularyData } from "@/components/vocabulary/use-vocabulary-data";
 import { getSelectedPersonId } from "@/lib/people/repository";
 import { recordReview, resetTodayReviewTask, rollbackReviewEvent } from "@/lib/review/repository";
@@ -185,7 +186,7 @@ export function ReviewSession() {
 
       if (!result.resetEventsCount) {
         setShowResetConfirm(false);
-        setMessage("今天还没有复习记录可重置。");
+        setMessage("There are no review records to reset today.");
         return;
       }
 
@@ -205,10 +206,10 @@ export function ReviewSession() {
       setShowResetConfirm(false);
       setCardStartedAt(0);
       setSubmittedItemId(null);
-      setMessage(`已重置今日复习任务：回滚 ${result.resetItemsCount} 个词，移除 ${result.resetEventsCount} 条今日记录。`);
+      setMessage(`Today’s review was reset for ${result.resetItemsCount} ${result.resetItemsCount === 1 ? "word" : "words"}.`);
     } catch (error) {
       setShowResetConfirm(false);
-      setMessage(error instanceof Error ? error.message : "重置今日复习任务失败");
+      setMessage(error instanceof Error ? error.message : "Could not reset today’s review");
     }
   };
 
@@ -240,9 +241,9 @@ export function ReviewSession() {
       setShowCompletionModal(false);
       setCardStartedAt(0);
       setSubmittedItemId(null);
-      setMessage(`已回退 ${previousReview.surfaceText}，可以重新选择熟练度。`);
+      setMessage(`Returned to ${previousReview.surfaceText}. Choose again when ready.`);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "回退1词失败");
+      setMessage(error instanceof Error ? error.message : "Could not return to the previous word");
     }
   };
 
@@ -300,8 +301,8 @@ export function ReviewSession() {
       setCardStartedAt(0);
       setMessage(
         nextSession.repeatedSession
-          ? `已记录，${currentItem.surfaceText} 会在本局稍后再出现。`
-          : `已记录，下次复习 ${new Date(result.state.dueAt).toLocaleString()}`,
+          ? `Saved. ${currentItem.surfaceText} will return later in this session.`
+          : `Saved. ${currentItem.surfaceText} is resting until ${new Date(result.state.dueAt).toLocaleString()}.`,
       );
 
       if (completedSession) {
@@ -310,7 +311,7 @@ export function ReviewSession() {
     } catch (error) {
       submittedItemIdRef.current = null;
       setSubmittedItemId(null);
-      setMessage(error instanceof Error ? error.message : "复习记录失败");
+      setMessage(error instanceof Error ? error.message : "Could not save this review");
     }
   };
 
@@ -324,7 +325,7 @@ export function ReviewSession() {
               <PressableButton
                 type="button"
                 onClick={() => void rollbackPreviousReview()}
-                className="mimi-button-secondary mimi-focus-ring inline-flex min-h-10 items-center justify-center gap-2 px-3 text-sm font-semibold"
+                className="mimi-button-secondary mimi-focus-ring inline-flex min-h-11 items-center justify-center gap-2 px-3 text-sm font-semibold"
               >
                 <Undo2 aria-hidden="true" className="size-4" />
                 回退1词
@@ -351,9 +352,9 @@ export function ReviewSession() {
             <div className="grid w-full max-w-2xl gap-5">
               <motion.div
                 key={currentItem.id}
-                initial={reduceMotion ? false : { opacity: 0, y: 10 }}
-                animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
-                transition={{ duration: 0.34, ease: [0.22, 1, 0.36, 1] }}
+                initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: reduceMotion ? 0.12 : 0.34, ease: [0.22, 1, 0.36, 1] }}
                 onPointerDown={(event) => {
                   if (event.button !== 0 || shouldIgnoreCardToggle(event.target)) {
                     cardPointerStartRef.current = null;
@@ -386,7 +387,7 @@ export function ReviewSession() {
                 }}
                 className="mimi-card cursor-pointer bg-[#fffaf1] p-6 sm:p-8"
               >
-                <p className="mimi-word-serif text-5xl text-[#203229] sm:text-6xl">{currentItem.surfaceText}</p>
+                <p className="mimi-word-serif break-words text-4xl text-[#203229] sm:text-6xl">{currentItem.surfaceText}</p>
                 <p className="mt-4 text-sm leading-6 text-[#5f6d62]">
                   {showBack ? "Tap again to hide." : "Tap the card to reveal."}
                 </p>
@@ -395,10 +396,10 @@ export function ReviewSession() {
                   {showBack ? (
                     <motion.div
                       key="answer"
-                      initial={reduceMotion ? false : { opacity: 0, y: 8 }}
-                      animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
-                      exit={reduceMotion ? undefined : { opacity: 0, y: -6 }}
-                      transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
+                      initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -6 }}
+                      transition={{ duration: reduceMotion ? 0.12 : 0.26, ease: [0.22, 1, 0.36, 1] }}
                       className="mt-6 grid gap-3 border-t border-[#d8d1c2] pt-5 text-left"
                     >
                       <div>
@@ -447,9 +448,9 @@ export function ReviewSession() {
               <p className="text-lg font-semibold text-[#203229]">
                 {isLoaded
                   ? sessionTotal
-                    ? "本次复习已完成。"
-                    : "当前没有到期或可开始的新词。"
-                  : "Loading local vocabulary..."}
+                    ? "This review is complete."
+                    : "Nothing is ready right now."
+                  : "Loading Review..."}
               </p>
               <p className="text-sm leading-6 text-[#5f6d62]">You are building something valuable.</p>
             </div>
@@ -528,88 +529,59 @@ export function ReviewSession() {
       </SimplePanel>
       </div>
 
-      <AnimatePresence>
-        {showCompletionModal ? (
-          <motion.div
-            className="fixed inset-0 z-50 grid place-items-center bg-[#14251d]/55 px-4 py-6 backdrop-blur-sm"
-            initial={reduceMotion ? false : { opacity: 0 }}
-            animate={reduceMotion ? undefined : { opacity: 1 }}
-            exit={reduceMotion ? undefined : { opacity: 0 }}
-            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-          >
-            <motion.div
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="review-complete-title"
-              className="mimi-card w-full max-w-sm p-6 text-center shadow-[0_24px_70px_rgb(20_37_29/0.26)]"
-              initial={reduceMotion ? false : { opacity: 0, y: 12, scale: 0.98 }}
-              animate={reduceMotion ? undefined : { opacity: 1, y: 0, scale: 1 }}
-              exit={reduceMotion ? undefined : { opacity: 0, y: 8, scale: 0.98 }}
-              transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
-            >
-              <CheckCircle2 aria-hidden="true" className="mx-auto size-10 text-[var(--mimi-primary)]" />
-              <h2 id="review-complete-title" className="mt-4 text-xl font-semibold text-[var(--mimi-text)]">
-                已完成今日复习任务
-              </h2>
-              <PressableButton
-                type="button"
-                data-mimi-sound-skip="true"
-                onClick={confirmCompletion}
-                className="mimi-button mimi-focus-ring mt-5 inline-flex min-w-28 items-center justify-center px-5 text-sm font-semibold"
-              >
-                确定
-              </PressableButton>
-            </motion.div>
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
+      <ResponsiveDialog
+        open={showCompletionModal}
+        onClose={() => setShowCompletionModal(false)}
+        labelledBy="review-complete-title"
+        panelClassName="max-w-sm text-center sm:max-w-sm"
+        dismissOnBackdrop={false}
+      >
+        <CheckCircle2 aria-hidden="true" className="mx-auto size-10 text-[var(--mimi-primary)]" />
+        <h2 id="review-complete-title" className="mt-4 text-xl font-semibold text-[var(--mimi-text)]">
+          已完成今日复习任务
+        </h2>
+        <PressableButton
+          type="button"
+          data-mimi-sound-skip="true"
+          onClick={confirmCompletion}
+          className="mimi-button mimi-focus-ring mt-5 inline-flex min-w-28 items-center justify-center px-5 text-sm font-semibold"
+        >
+          确定
+        </PressableButton>
+      </ResponsiveDialog>
 
-      <AnimatePresence>
-        {showResetConfirm ? (
-          <motion.div
-            className="fixed inset-0 z-50 grid place-items-center bg-[#14251d]/55 px-4 py-6 backdrop-blur-sm"
-            initial={reduceMotion ? false : { opacity: 0 }}
-            animate={reduceMotion ? undefined : { opacity: 1 }}
-            exit={reduceMotion ? undefined : { opacity: 0 }}
-            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+      <ResponsiveDialog
+        open={showResetConfirm}
+        onClose={() => setShowResetConfirm(false)}
+        labelledBy="review-reset-title"
+        describedBy="review-reset-description"
+        panelClassName="max-w-sm text-center sm:max-w-sm"
+        dismissOnBackdrop={false}
+      >
+        <RotateCcw aria-hidden="true" className="mx-auto size-9 text-[var(--mimi-primary)]" />
+        <h2 id="review-reset-title" className="mt-4 text-xl font-semibold text-[var(--mimi-text)]">
+          是否确认重置今日复习任务？
+        </h2>
+        <p id="review-reset-description" className="mt-2 text-sm leading-6 text-[var(--mimi-text-soft)]">
+          YES 后会移除今天的复习记录，并回到今日开始复习之前。
+        </p>
+        <div className="mt-5 grid grid-cols-2 gap-3">
+          <PressableButton
+            type="button"
+            onClick={() => setShowResetConfirm(false)}
+            className="mimi-button-secondary mimi-focus-ring inline-flex items-center justify-center px-4 text-sm font-semibold"
           >
-            <motion.div
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="review-reset-title"
-              className="mimi-card w-full max-w-sm p-6 text-center shadow-[0_24px_70px_rgb(20_37_29/0.26)]"
-              initial={reduceMotion ? false : { opacity: 0, y: 12, scale: 0.98 }}
-              animate={reduceMotion ? undefined : { opacity: 1, y: 0, scale: 1 }}
-              exit={reduceMotion ? undefined : { opacity: 0, y: 8, scale: 0.98 }}
-              transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
-            >
-              <RotateCcw aria-hidden="true" className="mx-auto size-9 text-[var(--mimi-primary)]" />
-              <h2 id="review-reset-title" className="mt-4 text-xl font-semibold text-[var(--mimi-text)]">
-                是否确认重置今日复习任务？
-              </h2>
-              <p className="mt-2 text-sm leading-6 text-[var(--mimi-muted)]">
-                YES 后会移除今天的复习记录，并回到今日开始复习之前。
-              </p>
-              <div className="mt-5 grid grid-cols-2 gap-3">
-                <PressableButton
-                  type="button"
-                  onClick={() => setShowResetConfirm(false)}
-                  className="mimi-button-secondary mimi-focus-ring inline-flex items-center justify-center px-4 text-sm font-semibold"
-                >
-                  取消
-                </PressableButton>
-                <PressableButton
-                  type="button"
-                  onClick={() => void resetTodayReview()}
-                  className="mimi-button mimi-focus-ring inline-flex items-center justify-center px-4 text-sm font-semibold"
-                >
-                  YES
-                </PressableButton>
-              </div>
-            </motion.div>
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
+            取消
+          </PressableButton>
+          <PressableButton
+            type="button"
+            onClick={() => void resetTodayReview()}
+            className="mimi-button mimi-focus-ring inline-flex items-center justify-center px-4 text-sm font-semibold"
+          >
+            YES
+          </PressableButton>
+        </div>
+      </ResponsiveDialog>
     </>
   );
 }

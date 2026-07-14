@@ -8,7 +8,6 @@ import {
   Download,
   Ear,
   Leaf,
-  PenLine,
   Settings,
   Sparkles,
   Upload,
@@ -21,7 +20,6 @@ import {
 } from "@/lib/vocabulary/repository";
 import { useVocabularyData } from "./use-vocabulary-data";
 import {
-  DEFAULT_ACTIVE_SESSION_LIMIT,
   DEFAULT_RECOGNITION_SESSION_LIMIT,
   getSelectedReviewSettings,
 } from "@/lib/review/settings";
@@ -56,12 +54,8 @@ export function HomeDashboard() {
     (event) => event.personId === selectedPerson.id && isSameLocalDay(event.reviewedAt),
   ).length;
   const recognitionLimit = isLoaded ? settings.recognitionSessionLimit : DEFAULT_RECOGNITION_SESSION_LIMIT;
-  const activeLimit = isLoaded ? settings.activeSessionLimit : DEFAULT_ACTIVE_SESSION_LIMIT;
   const recognitionProgress = recognitionLimit
     ? Math.min(100, Math.round((completedToday / recognitionLimit) * 100))
-    : 0;
-  const activeProgress = activeLimit
-    ? Math.min(100, Math.round((activeTrackItems.length / activeLimit) * 100))
     : 0;
   const weakWordsCount = data.reviewStates.filter(
     (state) => state.personId === selectedPerson.id && state.lapseCount > 0,
@@ -71,9 +65,8 @@ export function HomeDashboard() {
   const trackCards = [
     {
       title: "Recognition Vocabulary",
-      titleZh: "阅读词汇",
       eyebrow: "Higher-volume reading review",
-      description: "Recognize the word, meaning, and example context without adding pressure.",
+      description: "Recognize the word, meaning, and example context.",
       goal: `${recognitionLimit} cards today`,
       progressLabel: `${isLoaded ? completedToday : "-"} / ${recognitionLimit}`,
       progress: recognitionProgress,
@@ -85,16 +78,15 @@ export function HomeDashboard() {
     },
     {
       title: "Active Vocabulary",
-      titleZh: "输出词汇",
-      eyebrow: "Focused listening and writing track",
-      description: "Reserved for dictation, spelling, sentence recall, and writing usage.",
-      goal: `${activeLimit} focused words later`,
-      progressLabel: `${isLoaded ? activeTrackItems.length : "-"} / ${activeLimit}`,
-      progress: activeProgress,
+      eyebrow: "Focused recall and sound",
+      description: "A calm home for Say it, Spell it, and Dictation.",
+      goal: "Practice rests for now",
+      progressLabel: `${isLoaded ? activeTrackItems.length : "-"} words`,
+      progress: 0,
       href: "/practice-lab",
-      cta: "Open lab",
-      Icon: PenLine,
-      mastery: ["Listening", "Spelling", "Usage"],
+      cta: "See practice modes",
+      Icon: AudioWaveform,
+      mastery: ["Say it", "Spell it", "Dictation"],
       tone: "bg-[#e7decb] text-[#5b4c2c]",
     },
   ] as const;
@@ -111,12 +103,12 @@ export function HomeDashboard() {
               </div>
               <h2 className="text-xl font-semibold text-[#203229]">Today Hub</h2>
               <p className="mt-2 max-w-xl text-sm leading-6 text-[#5f6d62]">
-                Pick the right learning track for today. Recognition review is ready, while the active track has a calm space prepared for later practice.
+                Choose the Track that fits this moment.
               </p>
             </div>
             <Link
               href="/study"
-              className="mimi-button-secondary mimi-focus-ring inline-flex !min-h-10 items-center justify-center gap-2 px-3 text-sm font-semibold"
+              className="mimi-button-secondary mimi-focus-ring inline-flex !min-h-11 items-center justify-center gap-2 px-3 text-sm font-semibold"
             >
               Study plan
               <ArrowRight aria-hidden="true" className="size-4" />
@@ -129,12 +121,11 @@ export function HomeDashboard() {
 
               return (
                 <CalmCard key={track.title} className="mimi-card h-full">
-                  <div className="flex h-full min-h-[17rem] flex-col gap-3 p-4">
+                  <div className="flex h-full min-h-[15rem] flex-col gap-3 p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <p className="text-xs font-semibold uppercase tracking-normal text-[#879087]">{track.eyebrow}</p>
                         <h3 className="mt-1.5 text-lg font-semibold text-[#203229]">{track.title}</h3>
-                        <p className="mimi-cjk mt-1 text-sm font-semibold text-[#425f4a]">{track.titleZh}</p>
                       </div>
                       <span className={`inline-flex size-9 shrink-0 items-center justify-center rounded-md ${track.tone}`}>
                         <Icon aria-hidden="true" className="size-4.5" />
@@ -163,7 +154,7 @@ export function HomeDashboard() {
 
                     <Link
                       href={track.href}
-                      className="mimi-button mimi-focus-ring mt-auto inline-flex !min-h-10 w-fit items-center justify-center gap-2 px-3 text-sm font-semibold"
+                      className="mimi-button mimi-focus-ring mt-auto inline-flex !min-h-11 w-fit items-center justify-center gap-2 px-3 text-sm font-semibold"
                     >
                       {track.cta}
                       <ArrowRight aria-hidden="true" className="size-4" />
@@ -176,13 +167,13 @@ export function HomeDashboard() {
         </section>
 
         <section className="mimi-panel-dark p-4">
-          <p className="text-sm font-semibold text-[var(--mimi-panel-dark-text)]">Review schedule</p>
+          <p className="text-sm font-semibold text-[var(--mimi-panel-dark-text)]">Today at a glance</p>
           <div className="mt-4 grid gap-2">
             {[
               ["Ready now", isLoaded ? reviewQueue.length : "-"],
               ["Recognition", isLoaded ? recognitionItems.length : "-"],
               ["Active", isLoaded ? activeTrackItems.length : "-"],
-              ["Weak words", isLoaded ? weakWordsCount : "-"],
+              ["Needs care", isLoaded ? weakWordsCount : "-"],
               ["Archived", isLoaded ? archivedItems.length : "-"],
             ].map(([label, value]) => (
               <div key={label} className="flex items-center justify-between rounded-md border border-[var(--mimi-panel-dark-item-border)] bg-[var(--mimi-panel-dark-item-bg)] px-3 py-2.5">
@@ -192,7 +183,7 @@ export function HomeDashboard() {
             ))}
           </div>
           <p className="mt-3 text-sm leading-6 text-[var(--mimi-panel-dark-muted)]">
-            Recognition reviews follow the current FSRS schedule.
+            Recognition follows your review rhythm.
           </p>
         </section>
       </CalmEntrance>
@@ -202,7 +193,7 @@ export function HomeDashboard() {
           <div className="mb-3 flex items-center justify-between gap-3">
             <h2 className="text-base font-semibold text-[#203229]">Latest words</h2>
             <Link href="/library" className="mimi-focus-ring rounded-md text-sm font-semibold text-[#5f7d66]">
-              查看全部
+              See all
             </Link>
           </div>
           {latestItems.length ? (
@@ -219,7 +210,7 @@ export function HomeDashboard() {
             </div>
           ) : (
             <p className="rounded-md border border-dashed border-[#afbea9] bg-[#fffaf1] p-3 text-sm leading-6 text-[#5f6d62]">
-              {isLoaded ? "还没有词条。可以从导入页添加单个词或导入 JSON。" : "Loading vocabulary..."}
+              {isLoaded ? "Your first word can begin in Add Words." : "Loading words..."}
             </p>
           )}
         </section>
@@ -230,17 +221,17 @@ export function HomeDashboard() {
               <AudioWaveform aria-hidden="true" className="size-4.5" />
             </span>
             <div>
-              <h2 className="text-base font-semibold text-[#203229]">Practice Lab / 练习室</h2>
+              <h2 className="text-base font-semibold text-[#203229]">Practice Lab</h2>
               <p className="mt-2 text-sm leading-6 text-[#5f6d62]">
-                Dictation, spelling, and writing practice for Active Vocabulary will be added here later.
+                Say it, Spell it, and Dictation are resting for now.
               </p>
             </div>
           </div>
           <div className="mt-3 flex flex-wrap gap-1.5">
             {[
-              { label: "Listen", icon: Ear },
-              { label: "Spell", icon: Sparkles },
-              { label: "Write", icon: PenLine },
+              { label: "Say it", icon: AudioWaveform },
+              { label: "Spell it", icon: Sparkles },
+              { label: "Dictation", icon: Ear },
             ].map((labItem) => {
               const Icon = labItem.icon;
 
@@ -254,7 +245,7 @@ export function HomeDashboard() {
           </div>
           <Link
             href="/practice-lab"
-            className="mimi-button-secondary mimi-focus-ring mt-3 inline-flex !min-h-10 items-center justify-center gap-2 px-3 text-sm font-semibold"
+            className="mimi-button-secondary mimi-focus-ring mt-3 inline-flex !min-h-11 items-center justify-center gap-2 px-3 text-sm font-semibold"
           >
             Open lab
             <ArrowRight aria-hidden="true" className="size-4" />
@@ -265,8 +256,8 @@ export function HomeDashboard() {
           <h2 className="text-base font-semibold text-[#203229]">Quiet tools</h2>
           <div className="mt-3 grid gap-2">
             {[
-              { href: "/import", label: "Input vocabulary", icon: Upload },
-              { href: "/export", label: "Export backup", icon: Download },
+              { href: "/import", label: "Add words", icon: Upload },
+              { href: "/export", label: "Backup", icon: Download },
               { href: "/settings", label: "Settings", icon: Settings },
             ].map((tool) => {
               const Icon = tool.icon;
@@ -275,7 +266,7 @@ export function HomeDashboard() {
                 <Link
                   key={tool.href}
                   href={tool.href}
-                  className="mimi-button-secondary mimi-focus-ring inline-flex !min-h-10 items-center justify-between gap-3 px-3 text-sm font-semibold"
+                  className="mimi-button-secondary mimi-focus-ring inline-flex !min-h-11 items-center justify-between gap-3 px-3 text-sm font-semibold"
                 >
                   <span className="inline-flex items-center gap-2">
                     <Icon aria-hidden="true" className="size-4" />

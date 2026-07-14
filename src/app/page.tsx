@@ -3,7 +3,7 @@ import { HomeDashboard } from "@/components/vocabulary/home-dashboard";
 
 export default function Home() {
   return (
-    <AppShell title="今日学习" subtitle="Keep going, one word at a time.">
+    <AppShell title="Today" subtitle="One calm step at a time.">
       <HomeDashboard />
     </AppShell>
   );

@@ -1,7 +1,7 @@
 # Words Learning App For Mimi V2 Master Plan
 
 Created: 2026-07-13 00:16 AEST
-Last updated: 2026-07-14 01:32 AEST
+Last updated: 2026-07-14 11:14 AEST
 
 Source plan:
 - `plan_docs/PLAN_V1_MASTER.md`
@@ -26,11 +26,12 @@ Consumer / next stage:
 - `plan_docs/PLAN_V2_STAGE1_PRODUCT_METRIC_DATA_CONTRACT.md`
 - `plan_docs/PLAN_V2_STAGE3_DATA_MODEL_BACKUP_PARITY.md`
 - `plan_docs/PLAN_V2_STAGE3_1_REVIEW_INTERACTION_CONTEXT_WORD_ACTIONS.md`
+- `plan_docs/PLAN_V2_STAGE4_MOBILE_FOUNDATION_COPY.md`
 - Future derived V2 child plans created in the order defined by this document.
 - `plan_docs/PLAN_VERSION_HOLD_MULTI_USER_CONFIDENTIAL_ISOLATION.md`
 
 Document nature:
-This is the canonical V2 product and engineering master plan. It is derived from the completed V1 plan and current Production architecture. V2-1 has an isolated executable contract; V2-2 / 2-B have bounded local AI quality evidence; V2-3 has implemented the local/application Schema Version 6 and backup parity. No V2 user-facing page, remote migration, Production provider route, or deployment has been implemented.
+This is the canonical V2 product and engineering master plan. It is derived from the completed V1 plan and current Production architecture. V2-1 has an isolated executable contract; V2-2 / 2-B have bounded local AI quality evidence; V2-3 has implemented the local/application Schema Version 6 and backup parity; V2-3.1 and V2-4 have implemented the bounded local Review-interaction and mobile/copy layers. No remote V2 migration, Production provider route, or V2 deployment has been performed.
 
 Current operational tier: Tier 3.
 
@@ -38,7 +39,7 @@ Target capability tier: Tier 3. V2 adds a bounded paid AI API（人工智能接�
 
 Working tier: Tier 3.
 
-Status: V2-0 through V2-3.1 are complete locally. V2-3.1 is recorded under `plan_docs/PLAN_V2_STAGE3_1_REVIEW_INTERACTION_CONTEXT_WORD_ACTIONS.md`. Schema Version 6 and backup version 3 are implemented on branch `V2`; `0003_v2_schema6_data_model.sql` remains an unexecuted migration draft. The live V1 database remains Schema Version 5. No remote migration, Production external-service route, credential change, or deployment action has been performed.
+Status: V2-0 through V2-4 are complete locally. V2-4 is recorded under `plan_docs/PLAN_V2_STAGE4_MOBILE_FOUNDATION_COPY.md`. Schema Version 6 and backup version 3 are implemented on branch `V2`; `0003_v2_schema6_data_model.sql` remains an unexecuted migration draft. The live V1 database remains Schema Version 5. No remote migration, Production external-service route, credential change, or deployment action has been performed.
 
 ## Scope
 
@@ -550,10 +551,13 @@ Status: complete locally on 2026-07-14. Canonical child plan: `plan_docs/PLAN_V2
 
 ### V2-4 Mobile Foundation And Copy
 
-- Close the 768–1023 px navigation gap.
-- Rework mobile import preview, forms, dialogs, practice cards, Safe Area, and keyboard behavior.
-- Reduce visible copy and retain English-first immersion.
-- Preserve `Batch imported`, the cat Home Brand Button, soft sage palette, and reduced-motion behavior.
+Status: complete locally on 2026-07-14. Canonical child plan: `plan_docs/PLAN_V2_STAGE4_MOBILE_FOUNDATION_COPY.md`. No provider, credential, remote database, Production data, or deployment action occurred.
+
+- Closed the 768–1023 px navigation gap with five mobile/tablet destinations and an accessible `More` panel; the desktop rail begins at 1024 px.
+- Added Safe Area and dynamic-viewport layout, shared responsive dialogs, 44+ px touch actions, mobile Batch cards, and a desktop-only editing table backed by the same candidate state.
+- Reduced visible copy and retained English-first immersion while preserving destructive Chinese warnings, exact `Batch imported`, the cat Home Brand Button, and the soft sage palette.
+- Preserved fluid 180–240 ms normal feedback and selectively reduced spatial movement without removing short opacity/color/border transitions.
+- Passed the accepted 320–1280 px browser matrix and produced user-facing 320/390 px screenshots outside tracked source.
 
 ### V2-5 Daily Learning Engine
 

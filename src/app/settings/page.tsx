@@ -7,7 +7,7 @@ import { ThemeSettingsForm } from "@/components/settings/theme-settings-form";
 
 export default function SettingsPage() {
   return (
-    <AppShell title="设置" subtitle="Tune the local study rhythm for each person.">
+    <AppShell title="Settings" subtitle="Choose how the app feels and who is studying.">
       <div className="grid gap-4">
         <SimplePanel title="Theme">
           <ThemeSettingsForm />

@@ -7,23 +7,21 @@ export default function StudyPage() {
     {
       href: "/review",
       title: "Recognition Vocabulary",
-      titleZh: "阅读词汇",
-      description: "Review meaning and examples with the current V1 flashcard flow.",
+      description: "Recognize meanings and examples with calm flashcards.",
       icon: BookOpen,
       cta: "Start review",
     },
     {
       href: "/practice-lab",
       title: "Active Vocabulary",
-      titleZh: "输出词汇",
-      description: "Open the reserved space for later listening, spelling, and writing practice.",
+      description: "Preview Say it, Spell it, and Dictation practice.",
       icon: PenLine,
       cta: "Open lab",
     },
   ] as const;
 
   return (
-    <AppShell title="学习" subtitle="Choose the daily path for Recognition or future Active practice.">
+    <AppShell title="Study" subtitle="Choose a learning Track.">
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(260px,0.6fr)]">
         <section className="grid gap-4">
           {studyCards.map((card) => {
@@ -39,7 +37,6 @@ export default function StudyPage() {
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div>
                         <h2 className="text-xl font-semibold text-[#203229]">{card.title}</h2>
-                        <p className="mimi-cjk mt-1 text-sm font-semibold text-[#425f4a]">{card.titleZh}</p>
                       </div>
                       <span className="inline-flex items-center gap-1 text-sm font-semibold text-[#5f7d66]">
                         {card.cta}
@@ -60,7 +57,7 @@ export default function StudyPage() {
           </div>
           <h2 className="mt-4 text-base font-semibold text-[var(--mimi-panel-dark-text)]">Daily rhythm</h2>
           <p className="mt-2 text-sm leading-6 text-[var(--mimi-panel-dark-muted)]">
-            Recognition review stays higher volume. Active practice stays smaller and more focused when it arrives later.
+            Recognition supports reading. Active practice will focus on recall and sound.
           </p>
         </aside>
       </div>

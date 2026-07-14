@@ -176,12 +176,38 @@ select {
   border-color: var(--mimi-rail-border);
   background: var(--mimi-rail-bg);
   color: var(--mimi-rail-text);
+  padding-top: max(1rem, env(safe-area-inset-top));
 }
 
 .mimi-mobile-nav {
   border-color: rgb(216 209 194 / 0.8);
   background: var(--mimi-mobile-nav-bg);
   box-shadow: 0 -18px 42px rgb(31 47 38 / 0.16);
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+}
+
+.mimi-main-content {
+  padding-bottom: calc(7rem + env(safe-area-inset-bottom));
+  scroll-padding-bottom: calc(7rem + env(safe-area-inset-bottom));
+}
+
+.mimi-responsive-dialog {
+  overscroll-behavior: contain;
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  scroll-padding-bottom: max(5rem, calc(1rem + env(safe-area-inset-bottom)));
+}
+
+@media (min-width: 640px) {
+  .mimi-responsive-dialog {
+    padding-bottom: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .mimi-main-content {
+    padding-bottom: 3rem;
+    scroll-padding-bottom: 3rem;
+  }
 }
 
 .mimi-page-heading {
@@ -419,8 +445,7 @@ select {
   *::before,
   *::after {
     scroll-behavior: auto !important;
-    transition-duration: 1ms !important;
-    animation-duration: 1ms !important;
+    animation-duration: 120ms !important;
     animation-iteration-count: 1 !important;
   }
 
@@ -430,7 +455,8 @@ select {
   .mimi-button:hover,
   .mimi-button-secondary:hover,
   .mimi-button:active,
-  .mimi-button-secondary:active {
+  .mimi-button-secondary:active,
+  .hover\:-translate-y-0\.5:hover {
     transform: none;
   }
 }

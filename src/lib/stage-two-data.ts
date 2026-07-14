@@ -4,6 +4,7 @@ import {
   GraduationCap,
   Home,
   Library,
+  MoreHorizontal,
   RotateCcw,
   Settings,
   Upload,
@@ -11,14 +12,26 @@ import {
 import type { ReviewRating } from "@/lib/review/types";
 
 export const appNavItems = [
-  { href: "/", label: "首页", icon: Home },
-  { href: "/study", label: "学习", icon: GraduationCap },
-  { href: "/review", label: "复习", icon: RotateCcw },
-  { href: "/library", label: "词库", icon: Library },
-  { href: "/practice-lab", label: "练习室", icon: FlaskConical },
-  { href: "/import", label: "导入", icon: Upload },
-  { href: "/settings", label: "设置", icon: Settings },
+  { href: "/", label: "Home", icon: Home },
+  { href: "/study", label: "Study", icon: GraduationCap },
+  { href: "/review", label: "Review", icon: RotateCcw },
+  { href: "/library", label: "Library", icon: Library },
+  { href: "/practice-lab", label: "Practice Lab", icon: FlaskConical },
+  { href: "/import", label: "Add Words", icon: Upload },
+  { href: "/settings", label: "Settings", icon: Settings },
+  { href: "/export", label: "Backup", icon: Download },
 ] as const;
+
+export const mobilePrimaryNavItems = appNavItems.slice(0, 4);
+
+export const mobileMoreNavItems = [
+  appNavItems[5],
+  appNavItems[4],
+  appNavItems[6],
+  appNavItems[7],
+] as const;
+
+export const mobileMoreItem = { label: "More", icon: MoreHorizontal } as const;
 
 export const primaryActions = [
   {

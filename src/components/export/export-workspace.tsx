@@ -45,12 +45,12 @@ function SummaryGrid({ data }: { data: VocabularyData }) {
     <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
       {[
         ["People", counts.people],
-        ["Items", counts.items],
-        ["Active", counts.activeItems],
+        ["Words", counts.items],
+        ["In Library", counts.activeItems],
         ["Archived", counts.archivedItems],
         ["Batches", counts.importBatches],
-        ["States", counts.reviewStates],
-        ["Events", counts.reviewEvents],
+        ["In review", counts.reviewStates],
+        ["Review attempts", counts.reviewEvents],
       ].map(([label, value]) => (
         <div key={label} className="rounded-md bg-[#efe9dc] p-3">
           <p className="text-xs font-semibold text-[#5f6d62]">{label}</p>
@@ -101,7 +101,7 @@ export function ExportWorkspace() {
       backup,
       "application/json;charset=utf-8",
     );
-    setMessage("已生成 JSON backup");
+    setMessage("Full backup downloaded");
   };
 
   const downloadCsv = () => {
@@ -112,7 +112,7 @@ export function ExportWorkspace() {
       exportVocabularyCsv(data),
       "text/csv;charset=utf-8",
     );
-    setMessage("已生成 vocabulary CSV");
+    setMessage("Vocabulary list downloaded");
   };
 
   const readBackupFile = async (file: File | undefined) => {
@@ -124,7 +124,7 @@ export function ExportWorkspace() {
     const result = parseVocabularyBackupText(text);
 
     setRestoreResult(result);
-    setMessage(result.ok ? "已读取备份预览" : "备份文件未通过校验");
+    setMessage(result.ok ? "Backup preview ready" : "This backup needs attention");
   };
 
   const restoreBackup = async () => {
@@ -133,12 +133,12 @@ export function ExportWorkspace() {
     }
 
     if (isPostgresRuntime) {
-      setMessage("Postgres runtime 请使用正式 backup import 脚本导入");
+      setMessage("Restore is unavailable in this workspace.");
       return;
     }
 
     await commit(restoreResult.data);
-    setMessage(`已恢复 ${restoreResult.counts.items} 个词条到本地浏览器存储`);
+    setMessage(`Restored ${restoreResult.counts.items} ${restoreResult.counts.items === 1 ? "word" : "words"}`);
     setRestoreResult(null);
 
     if (fileInputRef.current) {
@@ -148,7 +148,7 @@ export function ExportWorkspace() {
 
   return (
     <div className="grid gap-4">
-      <SimplePanel title="Current Data">
+      <SimplePanel title="Your data">
         {isLoaded ? <SummaryGrid data={data} /> : <p className="text-sm text-[#5f6d62]">Loading data...</p>}
       </SimplePanel>
 
@@ -161,7 +161,7 @@ export function ExportWorkspace() {
             className="mimi-button-secondary mimi-focus-ring inline-flex min-h-14 items-center justify-center gap-2 px-4 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50"
           >
             <FileJson aria-hidden="true" className="size-4" />
-            JSON backup
+            Full backup
           </PressableButton>
           <PressableButton
             type="button"
@@ -170,22 +170,22 @@ export function ExportWorkspace() {
             className="mimi-button-secondary mimi-focus-ring inline-flex min-h-14 items-center justify-center gap-2 px-4 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50"
           >
             <FileSpreadsheet aria-hidden="true" className="size-4" />
-            Vocabulary CSV
+            Vocabulary list
           </PressableButton>
         </div>
         {message ? <p className="mt-3 rounded-md bg-[#d9e5d5] px-3 py-2 text-sm text-[#274331]">{message}</p> : null}
       </SimplePanel>
 
-      <SimplePanel title="Restore Preview">
+      <SimplePanel title="Restore">
         <div className="grid gap-3 md:grid-cols-[1fr_auto]">
           <label className="grid gap-2">
-            <span className="text-sm font-semibold text-[#203229]">JSON backup file</span>
+            <span className="text-sm font-semibold text-[#203229]">Backup file</span>
             <input
               ref={fileInputRef}
               type="file"
               accept=".json,application/json"
               onChange={(event) => void readBackupFile(event.target.files?.[0])}
-              className="mimi-input px-3 py-2 text-sm"
+              className="mimi-input min-w-0 px-3 py-2 text-sm"
             />
           </label>
           <PressableButton
@@ -194,7 +194,7 @@ export function ExportWorkspace() {
             className="mimi-button-secondary mimi-focus-ring inline-flex items-center justify-center gap-2 self-end px-4 text-sm font-semibold"
           >
             <Upload aria-hidden="true" className="size-4" />
-            选择文件
+            Choose file
           </PressableButton>
         </div>
 
@@ -203,7 +203,6 @@ export function ExportWorkspace() {
             <div className="rounded-md border border-[#d8d1c2] bg-[#efe9dc] p-3 text-sm text-[#203229]">
               <p>Exported at: {new Date(restoreResult.backup.metadata.exportedAt).toLocaleString()}</p>
               <p>Timezone: {restoreResult.backup.metadata.timezone}</p>
-              <p>Schema version: {restoreResult.backup.metadata.schemaVersion}</p>
             </div>
             <SummaryGrid data={restoreResult.data} />
             <PressableButton
@@ -213,7 +212,7 @@ export function ExportWorkspace() {
               className="mimi-button mimi-focus-ring inline-flex items-center justify-center gap-2 px-4 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Download aria-hidden="true" className="size-4" />
-              {isPostgresRuntime ? "Postgres 导入暂用脚本" : "确认恢复到本地"}
+              {isPostgresRuntime ? "Restore unavailable" : "确认用此备份替换当前数据"}
             </PressableButton>
           </div>
         ) : null}

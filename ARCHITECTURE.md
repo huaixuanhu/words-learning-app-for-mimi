@@ -1,7 +1,7 @@
 # Words Learning App For Mimi Architecture
 
 Created: 2026-07-02 23:30 AEST
-Last updated: 2026-07-14 00:27 AEST
+Last updated: 2026-07-14 11:14 AEST
 
 ## Current State
 
@@ -66,7 +66,9 @@ The local `main` branch now tracks `origin/main`. Remote repository settings hav
 
 ## Current V2 Planning Baseline
 
-The cloud-backed V1 described above is live and remains the current Production behavior. On branch `V2`, Stage 1 completed the isolated daily-study contract, Stage 2 / 2-B completed the bounded Gemini quality evidence, Stage 3 completed the local/application Schema Version 6 plus backup version 3 data layer, and Stage 3.1 completed the bounded local Review interaction/context-word-action pass under `plan_docs/PLAN_V2_STAGE3_1_REVIEW_INTERACTION_CONTEXT_WORD_ACTIONS.md`. Stage 3.1 amended only the unexecuted `0003` draft and made no Gemini or remote-database call. The live V1 database remains Schema Version 5; no remote V2 migration, credential change, Production data write, or deployment has been performed.
+The cloud-backed V1 described above is live and remains the current Production behavior. On branch `V2`, Stage 1 completed the isolated daily-study contract, Stage 2 / 2-B completed the bounded Gemini quality evidence, Stage 3 completed the local/application Schema Version 6 plus backup version 3 data layer, Stage 3.1 completed the bounded local Review interaction/context-word-action pass, and Stage 4 completed the mobile foundation and English-first copy pass under `plan_docs/PLAN_V2_STAGE4_MOBILE_FOUNDATION_COPY.md`. Stage 4 changed only local application UI, focused tests, and documentation. The live V1 database remains Schema Version 5; no remote V2 migration, provider call, credential change, Production data write, or deployment has been performed.
+
+Stage 4 establishes the responsive application shell reused by later V2 stages. Below 1024 px, a five-item bottom navigation exposes `Home`, `Study`, `Review`, `Library`, and an accessible `More` bottom sheet; at 1024 px and above, the desktop rail is the sole primary navigation. One shared responsive dialog owns focus containment/restoration, Escape/backdrop handling, background scroll lock, dynamic viewport limits, and Safe Area padding for `More`, Review, and Library confirmations. Batch import renders one candidate state as touch-friendly cards below 1024 px and a scroll-contained table from 1024 px. Normal motion retains short fluid transitions, while reduced-motion styling removes spatial lift/travel and keeps brief opacity, color, border, and surface feedback.
 
 The accepted V2 architecture direction is:
 

@@ -23,9 +23,9 @@ export function PersonSettingsForm() {
         type: "people.select",
         personId,
       });
-      setMessage(`已切换到 ${getSelectedPerson(nextData).displayName}`);
+      setMessage(`Switched to ${getSelectedPerson(nextData).displayName}`);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "切换失败");
+      setMessage(error instanceof Error ? error.message : "Could not switch person");
     }
   };
 
@@ -43,9 +43,9 @@ export function PersonSettingsForm() {
         input,
       });
       setDisplayName("");
-      setMessage(`已添加并切换到 ${result.person.displayName}`);
+      setMessage(`Added and switched to ${result.person.displayName}`);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "添加失败");
+      setMessage(error instanceof Error ? error.message : "Could not add this person");
     }
   };
 
@@ -83,14 +83,14 @@ export function PersonSettingsForm() {
           className="mimi-button mimi-focus-ring inline-flex items-center justify-center gap-2 px-4 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50"
         >
           <UserPlus aria-hidden="true" className="size-4" />
-          添加并切换
+          Add and switch
         </PressableButton>
       </form>
 
       <div className="rounded-md border border-[#d8d1c2] bg-[#efe9dc] p-3 text-sm text-[#5f6d62]">
         <p className="inline-flex items-center gap-2 font-semibold text-[#203229]">
           <Users aria-hidden="true" className="size-4" />
-          {activePeople.length} people
+          {activePeople.length} {activePeople.length === 1 ? "person" : "people"}
         </p>
         <p className="mt-1">私人项目内的数据切换，不是密码或安全隔离。</p>
       </div>

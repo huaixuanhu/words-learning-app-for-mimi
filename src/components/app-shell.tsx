@@ -26,7 +26,7 @@ export function AppShell({ title, subtitle, children }: AppShellProps) {
             </Link>
           </header>
 
-          <main className="mx-auto w-full max-w-6xl px-4 pb-28 pt-5 sm:px-6 lg:px-8 lg:pb-12 lg:pt-8">
+          <main className="mimi-main-content mx-auto w-full max-w-6xl px-4 pt-5 sm:px-6 lg:px-8 lg:pt-8">
             <div className="mimi-page-heading mb-6">
               <p className="mimi-page-kicker text-sm font-medium">Calm mind. Clear words.</p>
               <h1 className="mt-2 text-3xl font-semibold tracking-normal sm:text-4xl">{title}</h1>

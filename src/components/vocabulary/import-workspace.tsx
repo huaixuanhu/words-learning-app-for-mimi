@@ -2,7 +2,7 @@
 
 import { ClipboardList, Save, Upload } from "lucide-react";
 import type { FormEvent } from "react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useSyncExternalStore } from "react";
 import type { ImportCandidate, ImportSourceType, LearningTrack, VocabularyTag } from "@/lib/vocabulary/types";
 import {
   parseJsonImport,
@@ -36,12 +36,43 @@ const JSON_IMPORT_SAMPLE = `{
       "word": "coherent",
       "track": "active",
       "meaningsZh": ["连贯的", "条理清楚的"],
-      "examples": ["Write a coherent paragraph using this word."],
+      "examples": ["Her explanation remained coherent throughout."],
       "tags": null,
       "rarityScore": null
     }
   ]
 }`;
+
+const DESKTOP_PREVIEW_QUERY = "(min-width: 1024px)";
+
+const IMPORT_ISSUE_LABELS: Record<string, string> = {
+  duplicate: "Already in Library",
+  empty: "Add a word or phrase",
+  too_long: "Word or phrase is too long",
+  sentence_like: "Use a word, phrase, or fixed expression",
+  invalid_track: "Choose a learning Track",
+  invalid_tags: "Check the selected tags",
+  unsupported_tag: "Remove an unsupported tag",
+  invalid_json: "Check the Example format",
+  missing_items: "Add at least one item",
+  missing_meaning: "Add a Chinese meaning",
+  missing_example: "Add an example",
+};
+
+function subscribeToDesktopPreview(callback: () => void) {
+  const mediaQuery = window.matchMedia(DESKTOP_PREVIEW_QUERY);
+
+  mediaQuery.addEventListener("change", callback);
+  return () => mediaQuery.removeEventListener("change", callback);
+}
+
+function getDesktopPreviewSnapshot() {
+  return window.matchMedia(DESKTOP_PREVIEW_QUERY).matches;
+}
+
+function getServerDesktopPreviewSnapshot() {
+  return false;
+}
 
 function detectTimezone() {
   return Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -49,6 +80,22 @@ function detectTimezone() {
 
 function trackLabel(track: LearningTrack) {
   return track === "active" ? "Active" : "Recognition";
+}
+
+function candidateStatusLabel(status: ImportCandidate["status"]) {
+  if (status === "new") {
+    return "Ready";
+  }
+
+  if (status === "duplicate") {
+    return "Already saved";
+  }
+
+  return "Needs attention";
+}
+
+function candidateIssueLabel(issue: string) {
+  return IMPORT_ISSUE_LABELS[issue] ?? "Check this entry";
 }
 
 function toMultilineText(values: string[]) {
@@ -73,6 +120,11 @@ export function ImportWorkspace() {
   const [candidates, setCandidates] = useState<ImportCandidate[]>([]);
   const [acceptedIds, setAcceptedIds] = useState<Set<string>>(new Set());
   const [message, setMessage] = useState("");
+  const desktopPreview = useSyncExternalStore(
+    subscribeToDesktopPreview,
+    getDesktopPreviewSnapshot,
+    getServerDesktopPreviewSnapshot,
+  );
   const summary = useMemo(() => summarizeImportCandidates(candidates), [candidates]);
 
   const parseInput = (text = jsonText, nextSourceType = sourceType, nextFileName = fileName) => {
@@ -88,7 +140,7 @@ export function ImportWorkspace() {
     setFileName(nextFileName);
     setCandidates(parsed);
     setAcceptedIds(nextAccepted);
-    setMessage(parsed.length ? "已生成 JSON 导入预览" : "没有可解析内容");
+    setMessage(parsed.length ? "Preview ready" : "No words found");
   };
 
   const readFile = async (file: File | undefined) => {
@@ -162,9 +214,9 @@ export function ImportWorkspace() {
       setSingleTrack("recognition");
       setSingleTags(null);
       setSingleRarityScore("");
-      setMessage(`已保存 ${result.item.surfaceText} (${trackLabel(result.item.learningTrack)})`);
+      setMessage(`Saved ${result.item.surfaceText} to ${trackLabel(result.item.learningTrack)}`);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "保存失败");
+      setMessage(error instanceof Error ? error.message : "Could not save this word");
     }
   };
 
@@ -194,13 +246,13 @@ export function ImportWorkspace() {
         now,
         timezone,
       });
-      setMessage(`已保存 ${result.items.length} 个词条`);
+      setMessage(`Saved ${result.items.length} ${result.items.length === 1 ? "word" : "words"}`);
       setCandidates([]);
       setAcceptedIds(new Set());
       setFileName(null);
       setSourceType("json_paste");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "导入保存失败");
+      setMessage(error instanceof Error ? error.message : "Could not save this batch");
     }
   };
 
@@ -212,7 +264,7 @@ export function ImportWorkspace() {
       {VOCABULARY_TAGS.map((tag) => (
         <label
           key={tag}
-          className="mimi-focus-ring flex min-h-9 items-center justify-center rounded-md border border-[#d8d1c2] bg-[#fffaf1] px-3 text-xs font-semibold text-[#203229] transition has-checked:border-[#5f7d66] has-checked:bg-[#d9e5d5]"
+          className="mimi-focus-ring relative flex min-h-11 items-center justify-center rounded-md border border-[#d8d1c2] bg-[#fffaf1] px-3 text-xs font-semibold text-[#203229] transition has-checked:border-[#5f7d66] has-checked:bg-[#d9e5d5]"
         >
           <input
             className="sr-only"
@@ -238,8 +290,8 @@ export function ImportWorkspace() {
       <section className="mimi-panel p-4 sm:p-5">
         <div className="flex flex-wrap gap-2">
           {[
-            { value: "single", label: "Single input / 单个输入" },
-            { value: "batch", label: "Batch JSON import / 批量 JSON 导入" },
+            { value: "single", label: "Add one" },
+            { value: "batch", label: "Batch import" },
           ].map((tab) => (
             <button
               key={tab.value}
@@ -260,7 +312,7 @@ export function ImportWorkspace() {
 
       {mode === "single" ? (
         <section className="mimi-panel p-4 sm:p-5">
-          <h2 className="mb-4 text-base font-semibold text-[#203229]">Single input</h2>
+          <h2 className="mb-4 text-base font-semibold text-[#203229]">Add one word or phrase</h2>
           <form className="grid gap-4" aria-label="Single vocabulary input" onSubmit={saveSingleInput}>
             <label className="grid gap-2">
               <span className="text-sm font-semibold text-[#203229]">Word or phrase</span>
@@ -268,7 +320,7 @@ export function ImportWorkspace() {
             </label>
             <div className="grid gap-4 md:grid-cols-2">
               <label className="grid gap-2">
-                <span className="text-sm font-semibold text-[#203229]">中文释义</span>
+                <span className="text-sm font-semibold text-[#203229]">Chinese meaning</span>
                 <input name="meaning_zh" placeholder="分配" className="mimi-input px-3 text-base" />
               </label>
               <label className="grid gap-2">
@@ -295,12 +347,12 @@ export function ImportWorkspace() {
               <legend className="text-sm font-semibold text-[#203229]">Learning track</legend>
               <div className="grid gap-2 sm:grid-cols-2">
                 {[
-                  { value: "recognition", label: "Recognition / 阅读词汇" },
-                  { value: "active", label: "Active / 输出词汇" },
+                  { value: "recognition", label: "Recognition" },
+                  { value: "active", label: "Active" },
                 ].map((track) => (
                   <label
                     key={track.value}
-                    className="mimi-focus-ring flex min-h-11 items-center justify-center rounded-md border border-[#d8d1c2] bg-[#fffaf1] px-3 text-sm font-semibold text-[#203229] transition has-checked:border-[#5f7d66] has-checked:bg-[#d9e5d5]"
+                    className="mimi-focus-ring relative flex min-h-11 items-center justify-center rounded-md border border-[#d8d1c2] bg-[#fffaf1] px-3 text-sm font-semibold text-[#203229] transition has-checked:border-[#5f7d66] has-checked:bg-[#d9e5d5]"
                   >
                     <input
                       className="sr-only"
@@ -324,18 +376,18 @@ export function ImportWorkspace() {
               className="mimi-button mimi-focus-ring inline-flex items-center justify-center gap-2 px-4 text-sm font-semibold"
             >
               <Save aria-hidden="true" className="size-4" />
-              保存词条
+              Save word
             </PressableButton>
           </form>
         </section>
       ) : (
         <>
           <section className="mimi-panel p-4 sm:p-5">
-            <h2 className="mb-4 text-base font-semibold text-[#203229]">Batch JSON import</h2>
+            <h2 className="mb-4 text-base font-semibold text-[#203229]">Batch import</h2>
             <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
               <div className="grid gap-4">
                 <label className="grid gap-2">
-                  <span className="text-sm font-semibold text-[#203229]">JSON file</span>
+                  <span className="text-sm font-semibold text-[#203229]">Choose a file</span>
                   <input
                     type="file"
                     accept=".json,application/json"
@@ -344,7 +396,7 @@ export function ImportWorkspace() {
                   />
                 </label>
                 <label className="grid gap-2">
-                  <span className="text-sm font-semibold text-[#203229]">Paste JSON</span>
+                  <span className="text-sm font-semibold text-[#203229]">Or paste your list</span>
                   <textarea
                     rows={15}
                     value={jsonText}
@@ -361,16 +413,18 @@ export function ImportWorkspace() {
                 <div className="mb-3 inline-flex size-9 items-center justify-center rounded-md bg-[#d9e5d5] text-[#274331]">
                   <ClipboardList aria-hidden="true" className="size-4" />
                 </div>
-                <p className="font-semibold text-[#203229]">JSON sample</p>
-                <p className="mt-2">
-                  可以使用对话 AI 根据这个 JSON 文件格式整理词汇。整理后的 JSON 可以被本 app 直接读取并入库。
-                </p>
-                  <p className="mt-3">
-                  `track` 必须是 `recognition` 或 `active`。`meaningsZh` 和 `examples` 都是数组，至少需要 1 条，不限制数量。
-                </p>
-                <p className="mt-3">
-                  `tags` 可以是数组、`null`，也可以省略后归一为 `null`。`rarityScore` 可以是 1-5，也可以是 `null`。
-                </p>
+                <p className="font-semibold text-[#203229]">Bring in several words at once</p>
+                <p className="mt-2">Choose a prepared file or paste a list, then review every word before saving.</p>
+                <details className="mt-3 rounded-md border border-[var(--mimi-border)] bg-[var(--mimi-surface-strong)] px-3 py-2">
+                  <summary className="mimi-focus-ring cursor-pointer font-semibold text-[var(--mimi-primary-deep)]">
+                    Example format
+                  </summary>
+                  <div className="mt-3 grid gap-2 text-xs leading-5 text-[var(--mimi-text-soft)]">
+                    <p><code>track</code> accepts <code>recognition</code> or <code>active</code>.</p>
+                    <p><code>meaningsZh</code> and <code>examples</code> each need at least one item.</p>
+                    <p><code>tags</code> and <code>rarityScore</code> are optional.</p>
+                  </div>
+                </details>
               </aside>
             </div>
             <PressableButton
@@ -379,7 +433,7 @@ export function ImportWorkspace() {
               className="mimi-button mimi-focus-ring mt-4 inline-flex items-center justify-center gap-2 px-4 text-sm font-semibold"
             >
               <Upload aria-hidden="true" className="size-4" />
-              生成预览
+              Preview words
             </PressableButton>
           </section>
 
@@ -393,16 +447,16 @@ export function ImportWorkspace() {
                 className="mimi-button mimi-focus-ring inline-flex items-center justify-center gap-2 px-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Save aria-hidden="true" className="size-4" />
-                确认保存
+                Save selected
               </PressableButton>
             </div>
 
             <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-4">
               {[
                 ["Total", summary.totalRows],
-                ["New", summary.newRows],
-                ["Duplicate", summary.duplicateRows],
-                ["Invalid", summary.invalidRows],
+                ["Ready", summary.newRows],
+                ["Saved", summary.duplicateRows],
+                ["Check", summary.invalidRows],
               ].map(([label, value]) => (
                 <div key={label} className="rounded-md bg-[#efe9dc] p-3">
                   <p className="text-xs font-semibold text-[#5f6d62]">{label}</p>
@@ -412,7 +466,122 @@ export function ImportWorkspace() {
             </div>
 
             {candidates.length ? (
-              <div className="overflow-x-auto">
+              <>
+                {!desktopPreview ? <div className="grid gap-3">
+                  {candidates.map((candidate, index) => (
+                    <article key={candidate.tempId} className="mimi-card grid gap-4 p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <label className="mimi-focus-ring flex min-h-11 items-center gap-3 rounded-md px-1 text-sm font-semibold text-[var(--mimi-text)]">
+                          <input
+                            type="checkbox"
+                            checked={acceptedIds.has(candidate.tempId)}
+                            disabled={candidate.status === "invalid"}
+                            onChange={(event) => toggleAccepted(candidate.tempId, event.target.checked)}
+                            className="size-5 accent-[#5f7d66]"
+                          />
+                          Save entry {index + 1}
+                        </label>
+                        <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                          candidate.status === "new"
+                            ? "bg-[var(--mimi-primary-soft)] text-[var(--mimi-primary-deep)]"
+                            : "bg-[var(--mimi-surface-muted)] text-[var(--mimi-text-soft)]"
+                        }`}>
+                          {candidateStatusLabel(candidate.status)}
+                        </span>
+                      </div>
+
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <label className="grid gap-1.5">
+                          <span className="text-sm font-semibold text-[var(--mimi-text)]">Word or phrase</span>
+                          <input
+                            value={candidate.surfaceText}
+                            onChange={(event) => updateCandidate(candidate.tempId, { surfaceText: event.target.value })}
+                            className="mimi-input px-3 text-base"
+                          />
+                        </label>
+                        <label className="grid gap-1.5">
+                          <span className="text-sm font-semibold text-[var(--mimi-text)]">Learning Track</span>
+                          <select
+                            value={candidate.learningTrack}
+                            onChange={(event) =>
+                              updateCandidate(candidate.tempId, {
+                                learningTrack: event.target.value as LearningTrack,
+                                errors: candidate.errors.filter((error) => error !== "invalid_track"),
+                              })
+                            }
+                            className="mimi-input px-3 text-base"
+                          >
+                            <option value="recognition">Recognition</option>
+                            <option value="active">Active</option>
+                          </select>
+                        </label>
+                      </div>
+
+                      <label className="grid gap-1.5">
+                        <span className="text-sm font-semibold text-[var(--mimi-text)]">Chinese meanings</span>
+                        <textarea
+                          value={toMultilineText(candidate.meaningsZh)}
+                          onChange={(event) => {
+                            const meaningsZh = fromMultilineText(event.target.value);
+                            updateCandidate(candidate.tempId, {
+                              meaningZh: meaningsZh[0] ?? "",
+                              meaningsZh,
+                            });
+                          }}
+                          rows={3}
+                          className="mimi-input min-h-24 resize-y px-3 py-2 text-base"
+                        />
+                      </label>
+
+                      <label className="grid gap-1.5">
+                        <span className="text-sm font-semibold text-[var(--mimi-text)]">Examples</span>
+                        <textarea
+                          value={toMultilineText(candidate.examples)}
+                          onChange={(event) => {
+                            const examples = fromMultilineText(event.target.value);
+                            updateCandidate(candidate.tempId, {
+                              example: examples[0] ?? "",
+                              examples,
+                            });
+                          }}
+                          rows={3}
+                          className="mimi-input min-h-24 resize-y px-3 py-2 text-base"
+                        />
+                      </label>
+
+                      <fieldset className="grid gap-2">
+                        <legend className="text-sm font-semibold text-[var(--mimi-text)]">Tags</legend>
+                        {renderTagControls(candidate.tags, (tags) => updateCandidate(candidate.tempId, { tags }))}
+                      </fieldset>
+
+                      <label className="grid max-w-40 gap-1.5">
+                        <span className="text-sm font-semibold text-[var(--mimi-text)]">Rarity</span>
+                        <input
+                          value={candidate.rarityScore ?? ""}
+                          onChange={(event) =>
+                            updateCandidate(candidate.tempId, {
+                              rarityScore: normalizeRarityScore(event.target.value),
+                            })
+                          }
+                          type="number"
+                          min={1}
+                          max={5}
+                          className="mimi-input px-3 text-base"
+                        />
+                      </label>
+
+                      {candidate.errors.length ? (
+                        <ul className="grid gap-1 rounded-md bg-[var(--mimi-surface-muted)] px-3 py-2 text-sm text-[var(--mimi-text-soft)]">
+                          {Array.from(new Set(candidate.errors.map(candidateIssueLabel))).map((issue) => (
+                            <li key={issue}>{issue}</li>
+                          ))}
+                        </ul>
+                      ) : null}
+                    </article>
+                  ))}
+                </div> : null}
+
+                {desktopPreview ? <div className="overflow-x-auto">
                 <table className="w-full min-w-[1180px] border-collapse text-left text-sm">
                   <thead>
                     <tr className="border-b border-[#d8d1c2] text-[#5f6d62]">
@@ -508,19 +677,22 @@ export function ImportWorkspace() {
                           />
                         </td>
                         <td className="py-2 pr-3">
-                          <span className="block font-medium text-[#203229]">{candidate.status}</span>
+                          <span className="block font-medium text-[#203229]">{candidateStatusLabel(candidate.status)}</span>
                           {candidate.errors.length ? (
-                            <span className="block text-xs text-[#8a4d21]">{candidate.errors.join(", ")}</span>
+                            <span className="block text-xs text-[#8a4d21]">
+                              {Array.from(new Set(candidate.errors.map(candidateIssueLabel))).join(", ")}
+                            </span>
                           ) : null}
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
-              </div>
+              </div> : null}
+              </>
             ) : (
               <p className="rounded-md border border-dashed border-[#afbea9] bg-[#fffaf1] p-4 text-sm leading-6 text-[#5f6d62]">
-                上传 `.json` 文件或粘贴 JSON 后生成预览。
+                Choose a file or paste your list to begin.
               </p>
             )}
           </section>

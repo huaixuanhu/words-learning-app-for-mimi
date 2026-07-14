@@ -20,21 +20,21 @@ const soundRows: SoundRow[] = [
     key: "button",
     title: "Button sound",
     detail: "Soft tactile click for normal app buttons.",
-    previewLabel: "试听按键音",
+    previewLabel: "Preview button sound",
     icon: Volume2,
   },
   {
     key: "reviewComplete",
     title: "Review complete",
     detail: "Mimi custom sound after today's review task is confirmed.",
-    previewLabel: "试听复习完成音",
+    previewLabel: "Preview review-complete sound",
     icon: Volume2,
   },
 ];
 
 export function SoundSettingsForm() {
   const { settings, setButtonSound, setReviewCompleteSound } = useMimiSound();
-  const [status, setStatus] = useState("音效偏好只保存在本机浏览器。");
+  const [status, setStatus] = useState("Sound preferences stay on this device.");
 
   const setEnabled = (key: SoundRow["key"], enabled: boolean) => {
     if (key === "button") {
@@ -43,20 +43,20 @@ export function SoundSettingsForm() {
       setReviewCompleteSound(enabled);
     }
 
-    setStatus(`${key === "button" ? "按键音效" : "复习完成音效"}已${enabled ? "开启" : "关闭"}。`);
+    setStatus(`${key === "button" ? "Button sound" : "Review-complete sound"} is ${enabled ? "on" : "off"}.`);
   };
 
   const previewSound = async (key: SoundRow["key"]) => {
     try {
       if (key === "button") {
         await playSoftButtonClick();
-        setStatus("已试听按键音效。");
+        setStatus("Button sound played.");
       } else {
         await playReviewCompleteSound();
-        setStatus("已试听复习完成音效。");
+        setStatus("Review-complete sound played.");
       }
     } catch {
-      setStatus("浏览器暂时没有播放音效，请再点一次试听。");
+      setStatus("Sound did not play. Try the preview again.");
     }
   };
 
@@ -92,7 +92,7 @@ export function SoundSettingsForm() {
                           type="button"
                           aria-pressed={active}
                           onClick={() => setEnabled(row.key, option)}
-                          className={`mimi-focus-ring min-h-9 min-w-14 rounded-[6px] px-3 text-xs font-semibold transition duration-200 ease-[var(--mimi-ease)] ${
+                          className={`mimi-focus-ring min-h-11 min-w-14 rounded-[6px] px-3 text-xs font-semibold transition duration-200 ease-[var(--mimi-ease)] ${
                             active
                               ? "bg-[var(--mimi-primary)] text-[var(--mimi-surface-strong)] shadow-[0_10px_20px_rgb(31_47_38/0.16)]"
                               : "text-[var(--mimi-text-soft)] hover:bg-[var(--mimi-primary-soft)] hover:text-[var(--mimi-primary-deep)]"
@@ -110,7 +110,7 @@ export function SoundSettingsForm() {
                     aria-label={row.previewLabel}
                     title={row.previewLabel}
                     onClick={() => void previewSound(row.key)}
-                    className="mimi-button-secondary mimi-focus-ring inline-grid size-10 place-items-center p-0"
+                    className="mimi-button-secondary mimi-focus-ring inline-grid size-11 place-items-center p-0"
                   >
                     <Icon aria-hidden="true" className="size-4" />
                   </PressableButton>
@@ -122,9 +122,6 @@ export function SoundSettingsForm() {
       </div>
 
       <p className="text-sm leading-6 text-[var(--mimi-text-soft)]">{status}</p>
-      <p className="text-sm leading-6 text-[var(--mimi-text-soft)]">
-        不会写入词库、复习记录、备份文件、API 或远程数据。
-      </p>
     </div>
   );
 }

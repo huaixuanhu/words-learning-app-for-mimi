@@ -50,9 +50,9 @@ export function ReviewSettingsForm() {
       });
       const saved = getSelectedReviewSettings(nextData);
 
-      setMessage(`已保存：阅读 ${saved.recognitionSessionLimit}，输出 ${saved.activeSessionLimit}`);
+      setMessage(`Saved: Recognition ${saved.recognitionSessionLimit}, Active ${saved.activeSessionLimit}`);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "设置保存失败");
+      setMessage(error instanceof Error ? error.message : "Could not save these settings");
     }
   };
 
@@ -63,7 +63,7 @@ export function ReviewSettingsForm() {
       onSubmit={handleSubmit}
     >
       <label className="grid gap-2">
-        <span className="text-sm font-semibold text-[#203229]">Recognition daily limit / 阅读词汇</span>
+        <span className="text-sm font-semibold text-[#203229]">Recognition session</span>
         <input
           name="recognition_session_limit"
           type="number"
@@ -74,7 +74,7 @@ export function ReviewSettingsForm() {
         />
       </label>
       <label className="grid gap-2">
-        <span className="text-sm font-semibold text-[#203229]">Active daily limit / 输出词汇</span>
+        <span className="text-sm font-semibold text-[#203229]">Active session</span>
         <input
           name="active_session_limit"
           type="number"
@@ -97,7 +97,7 @@ export function ReviewSettingsForm() {
         className="mimi-button mimi-focus-ring inline-flex items-center justify-center gap-2 px-4 text-sm font-semibold"
       >
         <Save aria-hidden="true" className="size-4" />
-        保存设置
+        Save settings
       </PressableButton>
       {message ? <p className="rounded-md bg-[#d9e5d5] px-3 py-2 text-sm text-[#274331]">{message}</p> : null}
     </form>

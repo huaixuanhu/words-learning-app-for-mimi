@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { Archive, Download, RotateCcw, Save, Search, Trash2, Upload } from "lucide-react";
 import { useMemo, useState } from "react";
+import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import type { ImportBatch, UpdateVocabularyInput, VocabularyItem } from "@/lib/vocabulary/types";
 import { getSelectedPersonId } from "@/lib/people/repository";
 import {
@@ -128,12 +128,13 @@ function getBatchLabel(batch: ImportBatch) {
       ? "Batch imported"
       : "Text imported";
 
-  return batch.fileName ? `${sourceLabel} · ${batch.fileName}` : `${sourceLabel} · ${batch.createdAt}`;
+  return batch.fileName
+    ? `${sourceLabel} · ${batch.fileName}`
+    : `${sourceLabel} · ${new Date(batch.createdAt).toLocaleDateString()}`;
 }
 
 export function VocabularyLibrary() {
   const { data, isLoaded, commit } = useVocabularyData();
-  const reduceMotion = useReducedMotion();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<LibraryFilter>("all");
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -155,7 +156,7 @@ export function VocabularyLibrary() {
     { value: "all", label: "All Words", count: allItems.length },
     { value: "recognition", label: "Recognition", count: recognitionItems.length },
     { value: "activeVocabulary", label: "Active", count: activeTrackItems.length },
-    { value: "weak", label: "Weak Words", count: activeItems.filter((item) => weakWordIds.has(item.id)).length },
+    { value: "weak", label: "Needs care", count: activeItems.filter((item) => weakWordIds.has(item.id)).length },
     { value: "archived", label: "Archived", count: archivedItems.length },
   ] as const satisfies readonly { value: LibraryFilter; label: string; count: number }[];
   const batchSummaries = useMemo(
@@ -240,9 +241,9 @@ export function VocabularyLibrary() {
       });
       setEditingId(null);
       setDraft(null);
-      setMessage(`已更新 ${result.item.surfaceText}`);
+      setMessage(`Updated ${result.item.surfaceText}`);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "更新失败");
+      setMessage(error instanceof Error ? error.message : "Could not update this word");
     }
   };
 
@@ -256,9 +257,9 @@ export function VocabularyLibrary() {
         now,
         timezone: detectTimezone(),
       });
-      setMessage("已归档词条");
+      setMessage("Moved to Archive");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "归档失败");
+      setMessage(error instanceof Error ? error.message : "Could not archive this word");
     }
   };
 
@@ -272,9 +273,9 @@ export function VocabularyLibrary() {
         now,
         timezone: detectTimezone(),
       });
-      setMessage("已恢复词条");
+      setMessage("Returned to Library");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "恢复失败");
+      setMessage(error instanceof Error ? error.message : "Could not restore this word");
     }
   };
 
@@ -292,9 +293,9 @@ export function VocabularyLibrary() {
       });
       setEditingId(null);
       setDraft(null);
-      setMessage(`已删除 ${result.item.surfaceText}`);
+      setMessage(`Deleted ${result.item.surfaceText}`);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "删除失败");
+      setMessage(error instanceof Error ? error.message : "Could not delete this word");
     }
   };
 
@@ -312,11 +313,9 @@ export function VocabularyLibrary() {
       });
       setEditingId(null);
       setDraft(null);
-      setMessage(
-        `已 rollback batch imported：删除 ${result.deletedItemsCount} 个词条，移除 ${result.deletedReviewEventsCount} 条复习记录。`,
-      );
+      setMessage(`Undid this batch and removed ${result.deletedItemsCount} ${result.deletedItemsCount === 1 ? "word" : "words"}.`);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Batch rollback 失败");
+      setMessage(error instanceof Error ? error.message : "Could not undo this batch");
     }
   };
 
@@ -371,34 +370,14 @@ export function VocabularyLibrary() {
             ))}
           </div>
 
-          <div className="grid gap-3 rounded-md border border-[#d8d1c2] bg-[#fffaf1]/64 p-3">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-semibold uppercase tracking-normal text-[#879087]">Soft tags</span>
-              {["Recognition", "Active", ...VOCABULARY_TAGS].map((tag) => (
-                <span key={tag} className="mimi-pill-muted px-2 py-1 text-xs font-semibold">
-                  {tag}
-                </span>
-              ))}
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-semibold uppercase tracking-normal text-[#879087]">Mastery</span>
-              <span className="mimi-pill px-2 py-1 text-xs font-semibold">Meaning</span>
-              {["Listening", "Spelling", "Usage"].map((tag) => (
-                <span key={tag} className="mimi-pill-muted px-2 py-1 text-xs font-semibold">
-                  {tag}
-                </span>
-              ))}
-            </div>
-          </div>
-
           <div className="flex flex-wrap gap-2">
             <Link href="/import" className="mimi-button-secondary mimi-focus-ring inline-flex items-center gap-2 px-3 text-sm font-semibold">
               <Upload aria-hidden="true" className="size-4" />
-              Input vocabulary
+              Add words
             </Link>
             <Link href="/export" className="mimi-button-secondary mimi-focus-ring inline-flex items-center gap-2 px-3 text-sm font-semibold">
               <Download aria-hidden="true" className="size-4" />
-              Export
+              Backup
             </Link>
           </div>
 
@@ -408,7 +387,7 @@ export function VocabularyLibrary() {
                 <div>
                   <h2 className="text-sm font-semibold text-[#203229]">Batch imported</h2>
                   <p className="text-xs leading-5 text-[#5f6d62]">
-                    Roll back a JSON batch if an import was added by mistake.
+                    Undo a batch if it was added by mistake.
                   </p>
                 </div>
               </div>
@@ -421,7 +400,7 @@ export function VocabularyLibrary() {
                     <div>
                       <p className="text-sm font-semibold text-[#203229]">{getBatchLabel(batch)}</p>
                       <p className="text-xs leading-5 text-[#5f6d62]">
-                        {remainingItems} remaining / {batch.acceptedRows} accepted · {batch.createdAt}
+                        {remainingItems} in Library · {batch.acceptedRows} originally saved
                       </p>
                     </div>
                     <PressableButton
@@ -437,7 +416,7 @@ export function VocabularyLibrary() {
                       className="mimi-button-secondary mimi-focus-ring inline-flex items-center justify-center gap-2 px-3 text-sm font-semibold"
                     >
                       <RotateCcw aria-hidden="true" className="size-4" />
-                      Rollback
+                      Undo batch
                     </PressableButton>
                   </div>
                 ))}
@@ -454,7 +433,7 @@ export function VocabularyLibrary() {
           <p className="text-sm text-[#5f6d62]">
             {isLoaded
               ? `${visibleItems.length} shown / ${allItems.length} total`
-              : "Loading local vocabulary..."}
+              : "Loading Library..."}
           </p>
         </div>
 
@@ -479,7 +458,7 @@ export function VocabularyLibrary() {
                           />
                         </label>
                         <label className="grid gap-1">
-                          <span className="text-sm font-semibold text-[#203229]">中文释义</span>
+                          <span className="text-sm font-semibold text-[#203229]">Chinese meanings</span>
                           <textarea
                             rows={2}
                             value={draft.meaningsZhText}
@@ -501,8 +480,8 @@ export function VocabularyLibrary() {
                         <legend className="text-sm font-semibold text-[#203229]">Learning track</legend>
                         <div className="grid gap-2 sm:grid-cols-2">
                           {[
-                            { value: "recognition", label: "Recognition / 阅读词汇" },
-                            { value: "active", label: "Active / 输出词汇" },
+                            { value: "recognition", label: "Recognition" },
+                            { value: "active", label: "Active" },
                           ].map((track) => (
                             <label
                               key={track.value}
@@ -529,7 +508,7 @@ export function VocabularyLibrary() {
                           {VOCABULARY_TAGS.map((tag) => (
                             <label
                               key={tag}
-                              className="mimi-focus-ring flex min-h-9 items-center justify-center rounded-md border border-[#d8d1c2] bg-[#fffaf1] px-3 text-xs font-semibold text-[#203229] transition has-checked:border-[#5f7d66] has-checked:bg-[#d9e5d5]"
+                              className="mimi-focus-ring flex min-h-11 items-center justify-center rounded-md border border-[#d8d1c2] bg-[#fffaf1] px-3 text-xs font-semibold text-[#203229] transition has-checked:border-[#5f7d66] has-checked:bg-[#d9e5d5]"
                             >
                               <input
                                 className="sr-only"
@@ -586,7 +565,7 @@ export function VocabularyLibrary() {
                           className="mimi-button mimi-focus-ring inline-flex items-center gap-2 px-3 text-sm font-semibold"
                         >
                           <Save aria-hidden="true" className="size-4" />
-                          保存
+                          Save changes
                         </PressableButton>
                         <PressableButton
                           type="button"
@@ -596,7 +575,7 @@ export function VocabularyLibrary() {
                           }}
                           className="mimi-button-secondary mimi-focus-ring px-3 text-sm font-semibold"
                         >
-                          取消
+                          Cancel
                         </PressableButton>
                       </div>
                     </div>
@@ -620,12 +599,12 @@ export function VocabularyLibrary() {
                           ))}
                           {weakWordIds.has(item.id) ? (
                             <span className="rounded-md bg-[#efe0d1] px-2 py-1 text-xs font-semibold text-[#8a4d21]">
-                              Weak Words
+                              Needs care
                             </span>
                           ) : null}
                           {item.archivedAt ? (
                             <span className="rounded-md bg-[#efe0d1] px-2 py-1 text-xs font-semibold text-[#8a4d21]">
-                              archived
+                              Archived
                             </span>
                           ) : null}
                         </div>
@@ -645,24 +624,8 @@ export function VocabularyLibrary() {
                             ))}
                           </div>
                         ) : null}
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          <span className="mimi-pill px-2 py-1 text-xs font-semibold">Meaning</span>
-                          {item.learningTrack === "active" ? (
-                            <>
-                              <span className="mimi-pill px-2 py-1 text-xs font-semibold">Listening</span>
-                              <span className="mimi-pill px-2 py-1 text-xs font-semibold">Spelling</span>
-                              <span className="mimi-pill px-2 py-1 text-xs font-semibold">Usage</span>
-                            </>
-                          ) : (
-                            <>
-                              <span className="mimi-pill-muted px-2 py-1 text-xs font-semibold">Listening</span>
-                              <span className="mimi-pill-muted px-2 py-1 text-xs font-semibold">Spelling</span>
-                              <span className="mimi-pill-muted px-2 py-1 text-xs font-semibold">Usage</span>
-                            </>
-                          )}
-                        </div>
-                        <p className="mt-2 font-mono text-xs text-[#879087]">
-                          created {item.createdAt} · system {item.systemCreatedAt}
+                        <p className="mt-3 text-xs text-[#879087]">
+                          Added {new Date(item.createdAt).toLocaleDateString()}
                         </p>
                       </div>
                       <div className="flex flex-wrap items-start gap-2 md:justify-end">
@@ -671,7 +634,7 @@ export function VocabularyLibrary() {
                           onClick={() => startEditing(item)}
                           className="mimi-button-secondary mimi-focus-ring px-3 text-sm font-semibold"
                         >
-                          编辑
+                          Edit
                         </PressableButton>
                         {item.archivedAt ? (
                           <PressableButton
@@ -680,7 +643,7 @@ export function VocabularyLibrary() {
                             className="mimi-button-secondary mimi-focus-ring inline-flex items-center gap-2 px-3 text-sm font-semibold"
                           >
                             <RotateCcw aria-hidden="true" className="size-4" />
-                            恢复
+                            Restore
                           </PressableButton>
                         ) : (
                           <PressableButton
@@ -689,7 +652,7 @@ export function VocabularyLibrary() {
                             className="mimi-button-secondary mimi-focus-ring inline-flex items-center gap-2 px-3 text-sm font-semibold"
                           >
                             <Archive aria-hidden="true" className="size-4" />
-                            归档
+                            Archive
                           </PressableButton>
                         )}
                         <PressableButton
@@ -704,7 +667,7 @@ export function VocabularyLibrary() {
                           className="mimi-button-secondary mimi-focus-ring inline-flex items-center gap-2 px-3 text-sm font-semibold"
                         >
                           <Trash2 aria-hidden="true" className="size-4" />
-                          删除
+                          Delete
                         </PressableButton>
                       </div>
                     </div>
@@ -717,65 +680,55 @@ export function VocabularyLibrary() {
           <p className="p-4 text-sm leading-6 text-[#5f6d62]">
             {isLoaded
               ? filter === "activeVocabulary"
-                ? "还没有 Active Vocabulary 词条。可以从导入页添加输出词汇。"
-                : "没有匹配的词条。"
+                ? "No Active Vocabulary yet. Add one in Add Words."
+                : "No matching words."
               : "Loading..."}
           </p>
         )}
       </div>
 
-      <AnimatePresence>
+      <ResponsiveDialog
+        open={Boolean(pendingAction)}
+        onClose={() => setPendingAction(null)}
+        labelledBy="library-confirm-title"
+        describedBy="library-confirm-description"
+        panelClassName="max-w-sm text-center sm:max-w-sm"
+        dismissOnBackdrop={false}
+      >
         {pendingAction ? (
-          <motion.div
-            className="fixed inset-0 z-50 grid place-items-center bg-[#14251d]/55 px-4 py-6 backdrop-blur-sm"
-            initial={reduceMotion ? false : { opacity: 0 }}
-            animate={reduceMotion ? undefined : { opacity: 1 }}
-            exit={reduceMotion ? undefined : { opacity: 0 }}
-            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-          >
-            <motion.div
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="library-confirm-title"
-              className="mimi-card w-full max-w-sm p-6 text-center shadow-[0_24px_70px_rgb(20_37_29/0.26)]"
-              initial={reduceMotion ? false : { opacity: 0, y: 12, scale: 0.98 }}
-              animate={reduceMotion ? undefined : { opacity: 1, y: 0, scale: 1 }}
-              exit={reduceMotion ? undefined : { opacity: 0, y: 8, scale: 0.98 }}
-              transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
-            >
-              {pendingAction.type === "delete" ? (
-                <Trash2 aria-hidden="true" className="mx-auto size-9 text-[#8a4d21]" />
-              ) : (
-                <RotateCcw aria-hidden="true" className="mx-auto size-9 text-[var(--mimi-primary)]" />
-              )}
-              <h2 id="library-confirm-title" className="mt-4 text-xl font-semibold text-[var(--mimi-text)]">
-                {pendingAction.type === "delete" ? "确认删除这个词条？" : "确认 rollback 这个 batch？"}
-              </h2>
-              <p className="mt-2 text-sm leading-6 text-[var(--mimi-muted)]">
-                {pendingAction.type === "delete"
-                  ? `将删除 ${pendingAction.label} 和它的复习记录。`
-                  : `将删除 ${pendingAction.remainingItems} 个仍在词库中的词条，并移除相关复习记录。`}
-              </p>
-              <div className="mt-5 grid grid-cols-2 gap-3">
-                <PressableButton
-                  type="button"
-                  onClick={() => setPendingAction(null)}
-                  className="mimi-button-secondary mimi-focus-ring inline-flex items-center justify-center px-4 text-sm font-semibold"
-                >
-                  取消
-                </PressableButton>
-                <PressableButton
-                  type="button"
-                  onClick={() => void confirmPendingAction()}
-                  className="mimi-button mimi-focus-ring inline-flex items-center justify-center px-4 text-sm font-semibold"
-                >
-                  YES
-                </PressableButton>
-              </div>
-            </motion.div>
-          </motion.div>
+          <>
+            {pendingAction.type === "delete" ? (
+              <Trash2 aria-hidden="true" className="mx-auto size-9 text-[#8a4d21]" />
+            ) : (
+              <RotateCcw aria-hidden="true" className="mx-auto size-9 text-[var(--mimi-primary)]" />
+            )}
+            <h2 id="library-confirm-title" className="mt-4 text-xl font-semibold text-[var(--mimi-text)]">
+              {pendingAction.type === "delete" ? "确认删除这个词条？" : "确认撤销这批导入？"}
+            </h2>
+            <p id="library-confirm-description" className="mt-2 text-sm leading-6 text-[var(--mimi-text-soft)]">
+              {pendingAction.type === "delete"
+                ? `将删除 ${pendingAction.label} 和它的复习记录。`
+                : `将删除 ${pendingAction.remainingItems} 个仍在词库中的词条，并移除相关复习记录。`}
+            </p>
+            <div className="mt-5 grid grid-cols-2 gap-3">
+              <PressableButton
+                type="button"
+                onClick={() => setPendingAction(null)}
+                className="mimi-button-secondary mimi-focus-ring inline-flex items-center justify-center px-4 text-sm font-semibold"
+              >
+                取消
+              </PressableButton>
+              <PressableButton
+                type="button"
+                onClick={() => void confirmPendingAction()}
+                className="mimi-button mimi-focus-ring inline-flex items-center justify-center px-4 text-sm font-semibold"
+              >
+                YES
+              </PressableButton>
+            </div>
+          </>
         ) : null}
-      </AnimatePresence>
+      </ResponsiveDialog>
     </div>
   );
 }

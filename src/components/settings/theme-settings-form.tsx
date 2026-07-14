@@ -60,9 +60,7 @@ export function ThemeSettingsForm() {
           );
         })}
       </div>
-      <p className="text-sm leading-6 text-[var(--mimi-text-soft)]">
-        只保存界面主题偏好，不会写入词库、复习记录或备份文件。
-      </p>
+      <p className="text-sm leading-6 text-[var(--mimi-text-soft)]">Saved on this device.</p>
     </div>
   );
 }

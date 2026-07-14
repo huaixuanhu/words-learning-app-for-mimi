@@ -1,5 +1,27 @@
 # AI Agent Log
 
+## 2026-07-14 11:14 AEST
+
+- Task: execute V2 Stage 4 with documentation first, then implement the bounded mobile foundation and concise-copy pass.
+- Plan agreed: yes. The user confirmed the Stage 4 plan and clarified that reduced-motion behavior must preserve fluid interaction and that the final handoff must include phone screenshots.
+- Working tier: Tier 3. Local plans, components, styles, copy, focused tests, isolated browser-local disposable data, screenshots outside tracked source, and local validation were in scope. Credentials, providers, paid calls, remote databases, Production data, Vercel, deployment, and GitHub remote actions were outside scope.
+- Changed files:
+  - Stage 4 child/master/status/architecture documents, changelog, AGENTS, and this log;
+  - responsive navigation, shell Safe Area spacing, and a shared focus-managed dialog;
+  - mobile Batch candidate cards plus the contained desktop editing table;
+  - concise English-first page, Review, Library, Settings, Backup, and import copy;
+  - resting `Say it`, `Spell it`, and `Dictation` presentation plus focused mobile-foundation tests.
+- Reason: make the existing V2 surface continuously usable from small phones through desktop before daily-learning, Active, AI, and Dashboard engines add more density.
+- Decisions:
+  - Below 1024 px, primary navigation is exactly `Home`, `Study`, `Review`, `Library`, and `More`; at 1024 px, the desktop rail takes over without duplicated navigation.
+  - `More`, Review, and Library confirmations share focus containment/restoration, Escape handling, background scroll lock, dynamic-height limits, and Safe Area padding.
+  - Batch cards and the desktop table edit one candidate state. Only one renderer is mounted for the current width, preventing duplicate form controls.
+  - Normal motion retains short fluid transitions. Reduced-motion mode removes spatial lift/travel and keeps brief opacity, color, border, and surface feedback.
+  - Current V1 `重置今日复习任务` keeps its existing one-confirmation behavior. The accepted two-gate whole-day reset remains V2-5 scope.
+  - A physical iOS/Android Software keyboard is a release-stage device recheck; this stage validates dynamic viewport, internal scrolling, 16 px phone inputs, focus reachability, and bottom clearance locally.
+- Validation: ESLint passed; TypeScript passed; Vitest passed 32 files / 207 tests with the existing Postgres integration file/test intentionally skipped; all three backup fixture dry-runs passed; Next.js Production build passed. Browser acceptance passed at 320, 375, 390, 768, 820, 1023, 1024, and 1280 px with no horizontal overflow, missing/duplicate primary navigation, framework overlay, or console warning/error. Focus wrap/Escape/return, scroll lock, all primary routes, light/dark themes, populated Batch cards, the desktop table, mobile Review completion/reset layout, Library delete cancellation, and accepted Practice Lab modes passed. Tier 3 governance preflight and final diff checks passed after documentation synchronization.
+- Safety notes: browser acceptance used the isolated `127.0.0.1:3001` origin with local storage forced; server persistence was rejected before browser-local fallback. One disposable Recognition entry was created, reviewed, reset, inspected, and removed within that isolated origin. No `.env` value, credential, or token was inspected, printed, changed, copied, or staged. No Gemini/provider call, charge, remote migration/import/restore, Production write, Vercel action, deployment, commit, push, pull request, or merge occurred. Live V1 remains Schema Version 5 and `0003` remains unexecuted.
+
 ## 2026-07-14 02:03 AEST
 
 - Task: execute V2 Stage 3.1 with documentation first, then implement the bounded Review interaction and context-word actions.

@@ -1,5 +1,21 @@
 # CHANGELOG
 
+## 2026-07-14 11:14 AEST
+
+- Completed local V2 Stage 4 from the documentation-first child plan `plan_docs/PLAN_V2_STAGE4_MOBILE_FOUNDATION_COPY.md`.
+- Closed the 768–1023 px navigation gap with `Home`, `Study`, `Review`, `Library`, and `More` below 1024 px; kept the desktop rail as the sole primary navigation from 1024 px.
+- Added an accessible responsive dialog for the mobile `More` panel and Review/Library confirmations, including focus containment/restoration, Escape handling, scroll lock, dynamic viewport sizing, and Safe Area padding.
+- Replaced sub-1024 px Batch editing tables with touch-friendly cards backed by the same candidate state; retained the desktop table and fixed a hidden-input containment issue that caused page-level horizontal scrolling at 1024 px.
+- Shortened ordinary copy into natural English across navigation, pages, import, Library, Review, Settings, and Backup while preserving `Batch imported`, the cat Home Brand Button, Chinese destructive warnings, and both themes.
+- Aligned visible Active presentation with only `Say it`, `Spell it`, and `Dictation`; kept all three resting until V2-6 and showed no false Active progress.
+- Preserved fluid 180–240 ms normal interaction. Reduced-motion behavior removes spatial lift/travel while keeping short opacity, color, border, and surface feedback.
+- Added focused mobile-foundation contract tests and passed ESLint, TypeScript, 32 test files / 207 tests with the existing Postgres integration test skipped, three backup fixture dry-runs, and the Next.js Production build.
+- Browser acceptance passed at 320, 375, 390, 768, 820, 1023, 1024, and 1280 px with no horizontal document overflow, breakpoint navigation gap/duplication, framework error overlay, or console warning/error. It also covered `More` focus behavior, all primary routes, mobile Review/Library dialogs, Batch card/table handoff, both themes, and the accepted Practice Lab modes.
+- Saved 320/390 px user screenshots outside tracked source. A real iOS/Android Software keyboard remains a release-stage device recheck; dynamic viewport, scroll, focus, input-size, and bottom-clearance behavior passed locally.
+- Kept the current one-confirmation V1 Review reset unchanged; the accepted two-gate whole-day learning reset remains V2-5 scope.
+- Did not access a credential, call Gemini, connect to or migrate a remote database, alter Production data, change Vercel, deploy, commit, push, or open a pull request. Live V1 remains Schema Version 5.
+- Reason: establish a continuous, calm, touch-friendly UI foundation before the daily-learning, Active, AI, and Dashboard engines are added.
+
 ## 2026-07-14 02:03 AEST
 
 - Completed local V2 Stage 3.1 from the documentation-first child plan `plan_docs/PLAN_V2_STAGE3_1_REVIEW_INTERACTION_CONTEXT_WORD_ACTIONS.md`.

@@ -19,13 +19,13 @@
 - **ADHD-friendly 学习体验**：把任务拆小、保持明确反馈，并允许保守地回退和重新开始。
 - **长期数据可控**：正式学习数据保存在云端数据库，同时保留导出和备份能力。
 
-当前 V1 已作为受保护的私人应用上线。V2 的文档基线已在 `V2` 分支确认，主线包括每日学习分区、独立 Active 练习、手机端改造、学习情况可视化和第一代付费 AI enrichment（AI 词汇补充）。Stage 1 已完成产品、指标与数据契约；Stage 2-B 的相同 120 条第二轮测试已从首轮 114 / 120 提升到 120 / 120 自动结构有效，并获得“可编辑补充草稿”范围内的有条件接受；Stage 3 已在本地完成 Schema Version 6（数据结构第 6 版）、backup version 3（备份格式第 3 版）、仓储层和导入恢复的一致性改造。Stage 3.1 也已在本地完成：Review 卡片可反复轻触显示/隐藏答案，四档记忆按钮采用温和色阶，例句词语可朗读或手动加入学习；`AI explain` 仍处于 resting 状态，没有调用 Gemini。线上数据库仍是 Schema Version 5。
+当前 V1 已作为受保护的私人应用上线。V2 的文档基线已在 `V2` 分支确认，主线包括每日学习分区、独立 Active 练习、手机端改造、学习情况可视化和第一代付费 AI enrichment（AI 词汇补充）。Stage 1 已完成产品、指标与数据契约；Stage 2-B 的相同 120 条第二轮测试已从首轮 114 / 120 提升到 120 / 120 自动结构有效，并获得“可编辑补充草稿”范围内的有条件接受；Stage 3 已在本地完成 Schema Version 6（数据结构第 6 版）、backup version 3（备份格式第 3 版）、仓储层和导入恢复的一致性改造。Stage 3.1 完成 Review 卡片轻触显示/隐藏、四档温和色阶和例句词语操作。Stage 4 已完成手机/平板导航、Safe Area（安全区）、响应式面板、手机批量预览卡片和精简英文界面；`AI explain` 仍处于 resting 状态，没有调用 Gemini。线上数据库仍是 Schema Version 5。
 
 ## 正式版本
 
 - 访问地址：[words-learning-app-for-mimi.vercel.app](https://words-learning-app-for-mimi.vercel.app)
 - 当前线上版本：cloud-backed V1（云端持久化 V1）
-- 当前开发分支：`V2`；Stage 1–3.1 已完成本地契约、AI 质量证据、Schema Version 6 数据层和 Review 交互；尚未执行远程迁移、Production AI 或部署
+- 当前开发分支：`V2`；Stage 1–4 已完成本地契约、AI 质量证据、Schema Version 6 数据层、Review 交互和手机基础界面；尚未执行远程迁移、Production AI 或部署
 - 访问方式：私人 Basic Auth（基础认证）；账号信息不会存放在仓库中
 - 正式数据：Neon Postgres（关系型数据库）
 
@@ -55,7 +55,7 @@
 - 普通界面继续使用简短自然的英文；不可逆操作和重要隐私提示保留中文或双语。
 
 完整范围和阶段顺序见 [V2 Master Plan](./plan_docs/PLAN_V2_MASTER.md)。
-Stage 1 的冻结口径、图示和可执行边界见 [V2 Stage 1 Contract](./plan_docs/PLAN_V2_STAGE1_PRODUCT_METRIC_DATA_CONTRACT.md)。Stage 2 的安全边界、首次测试和第二轮结论见 [V2 Stage 2 Gate](./plan_docs/PLAN_V2_STAGE2_AI_QUALITY_SECURITY_GATE.md)、[V2 Stage 2 Evidence](./plan_docs/PLAN_V2_STAGE2_AI_QUALITY_EVIDENCE.md)、[V2 Stage 2-B Refinement](./plan_docs/PLAN_V2_STAGE2_B_AI_QUALITY_REFINEMENT.md) 和 [V2 Stage 2-B Evidence](./plan_docs/PLAN_V2_STAGE2_B_AI_QUALITY_EVIDENCE.md)。Stage 3 的数据、迁移草案、备份范围和远程执行边界见 [V2 Stage 3 Data Model](./plan_docs/PLAN_V2_STAGE3_DATA_MODEL_BACKUP_PARITY.md)；Review 交互与例句词汇操作见 [V2 Stage 3.1](./plan_docs/PLAN_V2_STAGE3_1_REVIEW_INTERACTION_CONTEXT_WORD_ACTIONS.md)。
+Stage 1 的冻结口径、图示和可执行边界见 [V2 Stage 1 Contract](./plan_docs/PLAN_V2_STAGE1_PRODUCT_METRIC_DATA_CONTRACT.md)。Stage 2 的安全边界、首次测试和第二轮结论见 [V2 Stage 2 Gate](./plan_docs/PLAN_V2_STAGE2_AI_QUALITY_SECURITY_GATE.md)、[V2 Stage 2 Evidence](./plan_docs/PLAN_V2_STAGE2_AI_QUALITY_EVIDENCE.md)、[V2 Stage 2-B Refinement](./plan_docs/PLAN_V2_STAGE2_B_AI_QUALITY_REFINEMENT.md) 和 [V2 Stage 2-B Evidence](./plan_docs/PLAN_V2_STAGE2_B_AI_QUALITY_EVIDENCE.md)。Stage 3 的数据、迁移草案、备份范围和远程执行边界见 [V2 Stage 3 Data Model](./plan_docs/PLAN_V2_STAGE3_DATA_MODEL_BACKUP_PARITY.md)；Review 交互与例句词汇操作见 [V2 Stage 3.1](./plan_docs/PLAN_V2_STAGE3_1_REVIEW_INTERACTION_CONTEXT_WORD_ACTIONS.md)；手机基础界面与精简文案见 [V2 Stage 4](./plan_docs/PLAN_V2_STAGE4_MOBILE_FOUNDATION_COPY.md)。
 
 ## 两条学习轨道
 
