@@ -1,5 +1,26 @@
 # AI Agent Log
 
+## 2026-07-14 19:13 AEST
+
+- Task: repair the V2 Stage 5 prompt-evidence experience so long single-card or multi-card sessions do not require reopening Review/New Words or appear to log the learner out.
+- Plan agreed: yes. The user explicitly annotated the prior `/api/study` boundary as a possible experience interruption and supplied the accepted direction: refresh when the card is actually displayed, recover in the current learning zone, show a small notice, preserve progress, and never redirect to login. The Stage 5 child plan was amended before code changes.
+- Working tier: Tier 3. Local plan/architecture/log documents, daily-study token/runtime/API code, one Review component, deterministic tests, and localhost browser-local acceptance were in scope. Credentials, environment configuration, external providers, remote databases, Production data, Vercel, deployment, and GitHub remote actions were outside scope.
+- Changed files:
+  - `plan_docs/PLAN_V2_STAGE5_DAILY_LEARNING_ENGINE.md`, `ARCHITECTURE.md`, `CHANGELOG.md`, and this log;
+  - prompt error categories, server/browser-local refresh behavior, one-retry recovery helper, daily-study types/hook, strict `/api/study` refresh routing, and Postgres plan-lock ordering;
+  - Review current-card refresh/recovery behavior and focused token/runtime/route/retry/static/UI tests.
+- Reason: keep the 30-minute bounded prompt model while moving the useful lifetime close to actual card display and handling the remaining expiry race transparently.
+- Decisions:
+  - Basic Auth and prompt evidence remain independent; no prompt error changes authentication state or triggers login navigation.
+  - The active card refresh preserves its original server-owned `promptId`. A rating retries only after the explicit `prompt_expired` category, exactly once, with a new Idempotency Key.
+  - Invalid signatures, changed/closed plans, wrong learner/item, consumed prompts, and network or unknown failures receive no automatic retry.
+  - Server and browser-local refresh recheck the learner, open plan/version/day, active Recognition item, and prior prompt consumption. Browser-local expired evidence is retained in a 300-record operational cap with a 48-hour refresh-retention bound and remains outside backup.
+  - Postgres rating and refresh paths lock the plan row before same-`promptId` consumption inspection, serializing old/refreshed-token conflicts.
+  - Successful expiry recovery shows `This card was refreshed.` with the normal saved message; proactive active-card refresh stays silent.
+- Validation: focused follow-up suite passed 6 files / 33 tests; ESLint and TypeScript passed; Vitest passed 38 files / 242 tests with 1 Postgres integration file/test intentionally skipped; all three backup dry-runs passed; Next.js Production build, Tier 3 governance preflight, and final diff checks passed.
+- Browser acceptance: localhost browser-local fallback loaded a Recognition New Words card, refreshed it on activation, revealed and rated it, remained on `/review?zone=new`, and moved progress from 0/1 to 1/1 with no console warning/error or login transition. The exact expiry/retry branch used injected-clock unit tests instead of a 30-minute wait. The temporary rating was rolled back, the added test entry was deleted, and the changed new-word goal was restored to `0`.
+- Safety notes: the framework loaded its ordinary ignored local environment file during build/startup, but no environment value, credential, token, or connection string was inspected, printed, copied, changed, or staged. Local `/api/storage/data` requests were rejected before browser-local fallback; no remote database connection or transaction was executed. No Gemini/provider call, charge, SQL migration, remote import/restore, Production write, Vercel action, deployment, commit, push, pull request, or merge occurred. Live V1 remains Schema Version 5 and `0003_v2_schema6_data_model.sql` remains unexecuted.
+
 ## 2026-07-14 16:07 AEST
 
 - Task: execute the next approved V2 stage, Stage 5 Daily Learning Engine, with documentation first and local implementation second.

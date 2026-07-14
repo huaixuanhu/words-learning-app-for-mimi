@@ -1,6 +1,7 @@
 import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import type { PromptSeed } from "./runtime-engine";
 import type { TrustedPromptClaims } from "./types";
+import { StudyPromptError } from "./prompt-errors";
 
 type RecognitionPromptClaims = Extract<
   TrustedPromptClaims,
@@ -62,12 +63,13 @@ export function verifyOpaqueStudyToken<T>(
   expectedKind: StudyTokenEnvelope<T>["kind"],
   now: string,
   secret: string,
+  options: Readonly<{ allowExpired?: boolean }> = {},
 ) {
   assertSecret(secret);
   const [payload, suppliedSignature, ...rest] = token.split(".");
 
   if (!payload || !suppliedSignature || rest.length > 0) {
-    throw new Error("Study token is malformed");
+    throw new StudyPromptError("prompt_invalid", "Study token is malformed");
   }
 
   const expectedSignature = signature(payload, secret);
@@ -77,7 +79,7 @@ export function verifyOpaqueStudyToken<T>(
     supplied.length !== expectedSignature.length ||
     !timingSafeEqual(supplied, expectedSignature)
   ) {
-    throw new Error("Study token signature is invalid");
+    throw new StudyPromptError("prompt_invalid", "Study token signature is invalid");
   }
 
   let envelope: StudyTokenEnvelope<T>;
@@ -85,7 +87,7 @@ export function verifyOpaqueStudyToken<T>(
   try {
     envelope = JSON.parse(decode(payload)) as StudyTokenEnvelope<T>;
   } catch {
-    throw new Error("Study token payload is invalid");
+    throw new StudyPromptError("prompt_invalid", "Study token payload is invalid");
   }
 
   if (
@@ -95,14 +97,18 @@ export function verifyOpaqueStudyToken<T>(
     !envelope.claims ||
     typeof envelope.claims !== "object"
   ) {
-    throw new Error("Study token contract is invalid");
+    throw new StudyPromptError("prompt_invalid", "Study token contract is invalid");
   }
 
   const nowTime = new Date(now).getTime();
   const expiry = new Date(envelope.expiresAt).getTime();
 
-  if (!Number.isFinite(nowTime) || !Number.isFinite(expiry) || expiry <= nowTime) {
-    throw new Error("Study token has expired");
+  if (!Number.isFinite(nowTime) || !Number.isFinite(expiry)) {
+    throw new StudyPromptError("prompt_invalid", "Study token timestamps are invalid");
+  }
+
+  if (expiry <= nowTime && !options.allowExpired) {
+    throw new StudyPromptError("prompt_expired", "Study token has expired");
   }
 
   return envelope;
@@ -144,10 +150,11 @@ export function verifyServerPromptToken(
   promptToken: string,
   now: string,
   secret: string,
+  options: Readonly<{ allowExpired?: boolean }> = {},
 ): RecognitionPromptClaims {
   const envelope = verifyOpaqueStudyToken<
     Omit<RecognitionPromptClaims, "promptToken">
-  >(promptToken, "prompt", now, secret);
+  >(promptToken, "prompt", now, secret, options);
   const claims = envelope.claims;
 
   if (
@@ -161,7 +168,10 @@ export function verifyServerPromptToken(
     typeof claims.localDate !== "string" ||
     typeof claims.vocabularyItemId !== "string"
   ) {
-    throw new Error("Recognition prompt claims are invalid");
+    throw new StudyPromptError(
+      "prompt_invalid",
+      "Recognition prompt claims are invalid",
+    );
   }
 
   return { ...claims, promptToken };

@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## 2026-07-14 19:13 AEST
+
+- Completed the documentation-first V2 Stage 5 prompt-expiry experience repair requested after the main Stage 5 commit.
+- Refreshes prompt evidence when each Recognition card becomes active, so cards waiting in one queue no longer depend only on the queue-read timestamp.
+- Keeps Basic Auth separate from card evidence: expiry does not navigate to login, reopen the zone, clear the current card, or discard completed session progress.
+- Added explicit `prompt_expired`, `prompt_invalid`, `prompt_stale`, and `prompt_consumed` categories. Only `prompt_expired` may refresh and retry once; all other and ambiguous failures remain fail-closed.
+- Preserved the original `promptId` across refresh and moved Postgres same-prompt consumption inspection after the plan row lock, preventing concurrent old/refreshed tokens from both creating a rating.
+- Added strict `refreshPrompt` routing with person/plan/version/day/item/consumption checks, plus bounded browser-local expired-record retention outside formal data and backup.
+- Added the lightweight successful-recovery copy `This card was refreshed.`; ordinary proactive refresh remains silent.
+- Passed focused prompt recovery/token/route/static/UI tests (6 files / 33 tests), ESLint, TypeScript, the full Vitest suite (38 files and 242 tests passed; 1 Postgres integration file/test intentionally skipped), all three backup dry-runs, Next.js Production build, Tier 3 governance preflight, and final diff checks.
+- Browser acceptance confirmed a normal refreshed-card rating remains on `/review?zone=new`, preserves progress, and emits no console warning/error. The temporary rating, entry, and goal change were restored; the 30-minute expiry branch is covered with injected-clock tests.
+- Did not inspect or configure a credential, call Gemini, connect to a remote database, execute a migration, mutate Production data, change Vercel, deploy, commit, push, or open a pull request.
+- Reason: retain the strict bounded card-authority design without making a long learning session feel logged out or forcing the learner to restart a zone.
+
 ## 2026-07-14 16:07 AEST
 
 - Completed local V2 Stage 5 from the documentation-first child plan `plan_docs/PLAN_V2_STAGE5_DAILY_LEARNING_ENGINE.md`.

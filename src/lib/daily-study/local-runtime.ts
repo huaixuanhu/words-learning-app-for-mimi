@@ -1,8 +1,14 @@
 import type { PromptSeed } from "./runtime-engine";
-import type { TrustedPromptClaims } from "./types";
+import { StudyPromptError } from "./prompt-errors";
+import type {
+  RefreshedStudyPrompt,
+  RefreshStudyPromptCommand,
+  TrustedPromptClaims,
+} from "./types";
 
 const LOCAL_RUNTIME_KEY = "mimi-study-runtime-v1";
 const MAX_PROMPT_RECORDS = 300;
+const EXPIRED_PROMPT_REFRESH_RETENTION_MS = 48 * 60 * 60 * 1000;
 
 type LocalPromptRecord = Readonly<{
   claims: Extract<TrustedPromptClaims, { reviewProfile: "recognition" }>;
@@ -109,15 +115,18 @@ export function issueLocalPromptToken(
     expiresAt,
   } satisfies Extract<TrustedPromptClaims, { reviewProfile: "recognition" }>;
   const current = readState();
-  const activePrompts = current.prompts.filter(
-    (record) => new Date(record.claims.expiresAt).getTime() > new Date(now).getTime(),
+  const refreshablePrompts = current.prompts.filter(
+    (record) =>
+      new Date(record.claims.expiresAt).getTime() +
+        EXPIRED_PROMPT_REFRESH_RETENTION_MS >
+      new Date(now).getTime(),
   );
 
   writeState({
     ...current,
     prompts: [
       { claims, consumedByIdempotencyKey: null },
-      ...activePrompts,
+      ...refreshablePrompts,
     ].slice(0, MAX_PROMPT_RECORDS),
   });
 
@@ -127,20 +136,77 @@ export function issueLocalPromptToken(
 export function readLocalPromptToken(
   promptToken: string,
   now = new Date().toISOString(),
+  options: Readonly<{ allowExpired?: boolean }> = {},
 ) {
   const record = readState().prompts.find(
     (candidate) => candidate.claims.promptToken === promptToken,
   );
 
   if (!record) {
-    throw new Error("This study card is stale. Please start the zone again.");
+    throw new StudyPromptError(
+      "prompt_stale",
+      "This study card is stale. Please start the zone again.",
+    );
   }
 
-  if (new Date(record.claims.expiresAt).getTime() <= new Date(now).getTime()) {
-    throw new Error("This study card expired. Please start the zone again.");
+  if (
+    new Date(record.claims.expiresAt).getTime() <= new Date(now).getTime() &&
+    !options.allowExpired
+  ) {
+    throw new StudyPromptError(
+      "prompt_expired",
+      "This study card expired.",
+    );
   }
 
   return record;
+}
+
+export function refreshLocalPromptToken(
+  command: RefreshStudyPromptCommand,
+  now = new Date().toISOString(),
+): RefreshedStudyPrompt {
+  const current = readState();
+  const record = readLocalPromptToken(command.promptToken, now, {
+    allowExpired: true,
+  });
+
+  if (record.claims.personId !== command.personId) {
+    throw new StudyPromptError(
+      "prompt_stale",
+      "This study card does not match the selected learner.",
+    );
+  }
+
+  if (record.consumedByIdempotencyKey) {
+    throw new StudyPromptError(
+      "prompt_consumed",
+      "This study card was already saved.",
+    );
+  }
+
+  const promptToken = randomId("local_prompt_token");
+  const expiresAt = new Date(new Date(now).getTime() + 30 * 60 * 1000).toISOString();
+  const claims = {
+    ...record.claims,
+    promptToken,
+    expiresAt,
+  };
+  const refreshedFromExpired =
+    new Date(record.claims.expiresAt).getTime() <= new Date(now).getTime();
+  const remaining = current.prompts.filter(
+    (candidate) => candidate.claims.promptToken !== command.promptToken,
+  );
+
+  writeState({
+    ...current,
+    prompts: [
+      { claims, consumedByIdempotencyKey: null },
+      ...remaining,
+    ].slice(0, MAX_PROMPT_RECORDS),
+  });
+
+  return { promptToken, refreshedFromExpired };
 }
 
 export function consumeLocalPrompt(
@@ -155,7 +221,10 @@ export function consumeLocalPrompt(
     record.consumedByIdempotencyKey &&
     record.consumedByIdempotencyKey !== idempotencyKey
   ) {
-    throw new Error("This study card was already saved.");
+    throw new StudyPromptError(
+      "prompt_consumed",
+      "This study card was already saved.",
+    );
   }
 
   writeState({

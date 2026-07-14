@@ -1,7 +1,7 @@
 # Words Learning App For Mimi V2 Stage 5: Daily Learning Engine
 
 Created: 2026-07-14 15:09 AEST
-Last updated: 2026-07-14 16:07 AEST
+Last updated: 2026-07-14 19:13 AEST
 
 Source plan:
 
@@ -52,13 +52,14 @@ Exit criteria:
 - Recognition `Review` and `New Words` have separate remaining goals, bounded pagination, stale-plan protection, and no cross-filling.
 - Library shows `New` / `In review` from retained Recognition and Active evidence independently, without reusing lifecycle status.
 - Rating, goal update, and reset commands validate person, plan, version, local date, profile/zone, server time, opaque evidence, and idempotency before writing.
+- A long single-card or multi-card session refreshes the active card's prompt evidence without logout, route reopening, loss of completed progress, or an unbounded retry loop.
 - The two reset gates display the exact accepted meaning, and no data write occurs before the second confirmation.
 - Whole-day reset preserves daily plans, goals, frozen suggestions, vocabulary, creation facts, AI content, and unrelated dates; `回退1词` remains available for the bounded session action.
 - If the target day contains an Active event before V2-6 provides an Active rebuild path, reset fails closed with no mutation and gives the learner a clear message.
 - Local and Postgres adapters follow the same contract; route and domain tests jointly cover authentication, malformed input, stale evidence, and replay conflicts.
 - Full local validation and the accepted responsive browser matrix pass without reading secrets or connecting to a remote service.
 
-Status: complete locally on 2026-07-14 after documentation-first implementation, focused/full automated validation, and isolated responsive browser acceptance. The server-backed token secret remains intentionally unconfigured, Schema Version 6 SQL remains unexecuted, and no remote or Production action occurred.
+Status: complete locally, including the user-approved prompt-expiry experience repair documented before implementation at 19:01 AEST. The server-backed token secret remains intentionally unconfigured, Schema Version 6 SQL remains unexecuted, and no remote or Production action occurred.
 
 ## Decision Summary
 
@@ -205,6 +206,42 @@ The Active-event guard is expected to be dormant in normal V2-5 usage because Ac
 
 `回退1词` remains a separate bounded session command. It does not become another whole-day reset path.
 
+## Prompt Expiry Experience Follow-Up
+
+Source:
+
+- The user's 2026-07-14 annotation that the current bounded prompt mechanism may interrupt a long study session.
+- The user-provided analysis that expiration must not log the learner out or require Basic Auth（基础认证）again, while cards waiting in one batch must not share an avoidable early expiry clock.
+
+Agreed behavior:
+
+- Basic Auth and prompt evidence stay independent. Prompt expiry never redirects to login and never clears a valid login session.
+- The queue may remain bounded, but each card receives refreshed evidence when it becomes the active visible card, resetting that card's 30-minute window near actual use.
+- Refresh preserves the original server-owned `promptId`. Old and refreshed tokens therefore describe one logical card attempt and cannot legitimately create two ratings.
+- If a token still expires while the learner remains on one card, the first rating submission may refresh that exact card and retry once with a new Idempotency Key（幂等键）because the expired attempt is rejected before any review write.
+- The automatic retry is allowed only for the explicit `prompt_expired` category. Invalid signatures, consumed prompts, changed plans, closed days, and unrelated failures remain fail-closed.
+- Successful transparent recovery shows the small English line `This card was refreshed.` together with the normal saved result. Ordinary proactive refresh stays silent.
+- If transparent recovery cannot complete, the current card and already completed progress remain visible. The UI reports a concise error and does not force route or login navigation.
+- Server refresh rechecks selected person, active item, original Daily Plan, plan version, natural-day window, and prior prompt consumption before issuing replacement evidence.
+- A refreshed token keeps the same `promptId`; the Postgres rating transaction serializes on the plan row before checking prompt consumption, closing concurrent old/new-token duplicate writes.
+- Browser-local refresh replaces the old operational token with one new token carrying the same `promptId`; it remains outside formal data and backup.
+
+Non-Scope:
+
+- No longer token lifetime, permanent token, client-selected expiry, disabled signature check, or retry of ambiguous network/provider failures.
+- No Basic Auth, credential, environment, Schema Version, backup version, database migration, remote database, Vercel, or Production change.
+- No change to FSRS scheduling, daily metrics, rating meanings, same-session failed-card behavior, `回退1词`, reset, Active practice, AI, or Dashboard scope.
+
+Follow-up validation:
+
+- valid current-card refresh preserves `promptId` and extends expiry;
+- expired signed prompt refreshes only inside its still-open matching plan;
+- consumed, malformed, wrong-person, closed-day, or mismatched-plan evidence is rejected;
+- an expired rating performs exactly one refresh and one retry, while all other failures perform no automatic retry;
+- queue, failed-card repeat, rollback, and proactive current-card refresh continue to work in browser-local mode without login or progress loss;
+- Postgres prompt-consumption inspection occurs after the plan row lock;
+- localhost browser acceptance confirms no forced navigation and the exact lightweight recovery copy.
+
 ## Implementation Batches
 
 ### Batch A: plan and pure domain behavior
@@ -291,14 +328,18 @@ Completed local behavior:
 - The whole-day reset now uses the two accepted gates. Local and Postgres implementations preserve plans/goals/frozen suggestions and fail closed if current-day Active history cannot yet be rebuilt.
 - Library derives `New` / `In review` by Review Profile and keeps lifecycle state separate.
 - `POST /api/study` uses strict operation shapes and rechecks runtime/authentication gates. Server prompt/cursor evidence uses request-time HMAC（基于哈希的消息认证码）with a future dedicated secret; prompt evidence is issued only after the selected page is bounded; browser-local operational prompt/replay state stays outside study backups.
+- The active visible Recognition card now refreshes its own prompt evidence without reopening the zone. Refresh keeps the original `promptId`; only an explicit `prompt_expired` rating failure triggers one automatic refresh plus one retry with a new Idempotency Key. The learner remains on the same route with completed session progress intact, and successful expiry recovery uses `This card was refreshed.`
+- Server and browser-local refresh both recheck the selected learner, matching open plan/version/day, active Recognition entry, and prior prompt consumption. Postgres rating and refresh paths lock the plan row before the same-`promptId` consumption check, serializing old/refreshed-token conflicts.
 
 Acceptance evidence:
 
 - Focused daily-study/API tests passed: 5 files / 36 tests.
-- Full Vitest passed: 37 files passed, 1 file intentionally skipped; 231 tests passed, 1 Postgres integration test intentionally skipped.
+- Focused prompt-recovery tests passed: 6 files / 33 tests.
+- Full Vitest passed: 38 files passed, 1 file intentionally skipped; 242 tests passed, 1 Postgres integration test intentionally skipped.
 - ESLint, TypeScript, all three backup dry-runs, Next.js Production build, Tier 3 governance preflight, and `git diff --check` passed.
 - Isolated forced-local browser acceptance covered Home, Study, Review/New Words, Library, Settings, both reset gates, invalid/large goals, first-rating movement, failed-card repeat, `回退1词`, both themes, and 320/375/390/768/820/1023/1024/1280 px layouts. No horizontal overflow, framework overlay, console warning, or console error was observed.
 - One disposable phrase was created, rated, rolled back, rated again, and deleted on the isolated `127.0.0.1:3001` origin. Its Recognition new-word goal was restored to `0` after testing.
+- Follow-up browser acceptance confirmed that an active-card refresh remains silent, a normal rating stays on `/review?zone=new`, and progress moves from `0 / 1` to `1 / 1` without a login transition. The temporary rating was rolled back, the added test entry was deleted, the changed goal was restored to `0`, and no browser warning/error appeared. The actual 30-minute expiry branch uses injected-clock tests instead of a 30-minute browser wait.
 
 Residual boundaries:
 

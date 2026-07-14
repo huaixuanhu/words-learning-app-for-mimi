@@ -11,7 +11,13 @@ import {
   issueLocalPromptToken,
   readLocalCommandReplay,
   readLocalPromptToken,
+  refreshLocalPromptToken,
 } from "@/lib/daily-study/local-runtime";
+import {
+  isStudyPromptErrorCode,
+  StudyPromptError,
+  type StudyPromptErrorCode,
+} from "@/lib/daily-study/prompt-errors";
 import {
   readDailyStudyQueue,
   resetDailyStudyToday,
@@ -23,6 +29,8 @@ import { validateRecordStudyRatingCommand } from "@/lib/daily-study/contract";
 import type {
   DailyStudyTodayResponse,
   RecordStudyRatingCommand,
+  RefreshedStudyPrompt,
+  RefreshStudyPromptCommand,
   ResetTodayCommand,
   RollbackStudyRatingCommand,
   StudyQueueEntryFact,
@@ -39,6 +47,7 @@ type StudyApiResponse<T> = Readonly<{
   status: string;
   result?: T;
   error?: string;
+  errorCode?: StudyPromptErrorCode;
   reason?: string;
 }>;
 
@@ -91,7 +100,13 @@ async function postStudy<T>(selectedPersonId: string, operation: unknown) {
   const payload = (await response.json()) as StudyApiResponse<T>;
 
   if (!response.ok || !payload.ok || payload.result === undefined) {
-    throw new Error(payload.error ?? payload.reason ?? "Study request failed");
+    const message = payload.error ?? payload.reason ?? "Study request failed";
+
+    if (isStudyPromptErrorCode(payload.errorCode)) {
+      throw new StudyPromptError(payload.errorCode, message);
+    }
+
+    throw new Error(message);
   }
 
   return payload.result;
@@ -272,6 +287,63 @@ export function useDailyStudy() {
       return resolved.today;
     },
     [commit, data, refresh, storageRuntime],
+  );
+
+  const refreshPrompt = useCallback(
+    async (command: RefreshStudyPromptCommand): Promise<RefreshedStudyPrompt> => {
+      if (isPostgresClientStorageRuntime(storageRuntime)) {
+        return postStudy<RefreshedStudyPrompt>(data.selectedPersonId, {
+          type: "refreshPrompt",
+          command,
+        });
+      }
+
+      const now = new Date().toISOString();
+      const record = readLocalPromptToken(command.promptToken, now, {
+        allowExpired: true,
+      });
+      const plan = data.dailyStudyPlans.find(
+        (candidate) =>
+          candidate.id === record.claims.planId &&
+          candidate.personId === command.personId &&
+          candidate.localDate === record.claims.localDate &&
+          candidate.reviewProfile === "recognition" &&
+          candidate.planVersion === record.claims.planVersion,
+      );
+      const item = data.items.find(
+        (candidate) =>
+          candidate.id === record.claims.vocabularyItemId &&
+          candidate.personId === command.personId &&
+          candidate.learningTrack === "recognition" &&
+          candidate.status !== "archived" &&
+          candidate.archivedAt === null,
+      );
+      const nowTime = new Date(now).getTime();
+
+      if (
+        data.selectedPersonId !== command.personId ||
+        record.claims.personId !== command.personId ||
+        !plan ||
+        !item ||
+        nowTime < new Date(plan.dayStartsAt).getTime() ||
+        nowTime >= new Date(plan.dayEndsAt).getTime()
+      ) {
+        throw new StudyPromptError(
+          "prompt_stale",
+          "This study card no longer belongs to the current plan.",
+        );
+      }
+
+      if (record.consumedByIdempotencyKey) {
+        throw new StudyPromptError(
+          "prompt_consumed",
+          "This study card was already saved.",
+        );
+      }
+
+      return refreshLocalPromptToken(command, now);
+    },
+    [data, storageRuntime],
   );
 
   const recordRating = useCallback(
@@ -504,6 +576,7 @@ export function useDailyStudy() {
     readQueue,
     updateTodayGoals,
     updateDefaults,
+    refreshPrompt,
     recordRating,
     rollbackRating,
     resetToday,

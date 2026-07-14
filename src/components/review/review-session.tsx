@@ -18,6 +18,10 @@ import type { StudyZone } from "@/lib/daily-study/types";
 import { getSelectedPersonId } from "@/lib/people/repository";
 import { getNextAnswerRevealState } from "@/lib/review/answer-reveal";
 import {
+  PROMPT_REFRESHED_COPY,
+  submitWithExpiredPromptRecovery,
+} from "@/lib/daily-study/prompt-recovery";
+import {
   getNextSessionIdsAfterRating,
   moveReviewAttemptBackToFront,
 } from "@/lib/review/session-queue";
@@ -73,6 +77,7 @@ export function ReviewSession({ zone }: ReviewSessionProps) {
     commit,
     today,
     readQueue,
+    refreshPrompt,
     recordRating,
     rollbackRating,
   } = useDailyStudy();
@@ -88,10 +93,14 @@ export function ReviewSession({ zone }: ReviewSessionProps) {
   const [cardStartedAt, setCardStartedAt] = useState(0);
   const [submittedItemId, setSubmittedItemId] = useState<string | null>(null);
   const [isSessionLoading, setIsSessionLoading] = useState(false);
+  const [isPromptRefreshing, setIsPromptRefreshing] = useState(false);
   const [message, setMessage] = useState("");
   const submittedItemIdRef = useRef<string | null>(null);
   const requestedSessionKeyRef = useRef("");
+  const promptActivationKeyRef = useRef("");
+  const promptRefreshingItemIdRef = useRef<string | null>(null);
   const readQueueRef = useRef(readQueue);
+  const refreshPromptRef = useRef(refreshPrompt);
   const cardPointerStartRef = useRef<{
     pointerId: number;
     clientX: number;
@@ -106,6 +115,10 @@ export function ReviewSession({ zone }: ReviewSessionProps) {
   useEffect(() => {
     readQueueRef.current = readQueue;
   }, [readQueue]);
+
+  useEffect(() => {
+    refreshPromptRef.current = refreshPrompt;
+  }, [refreshPrompt]);
 
   useEffect(() => {
     if (!isLoaded) {
@@ -132,12 +145,14 @@ export function ReviewSession({ zone }: ReviewSessionProps) {
         setSessionIds(page.entries.map((entry) => entry.vocabularyItemId));
         setSessionPlan(page.plan);
         setPromptTokens(promptMap(page.entries));
+        promptActivationKeyRef.current = "";
         setCompletedCount(0);
         setCompletedReviews([]);
         setShowBack(false);
         setShowCompletionModal(false);
         setCardStartedAt(0);
         setSubmittedItemId(null);
+        setIsPromptRefreshing(false);
       })
       .catch((error) => {
         if (cancelled) {
@@ -170,6 +185,69 @@ export function ReviewSession({ zone }: ReviewSessionProps) {
   const currentExamples = currentItem
     ? getDisplayList(currentItem.examples, currentItem.example)
     : [];
+
+  useEffect(() => {
+    const promptToken = currentItem ? promptTokens[currentItem.id] : null;
+
+    if (!currentItem || !sessionPlan || !promptToken) {
+      return;
+    }
+
+    const activationKey = `${sessionPlan.planId}:${currentItem.id}:${completedReviews.length}`;
+
+    if (promptActivationKeyRef.current === activationKey) {
+      return;
+    }
+
+    promptActivationKeyRef.current = activationKey;
+    promptRefreshingItemIdRef.current = currentItem.id;
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (!cancelled) {
+        setIsPromptRefreshing(true);
+      }
+    });
+
+    void refreshPromptRef.current({
+      personId: sessionPlan.personId,
+      promptToken,
+    })
+      .then((result) => {
+        if (cancelled) {
+          return;
+        }
+
+        setPromptTokens((current) =>
+          current[currentItem.id] === promptToken
+            ? { ...current, [currentItem.id]: result.promptToken }
+            : current,
+        );
+
+        if (result.refreshedFromExpired) {
+          setMessage(PROMPT_REFRESHED_COPY);
+        }
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          setMessage(
+            error instanceof Error
+              ? error.message
+              : "This card could not be refreshed.",
+          );
+        }
+      })
+      .finally(() => {
+        if (promptActivationKeyRef.current === activationKey) {
+          promptRefreshingItemIdRef.current = null;
+          setIsPromptRefreshing(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [completedReviews.length, currentItem, promptTokens, sessionPlan]);
+
   const sessionTotal = completedCount + (sessionIds?.length ?? 0);
   const remainingCount = sessionIds?.length ?? 0;
   const progressPercent = sessionTotal
@@ -179,6 +257,7 @@ export function ReviewSession({ zone }: ReviewSessionProps) {
     !currentItem ||
     !showBack ||
     !sessionPlan ||
+    isPromptRefreshing ||
     submittedItemId === currentItem.id;
   const canRollbackPrevious = completedReviews.length > 0 && Boolean(sessionPlan);
   const recognitionMetrics =
@@ -268,6 +347,7 @@ export function ReviewSession({ zone }: ReviewSessionProps) {
     if (
       !currentItem ||
       !sessionPlan ||
+      promptRefreshingItemIdRef.current === currentItem.id ||
       submittedItemIdRef.current === currentItem.id
     ) {
       return;
@@ -288,22 +368,40 @@ export function ReviewSession({ zone }: ReviewSessionProps) {
         0,
         Math.round(cardStartedAt ? eventTimeStamp - cardStartedAt : 0),
       );
-      const result = await recordRating({
-        personId: sessionPlan.personId,
-        planId: sessionPlan.planId,
-        localDate: sessionPlan.localDate,
-        vocabularyItemId: currentItem.id,
+      const submission = await submitWithExpiredPromptRecovery({
         promptToken,
-        idempotencyKey: createStudyIdempotencyKey("rating"),
-        evidence: {
-          reviewProfile: "recognition",
-          activityType: "recognition_card",
-          answerOutcome: "self_rated",
-          answerNormalizationVersion: null,
-          memoryRating: rating,
-          elapsedMs,
+        createIdempotencyKey: () => createStudyIdempotencyKey("rating"),
+        submit: (currentPromptToken, idempotencyKey) =>
+          recordRating({
+            personId: sessionPlan.personId,
+            planId: sessionPlan.planId,
+            localDate: sessionPlan.localDate,
+            vocabularyItemId: currentItem.id,
+            promptToken: currentPromptToken,
+            idempotencyKey,
+            evidence: {
+              reviewProfile: "recognition",
+              activityType: "recognition_card",
+              answerOutcome: "self_rated",
+              answerNormalizationVersion: null,
+              memoryRating: rating,
+              elapsedMs,
+            },
+          }),
+        refresh: async (expiredPromptToken) => {
+          const refreshed = await refreshPrompt({
+            personId: sessionPlan.personId,
+            promptToken: expiredPromptToken,
+          });
+          setPromptTokens((current) =>
+            current[currentItem.id] === expiredPromptToken
+              ? { ...current, [currentItem.id]: refreshed.promptToken }
+              : current,
+          );
+          return refreshed;
         },
       });
+      const result = submission.result;
       const nextSession = getNextSessionIdsAfterRating(
         sessionIds ?? [],
         currentItem.id,
@@ -342,12 +440,16 @@ export function ReviewSession({ zone }: ReviewSessionProps) {
       );
       setShowBack(false);
       setCardStartedAt(0);
-      setMessage(
+      const savedMessage =
         repeatUnavailable
           ? `Saved. ${currentItem.surfaceText} could not be repeated in this session.`
           : nextSession.repeatedSession
             ? `Saved. ${currentItem.surfaceText} will return later in this session.`
-            : `Saved. ${currentItem.surfaceText} is resting until ${new Date(result.state.dueAt).toLocaleString()}.`,
+            : `Saved. ${currentItem.surfaceText} is resting until ${new Date(result.state.dueAt).toLocaleString()}.`;
+      setMessage(
+        submission.refreshed
+          ? `${PROMPT_REFRESHED_COPY} ${savedMessage}`
+          : savedMessage,
       );
 
       if (nextSessionIds.length === 0 && sessionTotal > 0) {

@@ -90,12 +90,15 @@ import {
   verifyOpaqueStudyToken,
   verifyServerPromptToken,
 } from "@/lib/daily-study/opaque-token";
+import { StudyPromptError } from "@/lib/daily-study/prompt-errors";
 import {
   validateRecordStudyRatingCommand,
   validateResetTodayCommand,
 } from "@/lib/daily-study/contract";
 import type {
   NewQueueCursor,
+  RefreshStudyPromptCommand,
+  RefreshedStudyPrompt,
   ResetTodayCommand,
   RollbackStudyRatingCommand,
   ReviewQueueCursor,
@@ -942,6 +945,116 @@ export async function readPostgresDailyStudyQueue(
   };
 }
 
+export async function refreshPostgresDailyStudyPrompt(
+  command: RefreshStudyPromptCommand,
+  now = new Date().toISOString(),
+  secret = getStudyTokenSecret(),
+): Promise<RefreshedStudyPrompt> {
+  assertDatabaseUuid(command.personId, "personId");
+  const trustedPrompt = verifyServerPromptToken(
+    command.promptToken,
+    now,
+    secret,
+    { allowExpired: true },
+  );
+
+  if (trustedPrompt.personId !== command.personId) {
+    throw new StudyPromptError(
+      "prompt_stale",
+      "This study card does not match the selected learner.",
+    );
+  }
+
+  const resolved = await resolvePostgresDailyStudyToday(command.personId, now);
+  const plan = resolved.data.dailyStudyPlans.find(
+    (candidate) =>
+      candidate.id === trustedPrompt.planId &&
+      candidate.personId === command.personId &&
+      candidate.localDate === trustedPrompt.localDate &&
+      candidate.reviewProfile === "recognition" &&
+      candidate.planVersion === trustedPrompt.planVersion,
+  );
+  const item = resolved.data.items.find(
+    (candidate) =>
+      candidate.id === trustedPrompt.vocabularyItemId &&
+      candidate.personId === command.personId &&
+      candidate.learningTrack === "recognition" &&
+      candidate.status !== "archived" &&
+      candidate.archivedAt === null,
+  );
+  const nowTime = new Date(now).getTime();
+
+  if (
+    !plan ||
+    !item ||
+    nowTime < new Date(plan.dayStartsAt).getTime() ||
+    nowTime >= new Date(plan.dayEndsAt).getTime()
+  ) {
+    throw new StudyPromptError(
+      "prompt_stale",
+      "This study card no longer belongs to the current plan.",
+    );
+  }
+
+  return withPostgresTransaction(async (client) => {
+    const lockedPlan = await client.query<{ id: string }>(
+      `
+        select id
+        from daily_study_plans
+        where person_id = $1 and id = $2 and plan_version = $3
+        for update
+      `,
+      [command.personId, plan.id, plan.planVersion],
+    );
+
+    if (!lockedPlan.rows[0]) {
+      throw new StudyPromptError(
+        "prompt_stale",
+        "This study card no longer belongs to the current plan.",
+      );
+    }
+
+    const consumed = await client.query<{ idempotency_key: string }>(
+      `
+        select idempotency_key
+        from study_command_idempotency
+        where person_id = $1
+          and command_type = 'record_rating'
+          and status = 'succeeded'
+          and result_json ->> 'promptId' = $2
+        limit 1
+      `,
+      [command.personId, trustedPrompt.promptId],
+    );
+
+    if (consumed.rows[0]) {
+      throw new StudyPromptError(
+        "prompt_consumed",
+        "This study card was already saved.",
+      );
+    }
+
+    return {
+      promptToken: issueServerPromptToken(
+        {
+          personId: trustedPrompt.personId,
+          planId: trustedPrompt.planId,
+          planVersion: trustedPrompt.planVersion,
+          localDate: trustedPrompt.localDate,
+          vocabularyItemId: trustedPrompt.vocabularyItemId,
+          reviewProfile: "recognition",
+          activityType: "recognition_card",
+        },
+        now,
+        secret,
+        { promptId: trustedPrompt.promptId },
+      ).promptToken,
+      refreshedFromExpired:
+        new Date(trustedPrompt.expiresAt).getTime() <= nowTime,
+    };
+  });
+}
+
 export async function updatePostgresDailyStudyTodayGoals(
   input: unknown,
   now = new Date().toISOString(),
@@ -1446,6 +1559,23 @@ export async function recordPostgresDailyStudyRating(
       return replay;
     }
 
+    const lockedPlan = await client.query<{ id: string }>(
+      `
+        select id
+        from daily_study_plans
+        where person_id = $1 and id = $2 and plan_version = $3
+        for update
+      `,
+      [command.personId, command.planId, trustedPrompt.planVersion],
+    );
+
+    if (!lockedPlan.rows[0]) {
+      throw new StudyPromptError(
+        "prompt_stale",
+        "Rating command plan is stale",
+      );
+    }
+
     const consumed = await client.query<{ idempotency_key: string }>(
       `
         select idempotency_key
@@ -1461,21 +1591,10 @@ export async function recordPostgresDailyStudyRating(
     );
 
     if (consumed.rows[0]) {
-      throw new Error("The prompt was already consumed by another rating command");
-    }
-
-    const lockedPlan = await client.query<{ id: string }>(
-      `
-        select id
-        from daily_study_plans
-        where person_id = $1 and id = $2 and plan_version = $3
-        for update
-      `,
-      [command.personId, command.planId, trustedPrompt.planVersion],
-    );
-
-    if (!lockedPlan.rows[0]) {
-      throw new Error("Rating command plan is stale");
+      throw new StudyPromptError(
+        "prompt_consumed",
+        "The prompt was already consumed by another rating command",
+      );
     }
 
     const result = await recordRecognitionReviewInTransaction(client, {

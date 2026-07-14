@@ -57,6 +57,32 @@ describe("opaque study tokens", () => {
     ).toThrow("expired");
   });
 
+  it("reads an expired signed prompt only for a bounded server refresh", () => {
+    const issued = issueServerPromptToken(
+      {
+        personId: "person-1",
+        planId: "plan-1",
+        planVersion: 1,
+        localDate: "2026-07-14",
+        vocabularyItemId: "item-1",
+        reviewProfile: "recognition",
+        activityType: "recognition_card",
+      },
+      "2026-07-14T04:00:00.000Z",
+      SECRET,
+      { promptId: "prompt-1", ttlMs: 60_000 },
+    );
+
+    expect(
+      verifyServerPromptToken(
+        issued.promptToken,
+        "2026-07-14T04:01:00.000Z",
+        SECRET,
+        { allowExpired: true },
+      ),
+    ).toEqual(issued.claims);
+  });
+
   it("reads the future secret only when explicitly called and fails closed", () => {
     expect(() => getStudyTokenSecret({ NODE_ENV: "test" } as NodeJS.ProcessEnv)).toThrow(
       "MIMI_STUDY_TOKEN_SECRET is required",

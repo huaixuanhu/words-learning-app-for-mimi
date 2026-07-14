@@ -306,6 +306,16 @@ export type RecordStudyRatingCommand = Readonly<{
   evidence: RatingEvidence;
 }>;
 
+export type RefreshStudyPromptCommand = Readonly<{
+  personId: string;
+  promptToken: string;
+}>;
+
+export type RefreshedStudyPrompt = Readonly<{
+  promptToken: string;
+  refreshedFromExpired: boolean;
+}>;
+
 type TrustedPromptClaimsBase = Readonly<{
   promptId: string;
   promptToken: string;

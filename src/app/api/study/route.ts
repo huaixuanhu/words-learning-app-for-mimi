@@ -3,12 +3,14 @@ import { requireProductionBasicAuth } from "@/lib/security/production-basic-auth
 import {
   readPostgresDailyStudyQueue,
   recordPostgresDailyStudyRating,
+  refreshPostgresDailyStudyPrompt,
   rollbackPostgresDailyStudyRating,
   resetPostgresDailyStudyToday,
   resolvePostgresDailyStudyToday,
   updatePostgresDailyStudyDefaults,
   updatePostgresDailyStudyTodayGoals,
 } from "@/lib/storage/postgres/repository";
+import { getStudyPromptErrorCode } from "@/lib/daily-study/prompt-errors";
 import {
   assertPostgresRuntime,
   isProductionVercelEnvironment,
@@ -18,6 +20,7 @@ import {
 } from "@/lib/storage/runtime-mode";
 import type {
   ReviewProfile,
+  RefreshStudyPromptCommand,
   RollbackStudyRatingCommand,
   StudyQueueRequest,
   UpdateDefaultGoalsCommand,
@@ -42,6 +45,7 @@ type StudyOperation =
       };
     }>
   | Readonly<{ type: "recordRating"; command: unknown }>
+  | Readonly<{ type: "refreshPrompt"; command: RefreshStudyPromptCommand }>
   | Readonly<{ type: "rollbackRating"; command: RollbackStudyRatingCommand }>
   | Readonly<{ type: "resetToday"; command: unknown }>;
 
@@ -211,6 +215,19 @@ function parseRollbackRatingCommand(value: unknown): RollbackStudyRatingCommand 
   };
 }
 
+function parseRefreshPromptCommand(value: unknown): RefreshStudyPromptCommand {
+  if (!isRecord(value)) {
+    throw new Error("operation.command is required");
+  }
+
+  assertExactKeys(value, ["personId", "promptToken"], "Refresh prompt command");
+
+  return {
+    personId: requiredString(value.personId, "command.personId"),
+    promptToken: requiredString(value.promptToken, "command.promptToken"),
+  };
+}
+
 function parseOperation(value: unknown): StudyOperation {
   if (!isRecord(value)) {
     throw new Error("operation is required");
@@ -233,6 +250,9 @@ function parseOperation(value: unknown): StudyOperation {
     case "rollbackRating":
       assertExactKeys(value, ["type", "command"], "rollbackRating operation");
       return { type, command: parseRollbackRatingCommand(value.command) };
+    case "refreshPrompt":
+      assertExactKeys(value, ["type", "command"], "refreshPrompt operation");
+      return { type, command: parseRefreshPromptCommand(value.command) };
     case "updateDefaults":
       assertExactKeys(value, ["type", "input"], "updateDefaults operation");
       return { type, input: parseDefaults(value.input) };
@@ -357,6 +377,9 @@ export async function POST(request: NextRequest) {
       case "recordRating":
         result = await recordPostgresDailyStudyRating(operation.command, now);
         break;
+      case "refreshPrompt":
+        result = await refreshPostgresDailyStudyPrompt(operation.command, now);
+        break;
       case "rollbackRating":
         result = await rollbackPostgresDailyStudyRating(operation.command, now);
         break;
@@ -372,12 +395,15 @@ export async function POST(request: NextRequest) {
       result,
     });
   } catch (error) {
+    const errorCode = getStudyPromptErrorCode(error);
+
     return NextResponse.json(
       {
         ok: false,
         status: "error",
         runtime: runtimePayload(),
         error: error instanceof Error ? error.message : "Unknown study command error",
+        ...(errorCode ? { errorCode } : {}),
       },
       { status: 400 },
     );

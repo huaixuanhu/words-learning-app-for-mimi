@@ -1,9 +1,11 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { NextRequest } from "next/server";
+import { StudyPromptError } from "@/lib/daily-study/prompt-errors";
 
 const serviceMocks = vi.hoisted(() => ({
   readPostgresDailyStudyQueue: vi.fn(),
   recordPostgresDailyStudyRating: vi.fn(),
+  refreshPostgresDailyStudyPrompt: vi.fn(),
   rollbackPostgresDailyStudyRating: vi.fn(),
   resetPostgresDailyStudyToday: vi.fn(),
   resolvePostgresDailyStudyToday: vi.fn(),
@@ -187,6 +189,48 @@ describe("/api/study", () => {
       queueRequest,
       expect.any(String),
     );
+  });
+
+  it("routes a strict current-card prompt refresh", async () => {
+    serviceMocks.refreshPostgresDailyStudyPrompt.mockResolvedValue({
+      promptToken: "refreshed-token",
+      refreshedFromExpired: true,
+    });
+    const { POST } = await import("./route");
+    const command = { personId, promptToken: "expired-token" };
+    const response = await POST(
+      request({
+        selectedPersonId: personId,
+        operation: { type: "refreshPrompt", command },
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(serviceMocks.refreshPostgresDailyStudyPrompt).toHaveBeenCalledWith(
+      command,
+      expect.any(String),
+    );
+  });
+
+  it("returns the bounded prompt error category without changing auth state", async () => {
+    serviceMocks.recordPostgresDailyStudyRating.mockRejectedValue(
+      new StudyPromptError("prompt_expired", "Study token has expired"),
+    );
+    const { POST } = await import("./route");
+    const response = await POST(
+      request({
+        selectedPersonId: personId,
+        operation: { type: "recordRating", command: { personId } },
+      }),
+    );
+    const payload = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(payload).toMatchObject({
+      ok: false,
+      status: "error",
+      errorCode: "prompt_expired",
+    });
   });
 
   it("routes a strictly scoped one-entry rollback", async () => {

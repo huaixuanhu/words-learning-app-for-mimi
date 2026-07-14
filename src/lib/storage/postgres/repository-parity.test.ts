@@ -62,4 +62,18 @@ describe("Postgres repository parity source", () => {
     expect(repositorySource).toContain("Start it fresh in the other Track instead");
     expect(repositorySource).toContain("insert into vocabulary_creation_reversals");
   });
+
+  it("refreshes the active study prompt and serializes duplicate-rating checks", () => {
+    expect(repositorySource).toContain("refreshPostgresDailyStudyPrompt");
+    expect(repositorySource).toContain("{ promptId: trustedPrompt.promptId }");
+    const ratingSource = repositorySource.slice(
+      repositorySource.indexOf("export async function recordPostgresDailyStudyRating"),
+      repositorySource.indexOf("export async function rollbackPostgresDailyStudyRating"),
+    );
+
+    expect(ratingSource.indexOf("for update")).toBeGreaterThan(-1);
+    expect(ratingSource.indexOf("result_json ->> 'promptId'")).toBeGreaterThan(
+      ratingSource.indexOf("for update"),
+    );
+  });
 });

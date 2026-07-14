@@ -45,4 +45,11 @@ describe("V2 Stage 3.1 review interaction UI contract", () => {
     expect(exampleActionsSource).not.toContain("fetch(");
     expect(exampleActionsSource).not.toContain("/api/ai");
   });
+
+  it("refreshes only the active study card without route or login navigation", () => {
+    expect(reviewSource).toContain("submitWithExpiredPromptRecovery");
+    expect(reviewSource).toContain("PROMPT_REFRESHED_COPY");
+    expect(reviewSource).toContain("refreshPromptRef.current");
+    expect(reviewSource).not.toContain("window.location");
+  });
 });
