@@ -1,5 +1,30 @@
 # AI Agent Log
 
+## 2026-07-14 16:07 AEST
+
+- Task: execute the next approved V2 stage, Stage 5 Daily Learning Engine, with documentation first and local implementation second.
+- Plan agreed: yes. After committing Stage 4, the user requested the next step and then explicitly confirmed the bounded Stage 5 plan. `plan_docs/PLAN_V2_STAGE5_DAILY_LEARNING_ENGINE.md` was written before application changes and records source plan, derived inputs, scope, non-scope, exit criteria, command boundaries, and safety stops.
+- Working tier: Tier 3. Local plans, pure daily-study logic, application components, guarded local/Postgres code paths, tests, isolated browser-local disposable data, screenshots outside tracked source, and documentation were in scope. Credentials, environment configuration, paid providers, remote databases, Production data, Vercel, deployment, and GitHub remote actions were outside scope.
+- Changed files:
+  - Stage 5 child/master/status/architecture documents, README, changelog, AGENTS, and this log;
+  - timezone-aware daily windows, plan/metric/queue/learning-stage/reset logic, opaque server evidence, and browser-local operational evidence;
+  - strict `/api/study` route plus local and Postgres daily-study behavior, including idempotent rating/reset and bounded rollback/rebuild;
+  - Home/Study daily cards, today/future goal forms, two-gate reset, separate Recognition Review/New Words sessions, whole-entry pronunciation, and Library learning-stage filters;
+  - focused day-window, runtime, token, local-operation, API, and updated daily-contract tests.
+- Reason: make the already accepted daily metrics and Schema Version 6 shapes usable in a complete Recognition flow before adding independent Active scheduling, paid AI enrichment, or Dashboard predictions.
+- Decisions:
+  - Both Daily Plans resolve against one timezone-owned person-day window. Plan recommendations remain frozen; today goals use optimistic plan versions and future defaults do not rewrite an existing plan.
+  - Each Track shows four plan values and two distinct-entry actuals. A single word, phrase, or fixed collocation stored as one entry counts once.
+  - Recognition `Review` and `New Words` never share capacity. A first valid rating changes learning stage; failed ratings return through new prompt evidence; `回退1词` is a bounded event rollback with state rebuild and replacement prompt.
+  - Goals accept exact decimal whole numbers from `0` through `2,147,483,647`; query pages remain internally bounded to 100.
+  - Study owns the accepted two-gate whole-day reset. The command preserves plans/goals/frozen suggestions and fails closed if current-day Active history exists before V2-6 supplies an Active rebuild.
+  - Server prompt/cursor tokens use request-time HMAC（基于哈希的消息认证码）through a future dedicated secret. No real secret was created or read; missing configuration fails closed. Browser-local prompt/replay records stay outside formal data and backups.
+- Page-bounding follow-up: queue facts are filtered and capped before prompt evidence is issued, so one read signs/stores no more prompt tokens than the selected page requires; a focused 150-entry fixture proves that a goal of 2 issues exactly 2 prompts.
+- Governance follow-up: the first final preflight correctly required review of a direct test-password assignment shape and a newly added operational row deletion. The test now follows the repository's existing `Reflect.set` placeholder pattern, and an expired idempotency record is renewed in place under its row lock instead of being deleted and reinserted. The rerun passed.
+- Validation: focused daily-study/API tests passed 5 files / 36 tests; ESLint passed; TypeScript passed; Vitest passed 37 files / 231 tests with 1 Postgres integration file/test intentionally skipped; schema 3, schema 5, and schema 6 backup dry-runs passed; Next.js Production build passed; Tier 3 governance preflight and final diff checks passed.
+- Browser acceptance: used a forced-local isolated `127.0.0.1:3001` origin. It covered Home/Study values, Recognition Review/New Words, first-rating `New` to `In review`, failed-card repeat, `回退1词`, a goal above 80, invalid numeric notation, both reset gates without premature mutation, Settings defaults, Library filters, both themes, and 320/375/390/768/820/1023/1024/1280 px responsive layouts. No horizontal overflow, framework overlay, console warning, or console error appeared. One disposable phrase was deleted and the changed new-word goal was restored to zero after acceptance.
+- Safety notes: the local dev server was explicitly forced to `MIMI_STORAGE_RUNTIME=local`. The framework detected its ordinary ignored local environment file during build/startup, but no environment value, credential, token, or connection string was inspected, printed, copied, changed, or staged. No Gemini/provider call, charge, Development/Staging/Preview/Production database connection, SQL migration, remote import/restore, Production write, Vercel action, deployment, commit, push, pull request, or merge occurred. Live V1 remains Schema Version 5 and `0003_v2_schema6_data_model.sql` remains unexecuted.
+
 ## 2026-07-14 11:14 AEST
 
 - Task: execute V2 Stage 4 with documentation first, then implement the bounded mobile foundation and concise-copy pass.

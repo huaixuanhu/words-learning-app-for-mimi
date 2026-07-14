@@ -39,6 +39,7 @@ export type RecordReviewCommand = PersonScopedContext &
     rating: ReviewRating;
     elapsedMs?: number | null;
     reviewedAt: string;
+    promptId?: string | null;
   }>;
 
 export type ReviewWriteResult = Readonly<{

@@ -1,18 +1,13 @@
 "use client";
 
 import { Save } from "lucide-react";
-import type { FormEvent } from "react";
-import { useState } from "react";
-import { useVocabularyData } from "@/components/vocabulary/use-vocabulary-data";
-import { getSelectedPersonId } from "@/lib/people/repository";
-import {
-  DEFAULT_ACTIVE_SESSION_LIMIT,
-  DEFAULT_RECOGNITION_SESSION_LIMIT,
-  getSelectedReviewSettings,
-  normalizeSessionLimit,
-  updateReviewSettings,
-} from "@/lib/review/settings";
+import { type FormEvent, useEffect, useMemo, useState } from "react";
+import { useDailyStudy } from "@/components/study/use-daily-study";
 import { PressableButton } from "@/components/ui/motion-primitives";
+import { parseDailyGoal } from "@/lib/daily-study/contract";
+import { getSelectedPersonId } from "@/lib/people/repository";
+import { getSelectedReviewSettings } from "@/lib/review/settings";
+import { DailyGoalInput } from "./daily-goal-input";
 
 function detectTimezone(fallback: string) {
   try {
@@ -23,83 +18,157 @@ function detectTimezone(fallback: string) {
 }
 
 export function ReviewSettingsForm() {
-  const { data, isLoaded, commit } = useVocabularyData();
+  const {
+    data,
+    isLoaded,
+    today,
+    resolveToday,
+    updateDefaults,
+  } = useDailyStudy();
   const [message, setMessage] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
   const selectedPersonId = getSelectedPersonId(data);
   const settings = getSelectedReviewSettings(data);
+  const defaults = useMemo(
+    () =>
+      new Map(
+        data.dailyStudyDefaults
+          .filter((entry) => entry.personId === selectedPersonId)
+          .map((entry) => [entry.reviewProfile, entry]),
+      ),
+    [data.dailyStudyDefaults, selectedPersonId],
+  );
+  const recognition = defaults.get("recognition");
+  const active = defaults.get("active");
+
+  useEffect(() => {
+    if (isLoaded) {
+      void resolveToday().catch((error) => {
+        setMessage(error instanceof Error ? error.message : "Could not prepare daily defaults");
+      });
+    }
+  }, [isLoaded, resolveToday, selectedPersonId]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-
     const formData = new FormData(event.currentTarget);
-    const now = new Date().toISOString();
-    const input = {
-      sessionLimit: normalizeSessionLimit(String(formData.get("recognition_session_limit") ?? "")),
-      recognitionSessionLimit: normalizeSessionLimit(String(formData.get("recognition_session_limit") ?? "")),
-      activeSessionLimit: normalizeSessionLimit(String(formData.get("active_session_limit") ?? "")),
-      timezone: String(formData.get("timezone") ?? ""),
-    };
-    const nextData = updateReviewSettings(data, input, now);
 
     try {
-      await commit(nextData, {
-        type: "reviewSettings.update",
-        input,
-        now,
-        timezone: input.timezone,
-      });
-      const saved = getSelectedReviewSettings(nextData);
+      setIsSaving(true);
+      setMessage("");
+      const timezone = String(formData.get("timezone") ?? "").trim();
+      const recognitionReviewGoal = parseDailyGoal(
+        String(formData.get("recognitionReviewGoal") ?? ""),
+      );
+      const recognitionNewWordGoal = parseDailyGoal(
+        String(formData.get("recognitionNewWordGoal") ?? ""),
+      );
+      const activeReviewGoal = parseDailyGoal(
+        String(formData.get("activeReviewGoal") ?? ""),
+      );
+      const activeNewWordGoal = parseDailyGoal(
+        String(formData.get("activeNewWordGoal") ?? ""),
+      );
 
-      setMessage(`Saved: Recognition ${saved.recognitionSessionLimit}, Active ${saved.activeSessionLimit}`);
+      await updateDefaults({
+        personId: selectedPersonId,
+        timezone,
+        goals: [
+          {
+            personId: selectedPersonId,
+            reviewProfile: "recognition",
+            reviewGoal: recognitionReviewGoal,
+            newWordGoal: recognitionNewWordGoal,
+          },
+          {
+            personId: selectedPersonId,
+            reviewProfile: "active",
+            reviewGoal: activeReviewGoal,
+            newWordGoal: activeNewWordGoal,
+          },
+        ],
+      });
+      setMessage("Daily defaults are saved. Today’s existing goals stay unchanged.");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Could not save these settings");
+      setMessage(error instanceof Error ? error.message : "Could not save these defaults");
+    } finally {
+      setIsSaving(false);
     }
   };
 
+  const recognitionMetrics =
+    today?.tracks.recognition.status === "available"
+      ? today.tracks.recognition.metrics
+      : null;
+  const activeMetrics =
+    today?.tracks.active.status === "available" ? today.tracks.active.metrics : null;
+  const formKey = [
+    selectedPersonId,
+    recognition?.updatedAt,
+    active?.updatedAt,
+    isLoaded ? "loaded" : "loading",
+  ].join("-");
+
   return (
-    <form
-      key={`${selectedPersonId}-${settings.updatedAt}-${isLoaded ? "loaded" : "loading"}`}
-      className="grid gap-4 md:max-w-md"
-      onSubmit={handleSubmit}
-    >
+    <form key={formKey} className="grid gap-5 md:max-w-2xl" onSubmit={handleSubmit}>
+      <p className="text-sm leading-6 text-[var(--mimi-text-soft)]">
+        These values begin the next study day. You can still change today from Study.
+      </p>
+
+      <fieldset className="grid gap-3 rounded-md border border-[var(--mimi-border)] p-3 sm:p-4">
+        <legend className="px-1 text-sm font-semibold text-[var(--mimi-text)]">Recognition Vocabulary</legend>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <DailyGoalInput
+            name="recognitionReviewGoal"
+            label="Review goal"
+            value={recognition?.reviewGoal ?? recognitionMetrics?.reviewGoal ?? settings.recognitionSessionLimit}
+          />
+          <DailyGoalInput
+            name="recognitionNewWordGoal"
+            label="New-word goal"
+            value={recognition?.newWordGoal ?? recognitionMetrics?.newWordGoal ?? 0}
+          />
+        </div>
+      </fieldset>
+
+      <fieldset className="grid gap-3 rounded-md border border-[var(--mimi-border)] p-3 sm:p-4">
+        <legend className="px-1 text-sm font-semibold text-[var(--mimi-text)]">Active Vocabulary</legend>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <DailyGoalInput
+            name="activeReviewGoal"
+            label="Review goal"
+            value={active?.reviewGoal ?? activeMetrics?.reviewGoal ?? settings.activeSessionLimit}
+          />
+          <DailyGoalInput
+            name="activeNewWordGoal"
+            label="New-word goal"
+            value={active?.newWordGoal ?? activeMetrics?.newWordGoal ?? 0}
+          />
+        </div>
+      </fieldset>
+
       <label className="grid gap-2">
-        <span className="text-sm font-semibold text-[#203229]">Recognition session</span>
-        <input
-          name="recognition_session_limit"
-          type="number"
-          min={1}
-          max={80}
-          defaultValue={isLoaded ? settings.recognitionSessionLimit : DEFAULT_RECOGNITION_SESSION_LIMIT}
-          className="mimi-input px-3 text-base"
-        />
-      </label>
-      <label className="grid gap-2">
-        <span className="text-sm font-semibold text-[#203229]">Active session</span>
-        <input
-          name="active_session_limit"
-          type="number"
-          min={1}
-          max={80}
-          defaultValue={isLoaded ? settings.activeSessionLimit : DEFAULT_ACTIVE_SESSION_LIMIT}
-          className="mimi-input px-3 text-base"
-        />
-      </label>
-      <label className="grid gap-2">
-        <span className="text-sm font-semibold text-[#203229]">Timezone</span>
+        <span className="text-sm font-semibold text-[var(--mimi-text)]">Timezone</span>
         <input
           name="timezone"
           defaultValue={isLoaded ? settings.timezone : detectTimezone(settings.timezone)}
-          className="mimi-input px-3 text-base"
+          className="mimi-input min-h-11 px-3 text-base"
         />
       </label>
+
       <PressableButton
         type="submit"
-        className="mimi-button mimi-focus-ring inline-flex items-center justify-center gap-2 px-4 text-sm font-semibold"
+        disabled={!isLoaded || isSaving}
+        className="mimi-button mimi-focus-ring inline-flex min-h-11 items-center justify-center gap-2 px-4 text-sm font-semibold disabled:cursor-wait disabled:opacity-60"
       >
         <Save aria-hidden="true" className="size-4" />
-        Save settings
+        {isSaving ? "Saving..." : "Save daily defaults"}
       </PressableButton>
-      {message ? <p className="rounded-md bg-[#d9e5d5] px-3 py-2 text-sm text-[#274331]">{message}</p> : null}
+      {message ? (
+        <p className="rounded-md bg-[var(--mimi-primary-soft)] px-3 py-2 text-sm leading-6 text-[var(--mimi-primary-deep)]">
+          {message}
+        </p>
+      ) : null}
     </form>
   );
 }

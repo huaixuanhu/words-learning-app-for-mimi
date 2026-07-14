@@ -14,6 +14,7 @@ export type RecordReviewInput = {
   vocabularyItemId: string;
   rating: ReviewRating;
   elapsedMs?: number | null;
+  promptId?: string | null;
 };
 
 export function getReviewState(data: VocabularyData, vocabularyItemId: string) {
@@ -45,7 +46,7 @@ function sortReviewEventsByReviewedAt(a: ReviewEvent, b: ReviewEvent) {
   return a.id.localeCompare(b.id);
 }
 
-function rebuildStateFromEvents(
+export function rebuildRecognitionStateFromEvents(
   personId: string,
   vocabularyItemId: string,
   events: ReviewEvent[],
@@ -128,7 +129,7 @@ export function resetTodayReviewTask(data: VocabularyData, now = new Date().toIS
         )
         .sort(sortReviewEventsByReviewedAt);
 
-      return rebuildStateFromEvents(
+      return rebuildRecognitionStateFromEvents(
         personId,
         vocabularyItemId,
         earlierEvents,
@@ -193,7 +194,7 @@ export function rollbackReviewEvent(
         candidate.vocabularyItemId === event.vocabularyItemId,
     )
     .sort(sortReviewEventsByReviewedAt);
-  const rebuiltState = rebuildStateFromEvents(
+  const rebuiltState = rebuildRecognitionStateFromEvents(
     personId,
     event.vocabularyItemId,
     earlierEvents,
@@ -266,7 +267,7 @@ export function recordReview(
   };
   const event: ReviewEvent = {
     id: makeId("review_event"),
-    promptId: null,
+    promptId: input.promptId ?? null,
     personId,
     vocabularyItemId: input.vocabularyItemId,
     reviewProfile: "recognition",

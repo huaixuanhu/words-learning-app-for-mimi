@@ -311,6 +311,7 @@ type TrustedPromptClaimsBase = Readonly<{
   promptToken: string;
   personId: string;
   planId: string;
+  planVersion: number;
   localDate: string;
   vocabularyItemId: string;
   expiresAt: string;
@@ -360,6 +361,15 @@ export type ResetTodayCommand = Readonly<{
   contractVersion: "v2-stage1";
   finalConfirmation: "confirmed_after_second_gate";
   idempotencyKey: string;
+}>;
+
+export type RollbackStudyRatingCommand = Readonly<{
+  personId: string;
+  planId: string;
+  localDate: string;
+  expectedPlanVersion: number;
+  eventId: string;
+  vocabularyItemId: string;
 }>;
 
 type StudyCommandIdempotencyFactBase = Readonly<{

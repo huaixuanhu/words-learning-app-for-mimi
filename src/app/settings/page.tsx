@@ -18,7 +18,7 @@ export default function SettingsPage() {
         <SimplePanel title="People">
           <PersonSettingsForm />
         </SimplePanel>
-        <SimplePanel title="Review">
+        <SimplePanel title="Daily plan">
           <ReviewSettingsForm />
         </SimplePanel>
       </div>

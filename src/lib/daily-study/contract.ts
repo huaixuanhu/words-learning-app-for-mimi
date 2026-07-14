@@ -795,6 +795,7 @@ export function validateRecordStudyRatingCommand(
     command.promptToken !== prompt.promptToken ||
     command.personId !== prompt.personId ||
     command.planId !== prompt.planId ||
+    prompt.planVersion !== context.window.planVersion ||
     command.localDate !== prompt.localDate ||
     command.vocabularyItemId !== prompt.vocabularyItemId ||
     evidence.reviewProfile !== prompt.reviewProfile ||

@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import type {
   DurableRepositoryPort,
   ImportBatchRollbackResult,
@@ -76,6 +76,34 @@ import type {
   VocabularyData,
   VocabularyItem,
 } from "@/lib/vocabulary/types";
+import {
+  readDailyStudyQueue,
+  rebuildRecognitionStateAfterDayReset,
+  resolveDailyStudyToday,
+  updateDailyStudyDefaults,
+  updateDailyStudyTodayGoals,
+} from "@/lib/daily-study/runtime-engine";
+import {
+  getStudyTokenSecret,
+  issueServerPromptToken,
+  signOpaqueStudyToken,
+  verifyOpaqueStudyToken,
+  verifyServerPromptToken,
+} from "@/lib/daily-study/opaque-token";
+import {
+  validateRecordStudyRatingCommand,
+  validateResetTodayCommand,
+} from "@/lib/daily-study/contract";
+import type {
+  NewQueueCursor,
+  ResetTodayCommand,
+  RollbackStudyRatingCommand,
+  ReviewQueueCursor,
+  ReviewProfile,
+  StudyQueueRequest,
+  TrustedStudyQueueQuery,
+  UpdateDefaultGoalsCommand,
+} from "@/lib/daily-study/types";
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -694,6 +722,907 @@ export async function getPostgresVocabularyDataSnapshot(
       (entry) => entry.schema6.vocabularyRelations,
     ),
     updatedAt: now,
+  };
+}
+
+type StudyCursorClaims = Readonly<{
+  personId: string;
+  planId: string;
+  localDate: string;
+  reviewProfile: ReviewProfile;
+  zone: "review" | "new";
+  expectedPlanVersion: number;
+  cursor: NewQueueCursor | ReviewQueueCursor;
+}>;
+
+function hasDailyDefault(
+  data: VocabularyData,
+  personId: string,
+  reviewProfile: ReviewProfile,
+) {
+  return data.dailyStudyDefaults.some(
+    (defaults) =>
+      defaults.personId === personId && defaults.reviewProfile === reviewProfile,
+  );
+}
+
+function hasDailyPlan(
+  data: VocabularyData,
+  personId: string,
+  reviewProfile: ReviewProfile,
+  localDate: string,
+) {
+  return data.dailyStudyPlans.some(
+    (plan) =>
+      plan.personId === personId &&
+      plan.reviewProfile === reviewProfile &&
+      plan.localDate === localDate,
+  );
+}
+
+async function insertResolvedDailyStudyRows(
+  queryable: PostgresQueryable,
+  before: VocabularyData,
+  after: VocabularyData,
+  personId: string,
+) {
+  for (const defaults of after.dailyStudyDefaults.filter(
+    (entry) =>
+      entry.personId === personId &&
+      !hasDailyDefault(before, personId, entry.reviewProfile),
+  )) {
+    await queryable.query(
+      `
+        insert into daily_study_defaults (
+          person_id,
+          review_profile,
+          review_goal,
+          new_word_goal,
+          timezone,
+          updated_at
+        )
+        values ($1, $2, $3, $4, $5, $6)
+        on conflict (person_id, review_profile) do nothing
+      `,
+      [
+        defaults.personId,
+        defaults.reviewProfile,
+        defaults.reviewGoal,
+        defaults.newWordGoal,
+        defaults.timezone,
+        defaults.updatedAt,
+      ],
+    );
+  }
+
+  for (const plan of after.dailyStudyPlans.filter(
+    (entry) =>
+      entry.personId === personId &&
+      !hasDailyPlan(before, personId, entry.reviewProfile, entry.localDate),
+  )) {
+    await queryable.query(
+      `
+        insert into daily_study_plans (
+          id,
+          person_id,
+          review_profile,
+          local_date,
+          timezone,
+          day_starts_at,
+          day_ends_at,
+          suggested_review,
+          review_goal,
+          new_word_goal,
+          plan_version,
+          recommendation_version,
+          calculated_at,
+          updated_at
+        )
+        values (
+          $1, $2, $3, $4, $5, $6, $7,
+          $8, $9, $10, $11, $12, $13, $14
+        )
+        on conflict (person_id, review_profile, local_date) do nothing
+      `,
+      [
+        plan.id,
+        plan.personId,
+        plan.reviewProfile,
+        plan.localDate,
+        plan.timezone,
+        plan.dayStartsAt,
+        plan.dayEndsAt,
+        plan.suggestedReview,
+        plan.reviewGoal,
+        plan.newWordGoal,
+        plan.planVersion,
+        plan.recommendationVersion,
+        plan.calculatedAt,
+        plan.updatedAt,
+      ],
+    );
+  }
+}
+
+export async function resolvePostgresDailyStudyToday(
+  personId: string,
+  now = new Date().toISOString(),
+) {
+  assertDatabaseUuid(personId, "personId");
+  const before = await getPostgresVocabularyDataSnapshot(personId, now);
+
+  if (!before.people.some((person) => person.id === personId && person.isActive)) {
+    throw new Error(`Person not found: ${personId}`);
+  }
+
+  const provisional = resolveDailyStudyToday(before, now, { makePlanId: randomUUID });
+
+  await withPostgresTransaction((client) =>
+    insertResolvedDailyStudyRows(client, before, provisional.data, personId),
+  );
+
+  const persisted = await getPostgresVocabularyDataSnapshot(personId, now);
+  return resolveDailyStudyToday(persisted, now, { makePlanId: randomUUID });
+}
+
+function assertCursorBinding(
+  claims: StudyCursorClaims,
+  request: StudyQueueRequest,
+) {
+  if (
+    claims.personId !== request.personId ||
+    claims.planId !== request.planId ||
+    claims.localDate !== request.localDate ||
+    claims.reviewProfile !== request.reviewProfile ||
+    claims.zone !== request.zone ||
+    claims.expectedPlanVersion !== request.expectedPlanVersion
+  ) {
+    throw new Error("Study cursor does not match the requested plan and zone");
+  }
+}
+
+export async function readPostgresDailyStudyQueue(
+  request: StudyQueueRequest,
+  now = new Date().toISOString(),
+  secret = getStudyTokenSecret(),
+) {
+  const resolved = await resolvePostgresDailyStudyToday(request.personId, now);
+  let cursor: NewQueueCursor | ReviewQueueCursor | null = null;
+
+  if (request.cursorToken) {
+    const envelope = verifyOpaqueStudyToken<StudyCursorClaims>(
+      request.cursorToken,
+      "cursor",
+      now,
+      secret,
+    );
+    assertCursorBinding(envelope.claims, request);
+    cursor = envelope.claims.cursor;
+  }
+
+  const trustedQuery = {
+    personId: request.personId,
+    planId: request.planId,
+    localDate: request.localDate,
+    reviewProfile: request.reviewProfile,
+    expectedPlanVersion: request.expectedPlanVersion,
+    requestedPageSize: request.requestedPageSize,
+    zone: request.zone,
+    cursor,
+  } as TrustedStudyQueueQuery;
+  const page = readDailyStudyQueue(
+    resolved.data,
+    trustedQuery,
+    (seed) => issueServerPromptToken(seed, now, secret).promptToken,
+  );
+  const nextCursorToken = page.nextCursor
+    ? signOpaqueStudyToken(
+        {
+          version: 1,
+          kind: "cursor",
+          expiresAt: new Date(new Date(now).getTime() + 15 * 60 * 1000).toISOString(),
+          claims: {
+            personId: request.personId,
+            planId: request.planId,
+            localDate: request.localDate,
+            reviewProfile: request.reviewProfile,
+            zone: request.zone,
+            expectedPlanVersion: request.expectedPlanVersion,
+            cursor: page.nextCursor,
+          } satisfies StudyCursorClaims,
+        },
+        secret,
+      )
+    : null;
+
+  return {
+    zone: page.zone,
+    entries: page.entries,
+    nextCursorToken,
+  };
+}
+
+export async function updatePostgresDailyStudyTodayGoals(
+  input: unknown,
+  now = new Date().toISOString(),
+) {
+  const snapshot = await getPostgresVocabularyDataSnapshot(
+    typeof input === "object" && input !== null && "personId" in input
+      ? String(input.personId)
+      : null,
+    now,
+  );
+  const updated = updateDailyStudyTodayGoals(snapshot, input, now);
+
+  if (updated.data === snapshot) {
+    return resolvePostgresDailyStudyToday(updated.plan.personId, now);
+  }
+
+  const result = await getPostgresPool().query<DailyStudyPlanRow>(
+    `
+      update daily_study_plans
+      set
+        review_goal = $1,
+        new_word_goal = $2,
+        plan_version = plan_version + 1,
+        updated_at = $3
+      where person_id = $4
+        and id = $5
+        and local_date = $6
+        and review_profile = $7
+        and plan_version = $8
+      returning
+        id,
+        person_id,
+        review_profile,
+        local_date,
+        timezone,
+        day_starts_at,
+        day_ends_at,
+        suggested_review,
+        review_goal,
+        new_word_goal,
+        plan_version,
+        recommendation_version,
+        calculated_at,
+        updated_at
+    `,
+    [
+      updated.plan.reviewGoal,
+      updated.plan.newWordGoal,
+      now,
+      updated.plan.personId,
+      updated.plan.id,
+      updated.plan.localDate,
+      updated.plan.reviewProfile,
+      updated.plan.planVersion - 1,
+    ],
+  );
+
+  if (!result.rows[0]) {
+    throw new Error("Today’s goals changed elsewhere. Reload and try again.");
+  }
+
+  return resolvePostgresDailyStudyToday(updated.plan.personId, now);
+}
+
+export async function updatePostgresDailyStudyDefaults(
+  input: Readonly<{
+    personId: string;
+    timezone: string;
+    goals: readonly UpdateDefaultGoalsCommand[];
+  }>,
+  now = new Date().toISOString(),
+) {
+  assertDatabaseUuid(input.personId, "personId");
+  const snapshot = await getPostgresVocabularyDataSnapshot(input.personId, now);
+  const next = updateDailyStudyDefaults(snapshot, input, now);
+  const defaults = next.dailyStudyDefaults.filter(
+    (entry) => entry.personId === input.personId,
+  );
+  const settings = next.settingsByPerson.find(
+    (entry) => entry.personId === input.personId,
+  );
+
+  if (!settings || defaults.length !== 2) {
+    throw new Error("Daily defaults could not be resolved for this learner");
+  }
+
+  await withPostgresTransaction(async (client) => {
+    for (const entry of defaults) {
+      await client.query(
+        `
+          insert into daily_study_defaults (
+            person_id,
+            review_profile,
+            review_goal,
+            new_word_goal,
+            timezone,
+            updated_at
+          )
+          values ($1, $2, $3, $4, $5, $6)
+          on conflict (person_id, review_profile)
+          do update set
+            review_goal = excluded.review_goal,
+            new_word_goal = excluded.new_word_goal,
+            timezone = excluded.timezone,
+            updated_at = excluded.updated_at
+        `,
+        [
+          entry.personId,
+          entry.reviewProfile,
+          entry.reviewGoal,
+          entry.newWordGoal,
+          entry.timezone,
+          entry.updatedAt,
+        ],
+      );
+    }
+
+    await client.query(
+      `
+        insert into review_settings (
+          person_id,
+          session_limit,
+          recognition_session_limit,
+          active_session_limit,
+          timezone,
+          updated_at
+        )
+        values ($1, $2, $3, $4, $5, $6)
+        on conflict (person_id)
+        do update set
+          timezone = excluded.timezone,
+          updated_at = excluded.updated_at
+      `,
+      [
+        input.personId,
+        settings.sessionLimit,
+        settings.recognitionSessionLimit,
+        settings.activeSessionLimit,
+        settings.timezone,
+        now,
+      ],
+    );
+  });
+
+  return resolvePostgresDailyStudyToday(input.personId, now);
+}
+
+type StudyCommandRow = {
+  person_id: string;
+  local_date: string | Date;
+  command_type: "record_rating" | "reset_today" | "rollback_event";
+  idempotency_key: string;
+  canonical_request_hash: string;
+  status: "in_progress" | "succeeded" | "failed";
+  result_json: Record<string, unknown> | null;
+  error_code: string | null;
+  created_at: string | Date;
+  expires_at: string | Date;
+};
+
+function canonicalize(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(canonicalize);
+  }
+
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([key, entry]) => [key, canonicalize(entry)]),
+    );
+  }
+
+  return value;
+}
+
+function hashStudyCommand(command: unknown) {
+  return createHash("sha256")
+    .update(JSON.stringify(canonicalize(command)))
+    .digest("hex");
+}
+
+async function beginStudyCommand(
+  queryable: PostgresQueryable,
+  input: Readonly<{
+    personId: string;
+    localDate: string;
+    commandType: "record_rating" | "reset_today";
+    idempotencyKey: string;
+    canonicalRequestHash: string;
+    now: string;
+  }>,
+): Promise<Record<string, unknown> | null> {
+  const expiresAt = new Date(new Date(input.now).getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
+  const inserted = await queryable.query<StudyCommandRow>(
+    `
+      insert into study_command_idempotency (
+        person_id,
+        local_date,
+        command_type,
+        idempotency_key,
+        canonical_request_hash,
+        status,
+        result_json,
+        error_code,
+        created_at,
+        expires_at
+      )
+      values ($1, $2, $3, $4, $5, 'in_progress', null, null, $6, $7)
+      on conflict (person_id, command_type, idempotency_key) do nothing
+      returning *
+    `,
+    [
+      input.personId,
+      input.localDate,
+      input.commandType,
+      input.idempotencyKey,
+      input.canonicalRequestHash,
+      input.now,
+      expiresAt,
+    ],
+  );
+
+  if (inserted.rows[0]) {
+    return null;
+  }
+
+  const existingResult = await queryable.query<StudyCommandRow>(
+    `
+      select *
+      from study_command_idempotency
+      where person_id = $1
+        and command_type = $2
+        and idempotency_key = $3
+      for update
+    `,
+    [input.personId, input.commandType, input.idempotencyKey],
+  );
+  const existing = existingResult.rows[0];
+
+  if (!existing) {
+    throw new Error("Study command idempotency row disappeared during validation");
+  }
+
+  if (new Date(existing.expires_at).getTime() <= new Date(input.now).getTime()) {
+    await queryable.query(
+      `
+        update study_command_idempotency
+        set
+          local_date = $4,
+          canonical_request_hash = $5,
+          status = 'in_progress',
+          result_json = null,
+          error_code = null,
+          created_at = $6,
+          expires_at = $7
+        where person_id = $1
+          and command_type = $2
+          and idempotency_key = $3
+      `,
+      [
+        input.personId,
+        input.commandType,
+        input.idempotencyKey,
+        input.localDate,
+        input.canonicalRequestHash,
+        input.now,
+        expiresAt,
+      ],
+    );
+    return null;
+  }
+
+  if (existing.canonical_request_hash !== input.canonicalRequestHash) {
+    throw new Error("The Idempotency Key was already used with a different request");
+  }
+
+  if (existing.status === "succeeded" && existing.result_json) {
+    return existing.result_json;
+  }
+
+  if (existing.status === "failed") {
+    throw new Error(existing.error_code ?? "The earlier study command failed");
+  }
+
+  throw new Error("The same study command is already in progress");
+}
+
+async function completeStudyCommand(
+  queryable: PostgresQueryable,
+  input: Readonly<{
+    personId: string;
+    commandType: "record_rating" | "reset_today";
+    idempotencyKey: string;
+    result: Record<string, unknown>;
+  }>,
+) {
+  await queryable.query(
+    `
+      update study_command_idempotency
+      set status = 'succeeded', result_json = $4::jsonb, error_code = null
+      where person_id = $1
+        and command_type = $2
+        and idempotency_key = $3
+        and status = 'in_progress'
+    `,
+    [
+      input.personId,
+      input.commandType,
+      input.idempotencyKey,
+      JSON.stringify(input.result),
+    ],
+  );
+}
+
+async function recordRecognitionReviewInTransaction(
+  queryable: PostgresQueryable,
+  command: RecordReviewCommand,
+) {
+  const item = await selectVocabularyItem(queryable, command, command.vocabularyItemId);
+
+  if (
+    !item ||
+    item.status === "archived" ||
+    item.archivedAt ||
+    item.learningTrack !== "recognition"
+  ) {
+    throw new Error(`Reviewable vocabulary item not found: ${command.vocabularyItemId}`);
+  }
+
+  const previousState = await getReviewState(queryable, command, command.vocabularyItemId);
+  const scheduled = scheduleNextReview(
+    previousState ?? undefined,
+    command.rating,
+    command.reviewedAt,
+  );
+  const elapsedMs =
+    command.elapsedMs === null || command.elapsedMs === undefined
+      ? 0
+      : Math.max(0, Math.round(command.elapsedMs));
+
+  if (elapsedMs > 90_000_000) {
+    throw new Error("elapsedMs must not exceed 90000000");
+  }
+
+  const nextState: ReviewState = {
+    id: previousState?.id ?? randomUUID(),
+    personId: command.personId,
+    vocabularyItemId: command.vocabularyItemId,
+    reviewProfile: "recognition",
+    parameterSetId: RECOGNITION_PARAMETER_SET_ID,
+    firstRatedAt:
+      previousState?.historyOrigin === "legacy_unknown"
+        ? null
+        : previousState?.firstRatedAt ?? command.reviewedAt,
+    historyOrigin:
+      previousState?.historyOrigin === "legacy_unknown" ? "legacy_unknown" : "recorded",
+    status: scheduled.status,
+    dueAt: scheduled.dueAt,
+    lastReviewedAt: command.reviewedAt,
+    reviewCount: scheduled.reviewCount,
+    lapseCount: scheduled.lapseCount,
+    intervalMinutes: scheduled.intervalMinutes,
+    difficulty: scheduled.difficulty,
+    stability: scheduled.stability,
+    updatedAt: command.reviewedAt,
+  };
+  const eventResult = await queryable.query<ReviewEventRow>(
+    `
+      insert into review_events (
+        id,
+        prompt_id,
+        person_id,
+        vocabulary_item_id,
+        review_profile,
+        activity_type,
+        answer_outcome,
+        answer_normalization_version,
+        target_revision,
+        parameter_set_id,
+        reviewed_at,
+        rating,
+        previous_due_at,
+        next_due_at,
+        previous_interval_minutes,
+        next_interval_minutes,
+        elapsed_ms
+      )
+      values (
+        $1, $2, $3, $4, 'recognition', 'recognition_card', 'self_rated',
+        null, null, $5, $6, $7, $8, $9, $10, $11, $12
+      )
+      returning
+        id,
+        prompt_id,
+        person_id,
+        vocabulary_item_id,
+        review_profile,
+        activity_type,
+        answer_outcome,
+        answer_normalization_version,
+        target_revision,
+        parameter_set_id,
+        reviewed_at,
+        rating,
+        previous_due_at,
+        next_due_at,
+        previous_interval_minutes,
+        next_interval_minutes,
+        elapsed_ms
+    `,
+    [
+      randomUUID(),
+      command.promptId ?? null,
+      command.personId,
+      command.vocabularyItemId,
+      RECOGNITION_PARAMETER_SET_ID,
+      command.reviewedAt,
+      command.rating,
+      previousState?.dueAt ?? null,
+      scheduled.dueAt,
+      previousState?.intervalMinutes ?? null,
+      scheduled.intervalMinutes,
+      elapsedMs,
+    ],
+  );
+  const state = await upsertReviewState(queryable, nextState);
+
+  return {
+    event: mapReviewEventRow(eventResult.rows[0]),
+    state,
+  };
+}
+
+export async function recordPostgresDailyStudyRating(
+  input: unknown,
+  now = new Date().toISOString(),
+  secret = getStudyTokenSecret(),
+) {
+  if (!input || typeof input !== "object" || !("personId" in input)) {
+    throw new Error("Rating command is required");
+  }
+
+  const personId = String(input.personId);
+  assertDatabaseUuid(personId, "personId");
+  const resolved = await resolvePostgresDailyStudyToday(personId, now);
+  const promptToken = "promptToken" in input ? String(input.promptToken) : "";
+  const trustedPrompt = verifyServerPromptToken(promptToken, now, secret);
+  const plan = resolved.data.dailyStudyPlans.find(
+    (candidate) =>
+      candidate.id === trustedPrompt.planId &&
+      candidate.personId === personId &&
+      candidate.localDate === trustedPrompt.localDate &&
+      candidate.reviewProfile === "recognition",
+  );
+
+  if (!plan) {
+    throw new Error("Rating command plan could not be resolved");
+  }
+
+  const nowTime = new Date(now).getTime();
+
+  if (
+    nowTime < new Date(plan.dayStartsAt).getTime() ||
+    nowTime >= new Date(plan.dayEndsAt).getTime()
+  ) {
+    throw new Error("Rating command belongs to a closed daily plan");
+  }
+
+  const validated = validateRecordStudyRatingCommand(input, {
+    window: {
+      planId: plan.id,
+      planVersion: plan.planVersion,
+      personId: plan.personId,
+      reviewProfile: plan.reviewProfile,
+      localDate: plan.localDate,
+      timezone: plan.timezone,
+      dayStartsAt: plan.dayStartsAt,
+      dayEndsAt: plan.dayEndsAt,
+      reviewGoal: plan.reviewGoal,
+      newWordGoal: plan.newWordGoal,
+    },
+    trustedPrompt,
+    currentTargetRevision: null,
+    consumedByIdempotencyKey: null,
+    now,
+  });
+  const command = validated.command;
+  const canonicalRequestHash = hashStudyCommand(command);
+
+  return withPostgresTransaction(async (client) => {
+    const replay = await beginStudyCommand(client, {
+      personId: command.personId,
+      localDate: command.localDate,
+      commandType: "record_rating",
+      idempotencyKey: command.idempotencyKey,
+      canonicalRequestHash,
+      now,
+    });
+
+    if (replay) {
+      return replay;
+    }
+
+    const consumed = await client.query<{ idempotency_key: string }>(
+      `
+        select idempotency_key
+        from study_command_idempotency
+        where person_id = $1
+          and command_type = 'record_rating'
+          and status = 'succeeded'
+          and result_json ->> 'promptId' = $2
+          and idempotency_key <> $3
+        limit 1
+      `,
+      [command.personId, validated.promptId, command.idempotencyKey],
+    );
+
+    if (consumed.rows[0]) {
+      throw new Error("The prompt was already consumed by another rating command");
+    }
+
+    const lockedPlan = await client.query<{ id: string }>(
+      `
+        select id
+        from daily_study_plans
+        where person_id = $1 and id = $2 and plan_version = $3
+        for update
+      `,
+      [command.personId, command.planId, trustedPrompt.planVersion],
+    );
+
+    if (!lockedPlan.rows[0]) {
+      throw new Error("Rating command plan is stale");
+    }
+
+    const result = await recordRecognitionReviewInTransaction(client, {
+      personId: command.personId,
+      vocabularyItemId: command.vocabularyItemId,
+      rating: command.evidence.memoryRating,
+      elapsedMs: command.evidence.elapsedMs,
+      reviewedAt: now,
+      promptId: validated.promptId,
+    });
+    const repeatPromptToken =
+      command.evidence.memoryRating === "forgot" ||
+      command.evidence.memoryRating === "hard"
+        ? issueServerPromptToken(
+            {
+              personId: command.personId,
+              planId: command.planId,
+              planVersion: trustedPrompt.planVersion,
+              localDate: command.localDate,
+              vocabularyItemId: command.vocabularyItemId,
+              reviewProfile: "recognition",
+              activityType: "recognition_card",
+            },
+            now,
+            secret,
+          ).promptToken
+        : null;
+    const storedResult = {
+      promptId: validated.promptId,
+      event: result.event,
+      state: result.state,
+      repeatPromptToken,
+    };
+
+    await completeStudyCommand(client, {
+      personId: command.personId,
+      commandType: "record_rating",
+      idempotencyKey: command.idempotencyKey,
+      result: storedResult,
+    });
+
+    return storedResult;
+  });
+}
+
+export async function rollbackPostgresDailyStudyRating(
+  command: RollbackStudyRatingCommand,
+  now = new Date().toISOString(),
+  secret = getStudyTokenSecret(),
+) {
+  assertDatabaseUuid(command.personId, "personId");
+  assertDatabaseUuid(command.planId, "planId");
+  assertDatabaseUuid(command.eventId, "eventId");
+  assertDatabaseUuid(command.vocabularyItemId, "vocabularyItemId");
+  const resolved = await resolvePostgresDailyStudyToday(command.personId, now);
+  const plan = resolved.data.dailyStudyPlans.find(
+    (candidate) =>
+      candidate.personId === command.personId &&
+      candidate.id === command.planId &&
+      candidate.localDate === command.localDate &&
+      candidate.reviewProfile === "recognition" &&
+      candidate.planVersion === command.expectedPlanVersion,
+  );
+
+  if (!plan) {
+    throw new Error("The Recognition plan changed. Start this zone again.");
+  }
+
+  const event = resolved.data.reviewEvents.find(
+    (candidate) =>
+      candidate.id === command.eventId &&
+      candidate.personId === command.personId &&
+      candidate.vocabularyItemId === command.vocabularyItemId &&
+      candidate.reviewProfile === "recognition" &&
+      new Date(candidate.reviewedAt).getTime() >= new Date(plan.dayStartsAt).getTime() &&
+      new Date(candidate.reviewedAt).getTime() < new Date(plan.dayEndsAt).getTime(),
+  );
+
+  if (!event) {
+    throw new Error("Only a Recognition rating from this study day can be returned");
+  }
+
+  const rollback = await rollbackReviewEvent(
+    { personId: command.personId, now, timezone: plan.timezone },
+    command.eventId,
+  );
+  const promptToken = issueServerPromptToken(
+    {
+      personId: command.personId,
+      planId: command.planId,
+      planVersion: command.expectedPlanVersion,
+      localDate: command.localDate,
+      vocabularyItemId: command.vocabularyItemId,
+      reviewProfile: "recognition",
+      activityType: "recognition_card",
+    },
+    now,
+    secret,
+  ).promptToken;
+
+  return { ...rollback, promptToken };
+}
+
+export async function resetPostgresDailyStudyToday(
+  input: unknown,
+  now = new Date().toISOString(),
+) {
+  const command = validateResetTodayCommand(input);
+  assertDatabaseUuid(command.personId, "personId");
+  assertDatabaseUuid(command.planId, "planId");
+  const resolved = await resolvePostgresDailyStudyToday(command.personId, now);
+
+  if (command.localDate !== resolved.today.localDate) {
+    throw new Error("Reset command does not belong to the current person-day");
+  }
+
+  const plan = resolved.data.dailyStudyPlans.find(
+    (candidate) =>
+      candidate.personId === command.personId &&
+      candidate.id === command.planId &&
+      candidate.localDate === command.localDate,
+  );
+
+  if (!plan) {
+    throw new Error("Today’s plan could not be found");
+  }
+
+  const result = await resetTodayReview(
+    {
+      personId: command.personId,
+      now,
+      timezone: plan.timezone,
+    },
+    {
+      planId: command.planId,
+      localDate: command.localDate,
+      dayStartsAt: plan.dayStartsAt,
+      dayEndsAt: plan.dayEndsAt,
+      idempotencyKey: command.idempotencyKey,
+      canonicalRequestHash: hashStudyCommand(command as ResetTodayCommand),
+    },
+  );
+  const refreshed = await resolvePostgresDailyStudyToday(command.personId, now);
+
+  return {
+    ...result,
+    today: refreshed.today,
   };
 }
 
@@ -1413,23 +2342,120 @@ async function listReviewEventsForVocabularyItem(
   return result.rows.map(mapReviewEventRow);
 }
 
+type DailyResetOptions = Readonly<{
+  planId: string;
+  localDate: string;
+  dayStartsAt: string;
+  dayEndsAt: string;
+  idempotencyKey: string;
+  canonicalRequestHash: string;
+}>;
+
 async function resetTodayReview(
   context: TimestampedPersonContext,
+  options?: DailyResetOptions,
 ): Promise<ResetTodayReviewResult> {
   assertPersonContext(context);
 
   return withPostgresTransaction(async (client) => {
+    if (options) {
+      const plans = await client.query<DailyStudyPlanRow>(
+        `
+          select
+            id,
+            person_id,
+            review_profile,
+            local_date,
+            timezone,
+            day_starts_at,
+            day_ends_at,
+            suggested_review,
+            review_goal,
+            new_word_goal,
+            plan_version,
+            recommendation_version,
+            calculated_at,
+            updated_at
+          from daily_study_plans
+          where person_id = $1 and local_date = $2
+          order by review_profile asc
+          for update
+        `,
+        [context.personId, options.localDate],
+      );
+      const mappedPlans = plans.rows.map(mapDailyStudyPlanRow);
+      const anchor = mappedPlans.find((plan) => plan.id === options.planId);
+
+      if (
+        mappedPlans.length !== 2 ||
+        !anchor ||
+        mappedPlans.some(
+          (plan) =>
+            plan.dayStartsAt !== options.dayStartsAt ||
+            plan.dayEndsAt !== options.dayEndsAt ||
+            plan.timezone !== anchor.timezone,
+        )
+      ) {
+        throw new Error("Today’s Track plans are incomplete or no longer match");
+      }
+
+      const replay = await beginStudyCommand(client, {
+        personId: context.personId,
+        localDate: options.localDate,
+        commandType: "reset_today",
+        idempotencyKey: options.idempotencyKey,
+        canonicalRequestHash: options.canonicalRequestHash,
+        now: context.now,
+      });
+
+      if (replay) {
+        return {
+          resetEventsCount: Number(replay.resetEventsCount ?? 0),
+          resetItemsCount: Number(replay.resetItemsCount ?? 0),
+        };
+      }
+    }
+
     const settings = await getReviewSettings(client, context);
     const todayKey = getLocalDateKey(context.now, settings.timezone);
     const events = await listReviewEvents(client, context);
+    const isTargetEvent = (event: ReviewEvent) =>
+      options
+        ? new Date(event.reviewedAt).getTime() >= new Date(options.dayStartsAt).getTime() &&
+          new Date(event.reviewedAt).getTime() < new Date(options.dayEndsAt).getTime()
+        : getLocalDateKey(event.reviewedAt, settings.timezone) === todayKey;
+
+    if (
+      options &&
+      events.some(
+        (event) =>
+          event.personId === context.personId &&
+          event.reviewProfile === "active" &&
+          isTargetEvent(event),
+      )
+    ) {
+      throw new Error(
+        "Active practice history is present today. Reset is paused until the Active rebuild is available.",
+      );
+    }
+
     const todayEvents = events.filter(
       (event) =>
         event.reviewProfile === "recognition" &&
-        getLocalDateKey(event.reviewedAt, settings.timezone) === todayKey,
+        isTargetEvent(event),
     );
     const affectedItemIds = Array.from(new Set(todayEvents.map((event) => event.vocabularyItemId)));
 
     if (!todayEvents.length) {
+      if (options) {
+        await completeStudyCommand(client, {
+          personId: context.personId,
+          commandType: "reset_today",
+          idempotencyKey: options.idempotencyKey,
+          result: { resetEventsCount: 0, resetItemsCount: 0 },
+        });
+      }
+
       return {
         resetEventsCount: 0,
         resetItemsCount: 0,
@@ -1468,14 +2494,16 @@ async function resetTodayReview(
           (event) =>
             event.vocabularyItemId === vocabularyItemId &&
             event.reviewProfile === "recognition" &&
-            getLocalDateKey(event.reviewedAt, settings.timezone) !== todayKey,
+            !isTargetEvent(event),
         )
         .sort(sortReviewEventsByReviewedAt);
-      const rebuiltState = rebuildReviewStateFromEvents(
+      const rebuiltState = rebuildRecognitionStateAfterDayReset(
         context.personId,
         vocabularyItemId,
+        previousStateByItemId.get(vocabularyItemId) ?? undefined,
         earlierEvents,
-        previousStateByItemId.get(vocabularyItemId) ?? null,
+        todayEvents.filter((event) => event.vocabularyItemId === vocabularyItemId),
+        context.now,
       );
 
       if (rebuiltState) {
@@ -1483,10 +2511,21 @@ async function resetTodayReview(
       }
     }
 
-    return {
+    const result = {
       resetEventsCount: todayEvents.length,
       resetItemsCount: affectedItemIds.length,
     };
+
+    if (options) {
+      await completeStudyCommand(client, {
+        personId: context.personId,
+        commandType: "reset_today",
+        idempotencyKey: options.idempotencyKey,
+        result,
+      });
+    }
+
+    return result;
   });
 }
 
@@ -1882,122 +2921,9 @@ export function createPostgresRepository(): DurableRepositoryPort {
         assertPersonContext(command);
         assertDatabaseUuid(command.vocabularyItemId, "vocabularyItemId");
 
-        return withPostgresTransaction(async (client) => {
-          const item = await selectVocabularyItem(client, command, command.vocabularyItemId);
-
-          if (
-            !item ||
-            item.status === "archived" ||
-            item.archivedAt ||
-            item.learningTrack !== "recognition"
-          ) {
-            throw new Error(`Reviewable vocabulary item not found: ${command.vocabularyItemId}`);
-          }
-
-          const previousState = await getReviewState(client, command, command.vocabularyItemId);
-          const scheduled = scheduleNextReview(previousState ?? undefined, command.rating, command.reviewedAt);
-          const elapsedMs =
-            command.elapsedMs === null || command.elapsedMs === undefined
-              ? 0
-              : Math.max(0, Math.round(command.elapsedMs));
-          if (elapsedMs > 90_000_000) {
-            throw new Error("elapsedMs must not exceed 90000000");
-          }
-          const nextState: ReviewState = {
-            id: previousState?.id ?? randomUUID(),
-            personId: command.personId,
-            vocabularyItemId: command.vocabularyItemId,
-            reviewProfile: "recognition",
-            parameterSetId: RECOGNITION_PARAMETER_SET_ID,
-            firstRatedAt:
-              previousState?.historyOrigin === "legacy_unknown"
-                ? null
-                : previousState?.firstRatedAt ?? command.reviewedAt,
-            historyOrigin:
-              previousState?.historyOrigin === "legacy_unknown"
-                ? "legacy_unknown"
-                : "recorded",
-            status: scheduled.status,
-            dueAt: scheduled.dueAt,
-            lastReviewedAt: command.reviewedAt,
-            reviewCount: scheduled.reviewCount,
-            lapseCount: scheduled.lapseCount,
-            intervalMinutes: scheduled.intervalMinutes,
-            difficulty: scheduled.difficulty,
-            stability: scheduled.stability,
-            updatedAt: command.reviewedAt,
-          };
-          const eventResult = await client.query<ReviewEventRow>(
-            `
-              insert into review_events (
-                id,
-                prompt_id,
-                person_id,
-                vocabulary_item_id,
-                review_profile,
-                activity_type,
-                answer_outcome,
-                answer_normalization_version,
-                target_revision,
-                parameter_set_id,
-                reviewed_at,
-                rating,
-                previous_due_at,
-                next_due_at,
-                previous_interval_minutes,
-                next_interval_minutes,
-                elapsed_ms
-              )
-              values (
-                $1, $2, $3, $4, $5, $6, $7, $8, $9,
-                $10, $11, $12, $13, $14, $15, $16, $17
-              )
-              returning
-                id,
-                prompt_id,
-                person_id,
-                vocabulary_item_id,
-                review_profile,
-                activity_type,
-                answer_outcome,
-                answer_normalization_version,
-                target_revision,
-                parameter_set_id,
-                reviewed_at,
-                rating,
-                previous_due_at,
-                next_due_at,
-                previous_interval_minutes,
-                next_interval_minutes,
-                elapsed_ms
-            `,
-            [
-              randomUUID(),
-              null,
-              command.personId,
-              command.vocabularyItemId,
-              "recognition",
-              "recognition_card",
-              "self_rated",
-              null,
-              null,
-              RECOGNITION_PARAMETER_SET_ID,
-              command.reviewedAt,
-              command.rating,
-              previousState?.dueAt ?? null,
-              scheduled.dueAt,
-              previousState?.intervalMinutes ?? null,
-              scheduled.intervalMinutes,
-              elapsedMs,
-            ],
-          );
-          const state = await upsertReviewState(client, nextState);
-
-          return {
-            event: mapReviewEventRow(eventResult.rows[0]),
-            state,
-          };
-        });
+        return withPostgresTransaction((client) =>
+          recordRecognitionReviewInTransaction(client, command),
+        );
       },
       resetToday: (context) => resetTodayReview(context),
       rollbackEvent: (context, reviewEventId) => rollbackReviewEvent(context, reviewEventId),

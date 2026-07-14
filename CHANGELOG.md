@@ -1,5 +1,20 @@
 # CHANGELOG
 
+## 2026-07-14 16:07 AEST
+
+- Completed local V2 Stage 5 from the documentation-first child plan `plan_docs/PLAN_V2_STAGE5_DAILY_LEARNING_ENGINE.md`.
+- Added timezone-safe Daily Plan resolution for both Tracks, including 23-hour/25-hour local days, frozen `Suggested review`, exact today goals, future defaults, and six learner-visible values per Track.
+- Replaced the combined Recognition session with separate `Review` and `New Words` zones. First valid ratings move entries from `New` to `In review`; failed ratings can return in-session through new opaque prompt evidence without consuming another distinct target.
+- Updated Home, Study, Review, Settings, and Library with the daily values, today/future goal editing, learning-stage filters, card-body reveal/hide, whole-entry browser `Listen`, calm rating colors, example actions, and bounded `回退1词`.
+- Removed the old `1..80` goal limit. Exact decimal integers from `0` through `2,147,483,647` are accepted, while each internal queue page remains bounded to 100 entries.
+- Replaced the former Review-page daily reset with Study's two-gate whole-day reset using the accepted Chinese irreversible warning. Daily plans, goals, suggestions, vocabulary, creation facts, unrelated dates, and AI content are preserved; current-day Active history fails closed until V2-6 can rebuild it.
+- Added strict `POST /api/study` operations, Postgres transaction/rebuild paths, request-time HMAC prompt/cursor evidence issued only for the bounded selected page, local session-only operational evidence, rating idempotency, and bounded one-entry rollback routing. Operational tokens/replays remain outside JSON backup.
+- Kept `MIMI_STUDY_TOKEN_SECRET` intentionally unconfigured, so server-backed token issuance remains fail-closed. Schema Version 6 SQL remains an unexecuted draft and live V1 remains Schema Version 5.
+- Passed focused daily-study/API tests (5 files / 36 tests), ESLint, TypeScript, the full Vitest suite (37 files and 231 tests passed; 1 Postgres integration file/test intentionally skipped), all three backup dry-runs, Next.js Production build, Tier 3 governance preflight, and final diff checks.
+- Browser acceptance passed on isolated forced-local `127.0.0.1:3001` data across 320, 375, 390, 768, 820, 1023, 1024, and 1280 px, both themes, daily metrics/goals, New-to-In-review movement, failed-card repeat, rollback, both reset gates, and critical routes with no horizontal overflow, framework overlay, console warning, or console error. The disposable phrase was deleted and the changed test goal restored.
+- Did not inspect or configure a credential, call Gemini, connect to a remote database, execute a migration, mutate Production data, change Vercel, deploy, commit, push, or open a pull request.
+- Reason: turn the accepted daily-learning contract and Schema Version 6 shapes into a calm, usable Recognition flow before Active practice, AI enrichment, and Dashboard insights.
+
 ## 2026-07-14 11:14 AEST
 
 - Completed local V2 Stage 4 from the documentation-first child plan `plan_docs/PLAN_V2_STAGE4_MOBILE_FOUNDATION_COPY.md`.

@@ -1,7 +1,7 @@
 # Words Learning App For Mimi V2 Master Plan
 
 Created: 2026-07-13 00:16 AEST
-Last updated: 2026-07-14 11:14 AEST
+Last updated: 2026-07-14 16:07 AEST
 
 Source plan:
 - `plan_docs/PLAN_V1_MASTER.md`
@@ -27,11 +27,12 @@ Consumer / next stage:
 - `plan_docs/PLAN_V2_STAGE3_DATA_MODEL_BACKUP_PARITY.md`
 - `plan_docs/PLAN_V2_STAGE3_1_REVIEW_INTERACTION_CONTEXT_WORD_ACTIONS.md`
 - `plan_docs/PLAN_V2_STAGE4_MOBILE_FOUNDATION_COPY.md`
+- `plan_docs/PLAN_V2_STAGE5_DAILY_LEARNING_ENGINE.md`
 - Future derived V2 child plans created in the order defined by this document.
 - `plan_docs/PLAN_VERSION_HOLD_MULTI_USER_CONFIDENTIAL_ISOLATION.md`
 
 Document nature:
-This is the canonical V2 product and engineering master plan. It is derived from the completed V1 plan and current Production architecture. V2-1 has an isolated executable contract; V2-2 / 2-B have bounded local AI quality evidence; V2-3 has implemented the local/application Schema Version 6 and backup parity; V2-3.1 and V2-4 have implemented the bounded local Review-interaction and mobile/copy layers. No remote V2 migration, Production provider route, or V2 deployment has been performed.
+This is the canonical V2 product and engineering master plan. It is derived from the completed V1 plan and current Production architecture. V2-1 has an isolated executable contract; V2-2 / 2-B have bounded local AI quality evidence; V2-3 has implemented the local/application Schema Version 6 and backup parity; V2-3.1 and V2-4 have implemented the bounded local Review-interaction and mobile/copy layers; V2-5 has connected the accepted daily plans, metrics, separate Recognition zones, goals, reset, rollback, and pronunciation flow to local application behavior and a guarded Postgres/API boundary. No remote V2 migration, Production provider route, or V2 deployment has been performed.
 
 Current operational tier: Tier 3.
 
@@ -39,7 +40,7 @@ Target capability tier: Tier 3. V2 adds a bounded paid AI API（人工智能接�
 
 Working tier: Tier 3.
 
-Status: V2-0 through V2-4 are complete locally. V2-4 is recorded under `plan_docs/PLAN_V2_STAGE4_MOBILE_FOUNDATION_COPY.md`. Schema Version 6 and backup version 3 are implemented on branch `V2`; `0003_v2_schema6_data_model.sql` remains an unexecuted migration draft. The live V1 database remains Schema Version 5. No remote migration, Production external-service route, credential change, or deployment action has been performed.
+Status: V2-0 through V2-5 are complete locally. V2-5 is recorded under `plan_docs/PLAN_V2_STAGE5_DAILY_LEARNING_ENGINE.md`. Schema Version 6 and backup version 3 are implemented on branch `V2`; `0003_v2_schema6_data_model.sql` remains an unexecuted migration draft. The dedicated server study-token secret is intentionally unconfigured, so server-backed prompt/cursor issuance remains fail-closed. The live V1 database remains Schema Version 5. No remote migration, Production external-service route, credential change, or deployment action has been performed.
 
 ## Scope
 
@@ -561,19 +562,22 @@ Status: complete locally on 2026-07-14. Canonical child plan: `plan_docs/PLAN_V2
 
 ### V2-5 Daily Learning Engine
 
-- Build independent Review and New Words zones.
-- Implement all four values and both actual values per Track.
-- Remove the 1–80 goal cap while keeping safe integer / query boundaries.
-- Add daily snapshot semantics.
-- Add transactional two-gate whole-day reset and preserve `回退1词`.
-- Complete Recognition flow first; incomplete Active metrics show an unavailable state instead of a false zero.
+Status: complete locally on 2026-07-14. Canonical child plan: `plan_docs/PLAN_V2_STAGE5_DAILY_LEARNING_ENGINE.md`. No token secret was configured, Schema Version 6 remained unexecuted, and no remote database or Production action occurred.
+
+- Built independent Recognition `Review` and `New Words` zones with bounded queues, opaque prompt evidence, same-session failed-card return, and bounded `回退1词`.
+- Connected all four plan values and both distinct-entry actual values per Track to accepted daily facts on Home and Study.
+- Replaced the `1..80` setting boundary with exact non-negative integer goals through `2,147,483,647`, while keeping each internal queue page at no more than 100 entries.
+- Resolved immutable timezone-aware daily plan snapshots, including 23-hour and 25-hour local days.
+- Added today-specific goals, future defaults, profile-derived Library learning stage, and the transactional two-gate whole-day reset with an Active-history fail-closed guard.
+- Added whole-entry Recognition `Listen` through browser SpeechSynthesis and preserved the Stage 3.1 card/context interactions without scheduling side effects.
+- Added the strict `/api/study` boundary and local/Postgres application paths; the server token secret is a later separately approved environment action.
 
 ### V2-6 Active Practice Engine
 
 - Build `Say it`, `Spell it`, and `Dictation`.
 - Add browser SpeechSynthesis playback and typed-answer normalization.
 - Add independent Active FSRS parameters, state, events, rebuild, backup, and tests.
-- Add the Recognition `Listen` button and prove it has no scheduling side effect.
+- Retain the completed Recognition `Listen` button and regression-check that it has no scheduling side effect.
 - Keep Speech Recognition / microphone-AI scoring deferred.
 
 ### V2-7 AI Enrichment And Cost Guard

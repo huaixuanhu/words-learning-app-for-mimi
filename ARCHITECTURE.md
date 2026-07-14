@@ -1,7 +1,7 @@
 # Words Learning App For Mimi Architecture
 
 Created: 2026-07-02 23:30 AEST
-Last updated: 2026-07-14 11:14 AEST
+Last updated: 2026-07-14 16:07 AEST
 
 ## Current State
 
@@ -66,9 +66,13 @@ The local `main` branch now tracks `origin/main`. Remote repository settings hav
 
 ## Current V2 Planning Baseline
 
-The cloud-backed V1 described above is live and remains the current Production behavior. On branch `V2`, Stage 1 completed the isolated daily-study contract, Stage 2 / 2-B completed the bounded Gemini quality evidence, Stage 3 completed the local/application Schema Version 6 plus backup version 3 data layer, Stage 3.1 completed the bounded local Review interaction/context-word-action pass, and Stage 4 completed the mobile foundation and English-first copy pass under `plan_docs/PLAN_V2_STAGE4_MOBILE_FOUNDATION_COPY.md`. Stage 4 changed only local application UI, focused tests, and documentation. The live V1 database remains Schema Version 5; no remote V2 migration, provider call, credential change, Production data write, or deployment has been performed.
+The cloud-backed V1 described above is live and remains the current Production behavior. On branch `V2`, Stage 1 completed the isolated daily-study contract, Stage 2 / 2-B completed the bounded Gemini quality evidence, Stage 3 completed the local/application Schema Version 6 plus backup version 3 data layer, Stage 3.1 completed the bounded local Review interaction/context-word-action pass, Stage 4 completed the mobile foundation and English-first copy pass, and Stage 5 completed the local daily-learning engine under `plan_docs/PLAN_V2_STAGE5_DAILY_LEARNING_ENGINE.md`. The live V1 database remains Schema Version 5; no remote V2 migration, provider call, credential change, Production data write, or deployment has been performed.
 
 Stage 4 establishes the responsive application shell reused by later V2 stages. Below 1024 px, a five-item bottom navigation exposes `Home`, `Study`, `Review`, `Library`, and an accessible `More` bottom sheet; at 1024 px and above, the desktop rail is the sole primary navigation. One shared responsive dialog owns focus containment/restoration, Escape/backdrop handling, background scroll lock, dynamic viewport limits, and Safe Area padding for `More`, Review, and Library confirmations. Batch import renders one candidate state as touch-friendly cards below 1024 px and a scroll-contained table from 1024 px. Normal motion retains short fluid transitions, while reduced-motion styling removes spatial lift/travel and keeps brief opacity, color, border, and surface feedback.
+
+Stage 5 turns the accepted V2 daily contract into application behavior. One resolver creates or reuses both profile-specific Daily Plans for the same timezone-owned natural day. Home and Study read six values per Track: four plan values plus `Reviewed today` and `Learned today`. Recognition has separate `Review` and `New Words` queues; a valid first rating moves one entry to `In review`, while failed ratings can return through newly issued prompt evidence without consuming another distinct target. Study owns today-only goals and the two-gate whole-day reset. Settings owns future Recognition/Active review and new-word defaults plus timezone. Library derives `New` / `In review` from each Review Profile rather than lifecycle state.
+
+The browser-local adapter keeps operational prompt and replay records in session-only/in-memory storage, outside `VocabularyData` and JSON backup. The Postgres path maps the same behavior to existing Schema Version 6 tables and transactional commands, but it was not connected to a remote database in Stage 5. `POST /api/study` accepts only strict operation shapes, rechecks the existing auth/runtime gates, and delegates trusted server time and person scope. Server-backed cursor/prompt evidence is HMAC-authenticated and loads `MIMI_STUDY_TOKEN_SECRET` only at request time; the missing/unconfigured secret fails closed. Stage 5 deliberately did not create or configure that environment value.
 
 The accepted V2 architecture direction is:
 
@@ -183,6 +187,7 @@ Current routes:
 - `/practice-lab`
 - `/export`
 - `/settings`
+- `/api/study` for guarded server-backed daily-study commands
 
 ### Word Capture
 
@@ -226,7 +231,7 @@ Responsibilities:
 - preserve import batch metadata for batch-created vocabulary items
 - keep schema migration behavior explicit once a real database is introduced
 
-Current route: `/library`. It reads from the current runtime snapshot and supports search, All / Recognition / Active / Weak Words / Archived filters, edit, archive, restore, hard delete, and JSON batch rollback. Hard delete and rollback also remove matching review states and review events for the selected person. In Postgres runtimes, Stage 6B-P1-D routes these controls through `/api/storage/data` repository parity methods; real database execution still requires a migrated non-production database validation before formal Production use.
+Current route: `/library`. It reads from the current runtime snapshot and supports search, `All`, `New`, `In review`, Recognition, Active, Needs care, and Archived filters, plus edit, archive, restore, hard delete, and JSON batch rollback. `New` / `In review` is derived from retained profile evidence and stays separate from active/archived lifecycle state. Hard delete and rollback also remove matching review states and review events for the selected person. In Postgres runtimes, Stage 6B-P1-D routes lifecycle controls through `/api/storage/data`; Stage 5 daily learning uses the guarded `/api/study` path after Schema Version 6 and its dedicated token secret are separately enabled.
 
 ### Review Scheduler
 
@@ -243,7 +248,7 @@ Stage 8-D replaces the Stage 4 fixed interval table with Recognition-only FSRS-6
 
 Stage 8-B installed `ts-fsrs@5.4.1` and added an isolated `src/lib/review/fsrs-recognition.ts` calibration adapter. Stage 8-C adds same-session repeat behavior: `完全忘记了` and `有点忘记了` record the attempt and requeue the word later in the same local Review session, while only `模糊记得` and `完全记得` count as session passes. Stage 8-D wires the real scheduler through `src/lib/review/scheduler.ts`, local review repository rebuild, and the Postgres repository path without changing the schema.
 
-Current route: `/review`. It creates a Recognition Vocabulary review session from due cards first and new cards second, obeys the saved `recognitionSessionLimit`, lets the learner flip a card, records one of four ratings from either the main card controls or the right Session panel, appends `ReviewEvent`, and updates `ReviewState` with FSRS difficulty / stability values. It can roll back the previous completed attempt with `回退1词` during a multi-card session by removing that event, rebuilding that word's state from earlier history, and moving that word to the front of the current session. It can also reset today's review task after confirmation by removing only today's selected-person review events and rebuilding affected review states from earlier history. Failed Recognition ratings `完全忘记了` and `有点忘记了` repeat inside the same session until the learner selects `模糊记得` or `完全记得`. Active Vocabulary items are stored and visible in Library, but V1 must not schedule them, create review states for them, or create review events for them.
+Current branch-V2 route: `/review?zone=review|new`. It resolves the selected person's Recognition Daily Plan and reads only the requested bounded zone. Card-body tapping reveals/hides the answer; the whole-entry `Listen` button uses browser SpeechSynthesis and does not write scheduling data. A rating appends one Recognition event and updates FSRS state. First ratings remove entries from New Words. `完全忘记了` and `有点忘记了` return the card later in the same session through a new prompt token. `回退1词` removes only the previous current-day Recognition event, rebuilds that entry from retained history, and receives replacement prompt evidence. The former Review-page whole-day control has moved to Study's accepted two-gate reset. Active practice remains resting until V2-6.
 
 ### Flashcard Review
 
@@ -255,7 +260,7 @@ Responsibilities:
 - update review state
 - avoid overwhelming the user with too many cards in one session
 
-Current implementation uses the Stage 7 soft sage UI, exposes session count, completed count, remaining count, answer reveal, mirrored rating controls, one-word rollback while a current later card exists, a review-completion modal, and a confirmed reset-today control. Empty queues refresh automatically after local Recognition Vocabulary data changes without interrupting an active card.
+Current implementation uses the Stage 7 soft sage UI and Stage 4 responsive shell, exposes session/completion counts, card-body and explicit answer reveal/hide, calm four-tone rating controls, browser pronunciation, example-word actions, bounded `回退1词`, same-session failed-card return, and a completion modal. The whole-day reset entry now lives on Study and requires both accepted confirmations.
 
 ### Review Settings
 
@@ -268,7 +273,7 @@ Responsibilities:
 - normalize invalid limits into safe bounds
 - make Recognition review queue selection obey the saved Recognition limit
 
-Current route: `/settings`. It can save separate Recognition / Active daily limits and timezone to local browser storage. The default Recognition limit is 24, the default Active limit is 8, and both use safe bounds of 1 to 80.
+Current route: `/settings`. It saves four future defaults—Recognition/Active Review goals and New-word goals—plus timezone. Values are exact decimal integers from `0` through `2,147,483,647`; they do not rewrite an already-resolved plan. Study separately edits today's goals and uses optimistic plan-version checks.
 
 ### Storage Adapter
 
@@ -719,7 +724,7 @@ Current local validation commands:
 - `npm audit --json`
 - `npm run dev` plus browser smoke check
 
-Current unit tests cover vocabulary normalization, text and JSON import parsing, nullable tag normalization, duplicate candidate handling, repository updates, timestamp preservation, archive/restore, import batch commits, local schema migration to version 5, person-scoped data separation, per-person Recognition / Active review settings, recognition-only queue selection, FSRS scheduler behavior, natural-day due checks, review event/state updates, JSON backup validation, CSV escaping including `learningTrack` / `tags`, invalid backup rejection, broken review-reference rejection, impossible Active review history rejection, backup round trip behavior, Stage 5D / Stage 6B-P1-B SQL static checks, Stage 6B-P1-C runtime / API route contract checks, Stage 6B-P1-D Postgres mapper / route mock / repository static parity checks, Stage 6B-P1-E backup import version 5 mapping / Active review-row rejection checks, a skipped-by-default Stage 6B-P1-F Postgres repository integration test, and the isolated V2-1 daily-study contract. V2-1 coverage includes one-entry counting, immutable batch reversal, late-Snapshot recovery, legacy unknown history, 23/25-hour plan windows, freely chosen safe goals, separate bounded queues, Recognition/Active evidence isolation, Active answer normalization, exact reset copy, and replay conflicts. Later validation should cover:
+Current unit tests cover the V1 repository/scheduler/backup boundaries, Schema Version 6 migration and backup parity, V2 AI contracts, Stage 3.1 interactions, Stage 4 mobile contracts, and the V2-5 daily engine. Stage 5 coverage includes timezone-safe 23/25-hour day windows, exact free goals, Track-separated metrics/plans, separate queue selection, first-rating learning stage, reset/rebuild and Active fail-closed behavior, opaque token tamper/expiry checks, browser-local operational-data exclusion, strict API routing/auth gates, and bounded rollback routing. The Postgres integration test remains skipped by default and no remote database validation occurred in Stage 5. Later validation should cover:
 
 - duplicate card behavior
 - empty deck behavior
@@ -729,7 +734,7 @@ Current unit tests cover vocabulary normalization, text and JSON import parsing,
 - Production database migration dry run once the Production target and Stage 6B execution plan are explicitly approved
 - embedding or FSRS migration safety when those later stages are explicitly approved
 - V2 Review Profile isolation and V1-to-Recognition state migration
-- V2 browser pronunciation playback with no review-state side effect
+- V2 Active pronunciation/dictation playback and independent scheduling behavior
 - V2 AI quota / concurrency / replay / Cache / Kill Switch behavior
 - V2 limited-retention disclosure and minimal outbound lexical data
 - V2 mobile acceptance at 320 / 375 / 390 / 768 / 1024 px and representative desktop width

@@ -1,0 +1,901 @@
+import {
+  buildDailyStudyMetrics,
+  calculateSuggestedReview,
+  DailyStudyContractError,
+  selectStudyQueuePage,
+  validateDailyGoals,
+  validateResetTodayCommand,
+  validateUpdateTodayGoalsCommand,
+} from "./contract";
+import { resolvePersonDay } from "./day-window";
+import type {
+  DailyPlanWindow,
+  DailyStudyTodayResponse,
+  LearningStage,
+  ReviewEventFact,
+  ReviewProfile,
+  ReviewStateFact,
+  StudyQueueEntryFact,
+  StudyQueuePage,
+  TrustedStudyQueueQuery,
+  UpdateDefaultGoalsCommand,
+  UpdateTodayGoalsCommand,
+  VocabularyCreationFact,
+  VocabularyCreationReversalFact,
+  ResetTodayCommand,
+} from "./types";
+import { REVIEW_PROFILES } from "./types";
+import { getSelectedPersonId } from "@/lib/people/repository";
+import {
+  rebuildRecognitionStateFromEvents,
+} from "@/lib/review/repository";
+import { getReviewSettingsForPerson } from "@/lib/review/settings";
+import type { ReviewEvent, ReviewState } from "@/lib/review/types";
+import type { DailyStudyPlanRecord } from "@/lib/storage/v2-data-model";
+import { makeId } from "@/lib/vocabulary/repository";
+import type { VocabularyData, VocabularyItem } from "@/lib/vocabulary/types";
+
+export const DAILY_RECOMMENDATION_VERSION = "daily-suggested-review-v1";
+
+export type PromptSeed = Readonly<{
+  personId: string;
+  planId: string;
+  planVersion: number;
+  localDate: string;
+  vocabularyItemId: string;
+  reviewProfile: "recognition";
+  activityType: "recognition_card";
+}>;
+
+export class DailyStudyRuntimeError extends Error {
+  constructor(
+    readonly code:
+      | "plan_not_found"
+      | "plan_mismatch"
+      | "stale_plan"
+      | "active_reset_unavailable"
+      | "person_mismatch",
+    message: string,
+  ) {
+    super(message);
+    this.name = "DailyStudyRuntimeError";
+  }
+}
+
+function ensureNow(now: string) {
+  const parsed = new Date(now);
+
+  if (!Number.isFinite(parsed.getTime())) {
+    throw new DailyStudyContractError("now must be a valid timestamp");
+  }
+
+  return parsed.toISOString();
+}
+
+export function planRecordToWindow(plan: DailyStudyPlanRecord): DailyPlanWindow {
+  return {
+    planId: plan.id,
+    planVersion: plan.planVersion,
+    personId: plan.personId,
+    reviewProfile: plan.reviewProfile,
+    localDate: plan.localDate,
+    timezone: plan.timezone,
+    dayStartsAt: plan.dayStartsAt,
+    dayEndsAt: plan.dayEndsAt,
+    reviewGoal: plan.reviewGoal,
+    newWordGoal: plan.newWordGoal,
+  };
+}
+
+function isAvailableItem(item: VocabularyItem | undefined, profile: ReviewProfile) {
+  return Boolean(
+    item &&
+      item.learningTrack === profile &&
+      item.status !== "archived" &&
+      item.archivedAt === null,
+  );
+}
+
+function creationFacts(data: VocabularyData): VocabularyCreationFact[] {
+  return data.vocabularyCreationFacts.map((fact) => ({
+    creationFactId: fact.creationFactId,
+    personId: fact.personId,
+    originalVocabularyItemId: fact.originalVocabularyItemId,
+    sourceActionId: fact.sourceActionId,
+    trackAtCreation: fact.trackAtCreation,
+    sourceKind: fact.sourceKind,
+    systemCreatedAt: fact.systemCreatedAt,
+  }));
+}
+
+function creationReversals(data: VocabularyData): VocabularyCreationReversalFact[] {
+  return data.vocabularyCreationReversals.map((fact) => ({
+    reversalFactId: fact.reversalFactId,
+    personId: fact.personId,
+    sourceActionId: fact.sourceActionId,
+    reason: fact.reason,
+    reversedAt: fact.reversedAt,
+  }));
+}
+
+function reviewStateFacts(data: VocabularyData): ReviewStateFact[] {
+  const itemById = new Map(data.items.map((item) => [item.id, item]));
+  const facts: ReviewStateFact[] = [];
+
+  for (const state of data.reviewStates) {
+    const item = itemById.get(state.vocabularyItemId);
+
+    if (!item) {
+      continue;
+    }
+
+    const base = {
+      personId: state.personId,
+      vocabularyItemId: state.vocabularyItemId,
+      reviewProfile: state.reviewProfile,
+      learningTrack: item.learningTrack,
+      parameterSetId: state.parameterSetId,
+      dueAt: state.dueAt,
+      systemCreatedAt: item.systemCreatedAt,
+      isAvailable: isAvailableItem(item, state.reviewProfile),
+    };
+
+    if (state.historyOrigin === "legacy_unknown") {
+      facts.push({ ...base, firstRatedAt: null, historyOrigin: "legacy_unknown" });
+    } else if (state.firstRatedAt) {
+      facts.push({ ...base, firstRatedAt: state.firstRatedAt, historyOrigin: "recorded" });
+    }
+  }
+
+  return facts;
+}
+
+function reviewEventFact(event: ReviewEvent): ReviewEventFact {
+  const base = {
+    eventId: event.id,
+    promptId: event.promptId,
+    personId: event.personId,
+    vocabularyItemId: event.vocabularyItemId,
+    reviewedAt: event.reviewedAt,
+    previousDueAt: event.previousDueAt,
+    parameterSetId: event.parameterSetId,
+    elapsedMs: event.elapsedMs,
+    memoryRating: event.rating,
+  };
+
+  if (
+    event.reviewProfile === "recognition" &&
+    event.activityType === "recognition_card" &&
+    event.answerOutcome === "self_rated" &&
+    event.answerNormalizationVersion === null &&
+    event.targetRevision === null
+  ) {
+    return {
+      ...base,
+      reviewProfile: "recognition",
+      activityType: "recognition_card",
+      answerOutcome: "self_rated",
+      answerNormalizationVersion: null,
+      targetRevision: null,
+    };
+  }
+
+  if (
+    event.reviewProfile === "active" &&
+    event.activityType === "say" &&
+    event.answerOutcome === "self_rated" &&
+    event.answerNormalizationVersion === null &&
+    event.targetRevision
+  ) {
+    return {
+      ...base,
+      reviewProfile: "active",
+      activityType: "say",
+      answerOutcome: "self_rated",
+      answerNormalizationVersion: null,
+      targetRevision: event.targetRevision,
+    };
+  }
+
+  if (
+    event.reviewProfile === "active" &&
+    (event.activityType === "spell" || event.activityType === "dictation") &&
+    (event.answerOutcome === "exact" ||
+      event.answerOutcome === "normalized_match" ||
+      event.answerOutcome === "different" ||
+      event.answerOutcome === "revealed_without_answer") &&
+    event.answerNormalizationVersion === "active-answer-v1" &&
+    event.targetRevision
+  ) {
+    return {
+      ...base,
+      reviewProfile: "active",
+      activityType: event.activityType,
+      answerOutcome: event.answerOutcome,
+      answerNormalizationVersion: "active-answer-v1",
+      targetRevision: event.targetRevision,
+    };
+  }
+
+  throw new DailyStudyContractError(`Review event ${event.id} has inconsistent profile evidence`);
+}
+
+function reviewEventFacts(data: VocabularyData) {
+  return data.reviewEvents.map(reviewEventFact);
+}
+
+function sameWindow(a: DailyStudyPlanRecord, b: DailyStudyPlanRecord) {
+  return (
+    a.localDate === b.localDate &&
+    a.timezone === b.timezone &&
+    a.dayStartsAt === b.dayStartsAt &&
+    a.dayEndsAt === b.dayEndsAt
+  );
+}
+
+function findPlan(
+  data: VocabularyData,
+  personId: string,
+  reviewProfile: ReviewProfile,
+  localDate: string,
+) {
+  return data.dailyStudyPlans.find(
+    (plan) =>
+      plan.personId === personId &&
+      plan.reviewProfile === reviewProfile &&
+      plan.localDate === localDate,
+  );
+}
+
+export function resolveDailyStudyToday(
+  data: VocabularyData,
+  now = new Date().toISOString(),
+  options: Readonly<{ makePlanId?: () => string }> = {},
+): Readonly<{ data: VocabularyData; today: DailyStudyTodayResponse }> {
+  const calculatedAt = ensureNow(now);
+  const personId = getSelectedPersonId(data);
+  const settings = getReviewSettingsForPerson(data, personId);
+  const currentDay = resolvePersonDay(calculatedAt, settings.timezone);
+  const currentPlans = REVIEW_PROFILES.map((profile) =>
+    findPlan(data, personId, profile, currentDay.localDate),
+  ).filter((plan): plan is DailyStudyPlanRecord => Boolean(plan));
+  const anchor = currentPlans[0];
+
+  if (anchor && currentPlans.some((plan) => !sameWindow(anchor, plan))) {
+    throw new DailyStudyRuntimeError(
+      "plan_mismatch",
+      "The two Track plans do not share one daily window",
+    );
+  }
+
+  const personDay = anchor
+    ? {
+        localDate: anchor.localDate,
+        timezone: anchor.timezone,
+        dayStartsAt: anchor.dayStartsAt,
+        dayEndsAt: anchor.dayEndsAt,
+      }
+    : currentDay;
+  const defaultsByProfile = new Map(
+    data.dailyStudyDefaults
+      .filter((defaults) => defaults.personId === personId)
+      .map((defaults) => [defaults.reviewProfile, defaults]),
+  );
+  const stateFacts = reviewStateFacts(data);
+  const eventFacts = reviewEventFacts(data);
+  const makePlanId = options.makePlanId ?? (() => makeId("daily_plan"));
+  const newDefaults = REVIEW_PROFILES.flatMap((reviewProfile) => {
+    if (defaultsByProfile.has(reviewProfile)) {
+      return [];
+    }
+
+    return [{
+      personId,
+      reviewProfile,
+      reviewGoal:
+        reviewProfile === "recognition"
+          ? settings.recognitionSessionLimit
+          : settings.activeSessionLimit,
+      newWordGoal: 0,
+      timezone: personDay.timezone,
+      updatedAt: calculatedAt,
+    }];
+  });
+
+  for (const defaults of newDefaults) {
+    defaultsByProfile.set(defaults.reviewProfile, defaults);
+  }
+
+  const createdPlans = REVIEW_PROFILES.flatMap((reviewProfile) => {
+    const existing = findPlan(data, personId, reviewProfile, personDay.localDate);
+
+    if (existing) {
+      return [];
+    }
+
+    const defaults = defaultsByProfile.get(reviewProfile);
+
+    if (!defaults) {
+      throw new DailyStudyRuntimeError("plan_not_found", "Daily defaults could not be resolved");
+    }
+
+    const provisionalWindow: DailyPlanWindow = {
+      planId: makePlanId(),
+      planVersion: 1,
+      personId,
+      reviewProfile,
+      localDate: personDay.localDate,
+      timezone: personDay.timezone,
+      dayStartsAt: personDay.dayStartsAt,
+      dayEndsAt: personDay.dayEndsAt,
+      reviewGoal: defaults.reviewGoal,
+      newWordGoal: defaults.newWordGoal,
+    };
+    const suggestedReview = calculateSuggestedReview(provisionalWindow, stateFacts, eventFacts);
+
+    return [{
+      id: provisionalWindow.planId,
+      personId,
+      reviewProfile,
+      localDate: personDay.localDate,
+      timezone: personDay.timezone,
+      dayStartsAt: personDay.dayStartsAt,
+      dayEndsAt: personDay.dayEndsAt,
+      suggestedReview,
+      reviewGoal: provisionalWindow.reviewGoal,
+      newWordGoal: provisionalWindow.newWordGoal,
+      planVersion: 1,
+      recommendationVersion: DAILY_RECOMMENDATION_VERSION,
+      calculatedAt,
+      updatedAt: calculatedAt,
+    }];
+  });
+  const nextData: VocabularyData =
+    createdPlans.length || newDefaults.length
+      ? {
+          ...data,
+          dailyStudyDefaults: [...newDefaults, ...data.dailyStudyDefaults],
+          dailyStudyPlans: [...createdPlans, ...data.dailyStudyPlans],
+          updatedAt: calculatedAt,
+        }
+      : data;
+  const resolvedPlans = new Map(
+    REVIEW_PROFILES.map((reviewProfile) => {
+      const plan = findPlan(nextData, personId, reviewProfile, personDay.localDate);
+
+      if (!plan) {
+        throw new DailyStudyRuntimeError("plan_not_found", `Missing ${reviewProfile} daily plan`);
+      }
+
+      return [reviewProfile, plan];
+    }),
+  );
+  const facts = creationFacts(nextData);
+  const reversals = creationReversals(nextData);
+  const tracks = Object.fromEntries(
+    REVIEW_PROFILES.map((reviewProfile) => {
+      const plan = resolvedPlans.get(reviewProfile);
+
+      if (!plan) {
+        throw new DailyStudyRuntimeError("plan_not_found", `Missing ${reviewProfile} daily plan`);
+      }
+
+      const metrics = buildDailyStudyMetrics({
+        window: planRecordToWindow(plan),
+        suggestedReview: plan.suggestedReview,
+        creationFacts: facts,
+        creationReversals: reversals,
+        states: stateFacts,
+        events: eventFacts,
+      });
+
+      return [reviewProfile, {
+        reviewProfile,
+        status: "available" as const,
+        planId: plan.id,
+        planVersion: plan.planVersion,
+        metrics,
+        recommendationVersion: plan.recommendationVersion,
+        calculatedAt: plan.calculatedAt,
+        unavailableReason: null,
+      }];
+    }),
+  ) as DailyStudyTodayResponse["tracks"];
+
+  return {
+    data: nextData,
+    today: {
+      personId,
+      localDate: personDay.localDate,
+      timezone: personDay.timezone,
+      dayStartsAt: personDay.dayStartsAt,
+      dayEndsAt: personDay.dayEndsAt,
+      tracks,
+    },
+  };
+}
+
+function assertCurrentPlan(
+  data: VocabularyData,
+  command: Pick<
+    UpdateTodayGoalsCommand,
+    "personId" | "planId" | "localDate" | "reviewProfile"
+  >,
+) {
+  const plan = data.dailyStudyPlans.find(
+    (candidate) =>
+      candidate.id === command.planId &&
+      candidate.personId === command.personId &&
+      candidate.localDate === command.localDate &&
+      candidate.reviewProfile === command.reviewProfile,
+  );
+
+  if (!plan) {
+    throw new DailyStudyRuntimeError("plan_not_found", "Daily plan not found");
+  }
+
+  return plan;
+}
+
+export function updateDailyStudyTodayGoals(
+  data: VocabularyData,
+  input: unknown,
+  now = new Date().toISOString(),
+) {
+  const updatedAt = ensureNow(now);
+  const command = validateUpdateTodayGoalsCommand(input);
+
+  if (getSelectedPersonId(data) !== command.personId) {
+    throw new DailyStudyRuntimeError("person_mismatch", "Today goals belong to another learner");
+  }
+
+  const plan = assertCurrentPlan(data, command);
+
+  if (plan.planVersion !== command.expectedPlanVersion) {
+    throw new DailyStudyRuntimeError("stale_plan", "Today’s goals changed elsewhere. Reload and try again.");
+  }
+
+  if (plan.reviewGoal === command.reviewGoal && plan.newWordGoal === command.newWordGoal) {
+    return { data, plan };
+  }
+
+  const nextPlan = {
+    ...plan,
+    reviewGoal: command.reviewGoal,
+    newWordGoal: command.newWordGoal,
+    planVersion: plan.planVersion + 1,
+    updatedAt,
+  };
+
+  return {
+    data: {
+      ...data,
+      dailyStudyPlans: data.dailyStudyPlans.map((candidate) =>
+        candidate.id === plan.id && candidate.personId === plan.personId ? nextPlan : candidate,
+      ),
+      updatedAt,
+    },
+    plan: nextPlan,
+  };
+}
+
+export function updateDailyStudyDefaults(
+  data: VocabularyData,
+  input: Readonly<{
+    personId: string;
+    timezone: string;
+    goals: readonly UpdateDefaultGoalsCommand[];
+  }>,
+  now = new Date().toISOString(),
+) {
+  const updatedAt = ensureNow(now);
+
+  if (getSelectedPersonId(data) !== input.personId) {
+    throw new DailyStudyRuntimeError("person_mismatch", "Daily defaults belong to another learner");
+  }
+
+  resolvePersonDay(updatedAt, input.timezone);
+  const byProfile = new Map(
+    input.goals.map((entry) => {
+      if (entry.personId !== input.personId || !REVIEW_PROFILES.includes(entry.reviewProfile)) {
+        throw new DailyStudyRuntimeError("person_mismatch", "Daily default scope is invalid");
+      }
+
+      return [entry.reviewProfile, validateDailyGoals(entry)];
+    }),
+  );
+
+  if (byProfile.size !== REVIEW_PROFILES.length) {
+    throw new DailyStudyContractError("Daily defaults require both Review Profiles");
+  }
+
+  const defaults = REVIEW_PROFILES.map((reviewProfile) => {
+    const goals = byProfile.get(reviewProfile);
+
+    if (!goals) {
+      throw new DailyStudyContractError(`Missing ${reviewProfile} daily defaults`);
+    }
+
+    return {
+      personId: input.personId,
+      reviewProfile,
+      ...goals,
+      timezone: input.timezone.trim(),
+      updatedAt,
+    };
+  });
+  const settingsByPerson = data.settingsByPerson.map((settings) =>
+    settings.personId === input.personId
+      ? { ...settings, timezone: input.timezone.trim(), updatedAt }
+      : settings,
+  );
+
+  return {
+    ...data,
+    dailyStudyDefaults: [
+      ...defaults,
+      ...data.dailyStudyDefaults.filter((entry) => entry.personId !== input.personId),
+    ],
+    settingsByPerson,
+    updatedAt,
+  };
+}
+
+export function getLearningStage(
+  data: VocabularyData,
+  vocabularyItemId: string,
+  reviewProfile: ReviewProfile,
+): LearningStage {
+  const personId = getSelectedPersonId(data);
+  const hasState = data.reviewStates.some(
+    (state) =>
+      state.personId === personId &&
+      state.vocabularyItemId === vocabularyItemId &&
+      state.reviewProfile === reviewProfile,
+  );
+  const hasEvent = data.reviewEvents.some(
+    (event) =>
+      event.personId === personId &&
+      event.vocabularyItemId === vocabularyItemId &&
+      event.reviewProfile === reviewProfile,
+  );
+
+  return hasState || hasEvent ? "in_review" : "new";
+}
+
+function eventsForProfile(
+  data: VocabularyData,
+  personId: string,
+  vocabularyItemId: string,
+  reviewProfile: ReviewProfile,
+) {
+  return data.reviewEvents
+    .filter(
+      (event) =>
+        event.personId === personId &&
+        event.vocabularyItemId === vocabularyItemId &&
+        event.reviewProfile === reviewProfile,
+    )
+    .sort((a, b) => a.reviewedAt.localeCompare(b.reviewedAt) || a.id.localeCompare(b.id));
+}
+
+function queueFacts(
+  data: VocabularyData,
+  window: DailyPlanWindow,
+): StudyQueueEntryFact[] {
+  const startsAt = new Date(window.dayStartsAt).getTime();
+  const endsAt = new Date(window.dayEndsAt).getTime();
+  const facts: StudyQueueEntryFact[] = [];
+
+  for (const item of data.items) {
+    if (
+      item.personId !== window.personId ||
+      item.learningTrack !== window.reviewProfile ||
+      !isAvailableItem(item, window.reviewProfile)
+    ) {
+      continue;
+    }
+
+    const state = data.reviewStates.find(
+      (candidate) =>
+        candidate.personId === window.personId &&
+        candidate.vocabularyItemId === item.id &&
+        candidate.reviewProfile === window.reviewProfile,
+    );
+    const events = eventsForProfile(
+      data,
+      window.personId,
+      item.id,
+      window.reviewProfile,
+    );
+    const latestEvent = events.at(-1);
+    const completedInPlan = events.some((event) => {
+      const reviewedAt = new Date(event.reviewedAt).getTime();
+      return reviewedAt >= startsAt && reviewedAt < endsAt;
+    });
+    if (!state && !latestEvent) {
+      facts.push({
+        vocabularyItemId: item.id,
+        systemCreatedAt: item.systemCreatedAt,
+        dueAt: null,
+        personId: window.personId,
+        learningTrack: item.learningTrack,
+        reviewProfile: window.reviewProfile,
+        isAvailable: true,
+        completedInPlan: false,
+        sameSessionRepeat: false,
+        promptToken: "",
+        historyKind: "none" as const,
+        firstRatedAt: null,
+      });
+      continue;
+    }
+
+    const dueAt = state?.dueAt ?? latestEvent?.nextDueAt;
+
+    if (!dueAt) {
+      throw new DailyStudyContractError(`Study history for ${item.id} has no next review time`);
+    }
+
+    if (state?.historyOrigin === "legacy_unknown") {
+      facts.push({
+        vocabularyItemId: item.id,
+        systemCreatedAt: item.systemCreatedAt,
+        dueAt,
+        personId: window.personId,
+        learningTrack: item.learningTrack,
+        reviewProfile: window.reviewProfile,
+        isAvailable: true,
+        completedInPlan,
+        sameSessionRepeat: false,
+        promptToken: "",
+        historyKind: "legacy_unknown" as const,
+        firstRatedAt: null,
+      });
+      continue;
+    }
+
+    facts.push({
+      vocabularyItemId: item.id,
+      systemCreatedAt: item.systemCreatedAt,
+      dueAt,
+      personId: window.personId,
+      learningTrack: item.learningTrack,
+      reviewProfile: window.reviewProfile,
+      isAvailable: true,
+      completedInPlan,
+      sameSessionRepeat: false,
+      promptToken: "",
+      historyKind: "recorded" as const,
+      firstRatedAt: state?.firstRatedAt ?? events[0]?.reviewedAt ?? item.systemCreatedAt,
+    });
+  }
+
+  return facts;
+}
+
+export function readDailyStudyQueue(
+  data: VocabularyData,
+  query: TrustedStudyQueueQuery,
+  issuePromptToken: (seed: PromptSeed) => string = (seed) =>
+    `local-prompt:${seed.planId}:${seed.vocabularyItemId}`,
+): StudyQueuePage {
+  if (query.reviewProfile !== "recognition") {
+    throw new DailyStudyRuntimeError(
+      "plan_mismatch",
+      "Active practice is not available until the Active learning stage.",
+    );
+  }
+
+  if (getSelectedPersonId(data) !== query.personId) {
+    throw new DailyStudyRuntimeError("person_mismatch", "Study queue belongs to another learner");
+  }
+
+  const plan = assertCurrentPlan(data, query);
+  const window = planRecordToWindow(plan);
+  const metrics = buildDailyStudyMetrics({
+    window,
+    suggestedReview: plan.suggestedReview,
+    creationFacts: creationFacts(data),
+    creationReversals: creationReversals(data),
+    states: reviewStateFacts(data),
+    events: reviewEventFacts(data),
+  });
+
+  const page = selectStudyQueuePage({
+    window,
+    query,
+    completedDistinctEntries:
+      query.zone === "new" ? metrics.learnedToday : metrics.reviewedToday,
+    entries: queueFacts(data, window),
+  });
+
+  return {
+    ...page,
+    entries: page.entries.map((entry) => ({
+      ...entry,
+      promptToken: issuePromptToken({
+        personId: window.personId,
+        planId: window.planId,
+        planVersion: window.planVersion,
+        localDate: window.localDate,
+        vocabularyItemId: entry.vocabularyItemId,
+        reviewProfile: "recognition",
+        activityType: "recognition_card",
+      }),
+    })),
+  };
+}
+
+function isInWindow(value: string, plan: DailyStudyPlanRecord) {
+  const time = new Date(value).getTime();
+  return time >= new Date(plan.dayStartsAt).getTime() && time < new Date(plan.dayEndsAt).getTime();
+}
+
+function restoreLegacyBaseline(
+  previousState: ReviewState,
+  removedEvents: ReviewEvent[],
+  now: string,
+) {
+  const firstRemoved = [...removedEvents].sort(
+    (a, b) => a.reviewedAt.localeCompare(b.reviewedAt) || a.id.localeCompare(b.id),
+  )[0];
+
+  if (!firstRemoved?.previousDueAt || firstRemoved.previousIntervalMinutes === null) {
+    throw new DailyStudyRuntimeError(
+      "plan_mismatch",
+      "Legacy review history cannot be restored safely; no progress was changed.",
+    );
+  }
+
+  return {
+    ...previousState,
+    firstRatedAt: null,
+    historyOrigin: "legacy_unknown" as const,
+    dueAt: firstRemoved.previousDueAt,
+    lastReviewedAt: null,
+    reviewCount: Math.max(0, previousState.reviewCount - removedEvents.length),
+    lapseCount: Math.max(
+      0,
+      previousState.lapseCount - removedEvents.filter((event) => event.rating === "forgot").length,
+    ),
+    intervalMinutes: firstRemoved.previousIntervalMinutes,
+    difficulty: null,
+    stability: null,
+    updatedAt: now,
+  };
+}
+
+export function rebuildRecognitionStateAfterDayReset(
+  personId: string,
+  vocabularyItemId: string,
+  previousState: ReviewState | undefined,
+  earlierEvents: ReviewEvent[],
+  removedEvents: ReviewEvent[],
+  now: string,
+) {
+  const rebuilt = rebuildRecognitionStateFromEvents(
+    personId,
+    vocabularyItemId,
+    earlierEvents,
+    previousState,
+  );
+
+  if (rebuilt) {
+    return rebuilt;
+  }
+
+  if (previousState?.historyOrigin === "legacy_unknown") {
+    return restoreLegacyBaseline(previousState, removedEvents, now);
+  }
+
+  return undefined;
+}
+
+export function resetDailyStudyToday(
+  data: VocabularyData,
+  input: unknown,
+  now = new Date().toISOString(),
+) {
+  const updatedAt = ensureNow(now);
+  const command = validateResetTodayCommand(input);
+
+  if (getSelectedPersonId(data) !== command.personId) {
+    throw new DailyStudyRuntimeError("person_mismatch", "Reset belongs to another learner");
+  }
+
+  const plan = data.dailyStudyPlans.find(
+    (candidate) =>
+      candidate.id === command.planId &&
+      candidate.personId === command.personId &&
+      candidate.localDate === command.localDate,
+  );
+
+  if (!plan) {
+    throw new DailyStudyRuntimeError("plan_not_found", "Today’s plan could not be found");
+  }
+
+  const pairedPlans = data.dailyStudyPlans.filter(
+    (candidate) =>
+      candidate.personId === command.personId && candidate.localDate === command.localDate,
+  );
+
+  if (
+    pairedPlans.length !== REVIEW_PROFILES.length ||
+    pairedPlans.some((candidate) => !sameWindow(plan, candidate))
+  ) {
+    throw new DailyStudyRuntimeError("plan_mismatch", "Today’s Track plans are incomplete");
+  }
+
+  const eventsToday = data.reviewEvents.filter(
+    (event) => event.personId === command.personId && isInWindow(event.reviewedAt, plan),
+  );
+
+  if (eventsToday.some((event) => event.reviewProfile === "active")) {
+    throw new DailyStudyRuntimeError(
+      "active_reset_unavailable",
+      "Active practice history is present today. Reset is paused until the Active rebuild is available.",
+    );
+  }
+
+  const recognitionEvents = eventsToday.filter((event) => event.reviewProfile === "recognition");
+  const affectedIds = new Set(recognitionEvents.map((event) => event.vocabularyItemId));
+
+  if (recognitionEvents.length === 0) {
+    return {
+      data,
+      resetEventsCount: 0,
+      resetItemsCount: 0,
+      command: command as ResetTodayCommand,
+    };
+  }
+
+  const removedEventIds = new Set(recognitionEvents.map((event) => event.id));
+  const remainingEvents = data.reviewEvents.filter((event) => !removedEventIds.has(event.id));
+  const rebuiltStates = Array.from(affectedIds).flatMap((vocabularyItemId) => {
+    const previousState = data.reviewStates.find(
+      (state) =>
+        state.personId === command.personId &&
+        state.vocabularyItemId === vocabularyItemId &&
+        state.reviewProfile === "recognition",
+    );
+    const earlierEvents = remainingEvents
+      .filter(
+        (event) =>
+          event.personId === command.personId &&
+          event.vocabularyItemId === vocabularyItemId &&
+          event.reviewProfile === "recognition",
+      )
+      .sort((a, b) => a.reviewedAt.localeCompare(b.reviewedAt) || a.id.localeCompare(b.id));
+    return rebuildRecognitionStateAfterDayReset(
+      command.personId,
+      vocabularyItemId,
+      previousState,
+      earlierEvents,
+      recognitionEvents.filter((event) => event.vocabularyItemId === vocabularyItemId),
+      updatedAt,
+    );
+  }).filter((state): state is ReviewState => Boolean(state));
+
+  return {
+    data: {
+      ...data,
+      reviewEvents: remainingEvents,
+      reviewStates: [
+        ...rebuiltStates,
+        ...data.reviewStates.filter(
+          (state) =>
+            !(
+              state.personId === command.personId &&
+              state.reviewProfile === "recognition" &&
+              affectedIds.has(state.vocabularyItemId)
+            ),
+        ),
+      ],
+      updatedAt,
+    },
+    resetEventsCount: recognitionEvents.length,
+    resetItemsCount: affectedIds.size,
+    command: command as ResetTodayCommand,
+  };
+}

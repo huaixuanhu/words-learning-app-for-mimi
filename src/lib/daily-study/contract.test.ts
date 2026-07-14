@@ -57,6 +57,7 @@ const ACTIVE_PROMPT: Extract<TrustedPromptClaims, { reviewProfile: "active" }> =
   promptToken: "active-prompt-token",
   personId: ACTIVE_DAY.personId,
   planId: ACTIVE_DAY.planId,
+  planVersion: ACTIVE_DAY.planVersion,
   localDate: ACTIVE_DAY.localDate,
   vocabularyItemId: "active-item",
   reviewProfile: "active",

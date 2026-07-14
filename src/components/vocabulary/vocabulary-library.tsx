@@ -27,8 +27,16 @@ import {
 } from "@/lib/vocabulary/normalize";
 import { useVocabularyData } from "./use-vocabulary-data";
 import { PressableButton } from "@/components/ui/motion-primitives";
+import { getLearningStage } from "@/lib/daily-study/runtime-engine";
 
-type LibraryFilter = "all" | "recognition" | "activeVocabulary" | "weak" | "archived";
+type LibraryFilter =
+  | "all"
+  | "new"
+  | "inReview"
+  | "recognition"
+  | "activeVocabulary"
+  | "weak"
+  | "archived";
 
 type PendingLibraryAction =
   | {
@@ -149,11 +157,39 @@ export function VocabularyLibrary() {
   const activeTrackItems = getActiveTrackVocabularyItems(data);
   const archivedItems = getArchivedVocabularyItems(data);
   const weakWordIds = useMemo(
-    () => new Set(data.reviewStates.filter((state) => state.lapseCount > 0).map((state) => state.vocabularyItemId)),
-    [data.reviewStates],
+    () =>
+      new Set(
+        data.reviewStates
+          .filter(
+            (state) =>
+              state.personId === selectedPersonId && state.lapseCount > 0,
+          )
+          .map((state) => state.vocabularyItemId),
+      ),
+    [data.reviewStates, selectedPersonId],
+  );
+  const learningStageById = useMemo(
+    () =>
+      new Map(
+        activeItems.map((item) => [
+          item.id,
+          getLearningStage(data, item.id, item.learningTrack),
+        ]),
+      ),
+    [activeItems, data],
   );
   const filterTabs = [
     { value: "all", label: "All Words", count: allItems.length },
+    {
+      value: "new",
+      label: "New",
+      count: activeItems.filter((item) => learningStageById.get(item.id) === "new").length,
+    },
+    {
+      value: "inReview",
+      label: "In review",
+      count: activeItems.filter((item) => learningStageById.get(item.id) === "in_review").length,
+    },
     { value: "recognition", label: "Recognition", count: recognitionItems.length },
     { value: "activeVocabulary", label: "Active", count: activeTrackItems.length },
     { value: "weak", label: "Needs care", count: activeItems.filter((item) => weakWordIds.has(item.id)).length },
@@ -177,7 +213,11 @@ export function VocabularyLibrary() {
 
   const visibleItems = useMemo(() => {
     const sourceItems =
-      filter === "recognition"
+      filter === "new"
+        ? activeItems.filter((item) => learningStageById.get(item.id) === "new")
+        : filter === "inReview"
+          ? activeItems.filter((item) => learningStageById.get(item.id) === "in_review")
+          : filter === "recognition"
         ? recognitionItems
         : filter === "activeVocabulary"
           ? activeTrackItems
@@ -200,7 +240,7 @@ export function VocabularyLibrary() {
           example.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()),
         ),
     );
-  }, [activeItems, activeTrackItems, allItems, archivedItems, filter, query, recognitionItems, weakWordIds]);
+  }, [activeItems, activeTrackItems, allItems, archivedItems, filter, learningStageById, query, recognitionItems, weakWordIds]);
 
   const startEditing = (item: VocabularyItem) => {
     setEditingId(item.id);
@@ -590,6 +630,11 @@ export function VocabularyLibrary() {
                           {!item.archivedAt ? (
                             <span className="mimi-pill px-2 py-1 text-xs font-semibold">
                               {item.learningTrack === "active" ? "Active" : "Recognition"}
+                            </span>
+                          ) : null}
+                          {!item.archivedAt ? (
+                            <span className="rounded-md bg-[var(--mimi-primary-soft)] px-2 py-1 text-xs font-semibold text-[var(--mimi-primary-deep)]">
+                              {learningStageById.get(item.id) === "in_review" ? "In review" : "New"}
                             </span>
                           ) : null}
                           {item.tags?.map((tag) => (
