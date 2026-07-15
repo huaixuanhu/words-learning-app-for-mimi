@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { getSelectedPersonId } from "@/lib/people/repository";
-import { recordReview } from "@/lib/review/repository";
+import {
+  recordDailyReview,
+  recordReview,
+  rollbackReviewEvent,
+} from "@/lib/review/repository";
 import { addVocabularyItem, createEmptyVocabularyData } from "@/lib/vocabulary/repository";
 import type { VocabularyData } from "@/lib/vocabulary/types";
 import {
@@ -190,9 +194,24 @@ describe("daily study runtime engine", () => {
     });
     const first = resolveDailyStudyToday(data, DAY_NOW, { makePlanId: () => "plan-1" });
 
-    data = recordReview(
+    const plan = first.data.dailyStudyPlans.find(
+      (candidate) =>
+        candidate.id === first.today.tracks.recognition.planId &&
+        candidate.reviewProfile === "recognition",
+    );
+
+    if (!plan) {
+      throw new Error("Recognition plan should exist");
+    }
+
+    data = recordDailyReview(
       first.data,
-      { vocabularyItemId: "phrase-1", rating: "vague", promptId: "prompt-1" },
+      {
+        plan,
+        vocabularyItemId: "phrase-1",
+        rating: "vague",
+        promptId: "prompt-1",
+      },
       "2026-07-14T05:00:00.000Z",
     ).data;
     const afterRating = resolveDailyStudyToday(data, "2026-07-14T05:01:00.000Z");
@@ -201,6 +220,361 @@ describe("daily study runtime engine", () => {
     expect(afterRating.today.tracks.recognition).toMatchObject({
       status: "available",
       metrics: { learnedToday: 1, reviewedToday: 0, attemptsToday: 1 },
+    });
+    expect(afterRating.data.reviewStates[0]?.dueAt).toBe(plan.dayEndsAt);
+  });
+
+  it("keeps a failed-only new entry unfinished and returns it after a queue reread", () => {
+    let data = addItem(configuredData(), {
+      id: "new-fragile",
+      surfaceText: "fragile",
+    });
+    const resolved = resolveDailyStudyToday(data, DAY_NOW, {
+      makePlanId: () => "plan-failed-new",
+    });
+    const recognition = resolved.today.tracks.recognition;
+
+    if (recognition.status !== "available") {
+      throw new Error("Recognition plan should be available");
+    }
+
+    const plan = resolved.data.dailyStudyPlans.find(
+      (candidate) => candidate.id === recognition.planId,
+    );
+
+    if (!plan) {
+      throw new Error("Recognition plan should exist");
+    }
+
+    data = recordDailyReview(
+      resolved.data,
+      { plan, vocabularyItemId: "new-fragile", rating: "hard" },
+      "2026-07-14T05:00:00.000Z",
+    ).data;
+    const refreshed = resolveDailyStudyToday(data, "2026-07-14T05:05:00.000Z");
+    const page = readDailyStudyQueue(refreshed.data, {
+      personId: refreshed.today.personId,
+      planId: recognition.planId,
+      localDate: refreshed.today.localDate,
+      reviewProfile: "recognition",
+      expectedPlanVersion: recognition.planVersion,
+      requestedPageSize: 100,
+      zone: "new",
+      cursor: null,
+    });
+
+    expect(refreshed.today.tracks.recognition).toMatchObject({
+      status: "available",
+      metrics: { learnedToday: 0, reviewedToday: 0, attemptsToday: 1 },
+    });
+    expect(page.entries.map((entry) => entry.vocabularyItemId)).toEqual([
+      "new-fragile",
+    ]);
+    expect(refreshed.data.reviewStates[0]).toMatchObject({
+      dueAt: plan.dayEndsAt,
+      reviewCount: 1,
+    });
+    expect(refreshed.data.reviewEvents[0]?.rating).toBe("hard");
+  });
+
+  it("keeps the first failure as the cross-day anchor after a later pass", () => {
+    const data = addItem(configuredData(), {
+      id: "new-recovery",
+      surfaceText: "recover",
+    });
+    const resolved = resolveDailyStudyToday(data, DAY_NOW, {
+      makePlanId: () => "plan-recovery",
+    });
+    const recognition = resolved.today.tracks.recognition;
+
+    if (recognition.status !== "available") {
+      throw new Error("Recognition plan should be available");
+    }
+
+    const plan = resolved.data.dailyStudyPlans.find(
+      (candidate) => candidate.id === recognition.planId,
+    );
+
+    if (!plan) {
+      throw new Error("Recognition plan should exist");
+    }
+
+    const failed = recordDailyReview(
+      resolved.data,
+      { plan, vocabularyItemId: "new-recovery", rating: "forgot" },
+      "2026-07-14T05:00:00.000Z",
+    );
+    const passed = recordDailyReview(
+      failed.data,
+      { plan, vocabularyItemId: "new-recovery", rating: "remembered" },
+      "2026-07-14T05:10:00.000Z",
+    );
+    const afterPass = resolveDailyStudyToday(passed.data, "2026-07-14T05:11:00.000Z");
+    const nextNow = new Date(
+      new Date(plan.dayEndsAt).getTime() + 60 * 60 * 1000,
+    ).toISOString();
+    const nextDay = resolveDailyStudyToday(passed.data, nextNow, {
+      makePlanId: () => "next-plan",
+    });
+    const nextRecognition = nextDay.today.tracks.recognition;
+
+    if (nextRecognition.status !== "available") {
+      throw new Error("Next Recognition plan should be available");
+    }
+
+    const nextPage = readDailyStudyQueue(nextDay.data, {
+      personId: nextDay.today.personId,
+      planId: nextRecognition.planId,
+      localDate: nextDay.today.localDate,
+      reviewProfile: "recognition",
+      expectedPlanVersion: nextRecognition.planVersion,
+      requestedPageSize: 100,
+      zone: "review",
+      cursor: null,
+    });
+
+    expect(passed.state).toMatchObject({
+      dueAt: plan.dayEndsAt,
+      lastReviewedAt: "2026-07-14T05:00:00.000Z",
+      reviewCount: 1,
+    });
+    expect(passed.data.reviewEvents.map((event) => event.rating)).toEqual([
+      "remembered",
+      "forgot",
+    ]);
+    expect(afterPass.today.tracks.recognition).toMatchObject({
+      status: "available",
+      metrics: { learnedToday: 1, reviewedToday: 0, attemptsToday: 2 },
+    });
+    expect(nextPage.entries.map((entry) => entry.vocabularyItemId)).toEqual([
+      "new-recovery",
+    ]);
+  });
+
+  it("reopens an unfinished episode when the later passing attempt is returned", () => {
+    const data = addItem(configuredData(), {
+      id: "new-rollback",
+      surfaceText: "rollback",
+    });
+    const resolved = resolveDailyStudyToday(data, DAY_NOW, {
+      makePlanId: () => "plan-rollback-episode",
+    });
+    const recognition = resolved.today.tracks.recognition;
+
+    if (recognition.status !== "available") {
+      throw new Error("Recognition plan should be available");
+    }
+
+    const plan = resolved.data.dailyStudyPlans.find(
+      (candidate) => candidate.id === recognition.planId,
+    );
+
+    if (!plan) {
+      throw new Error("Recognition plan should exist");
+    }
+
+    const failed = recordDailyReview(
+      resolved.data,
+      { plan, vocabularyItemId: "new-rollback", rating: "hard" },
+      "2026-07-14T05:00:00.000Z",
+    );
+    const passed = recordDailyReview(
+      failed.data,
+      { plan, vocabularyItemId: "new-rollback", rating: "vague" },
+      "2026-07-14T05:10:00.000Z",
+    );
+    const rollback = rollbackReviewEvent(
+      passed.data,
+      passed.event.id,
+      "2026-07-14T05:11:00.000Z",
+    );
+    const afterRollback = resolveDailyStudyToday(
+      rollback.data,
+      "2026-07-14T05:12:00.000Z",
+    );
+    const page = readDailyStudyQueue(afterRollback.data, {
+      personId: afterRollback.today.personId,
+      planId: recognition.planId,
+      localDate: afterRollback.today.localDate,
+      reviewProfile: "recognition",
+      expectedPlanVersion: recognition.planVersion,
+      requestedPageSize: 100,
+      zone: "new",
+      cursor: null,
+    });
+
+    expect(rollback.state).toMatchObject({
+      dueAt: plan.dayEndsAt,
+      reviewCount: 1,
+    });
+    expect(afterRollback.today.tracks.recognition).toMatchObject({
+      status: "available",
+      metrics: { learnedToday: 0, attemptsToday: 1 },
+    });
+    expect(page.entries.map((entry) => entry.vocabularyItemId)).toEqual([
+      "new-rollback",
+    ]);
+  });
+
+  it("orders equal next-day checkpoints by retained failure counts", () => {
+    let data = addItem(configuredData(), {
+      id: "hard-once",
+      surfaceText: "hard once",
+    });
+    data = addItem(data, {
+      id: "forgot-twice",
+      surfaceText: "forgot twice",
+    });
+    const resolved = resolveDailyStudyToday(data, DAY_NOW, {
+      makePlanId: () => "plan-weakness-order",
+    });
+    const recognition = resolved.today.tracks.recognition;
+
+    if (recognition.status !== "available") {
+      throw new Error("Recognition plan should be available");
+    }
+
+    const plan = resolved.data.dailyStudyPlans.find(
+      (candidate) => candidate.id === recognition.planId,
+    );
+
+    if (!plan) {
+      throw new Error("Recognition plan should exist");
+    }
+
+    const hard = recordDailyReview(
+      resolved.data,
+      { plan, vocabularyItemId: "hard-once", rating: "hard" },
+      "2026-07-14T05:00:00.000Z",
+    );
+    const hardPass = recordDailyReview(
+      hard.data,
+      { plan, vocabularyItemId: "hard-once", rating: "vague" },
+      "2026-07-14T05:01:00.000Z",
+    );
+    const forgotOne = recordDailyReview(
+      hardPass.data,
+      { plan, vocabularyItemId: "forgot-twice", rating: "forgot" },
+      "2026-07-14T05:02:00.000Z",
+    );
+    const forgotTwo = recordDailyReview(
+      forgotOne.data,
+      { plan, vocabularyItemId: "forgot-twice", rating: "forgot" },
+      "2026-07-14T05:03:00.000Z",
+    );
+    const forgotPass = recordDailyReview(
+      forgotTwo.data,
+      { plan, vocabularyItemId: "forgot-twice", rating: "vague" },
+      "2026-07-14T05:04:00.000Z",
+    );
+    const nextNow = new Date(
+      new Date(plan.dayEndsAt).getTime() + 60 * 60 * 1000,
+    ).toISOString();
+    const nextDay = resolveDailyStudyToday(forgotPass.data, nextNow, {
+      makePlanId: () => "next-plan-weakness-order",
+    });
+    const nextRecognition = nextDay.today.tracks.recognition;
+
+    if (nextRecognition.status !== "available") {
+      throw new Error("Next Recognition plan should be available");
+    }
+
+    const page = readDailyStudyQueue(nextDay.data, {
+      personId: nextDay.today.personId,
+      planId: nextRecognition.planId,
+      localDate: nextDay.today.localDate,
+      reviewProfile: "recognition",
+      expectedPlanVersion: nextRecognition.planVersion,
+      requestedPageSize: 100,
+      zone: "review",
+      cursor: null,
+    });
+
+    expect(page.entries.map((entry) => entry.vocabularyItemId)).toEqual([
+      "forgot-twice",
+      "hard-once",
+    ]);
+  });
+
+  it("restores the prior episode anchor when the next study day is reset", () => {
+    const data = addItem(configuredData(), {
+      id: "reset-episode",
+      surfaceText: "reset episode",
+    });
+    const firstDay = resolveDailyStudyToday(data, DAY_NOW, {
+      makePlanId: () => "first-day-plan",
+    });
+    const firstRecognition = firstDay.today.tracks.recognition;
+
+    if (firstRecognition.status !== "available") {
+      throw new Error("First Recognition plan should be available");
+    }
+
+    const firstPlan = firstDay.data.dailyStudyPlans.find(
+      (candidate) => candidate.id === firstRecognition.planId,
+    );
+
+    if (!firstPlan) {
+      throw new Error("First Recognition plan should exist");
+    }
+
+    const failed = recordDailyReview(
+      firstDay.data,
+      { plan: firstPlan, vocabularyItemId: "reset-episode", rating: "forgot" },
+      "2026-07-14T05:00:00.000Z",
+    );
+    const firstPass = recordDailyReview(
+      failed.data,
+      { plan: firstPlan, vocabularyItemId: "reset-episode", rating: "vague" },
+      "2026-07-14T05:05:00.000Z",
+    );
+    const firstState = firstPass.state;
+    const nextNow = new Date(
+      new Date(firstPlan.dayEndsAt).getTime() + 60 * 60 * 1000,
+    ).toISOString();
+    const secondDay = resolveDailyStudyToday(firstPass.data, nextNow, {
+      makePlanId: () => "second-day-plan",
+    });
+    const secondRecognition = secondDay.today.tracks.recognition;
+
+    if (secondRecognition.status !== "available") {
+      throw new Error("Second Recognition plan should be available");
+    }
+
+    const secondPlan = secondDay.data.dailyStudyPlans.find(
+      (candidate) => candidate.id === secondRecognition.planId,
+    );
+
+    if (!secondPlan) {
+      throw new Error("Second Recognition plan should exist");
+    }
+
+    const secondPass = recordDailyReview(
+      secondDay.data,
+      { plan: secondPlan, vocabularyItemId: "reset-episode", rating: "remembered" },
+      nextNow,
+    );
+    const reset = resetDailyStudyToday(
+      secondPass.data,
+      {
+        personId: secondDay.today.personId,
+        planId: secondRecognition.planId,
+        localDate: secondDay.today.localDate,
+        contractVersion: "v2-stage1",
+        finalConfirmation: "confirmed_after_second_gate",
+        idempotencyKey: "reset-second-episode",
+      },
+      new Date(new Date(nextNow).getTime() + 5 * 60 * 1000).toISOString(),
+    );
+
+    expect(reset.resetEventsCount).toBe(1);
+    expect(reset.data.reviewStates[0]).toMatchObject({
+      dueAt: firstState.dueAt,
+      lastReviewedAt: firstState.lastReviewedAt,
+      reviewCount: firstState.reviewCount,
+      lapseCount: firstState.lapseCount,
+      difficulty: firstState.difficulty,
+      stability: firstState.stability,
     });
   });
 

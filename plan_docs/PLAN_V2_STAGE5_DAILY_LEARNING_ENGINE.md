@@ -1,7 +1,7 @@
 # Words Learning App For Mimi V2 Stage 5: Daily Learning Engine
 
 Created: 2026-07-14 15:09 AEST
-Last updated: 2026-07-14 19:13 AEST
+Last updated: 2026-07-15 16:20 AEST
 
 Source plan:
 
@@ -53,13 +53,14 @@ Exit criteria:
 - Library shows `New` / `In review` from retained Recognition and Active evidence independently, without reusing lifecycle status.
 - Rating, goal update, and reset commands validate person, plan, version, local date, profile/zone, server time, opaque evidence, and idempotency before writing.
 - A long single-card or multi-card session refreshes the active card's prompt evidence without logout, route reopening, loss of completed progress, or an unbounded retry loop.
+- Recognition cards support mouse and guarded keyboard control together: `Space` flips, Arrow keys choose within the four-rating grid, and `Enter` confirms only an enabled visible choice.
 - The two reset gates display the exact accepted meaning, and no data write occurs before the second confirmation.
 - Whole-day reset preserves daily plans, goals, frozen suggestions, vocabulary, creation facts, AI content, and unrelated dates; `回退1词` remains available for the bounded session action.
 - If the target day contains an Active event before V2-6 provides an Active rebuild path, reset fails closed with no mutation and gives the learner a clear message.
 - Local and Postgres adapters follow the same contract; route and domain tests jointly cover authentication, malformed input, stale evidence, and replay conflicts.
 - Full local validation and the accepted responsive browser matrix pass without reading secrets or connecting to a remote service.
 
-Status: complete locally, including the user-approved prompt-expiry experience repair documented before implementation at 19:01 AEST. The server-backed token secret remains intentionally unconfigured, Schema Version 6 SQL remains unexecuted, and no remote or Production action occurred.
+Status: the main Stage 5 implementation, prompt-expiry repair, keyboard-interaction follow-up, and Stage 5.1 daily-episode scheduling repair are complete locally. Stage 5.1 is recorded in `plan_docs/PLAN_V2_STAGE5_1_DAILY_EPISODE_SCHEDULING_REPAIR.md`. The server-backed token secret remains intentionally unconfigured, Schema Version 6 SQL remains unexecuted, and no remote or Production action occurred.
 
 ## Decision Summary
 
@@ -135,6 +136,8 @@ Additional rules:
 - If the plan version or distinct progress changes during queue construction, the stale cursor fails and the queue restarts from current facts.
 - The server stops paging after it selects the remaining distinct target, regardless of a larger inventory.
 - Recognition cards preserve the Stage 3.1 card-body reveal/hide behavior, rating color scale, example actions, and `回退1词`.
+
+Stage 5.1 supersedes the original assumption that every retained attempt is both a daily completion and a full cross-day scheduler input. One persisted Daily Plan now defines one Learning Episode per entry. The first attempt owns cross-day scheduling; later same-day attempts remain raw evidence and determine whether the episode has reached `vague` / `remembered`. Failed-only episodes remain recoverable in their original zone after refresh. The complete rule and implementation boundary live in `plan_docs/PLAN_V2_STAGE5_1_DAILY_EPISODE_SCHEDULING_REPAIR.md`.
 
 ## Strict Study Command Boundary
 
@@ -242,6 +245,39 @@ Follow-up validation:
 - Postgres prompt-consumption inspection occurs after the plan row lock;
 - localhost browser acceptance confirms no forced navigation and the exact lightweight recovery copy.
 
+## Keyboard Interaction Follow-Up
+
+Source:
+
+- The user's 2026-07-14 request for simultaneous mouse and keyboard control of Recognition card reveal and the four memory ratings.
+- The user's explicit confirmation that the current motion behavior is already accepted and must not be changed.
+
+Agreed behavior:
+
+- `Space` reveals or hides the current card when the shortcut is safe to handle. A handled Space event prevents ordinary page scrolling.
+- The four rating choices retain their visible 2-by-2 order: `完全忘记了`, `有点忘记了`, `模糊记得`, `完全记得`.
+- The first handled Arrow key selects `完全忘记了`, regardless of Arrow direction. Later Left/Right movement stays within the current row; Up/Down movement stays within the current column; an edge does not wrap.
+- `Enter` confirms only the current selected rating and routes through the existing guarded rating submission. It performs no action before the answer is visible, without a selection, while rating is disabled, or while the current card is already submitting.
+- Mouse hover updates the same transient selection so mouse and Arrow-key movement can be mixed. Mouse click keeps its existing immediate rating behavior.
+- Selection clears when the answer hides, the current card changes, a rating completes, a prior rating is returned, or the session is rebuilt.
+- Shortcuts do not take over inputs, textareas, selects, editable content, ordinary focused controls, open dialogs, modified key combinations, or IME（输入法）composition.
+- `Space` and `Enter` ignore key-repeat. Arrow key-repeat may continue moving within the bounded grid.
+- The existing rating-button hover brightness, shadow, transition timing, normal motion, and reduced-motion behavior remain unchanged. Keyboard selection reuses the accepted hover appearance; no new transform, animation, or reduced-motion rule is added.
+- A compact English hint reads `Space flip · Arrow keys choose · Enter confirm` without changing mobile touch behavior.
+
+Non-Scope:
+
+- No rating-value, FSRS, same-session repeat, prompt refresh, rollback, reset, Daily Plan, API, storage, backup, schema, or Track behavior change.
+- No global application shortcut system, user-configurable key mapping, number-key rating shortcuts, audio shortcut, or Active-practice keyboard behavior.
+- No credential, environment, remote database, provider, Vercel, Production, or deployment action.
+
+Follow-up validation:
+
+- pure tests cover first selection, 2-by-2 movement, every edge, and no wrap;
+- component contracts cover `Space`, Arrow keys, `Enter`, repeat/modifier/composition guards, input/dialog exclusion, the exact hint, mouse-hover handoff wiring, and the unchanged mouse-click submission path;
+- browser acceptance covers Space reveal, first Arrow selection, mixed Arrow movement, edge clamping, Enter submission, direct mouse submission, unchanged page scroll on handled Space, open-dialog exclusion, and no console error;
+- source/diff review confirms no existing reduced-motion block or rating transition value changed.
+
 ## Implementation Batches
 
 ### Batch A: plan and pure domain behavior
@@ -330,16 +366,24 @@ Completed local behavior:
 - `POST /api/study` uses strict operation shapes and rechecks runtime/authentication gates. Server prompt/cursor evidence uses request-time HMAC（基于哈希的消息认证码）with a future dedicated secret; prompt evidence is issued only after the selected page is bounded; browser-local operational prompt/replay state stays outside study backups.
 - The active visible Recognition card now refreshes its own prompt evidence without reopening the zone. Refresh keeps the original `promptId`; only an explicit `prompt_expired` rating failure triggers one automatic refresh plus one retry with a new Idempotency Key. The learner remains on the same route with completed session progress intact, and successful expiry recovery uses `This card was refreshed.`
 - Server and browser-local refresh both recheck the selected learner, matching open plan/version/day, active Recognition entry, and prior prompt consumption. Postgres rating and refresh paths lock the plan row before the same-`promptId` consumption check, serializing old/refreshed-token conflicts.
+- Recognition cards now support simultaneous mouse and keyboard operation. `Space` flips the card, Arrow keys select within the visible 2-by-2 rating grid, and `Enter` submits the selected enabled rating through the existing guarded path. Focused form controls, open dialogs, modified shortcuts, and IME composition remain protected.
+- Keyboard selection reuses the existing hover brightness and shadow. The accepted transition timing, card motion, hover motion, and reduced-motion behavior were not changed.
+- Stage 5.1 now treats one persisted Daily Plan window as one Learning Episode per Recognition entry. Its first attempt alone updates cross-day FSRS state; later attempts remain raw recovery evidence and can complete the episode without extending the anchor-owned due time.
+- Failed anchors and a new direct `vague` receive a next-local-day checkpoint. Failed-only entries survive refresh in their original zone, and pass-only distinct actuals prevent an unfinished attempt from consuming the learner's daily goal.
+- Equal-checkpoint Review entries use descending `forgot`, then `hard`, counts in both queue order and the signed cursor. Rollback/reset replay and the Postgres application path reuse the same pure policy without a schema change.
 
 Acceptance evidence:
 
 - Focused daily-study/API tests passed: 5 files / 36 tests.
 - Focused prompt-recovery tests passed: 6 files / 33 tests.
-- Full Vitest passed: 38 files passed, 1 file intentionally skipped; 242 tests passed, 1 Postgres integration test intentionally skipped.
+- Focused Stage 5.1 episode/runtime/parity tests passed: 4 files / 47 tests.
+- Full Vitest passed: 40 files passed, 1 file intentionally skipped; 265 tests passed, 1 Postgres integration test intentionally skipped.
 - ESLint, TypeScript, all three backup dry-runs, Next.js Production build, Tier 3 governance preflight, and `git diff --check` passed.
 - Isolated forced-local browser acceptance covered Home, Study, Review/New Words, Library, Settings, both reset gates, invalid/large goals, first-rating movement, failed-card repeat, `回退1词`, both themes, and 320/375/390/768/820/1023/1024/1280 px layouts. No horizontal overflow, framework overlay, console warning, or console error was observed.
 - One disposable phrase was created, rated, rolled back, rated again, and deleted on the isolated `127.0.0.1:3001` origin. Its Recognition new-word goal was restored to `0` after testing.
 - Follow-up browser acceptance confirmed that an active-card refresh remains silent, a normal rating stays on `/review?zone=new`, and progress moves from `0 / 1` to `1 / 1` without a login transition. The temporary rating was rolled back, the added test entry was deleted, the changed goal was restored to `0`, and no browser warning/error appeared. The actual 30-minute expiry branch uses injected-clock tests instead of a 30-minute browser wait.
+- Focused keyboard-interaction tests passed: 2 files / 10 tests. They cover first selection, 2-by-2 movement, every non-wrapping edge, shortcut guards, exact supporting copy, mouse-selection handoff wiring, and reuse of the existing hover appearance without a transform.
+- Isolated forced-local browser acceptance on `127.0.0.1:3017` confirmed Space reveal with unchanged scroll position, first-Arrow selection, mixed Arrow movement, edge clamping, Enter submission, direct mouse-click submission, and open-dialog shortcut protection. Both test ratings were rolled back, the new-word goal was restored to `0`, the disposable entry was deleted, and no browser console error appeared.
 
 Residual boundaries:
 

@@ -52,4 +52,36 @@ describe("V2 Stage 3.1 review interaction UI contract", () => {
     expect(reviewSource).toContain("refreshPromptRef.current");
     expect(reviewSource).not.toContain("window.location");
   });
+
+  it("adds guarded keyboard reveal and two-by-two rating control", () => {
+    expect(reviewSource).toContain('event.key === " "');
+    expect(reviewSource).toContain('event.key === "Enter"');
+    expect(reviewSource).toContain("isReviewRatingArrowKey");
+    expect(reviewSource).toContain("getNextReviewRatingIndex");
+    expect(reviewSource).toContain("shouldIgnoreReviewShortcut");
+    expect(reviewSource).toContain("REVIEW_SHORTCUT_IGNORE_SELECTOR");
+    expect(reviewSource).toContain("event.isComposing");
+    expect(reviewSource).toContain("event.altKey");
+    expect(reviewSource).toContain("event.ctrlKey");
+    expect(reviewSource).toContain("event.metaKey");
+    expect(reviewSource).toContain("event.shiftKey");
+    expect(reviewSource).toContain("event.repeat");
+    expect(reviewSource).toContain("[role=\"dialog\"][aria-modal=\"true\"]");
+    expect(reviewSource).toContain("Space flip · Arrow keys choose · Enter confirm");
+    expect(reviewSource).toContain("onMouseEnter");
+    expect(reviewSource).toContain("onClick={(event) => void submitRating");
+    expect(reviewSource).toContain('data-selected={');
+  });
+
+  it("reuses the accepted rating hover appearance without new movement", () => {
+    const ratingFeedback = globalCss.slice(
+      globalCss.indexOf(".mimi-rating-button:not(:disabled):hover"),
+      globalCss.indexOf(".mimi-rating-forgot"),
+    );
+
+    expect(ratingFeedback).toContain('[data-selected="true"]');
+    expect(ratingFeedback).toContain("filter: brightness");
+    expect(ratingFeedback).toContain("box-shadow:");
+    expect(ratingFeedback).not.toContain("transform");
+  });
 });

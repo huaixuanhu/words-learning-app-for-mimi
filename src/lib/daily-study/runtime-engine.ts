@@ -32,6 +32,12 @@ import {
 import { getReviewSettingsForPerson } from "@/lib/review/settings";
 import type { ReviewEvent, ReviewState } from "@/lib/review/types";
 import type { DailyStudyPlanRecord } from "@/lib/storage/v2-data-model";
+import {
+  findDailyEpisodePlan,
+  getDailyEpisodeAttemptSummary,
+  getDailyEpisodeEvents,
+  getLatestDailyEpisodeAttemptSummary,
+} from "@/lib/review/daily-episode";
 import { makeId } from "@/lib/vocabulary/repository";
 import type { VocabularyData, VocabularyItem } from "@/lib/vocabulary/types";
 
@@ -150,10 +156,14 @@ function reviewStateFacts(data: VocabularyData): ReviewStateFact[] {
   return facts;
 }
 
-function reviewEventFact(event: ReviewEvent): ReviewEventFact {
+function reviewEventFact(
+  event: ReviewEvent,
+  dailyPlanId: string | null,
+): ReviewEventFact {
   const base = {
     eventId: event.id,
     promptId: event.promptId,
+    dailyPlanId,
     personId: event.personId,
     vocabularyItemId: event.vocabularyItemId,
     reviewedAt: event.reviewedAt,
@@ -221,7 +231,12 @@ function reviewEventFact(event: ReviewEvent): ReviewEventFact {
 }
 
 function reviewEventFacts(data: VocabularyData) {
-  return data.reviewEvents.map(reviewEventFact);
+  return data.reviewEvents.map((event) =>
+    reviewEventFact(
+      event,
+      findDailyEpisodePlan(event, data.dailyStudyPlans)?.id ?? null,
+    ),
+  );
 }
 
 function sameWindow(a: DailyStudyPlanRecord, b: DailyStudyPlanRecord) {
@@ -584,8 +599,17 @@ function queueFacts(
   window: DailyPlanWindow,
 ): StudyQueueEntryFact[] {
   const startsAt = new Date(window.dayStartsAt).getTime();
-  const endsAt = new Date(window.dayEndsAt).getTime();
   const facts: StudyQueueEntryFact[] = [];
+  const currentPlan = data.dailyStudyPlans.find(
+    (plan) =>
+      plan.id === window.planId &&
+      plan.personId === window.personId &&
+      plan.reviewProfile === window.reviewProfile,
+  );
+
+  if (!currentPlan) {
+    throw new DailyStudyContractError("Study queue Daily Plan could not be resolved");
+  }
 
   for (const item of data.items) {
     if (
@@ -609,10 +633,29 @@ function queueFacts(
       window.reviewProfile,
     );
     const latestEvent = events.at(-1);
-    const completedInPlan = events.some((event) => {
-      const reviewedAt = new Date(event.reviewedAt).getTime();
-      return reviewedAt >= startsAt && reviewedAt < endsAt;
-    });
+    const eventsInPlan = getDailyEpisodeEvents(
+      events,
+      currentPlan,
+      item.id,
+      data.dailyStudyPlans,
+    );
+    const episode = getDailyEpisodeAttemptSummary(eventsInPlan);
+    const completedInPlan = episode.completed;
+    const unfinishedInPlan = episode.attemptCount > 0 && !episode.completed;
+    const priorEvents = events.filter(
+      (event) => new Date(event.reviewedAt).getTime() < startsAt,
+    );
+    const hasPriorState = Boolean(
+      state &&
+        (state.historyOrigin === "legacy_unknown" ||
+          (state.firstRatedAt !== null &&
+            new Date(state.firstRatedAt).getTime() < startsAt)),
+    );
+    const hadHistoryBeforePlan = priorEvents.length > 0 || hasPriorState;
+    const latestEpisode = getLatestDailyEpisodeAttemptSummary(
+      events,
+      data.dailyStudyPlans,
+    );
     if (!state && !latestEvent) {
       facts.push({
         vocabularyItemId: item.id,
@@ -623,8 +666,32 @@ function queueFacts(
         reviewProfile: window.reviewProfile,
         isAvailable: true,
         completedInPlan: false,
+        unfinishedInPlan: false,
         sameSessionRepeat: false,
         promptToken: "",
+        forgotCount: 0,
+        hardCount: 0,
+        historyKind: "none" as const,
+        firstRatedAt: null,
+      });
+      continue;
+    }
+
+    if (!hadHistoryBeforePlan && unfinishedInPlan) {
+      facts.push({
+        vocabularyItemId: item.id,
+        systemCreatedAt: item.systemCreatedAt,
+        dueAt: null,
+        personId: window.personId,
+        learningTrack: item.learningTrack,
+        reviewProfile: window.reviewProfile,
+        isAvailable: true,
+        completedInPlan: false,
+        unfinishedInPlan: true,
+        sameSessionRepeat: false,
+        promptToken: "",
+        forgotCount: latestEpisode.forgotCount,
+        hardCount: latestEpisode.hardCount,
         historyKind: "none" as const,
         firstRatedAt: null,
       });
@@ -647,8 +714,11 @@ function queueFacts(
         reviewProfile: window.reviewProfile,
         isAvailable: true,
         completedInPlan,
+        unfinishedInPlan,
         sameSessionRepeat: false,
         promptToken: "",
+        forgotCount: latestEpisode.forgotCount,
+        hardCount: latestEpisode.hardCount,
         historyKind: "legacy_unknown" as const,
         firstRatedAt: null,
       });
@@ -664,8 +734,11 @@ function queueFacts(
       reviewProfile: window.reviewProfile,
       isAvailable: true,
       completedInPlan,
+      unfinishedInPlan,
       sameSessionRepeat: false,
       promptToken: "",
+      forgotCount: latestEpisode.forgotCount,
+      hardCount: latestEpisode.hardCount,
       historyKind: "recorded" as const,
       firstRatedAt: state?.firstRatedAt ?? events[0]?.reviewedAt ?? item.systemCreatedAt,
     });
@@ -773,12 +846,17 @@ export function rebuildRecognitionStateAfterDayReset(
   earlierEvents: ReviewEvent[],
   removedEvents: ReviewEvent[],
   now: string,
+  options: Readonly<{
+    dailyStudyPlans?: readonly DailyStudyPlanRecord[];
+    makeStateId?: () => string;
+  }> = {},
 ) {
   const rebuilt = rebuildRecognitionStateFromEvents(
     personId,
     vocabularyItemId,
     earlierEvents,
     previousState,
+    options,
   );
 
   if (rebuilt) {
@@ -874,6 +952,7 @@ export function resetDailyStudyToday(
       earlierEvents,
       recognitionEvents.filter((event) => event.vocabularyItemId === vocabularyItemId),
       updatedAt,
+      { dailyStudyPlans: data.dailyStudyPlans },
     );
   }).filter((state): state is ReviewState => Boolean(state));
 

@@ -159,6 +159,7 @@ function newQueueEntry(
     firstRatedAt: null,
     isAvailable: true,
     completedInPlan: false,
+    unfinishedInPlan: false,
     sameSessionRepeat: false,
     promptToken: `prompt-${vocabularyItemId}`,
     ...overrides,
@@ -180,6 +181,7 @@ function recordedQueueEntry(
     firstRatedAt: "2026-07-01T00:00:00.000Z",
     isAvailable: true,
     completedInPlan: false,
+    unfinishedInPlan: false,
     sameSessionRepeat: false,
     promptToken: `prompt-${vocabularyItemId}`,
     ...overrides,
@@ -293,13 +295,39 @@ describe("V2 daily study contract", () => {
       reviewEvent("learned-1", "new-today", DAY.dayStartsAt, { previousDueAt: null }),
       reviewEvent("learned-2", "new-today", "2026-07-13T04:00:00.000Z"),
       reviewEvent("legacy-1", "legacy-state", "2026-07-13T05:00:00.000Z"),
+      reviewEvent("failed-new", "failed-new", "2026-07-13T06:00:00.000Z", {
+        previousDueAt: null,
+        memoryRating: "forgot",
+      }),
+      reviewEvent("failed-review", "reviewed", "2026-07-13T06:05:00.000Z", {
+        memoryRating: "hard",
+      }),
       reviewEvent("end-boundary", "not-today", DAY.dayEndsAt),
     ];
 
     expect(summarizeDailyActuals(DAY, states, events)).toEqual({
       learnedToday: 1,
       reviewedToday: 2,
-      attemptsToday: 5,
+      attemptsToday: 7,
+    });
+  });
+
+  it("does not count an event owned by an overlapping Daily Plan", () => {
+    const states = [state("reviewed")];
+    const events = [
+      reviewEvent("prior", "reviewed", "2026-07-12T01:00:00.000Z"),
+      reviewEvent("other-plan", "reviewed", "2026-07-13T03:00:00.000Z", {
+        dailyPlanId: "another-plan",
+      }),
+      reviewEvent("this-plan", "reviewed", "2026-07-13T04:00:00.000Z", {
+        dailyPlanId: DAY.planId,
+      }),
+    ];
+
+    expect(summarizeDailyActuals(DAY, states, events)).toEqual({
+      learnedToday: 0,
+      reviewedToday: 1,
+      attemptsToday: 1,
     });
   });
 
@@ -456,6 +484,8 @@ describe("V2 daily study contract", () => {
         vocabularyItemId: "item-a",
         systemCreatedAt: "2026-07-02T00:00:00.000Z",
         dueAt: "2026-07-04T00:00:00.000Z",
+        forgotCount: 2,
+        hardCount: 0,
       },
     ];
 
@@ -470,6 +500,150 @@ describe("V2 daily study contract", () => {
     expect(() =>
       compareReviewQueueEntries(entries[0], { ...entries[1], dueAt: null }),
     ).toThrow();
+  });
+
+  it("prioritizes weakness counts for entries sharing one due checkpoint", () => {
+    const entries: QueueEntryFact[] = [
+      {
+        vocabularyItemId: "clean",
+        systemCreatedAt: "2026-07-01T00:00:00.000Z",
+        dueAt: "2026-07-14T00:00:00.000Z",
+        forgotCount: 0,
+        hardCount: 0,
+      },
+      {
+        vocabularyItemId: "hard-twice",
+        systemCreatedAt: "2026-07-01T00:00:00.000Z",
+        dueAt: "2026-07-14T00:00:00.000Z",
+        forgotCount: 0,
+        hardCount: 2,
+      },
+      {
+        vocabularyItemId: "forgot-once",
+        systemCreatedAt: "2026-07-01T00:00:00.000Z",
+        dueAt: "2026-07-14T00:00:00.000Z",
+        forgotCount: 1,
+        hardCount: 0,
+      },
+    ];
+
+    expect(
+      [...entries].sort(compareReviewQueueEntries).map((entry) => entry.vocabularyItemId),
+    ).toEqual(["forgot-once", "hard-twice", "clean"]);
+  });
+
+  it("keeps weakness ordering across Review queue cursor pages", () => {
+    const window = { ...DAY, reviewGoal: 3 };
+    const baseQuery = {
+      personId: DAY.personId,
+      planId: DAY.planId,
+      localDate: DAY.localDate,
+      reviewProfile: DAY.reviewProfile,
+      expectedPlanVersion: DAY.planVersion,
+      requestedPageSize: 1,
+      zone: "review" as const,
+    };
+    const dueAt = "2026-07-13T00:00:00.000Z";
+    const entries = [
+      recordedQueueEntry("clean", {
+        dueAt,
+        forgotCount: 0,
+        hardCount: 0,
+      }),
+      recordedQueueEntry("hard-twice", {
+        dueAt,
+        forgotCount: 0,
+        hardCount: 2,
+      }),
+      recordedQueueEntry("forgot-once", {
+        dueAt,
+        forgotCount: 1,
+        hardCount: 0,
+      }),
+    ];
+
+    const firstPage = selectStudyQueuePage({
+      window,
+      query: { ...baseQuery, cursor: null },
+      completedDistinctEntries: 0,
+      entries,
+    });
+
+    if (firstPage.zone !== "review") {
+      throw new Error("Expected a Review queue page");
+    }
+
+    const secondPage = selectStudyQueuePage({
+      window,
+      query: { ...baseQuery, cursor: firstPage.nextCursor },
+      completedDistinctEntries: 0,
+      entries,
+    });
+
+    if (secondPage.zone !== "review") {
+      throw new Error("Expected a Review queue page");
+    }
+
+    const thirdPage = selectStudyQueuePage({
+      window,
+      query: { ...baseQuery, cursor: secondPage.nextCursor },
+      completedDistinctEntries: 0,
+      entries,
+    });
+
+    expect([
+      firstPage.entries[0]?.vocabularyItemId,
+      secondPage.entries[0]?.vocabularyItemId,
+      thirdPage.entries[0]?.vocabularyItemId,
+    ]).toEqual(["forgot-once", "hard-twice", "clean"]);
+    expect(thirdPage.nextCursor).toBeNull();
+  });
+
+  it("returns failed-only entries to their original zone", () => {
+    const entries = [
+      newQueueEntry("unfinished-new", { unfinishedInPlan: true }),
+      recordedQueueEntry("unfinished-review", {
+        dueAt: DAY.dayEndsAt,
+        unfinishedInPlan: true,
+      }),
+    ];
+    const window = { ...DAY, reviewGoal: 2, newWordGoal: 2 };
+
+    const newPage = selectStudyQueuePage({
+      window,
+      query: {
+        personId: DAY.personId,
+        planId: DAY.planId,
+        localDate: DAY.localDate,
+        reviewProfile: DAY.reviewProfile,
+        expectedPlanVersion: DAY.planVersion,
+        zone: "new",
+        cursor: null,
+      },
+      completedDistinctEntries: 0,
+      entries,
+    });
+    const reviewPage = selectStudyQueuePage({
+      window,
+      query: {
+        personId: DAY.personId,
+        planId: DAY.planId,
+        localDate: DAY.localDate,
+        reviewProfile: DAY.reviewProfile,
+        expectedPlanVersion: DAY.planVersion,
+        zone: "review",
+        cursor: null,
+      },
+      completedDistinctEntries: 0,
+      entries,
+    });
+
+    expect(newPage.entries.map((entry) => entry.vocabularyItemId)).toEqual([
+      "unfinished-new",
+    ]);
+    expect(reviewPage.entries.map((entry) => entry.vocabularyItemId)).toEqual([
+      "unfinished-review",
+    ]);
   });
 
   it("keeps Review and New Words as separate executable queues", () => {

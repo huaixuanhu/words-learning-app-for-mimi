@@ -18,6 +18,10 @@ import type { StudyZone } from "@/lib/daily-study/types";
 import { getSelectedPersonId } from "@/lib/people/repository";
 import { getNextAnswerRevealState } from "@/lib/review/answer-reveal";
 import {
+  getNextReviewRatingIndex,
+  isReviewRatingArrowKey,
+} from "@/lib/review/keyboard-controls";
+import {
   PROMPT_REFRESHED_COPY,
   submitWithExpiredPromptRecovery,
 } from "@/lib/daily-study/prompt-recovery";
@@ -58,8 +62,15 @@ type ReviewSessionProps = Readonly<{
   zone: StudyZone;
 }>;
 
+type RatingSelection = Readonly<{
+  vocabularyItemId: string;
+  index: number;
+}>;
+
 const CARD_TOGGLE_IGNORE_SELECTOR =
   "button, a, input, textarea, select, label, [contenteditable='true'], [data-card-toggle-ignore='true']";
+const REVIEW_SHORTCUT_IGNORE_SELECTOR =
+  "button, a, input, textarea, select, option, summary, [contenteditable='true'], [role='button'], [role='textbox'], [role='combobox'], [role='menuitem'], [data-review-shortcuts-ignore='true']";
 
 function shouldIgnoreCardToggle(target: EventTarget | null) {
   if (target instanceof Element && target.closest(CARD_TOGGLE_IGNORE_SELECTOR)) {
@@ -68,6 +79,28 @@ function shouldIgnoreCardToggle(target: EventTarget | null) {
 
   const selection = typeof window === "undefined" ? null : window.getSelection();
   return Boolean(selection && !selection.isCollapsed && selection.toString().trim());
+}
+
+function shouldIgnoreReviewShortcut(event: KeyboardEvent) {
+  if (
+    event.defaultPrevented ||
+    event.isComposing ||
+    event.altKey ||
+    event.ctrlKey ||
+    event.metaKey ||
+    event.shiftKey ||
+    document.querySelector('[role="dialog"][aria-modal="true"]')
+  ) {
+    return true;
+  }
+
+  const target = event.target instanceof Element ? event.target : null;
+  const activeElement = document.activeElement;
+
+  return Boolean(
+    target?.closest(REVIEW_SHORTCUT_IGNORE_SELECTOR) ||
+      activeElement?.closest(REVIEW_SHORTCUT_IGNORE_SELECTOR),
+  );
 }
 
 export function ReviewSession({ zone }: ReviewSessionProps) {
@@ -94,6 +127,7 @@ export function ReviewSession({ zone }: ReviewSessionProps) {
   const [submittedItemId, setSubmittedItemId] = useState<string | null>(null);
   const [isSessionLoading, setIsSessionLoading] = useState(false);
   const [isPromptRefreshing, setIsPromptRefreshing] = useState(false);
+  const [ratingSelection, setRatingSelection] = useState<RatingSelection | null>(null);
   const [message, setMessage] = useState("");
   const submittedItemIdRef = useRef<string | null>(null);
   const requestedSessionKeyRef = useRef("");
@@ -153,6 +187,7 @@ export function ReviewSession({ zone }: ReviewSessionProps) {
         setCardStartedAt(0);
         setSubmittedItemId(null);
         setIsPromptRefreshing(false);
+        setRatingSelection(null);
       })
       .catch((error) => {
         if (cancelled) {
@@ -163,6 +198,7 @@ export function ReviewSession({ zone }: ReviewSessionProps) {
         setSessionIds([]);
         setSessionPlan(null);
         setPromptTokens({});
+        setRatingSelection(null);
         setMessage(error instanceof Error ? error.message : "Could not prepare this study zone");
       })
       .finally(() => {
@@ -185,6 +221,10 @@ export function ReviewSession({ zone }: ReviewSessionProps) {
   const currentExamples = currentItem
     ? getDisplayList(currentItem.examples, currentItem.example)
     : [];
+  const selectedRatingIndex =
+    currentItem && ratingSelection?.vocabularyItemId === currentItem.id
+      ? ratingSelection.index
+      : null;
 
   useEffect(() => {
     const promptToken = currentItem ? promptTokens[currentItem.id] : null;
@@ -277,6 +317,10 @@ export function ReviewSession({ zone }: ReviewSessionProps) {
 
     setShowBack(next.showBack);
     setCardStartedAt(next.cardStartedAt);
+
+    if (!next.showBack) {
+      setRatingSelection(null);
+    }
   };
 
   const listenToCurrentItem = () => {
@@ -334,6 +378,7 @@ export function ReviewSession({ zone }: ReviewSessionProps) {
       setShowCompletionModal(false);
       setCardStartedAt(0);
       setSubmittedItemId(null);
+      setRatingSelection(null);
       setMessage(`Returned to ${previousReview.surfaceText}. Choose again when ready.`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Could not return to the previous entry");
@@ -440,6 +485,7 @@ export function ReviewSession({ zone }: ReviewSessionProps) {
       );
       setShowBack(false);
       setCardStartedAt(0);
+      setRatingSelection(null);
       const savedMessage =
         repeatUnavailable
           ? `Saved. ${currentItem.surfaceText} could not be repeated in this session.`
@@ -462,6 +508,67 @@ export function ReviewSession({ zone }: ReviewSessionProps) {
       setSubmittedItemId(null);
     }
   };
+
+  const toggleAnswerRef = useRef(toggleAnswer);
+  const submitRatingRef = useRef(submitRating);
+
+  useEffect(() => {
+    toggleAnswerRef.current = toggleAnswer;
+    submitRatingRef.current = submitRating;
+  });
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!currentItem || shouldIgnoreReviewShortcut(event)) {
+        return;
+      }
+
+      if (event.key === " ") {
+        if (event.repeat) {
+          return;
+        }
+
+        event.preventDefault();
+        toggleAnswerRef.current(event.timeStamp);
+        return;
+      }
+
+      if (isReviewRatingArrowKey(event.key)) {
+        if (!showBack || ratingDisabled) {
+          return;
+        }
+
+        event.preventDefault();
+        setRatingSelection({
+          vocabularyItemId: currentItem.id,
+          index: getNextReviewRatingIndex(selectedRatingIndex, event.key),
+        });
+        return;
+      }
+
+      if (
+        event.key === "Enter" &&
+        !event.repeat &&
+        showBack &&
+        !ratingDisabled &&
+        selectedRatingIndex !== null
+      ) {
+        event.preventDefault();
+        void submitRatingRef.current(
+          reviewRatings[selectedRatingIndex].value,
+          event.timeStamp,
+        );
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [
+    currentItem,
+    ratingDisabled,
+    selectedRatingIndex,
+    showBack,
+  ]);
 
   return (
     <>
@@ -656,12 +763,34 @@ export function ReviewSession({ zone }: ReviewSessionProps) {
                 )}
                 {showBack ? "Hide answer" : "Show answer"}
               </PressableButton>
-              <div className="mt-4 grid grid-cols-2 gap-2">
-                {reviewRatings.map((rating) => (
+              <p
+                id="review-keyboard-hint"
+                className="mt-2 text-center text-xs text-[var(--mimi-text-muted)]"
+              >
+                Space flip · Arrow keys choose · Enter confirm
+              </p>
+              <div
+                role="group"
+                aria-label="Memory rating"
+                aria-describedby="review-keyboard-hint"
+                className="mt-4 grid grid-cols-2 gap-2"
+              >
+                {reviewRatings.map((rating, index) => (
                   <PressableButton
                     key={rating.value}
                     type="button"
                     disabled={ratingDisabled}
+                    data-selected={
+                      selectedRatingIndex === index ? "true" : undefined
+                    }
+                    onMouseEnter={() => {
+                      if (!ratingDisabled && currentItem) {
+                        setRatingSelection({
+                          vocabularyItemId: currentItem.id,
+                          index,
+                        });
+                      }
+                    }}
                     onClick={(event) => void submitRating(rating.value, event.timeStamp)}
                     className={`mimi-rating-button mimi-rating-${rating.value} mimi-focus-ring min-h-14 rounded-md border px-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50`}
                   >

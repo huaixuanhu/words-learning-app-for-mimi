@@ -367,7 +367,8 @@ select {
     filter 180ms var(--mimi-ease);
 }
 
-.mimi-rating-button:not(:disabled):hover {
+.mimi-rating-button:not(:disabled):hover,
+.mimi-rating-button:not(:disabled)[data-selected="true"] {
   filter: brightness(1.025) saturate(1.04);
   box-shadow: 0 12px 24px rgb(31 47 38 / 0.13);
 }

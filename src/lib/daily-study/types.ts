@@ -128,6 +128,7 @@ export type ReviewStateFact = ReviewStateFactBase &
 type ReviewEventFactBase = Readonly<{
   eventId: string;
   promptId: string | null;
+  dailyPlanId?: string | null;
   personId: string;
   vocabularyItemId: string;
   reviewedAt: string;
@@ -173,6 +174,8 @@ export type QueueEntryFact = Readonly<{
   vocabularyItemId: string;
   systemCreatedAt: string;
   dueAt: string | null;
+  forgotCount?: number;
+  hardCount?: number;
 }>;
 
 export type StudyQueueEntryFact = QueueEntryFact &
@@ -182,6 +185,7 @@ export type StudyQueueEntryFact = QueueEntryFact &
     reviewProfile: ReviewProfile;
     isAvailable: boolean;
     completedInPlan: boolean;
+    unfinishedInPlan: boolean;
     sameSessionRepeat: boolean;
     promptToken: string;
   }> &
@@ -213,6 +217,8 @@ export type NewQueueCursor = Readonly<{
 
 export type ReviewQueueCursor = Readonly<{
   dueAt: string;
+  forgotCount: number;
+  hardCount: number;
   systemCreatedAt: string;
   vocabularyItemId: string;
   selectedCount: number;

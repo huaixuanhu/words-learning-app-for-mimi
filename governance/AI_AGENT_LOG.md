@@ -1,5 +1,47 @@
 # AI Agent Log
 
+## 2026-07-15 16:20 AEST
+
+- Task: implement Mimi's V2 scheduling repair so the required same-day passing rating does not overwrite the learning signal from earlier failed attempts.
+- Plan agreed: yes. The user chose to include the repair directly in V2 with no V1 Hotfix. The accepted Stage 5.1 child plan froze first-attempt anchoring, next-day consolidation, pass-only actuals, refresh recovery, failure priority, legacy replay, and no-schema boundaries before code changes.
+- Working tier: Tier 3. Local plans, pure scheduling/queue logic, browser-local and dormant Postgres application paths, deterministic tests, backup fixtures, and documentation were in scope. Credentials, provider calls, remote databases, migrations, Production data, Vercel, deployment, and GitHub remote actions were outside scope.
+- Changed files:
+  - `plan_docs/PLAN_V2_STAGE5_1_DAILY_EPISODE_SCHEDULING_REPAIR.md` plus the parent/master/status, architecture, README, changelog, AGENTS, and this log;
+  - `src/lib/review/daily-episode.ts`, the local review repository, daily-study contract/runtime/types, the guarded Postgres repository, and the existing V2 study hook;
+  - focused Daily Episode, daily contract/runtime, and Postgres parity tests.
+- Reason: the session requires `vague` or `remembered` before a word can finish, so applying every click to cross-day FSRS let the required final pass mask earlier failure and delay a genuinely weak word.
+- Decisions:
+  - one person/profile/item/persisted-plan window owns one Learning Episode; its earliest event by `reviewedAt` and id is the Scheduling Anchor（调度锚点）;
+  - every raw event is retained, but later recovery attempts preserve the anchor-owned FSRS state;
+  - `hard` keeps its raw label/count and uses the same unsuccessful scheduling input as `forgot` only when it is the anchor;
+  - a failed anchor and a new direct `vague` are due at the frozen plan's next local-day boundary; direct new `remembered` and mature clean passes keep normal FSRS output;
+  - daily completion requires a retained passing attempt; failed-only entries return to their original zone after refresh;
+  - equally due entries sort by descending `forgot`, then `hard`, counts, and signed Review cursors carry the same keys across pages;
+  - rollback/reset replay uses persisted plan ownership, while no-plan legacy events remain sequential. Timezone-overlapping plans use the latest eligible `calculatedAt`; equal activation fails closed.
+- Validation: focused Stage 5.1 suite passed 4 files / 47 tests; ESLint and TypeScript passed; Vitest passed 40 files / 265 tests with 1 existing Postgres integration file/test intentionally skipped; all three backup dry-runs, the Next.js Production build, Tier 3 governance preflight, and `git diff --check` passed.
+- Safety notes: the build framework detected the ordinary ignored `.env.local`, but no environment value, credential, token, or connection string was inspected, printed, copied, changed, or staged. No Gemini/provider call, charge, Development/Staging/Preview/Production database connection, SQL migration, remote import/restore, Production write, Vercel action, deployment, commit, push, pull request, or merge occurred. Schema Version 6, JSON backup version 3, live V1, keyboard behavior, motion, and reduced-motion behavior remain unchanged.
+
+## 2026-07-14 23:16 AEST
+
+- Task: implement the user-confirmed Stage 5 insertion for keyboard and mouse control of Recognition card reveal and four-choice memory rating.
+- Plan agreed: yes. The accepted amendment froze `Space` for flip, non-wrapping 2-by-2 Arrow movement with first selection at `完全忘记了`, `Enter` for confirmation, existing mouse behavior, safe-target guards, and no change to the current motion or reduced-motion behavior. The Stage 5 child plan was amended before code changes, and the user then explicitly confirmed execution.
+- Working tier: Tier 3. Local UI logic, deterministic tests, isolated browser-local acceptance, planning/architecture/status documents, changelog, and governance log were in scope. Credentials, external providers, remote databases, Production data, Vercel, deployment, and GitHub remote actions were outside scope.
+- Changed files:
+  - `src/lib/review/keyboard-controls.ts` and its focused test for first selection, 2-by-2 movement, and edge clamping;
+  - `src/components/review/review-session.tsx`, its static interaction contract, and `src/app/globals.css` for guarded global keys, transient mouse/keyboard selection, exact learner hint, and shared hover/selected appearance;
+  - Stage 5 child/master plan, architecture, README, AGENTS, changelog, and this log.
+- Reason: allow fluid mouse/keyboard handoff during Review and New Words without changing scheduling, card authority, or the accepted visual motion.
+- Decisions:
+  - `Space` toggles only when no protected target/dialog/modifier/composition state owns the key and prevents ordinary page scrolling when handled. Repeat Space is ignored.
+  - The first handled Arrow selects index 0. Later Left/Right movement stays within a row, Up/Down stays within a column, and outer edges clamp. Arrow repeat remains available.
+  - `Enter` submits only a visible, enabled, selected rating through the existing guarded `submitRating` path; repeat Enter is ignored.
+  - Mouse click remains immediate. Mouse hover updates the same transient index used by Arrow movement.
+  - Selection clears on hide, card change, successful rating, rollback, and queue/session replacement.
+  - Keyboard selection shares the existing hover filter and shadow. No existing transition duration, transform, card animation, hover animation, or reduced-motion rule was edited.
+- Validation: focused keyboard/UI tests passed 2 files / 10 tests; ESLint and TypeScript passed; Vitest passed 39 files / 248 tests with 1 Postgres integration file/test intentionally skipped; all three backup dry-runs and the Next.js Production build passed.
+- Browser acceptance: isolated forced-local `127.0.0.1:3017` data verified Space reveal with scroll unchanged, first-Arrow selection, Right/Down movement, non-wrapping edge clamp, Enter rating, direct mouse rating, and open-dialog shortcut exclusion. Both rating writes were rolled back, the Recognition new-word goal was restored to `0`, the disposable `keyboard meadow` entry was deleted, and no console error appeared.
+- Safety notes: the local Next.js process loaded its ordinary ignored environment file, but no environment value, credential, token, or connection string was inspected, printed, copied, changed, or staged. Local `/api/storage/data` requests returned 403 before the browser-local fallback; no remote database connection or transaction occurred. No Gemini/provider call, charge, SQL migration, remote import/restore, Production write, Vercel action, deployment, commit, push, pull request, or merge occurred. Live V1 remains Schema Version 5 and `0003_v2_schema6_data_model.sql` remains unexecuted.
+
 ## 2026-07-14 19:13 AEST
 
 - Task: repair the V2 Stage 5 prompt-evidence experience so long single-card or multi-card sessions do not require reopening Review/New Words or appear to log the learner out.

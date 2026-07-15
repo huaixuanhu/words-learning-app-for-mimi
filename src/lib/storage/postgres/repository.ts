@@ -46,6 +46,11 @@ import {
   selectReviewQueue,
 } from "@/lib/review/scheduler";
 import {
+  getDailyEpisodeEvents,
+  scheduleDailyEpisodeAttempt,
+} from "@/lib/review/daily-episode";
+import { rebuildRecognitionStateFromEvents } from "@/lib/review/repository";
+import {
   RECOGNITION_PARAMETER_SET_ID,
   type PersonReviewSettings,
   type ReviewEvent,
@@ -76,6 +81,7 @@ import type {
   VocabularyData,
   VocabularyItem,
 } from "@/lib/vocabulary/types";
+import type { DailyStudyPlanRecord } from "@/lib/storage/v2-data-model";
 import {
   readDailyStudyQueue,
   rebuildRecognitionStateAfterDayReset,
@@ -1373,6 +1379,7 @@ async function completeStudyCommand(
 async function recordRecognitionReviewInTransaction(
   queryable: PostgresQueryable,
   command: RecordReviewCommand,
+  plan?: DailyStudyPlanRecord,
 ) {
   const item = await selectVocabularyItem(queryable, command, command.vocabularyItemId);
 
@@ -1386,11 +1393,34 @@ async function recordRecognitionReviewInTransaction(
   }
 
   const previousState = await getReviewState(queryable, command, command.vocabularyItemId);
-  const scheduled = scheduleNextReview(
-    previousState ?? undefined,
-    command.rating,
-    command.reviewedAt,
-  );
+  const priorEpisodeEvents = plan
+    ? getDailyEpisodeEvents(
+        await listReviewEventsForVocabularyItem(
+          queryable,
+          command,
+          command.vocabularyItemId,
+        ),
+        plan,
+        command.vocabularyItemId,
+        await listDailyStudyPlans(queryable, command),
+      )
+    : [];
+  const episodeSchedule = plan
+    ? scheduleDailyEpisodeAttempt({
+        previousState: previousState ?? undefined,
+        priorEpisodeEvents,
+        rating: command.rating,
+        reviewedAt: command.reviewedAt,
+        plan,
+      })
+    : null;
+  const scheduled =
+    episodeSchedule?.schedule ??
+    scheduleNextReview(
+      previousState ?? undefined,
+      command.rating,
+      command.reviewedAt,
+    );
   const elapsedMs =
     command.elapsedMs === null || command.elapsedMs === undefined
       ? 0
@@ -1400,28 +1430,33 @@ async function recordRecognitionReviewInTransaction(
     throw new Error("elapsedMs must not exceed 90000000");
   }
 
-  const nextState: ReviewState = {
-    id: previousState?.id ?? randomUUID(),
-    personId: command.personId,
-    vocabularyItemId: command.vocabularyItemId,
-    reviewProfile: "recognition",
-    parameterSetId: RECOGNITION_PARAMETER_SET_ID,
-    firstRatedAt:
-      previousState?.historyOrigin === "legacy_unknown"
-        ? null
-        : previousState?.firstRatedAt ?? command.reviewedAt,
-    historyOrigin:
-      previousState?.historyOrigin === "legacy_unknown" ? "legacy_unknown" : "recorded",
-    status: scheduled.status,
-    dueAt: scheduled.dueAt,
-    lastReviewedAt: command.reviewedAt,
-    reviewCount: scheduled.reviewCount,
-    lapseCount: scheduled.lapseCount,
-    intervalMinutes: scheduled.intervalMinutes,
-    difficulty: scheduled.difficulty,
-    stability: scheduled.stability,
-    updatedAt: command.reviewedAt,
-  };
+  const nextState: ReviewState =
+    episodeSchedule && !episodeSchedule.isSchedulingAnchor
+      ? previousState!
+      : {
+          id: previousState?.id ?? randomUUID(),
+          personId: command.personId,
+          vocabularyItemId: command.vocabularyItemId,
+          reviewProfile: "recognition",
+          parameterSetId: RECOGNITION_PARAMETER_SET_ID,
+          firstRatedAt:
+            previousState?.historyOrigin === "legacy_unknown"
+              ? null
+              : previousState?.firstRatedAt ?? command.reviewedAt,
+          historyOrigin:
+            previousState?.historyOrigin === "legacy_unknown"
+              ? "legacy_unknown"
+              : "recorded",
+          status: scheduled.status,
+          dueAt: scheduled.dueAt,
+          lastReviewedAt: command.reviewedAt,
+          reviewCount: scheduled.reviewCount,
+          lapseCount: scheduled.lapseCount,
+          intervalMinutes: scheduled.intervalMinutes,
+          difficulty: scheduled.difficulty,
+          stability: scheduled.stability,
+          updatedAt: command.reviewedAt,
+        };
   const eventResult = await queryable.query<ReviewEventRow>(
     `
       insert into review_events (
@@ -1597,14 +1632,18 @@ export async function recordPostgresDailyStudyRating(
       );
     }
 
-    const result = await recordRecognitionReviewInTransaction(client, {
-      personId: command.personId,
-      vocabularyItemId: command.vocabularyItemId,
-      rating: command.evidence.memoryRating,
-      elapsedMs: command.evidence.elapsedMs,
-      reviewedAt: now,
-      promptId: validated.promptId,
-    });
+    const result = await recordRecognitionReviewInTransaction(
+      client,
+      {
+        personId: command.personId,
+        vocabularyItemId: command.vocabularyItemId,
+        rating: command.evidence.memoryRating,
+        elapsedMs: command.evidence.elapsedMs,
+        reviewedAt: now,
+        promptId: validated.promptId,
+      },
+      plan,
+    );
     const repeatPromptToken =
       command.evidence.memoryRating === "forgot" ||
       command.evidence.memoryRating === "hard"
@@ -1680,6 +1719,7 @@ export async function rollbackPostgresDailyStudyRating(
   const rollback = await rollbackReviewEvent(
     { personId: command.personId, now, timezone: plan.timezone },
     command.eventId,
+    resolved.data.dailyStudyPlans,
   );
   const promptToken = issueServerPromptToken(
     {
@@ -2312,33 +2352,17 @@ function rebuildReviewStateFromEvents(
   vocabularyItemId: string,
   events: ReviewEvent[],
   previousState: ReviewState | null,
+  dailyStudyPlans: readonly DailyStudyPlanRecord[] = [],
 ) {
-  return events.reduce<ReviewState | null>((state, event) => {
-    const scheduled = scheduleNextReview(state ?? undefined, event.rating, event.reviewedAt);
-
-    return {
-      id: state?.id ?? previousState?.id ?? randomUUID(),
+  return (
+    rebuildRecognitionStateFromEvents(
       personId,
       vocabularyItemId,
-      reviewProfile: "recognition",
-      parameterSetId: RECOGNITION_PARAMETER_SET_ID,
-      firstRatedAt:
-        previousState?.historyOrigin === "legacy_unknown"
-          ? null
-          : state?.firstRatedAt ?? previousState?.firstRatedAt ?? event.reviewedAt,
-      historyOrigin:
-        previousState?.historyOrigin === "legacy_unknown" ? "legacy_unknown" : "recorded",
-      status: scheduled.status,
-      dueAt: scheduled.dueAt,
-      lastReviewedAt: event.reviewedAt,
-      reviewCount: scheduled.reviewCount,
-      lapseCount: scheduled.lapseCount,
-      intervalMinutes: scheduled.intervalMinutes,
-      difficulty: scheduled.difficulty,
-      stability: scheduled.stability,
-      updatedAt: event.reviewedAt,
-    };
-  }, null);
+      events,
+      previousState ?? undefined,
+      { dailyStudyPlans, makeStateId: randomUUID },
+    ) ?? null
+  );
 }
 
 async function upsertReviewState(queryable: PostgresQueryable, state: ReviewState) {
@@ -2477,6 +2501,8 @@ async function resetTodayReview(
   assertPersonContext(context);
 
   return withPostgresTransaction(async (client) => {
+    let dailyStudyPlans: DailyStudyPlanRecord[] = [];
+
     if (options) {
       const plans = await client.query<DailyStudyPlanRow>(
         `
@@ -2517,6 +2543,8 @@ async function resetTodayReview(
       ) {
         throw new Error("Today’s Track plans are incomplete or no longer match");
       }
+
+      dailyStudyPlans = await listDailyStudyPlans(client, context);
 
       const replay = await beginStudyCommand(client, {
         personId: context.personId,
@@ -2623,6 +2651,7 @@ async function resetTodayReview(
         earlierEvents,
         todayEvents.filter((event) => event.vocabularyItemId === vocabularyItemId),
         context.now,
+        { dailyStudyPlans, makeStateId: randomUUID },
       );
 
       if (rebuiltState) {
@@ -2651,11 +2680,15 @@ async function resetTodayReview(
 async function rollbackReviewEvent(
   context: TimestampedPersonContext,
   reviewEventId: string,
+  dailyStudyPlans: readonly DailyStudyPlanRecord[] = [],
 ): Promise<RollbackReviewEventResult> {
   assertPersonContext(context);
   assertDatabaseUuid(reviewEventId, "reviewEventId");
 
   return withPostgresTransaction(async (client) => {
+    const rebuildPlans = dailyStudyPlans.length
+      ? await listDailyStudyPlans(client, context)
+      : [];
     const eventResult = await client.query<ReviewEventRow>(
       `
         select
@@ -2718,6 +2751,7 @@ async function rollbackReviewEvent(
       event.vocabularyItemId,
       remainingEvents.sort(sortReviewEventsByReviewedAt),
       previousState,
+      rebuildPlans,
     );
 
     return {

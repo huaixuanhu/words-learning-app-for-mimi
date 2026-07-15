@@ -38,7 +38,7 @@ import type {
   UpdateDefaultGoalsCommand,
   UpdateTodayGoalsCommand,
 } from "@/lib/daily-study/types";
-import { recordReview, rollbackReviewEvent } from "@/lib/review/repository";
+import { recordDailyReview, rollbackReviewEvent } from "@/lib/review/repository";
 import type { ReviewEvent, ReviewState } from "@/lib/review/types";
 import type { VocabularyData } from "@/lib/vocabulary/types";
 
@@ -400,9 +400,10 @@ export function useDailyStudy() {
         consumedByIdempotencyKey: prompt.consumedByIdempotencyKey,
         now,
       });
-      const review = recordReview(
+      const review = recordDailyReview(
         data,
         {
+          plan,
           vocabularyItemId: command.vocabularyItemId,
           rating: command.evidence.memoryRating,
           elapsedMs: command.evidence.elapsedMs,

@@ -26,6 +26,7 @@ import type {
   VocabularyCreationFact,
   VocabularyCreationReversalFact,
 } from "./types";
+import { isPassingSessionRating } from "@/lib/review/session-queue";
 
 export const MAX_DAILY_GOAL = 2_147_483_647;
 export const INTERNAL_STUDY_PAGE_SIZE = 100;
@@ -126,6 +127,18 @@ function isSameScope(
   window: DailyPlanWindow,
 ) {
   return fact.personId === window.personId && fact.reviewProfile === window.reviewProfile;
+}
+
+function isEventInPlanScope(
+  event: ReviewEventFact,
+  window: DailyPlanWindow,
+) {
+  return (
+    isSameScope(event, window) &&
+    (event.dailyPlanId === undefined ||
+      event.dailyPlanId === null ||
+      event.dailyPlanId === window.planId)
+  );
 }
 
 function isInside(time: number, startsAt: number, endsAt: number) {
@@ -351,7 +364,7 @@ export function summarizeDailyActuals(
   let attemptsToday = 0;
 
   for (const event of events) {
-    if (!isSameScope(event, window)) {
+    if (!isEventInPlanScope(event, window)) {
       continue;
     }
 
@@ -363,6 +376,10 @@ export function summarizeDailyActuals(
 
     seenEventIds.add(event.eventId);
     attemptsToday += 1;
+
+    if (!isPassingSessionRating(event.memoryRating)) {
+      continue;
+    }
 
     if (priorIds.has(event.vocabularyItemId)) {
       reviewedIds.add(event.vocabularyItemId);
@@ -386,7 +403,7 @@ function earliestTodayEvents(
   const earliest = new Map<string, ReviewEventFact>();
 
   for (const event of events) {
-    if (!isSameScope(event, window)) {
+    if (!isEventInPlanScope(event, window)) {
       continue;
     }
 
@@ -507,6 +524,18 @@ export function compareReviewQueueEntries(a: QueueEntryFact, b: QueueEntryFact) 
     return dueCompare;
   }
 
+  const forgotCompare = (b.forgotCount ?? 0) - (a.forgotCount ?? 0);
+
+  if (forgotCompare !== 0) {
+    return forgotCompare;
+  }
+
+  const hardCompare = (b.hardCount ?? 0) - (a.hardCount ?? 0);
+
+  if (hardCompare !== 0) {
+    return hardCompare;
+  }
+
   return compareNewQueueEntries(a, b);
 }
 
@@ -525,6 +554,16 @@ export function isEligibleForStudyZone(
     entry.sameSessionRepeat
   ) {
     return false;
+  }
+
+  if (entry.unfinishedInPlan) {
+    if (entry.completedInPlan) {
+      throw new DailyStudyContractError(
+        "A completed queue entry cannot also be unfinished",
+      );
+    }
+
+    return zone === (entry.historyKind === "none" ? "new" : "review");
   }
 
   if (zone === "new") {
@@ -576,6 +615,18 @@ function isAfterReviewCursor(
 
   if (dueCompare !== 0) {
     return dueCompare > 0;
+  }
+
+  const forgotCount = entry.forgotCount ?? 0;
+
+  if (forgotCount !== cursor.forgotCount) {
+    return forgotCount < cursor.forgotCount;
+  }
+
+  const hardCount = entry.hardCount ?? 0;
+
+  if (hardCount !== cursor.hardCount) {
+    return hardCount < cursor.hardCount;
   }
 
   return isAfterNewCursor(entry, cursor);
@@ -667,10 +718,12 @@ export function selectStudyQueuePage(input: {
       last.dueAt !== null &&
       candidates.length > entries.length &&
       nextSelectedCount < getRemainingGoal(planGoal, completedDistinctAtStart)
-        ? {
-            dueAt: last.dueAt,
-            systemCreatedAt: last.systemCreatedAt,
-            vocabularyItemId: last.vocabularyItemId,
+          ? {
+              dueAt: last.dueAt,
+              forgotCount: last.forgotCount ?? 0,
+              hardCount: last.hardCount ?? 0,
+              systemCreatedAt: last.systemCreatedAt,
+              vocabularyItemId: last.vocabularyItemId,
             selectedCount: nextSelectedCount,
             completedDistinctAtStart,
           }

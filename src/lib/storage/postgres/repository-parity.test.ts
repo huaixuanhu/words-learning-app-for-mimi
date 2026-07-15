@@ -41,6 +41,20 @@ describe("Postgres repository parity source", () => {
     expect(repositorySource).toContain("getLocalDateKey(context.now, settings.timezone)");
   });
 
+  it("uses the shared Daily Episode policy for V2 rating and rebuild paths", () => {
+    expect(repositorySource).toContain("scheduleDailyEpisodeAttempt");
+    expect(repositorySource).toContain("getDailyEpisodeEvents");
+    expect(repositorySource).toContain("rebuildRecognitionStateFromEvents");
+    expect(repositorySource).toContain("{ dailyStudyPlans, makeStateId: randomUUID }");
+
+    const ratingSource = repositorySource.slice(
+      repositorySource.indexOf("export async function recordPostgresDailyStudyRating"),
+      repositorySource.indexOf("export async function rollbackPostgresDailyStudyRating"),
+    );
+
+    expect(ratingSource).toContain("plan,");
+  });
+
   it("returns the complete formal Schema Version 6 snapshot", () => {
     expect(repositorySource).toContain("schemaVersion: 6");
     for (const domain of [

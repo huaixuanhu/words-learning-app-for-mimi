@@ -1,7 +1,7 @@
 # Words Learning App For Mimi V2 Master Plan
 
 Created: 2026-07-13 00:16 AEST
-Last updated: 2026-07-14 16:07 AEST
+Last updated: 2026-07-15 16:20 AEST
 
 Source plan:
 - `plan_docs/PLAN_V1_MASTER.md`
@@ -28,11 +28,12 @@ Consumer / next stage:
 - `plan_docs/PLAN_V2_STAGE3_1_REVIEW_INTERACTION_CONTEXT_WORD_ACTIONS.md`
 - `plan_docs/PLAN_V2_STAGE4_MOBILE_FOUNDATION_COPY.md`
 - `plan_docs/PLAN_V2_STAGE5_DAILY_LEARNING_ENGINE.md`
+- `plan_docs/PLAN_V2_STAGE5_1_DAILY_EPISODE_SCHEDULING_REPAIR.md`
 - Future derived V2 child plans created in the order defined by this document.
 - `plan_docs/PLAN_VERSION_HOLD_MULTI_USER_CONFIDENTIAL_ISOLATION.md`
 
 Document nature:
-This is the canonical V2 product and engineering master plan. It is derived from the completed V1 plan and current Production architecture. V2-1 has an isolated executable contract; V2-2 / 2-B have bounded local AI quality evidence; V2-3 has implemented the local/application Schema Version 6 and backup parity; V2-3.1 and V2-4 have implemented the bounded local Review-interaction and mobile/copy layers; V2-5 has connected the accepted daily plans, metrics, separate Recognition zones, goals, reset, rollback, and pronunciation flow to local application behavior and a guarded Postgres/API boundary. No remote V2 migration, Production provider route, or V2 deployment has been performed.
+This is the canonical V2 product and engineering master plan. It is derived from the completed V1 plan and current Production architecture. V2-1 has an isolated executable contract; V2-2 / 2-B have bounded local AI quality evidence; V2-3 has implemented the local/application Schema Version 6 and backup parity; V2-3.1 and V2-4 have implemented the bounded local Review-interaction and mobile/copy layers; V2-5 has connected the accepted daily plans, metrics, separate Recognition zones, goals, reset, rollback, pronunciation, and guarded keyboard flow to local application behavior and a guarded Postgres/API boundary. V2-5.1 has repaired the mismatch between same-session pass requirements and cross-day scheduling through one Daily Plan-owned Learning Episode per entry. No remote V2 migration, Production provider route, or V2 deployment has been performed.
 
 Current operational tier: Tier 3.
 
@@ -40,7 +41,7 @@ Target capability tier: Tier 3. V2 adds a bounded paid AI API（人工智能接�
 
 Working tier: Tier 3.
 
-Status: V2-0 through V2-5 are complete locally. V2-5 is recorded under `plan_docs/PLAN_V2_STAGE5_DAILY_LEARNING_ENGINE.md`. Schema Version 6 and backup version 3 are implemented on branch `V2`; `0003_v2_schema6_data_model.sql` remains an unexecuted migration draft. The dedicated server study-token secret is intentionally unconfigured, so server-backed prompt/cursor issuance remains fail-closed. The live V1 database remains Schema Version 5. No remote migration, Production external-service route, credential change, or deployment action has been performed.
+Status: V2-0 through V2-5.1 are complete locally. V2-5 and its scheduling repair are recorded under `plan_docs/PLAN_V2_STAGE5_DAILY_LEARNING_ENGINE.md` and `plan_docs/PLAN_V2_STAGE5_1_DAILY_EPISODE_SCHEDULING_REPAIR.md`. Schema Version 6 and backup version 3 are implemented on branch `V2`; `0003_v2_schema6_data_model.sql` remains an unexecuted migration draft. The dedicated server study-token secret is intentionally unconfigured, so server-backed prompt/cursor issuance remains fail-closed. The live V1 database remains Schema Version 5. No remote migration, Production external-service route, credential change, or deployment action has been performed.
 
 ## Scope
 
@@ -571,6 +572,21 @@ Status: complete locally on 2026-07-14. Canonical child plan: `plan_docs/PLAN_V2
 - Added today-specific goals, future defaults, profile-derived Library learning stage, and the transactional two-gate whole-day reset with an Active-history fail-closed guard.
 - Added whole-entry Recognition `Listen` through browser SpeechSynthesis and preserved the Stage 3.1 card/context interactions without scheduling side effects.
 - Added the strict `/api/study` boundary and local/Postgres application paths; the server token secret is a later separately approved environment action.
+- Added guarded Recognition keyboard control: `Space` flips, Arrow keys move inside the four-choice 2-by-2 grid, and `Enter` confirms. Mouse click remains immediate, mouse hover and Arrow keys share one transient selection, and focused controls/dialogs remain protected.
+- Reused the accepted hover brightness and shadow for keyboard selection without changing the current motion, transition timing, or reduced-motion behavior.
+
+### V2-5.1 Daily Episode Scheduling Repair
+
+Status: complete locally on 2026-07-15. Canonical child plan and acceptance evidence: `plan_docs/PLAN_V2_STAGE5_1_DAILY_EPISODE_SCHEDULING_REPAIR.md`. No V1 Hotfix or Production action occurred.
+
+- Group one entry's Recognition attempts by its persisted Daily Plan window.
+- Let only the first attempt update cross-day FSRS state; keep later same-day ratings as raw recovery evidence.
+- Treat `forgot` and `hard` as unsuccessful scheduling anchors while retaining their distinct event values and counts.
+- Put a new non-immediate-recall entry, and any Review entry with a failed first attempt, into a next-local-day consolidation checkpoint.
+- Count distinct daily actuals only after `vague` or `remembered` and restore failed-only entries to their original daily zone after refresh.
+- Use failure counts to prioritize equally due weak entries without adding an uncalibrated weighted interval model.
+- Reuse Schema Version 6 Daily Plans and events; keep legacy no-plan history sequential and unchanged.
+- Focused episode/runtime/parity validation passed 4 files / 47 tests; full Vitest passed 40 files / 265 tests with the existing Postgres integration file/test skipped.
 
 ### V2-6 Active Practice Engine
 

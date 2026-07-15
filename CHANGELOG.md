@@ -1,5 +1,32 @@
 # CHANGELOG
 
+## 2026-07-15 16:20 AEST
+
+- Completed the documentation-first V2 Stage 5.1 Daily Episode scheduling repair requested from Mimi's real-use feedback; no V1 Hotfix was created.
+- Made the first Recognition attempt inside one persisted Daily Plan window the sole cross-day FSRS scheduling anchor. Later same-day attempts remain immutable raw evidence and no longer extend the next review after a required recovery pass.
+- Retained `forgot` and `hard` as separate events/counts while both use unsuccessful-recall scheduling when they are the anchor.
+- Scheduled a failed anchor and a new direct `vague` for the next local-day boundary; preserved normal FSRS behavior for direct new `remembered` and mature direct `vague` / `remembered` ratings.
+- Counted `Learned today` / `Reviewed today` only after a passing attempt and restored failed-only entries to their original `New Words` / `Review` zone after refresh.
+- Added equal-checkpoint priority by descending `forgot`, then `hard`, counts and included those keys in the signed Review cursor so ordering remains correct across pages.
+- Reused the same pure episode policy for local and Postgres application paths, rollback, reset, and replay. Timezone-overlapping plans use deterministic activation ownership; ambiguous equal activation fails closed.
+- Passed focused Stage 5.1 tests (4 files / 47 tests), ESLint, TypeScript, the full Vitest suite (40 files / 265 tests passed; 1 Postgres integration file/test intentionally skipped), all three backup dry-runs, the Next.js Production build, Tier 3 governance preflight, and final diff checks.
+- Kept Schema Version 6 and backup version 3 unchanged. Did not inspect a secret, call Gemini, connect to a remote database, execute a migration, mutate Production, change Vercel, deploy, commit, push, or open a pull request.
+- Reason: prevent the required final passing click from hiding that a word was genuinely weak earlier in the same learning session.
+
+## 2026-07-14 23:16 AEST
+
+- Completed the documentation-first Stage 5 keyboard-interaction follow-up after the user's confirmation.
+- Added simultaneous mouse and keyboard control to Recognition Review/New Words cards: `Space` reveals or hides, Arrow keys select inside the visible non-wrapping 2-by-2 memory grid, and `Enter` confirms the selected enabled rating through the existing submission path.
+- Made the first handled Arrow key select `完全忘记了`, then preserved row/column movement and clamped every outer edge without wrapping.
+- Kept mouse click as immediate submission and let mouse hover hand the same transient choice to later Arrow-key movement.
+- Protected inputs, textareas, selects, editable content, ordinary focused controls, open dialogs, modifier combinations, IME composition, repeat Space, and repeat Enter from shortcut takeover.
+- Added the compact learner hint `Space flip · Arrow keys choose · Enter confirm`.
+- Reused the existing rating hover brightness and shadow for keyboard selection. No transition value, card motion, hover motion, transform, or reduced-motion rule changed.
+- Passed focused keyboard tests (2 files / 10 tests), ESLint, TypeScript, the full Vitest suite (39 files / 248 tests passed; 1 Postgres integration file/test intentionally skipped), all three backup dry-runs, and the Next.js Production build.
+- Isolated forced-local browser acceptance on `127.0.0.1:3017` verified unchanged scroll position on Space, first-Arrow selection, mixed Arrow movement, edge clamping, Enter submission, direct mouse submission, and open-dialog shortcut protection with no console error. Temporary ratings were rolled back, the goal was restored to `0`, and the disposable entry was deleted.
+- Did not inspect or configure a credential, call Gemini, connect to a remote database, execute a migration, mutate Production data, change Vercel, deploy, commit, push, or open a pull request.
+- Reason: let the learner move fluidly between mouse and keyboard while preserving the already accepted visual motion and the existing study-data safeguards.
+
 ## 2026-07-14 19:13 AEST
 
 - Completed the documentation-first V2 Stage 5 prompt-expiry experience repair requested after the main Stage 5 commit.

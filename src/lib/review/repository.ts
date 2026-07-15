@@ -5,16 +5,26 @@ import {
   type ReviewState,
 } from "./types";
 import type { VocabularyData } from "@/lib/vocabulary/types";
+import type { DailyStudyPlanRecord } from "@/lib/storage/v2-data-model";
 import { makeId } from "@/lib/vocabulary/repository";
 import { getSelectedPersonId } from "@/lib/people/repository";
 import { getSelectedReviewSettings } from "./settings";
 import { getLocalDateKey, scheduleNextReview, selectReviewQueue } from "./scheduler";
+import {
+  findDailyEpisodePlan,
+  getDailyEpisodeEvents,
+  scheduleDailyEpisodeAttempt,
+} from "./daily-episode";
 
 export type RecordReviewInput = {
   vocabularyItemId: string;
   rating: ReviewRating;
   elapsedMs?: number | null;
   promptId?: string | null;
+};
+
+export type RecordDailyReviewInput = RecordReviewInput & {
+  plan: DailyStudyPlanRecord;
 };
 
 export function getReviewState(data: VocabularyData, vocabularyItemId: string) {
@@ -51,12 +61,45 @@ export function rebuildRecognitionStateFromEvents(
   vocabularyItemId: string,
   events: ReviewEvent[],
   previousState: ReviewState | undefined,
+  options: Readonly<{
+    dailyStudyPlans?: readonly DailyStudyPlanRecord[];
+    makeStateId?: () => string;
+  }> = {},
 ) {
-  return events.reduce<ReviewState | undefined>((state, event) => {
-    const scheduled = scheduleNextReview(state, event.rating, event.reviewedAt);
+  const orderedEvents = [...events].sort(sortReviewEventsByReviewedAt);
+  const seenPlanIds = new Set<string>();
+  let state: ReviewState | undefined;
 
-    return {
-      id: state?.id ?? previousState?.id ?? makeId("review_state"),
+  for (const event of orderedEvents) {
+    const plan = findDailyEpisodePlan(event, options.dailyStudyPlans ?? []);
+
+    if (plan && seenPlanIds.has(plan.id)) {
+      if (!state) {
+        throw new Error(`Daily episode ${plan.id} is missing its anchor state`);
+      }
+
+      continue;
+    }
+
+    if (plan) {
+      seenPlanIds.add(plan.id);
+    }
+
+    const scheduled = plan
+      ? scheduleDailyEpisodeAttempt({
+          previousState: state,
+          priorEpisodeEvents: [],
+          rating: event.rating,
+          reviewedAt: event.reviewedAt,
+          plan,
+        }).schedule
+      : scheduleNextReview(state, event.rating, event.reviewedAt);
+
+    state = {
+      id:
+        state?.id ??
+        previousState?.id ??
+        (options.makeStateId ?? (() => makeId("review_state")))(),
       personId,
       vocabularyItemId,
       reviewProfile: "recognition",
@@ -77,7 +120,9 @@ export function rebuildRecognitionStateFromEvents(
       stability: scheduled.stability,
       updatedAt: event.reviewedAt,
     };
-  }, undefined);
+  }
+
+  return state;
 }
 
 export function resetTodayReviewTask(data: VocabularyData, now = new Date().toISOString()) {
@@ -134,6 +179,7 @@ export function resetTodayReviewTask(data: VocabularyData, now = new Date().toIS
         vocabularyItemId,
         earlierEvents,
         previousStateByItemId.get(vocabularyItemId),
+        { dailyStudyPlans: data.dailyStudyPlans },
       );
     })
     .filter((state): state is ReviewState => Boolean(state));
@@ -199,6 +245,7 @@ export function rollbackReviewEvent(
     event.vocabularyItemId,
     earlierEvents,
     previousState,
+    { dailyStudyPlans: data.dailyStudyPlans },
   );
 
   return {
@@ -287,6 +334,120 @@ export function recordReview(
   const nextReviewStates = previousState
     ? data.reviewStates.map((state) =>
         state.personId === personId && state.vocabularyItemId === input.vocabularyItemId
+          ? nextState
+          : state,
+      )
+    : [nextState, ...data.reviewStates];
+
+  return {
+    data: {
+      ...data,
+      reviewStates: nextReviewStates,
+      reviewEvents: [event, ...data.reviewEvents],
+      updatedAt: now,
+    },
+    event,
+    state: nextState,
+  };
+}
+
+export function recordDailyReview(
+  data: VocabularyData,
+  input: RecordDailyReviewInput,
+  now = new Date().toISOString(),
+) {
+  const personId = getSelectedPersonId(data);
+  const item = data.items.find(
+    (candidate) =>
+      candidate.id === input.vocabularyItemId && candidate.personId === personId,
+  );
+
+  if (
+    !item ||
+    item.status === "archived" ||
+    item.archivedAt ||
+    item.learningTrack !== "recognition"
+  ) {
+    throw new Error(`Reviewable vocabulary item not found: ${input.vocabularyItemId}`);
+  }
+
+  if (
+    input.plan.personId !== personId ||
+    input.plan.reviewProfile !== "recognition" ||
+    input.plan.localDate.trim() === ""
+  ) {
+    throw new Error("Daily review does not match the selected Recognition plan");
+  }
+
+  const previousState = getReviewState(data, input.vocabularyItemId);
+  const priorEpisodeEvents = getDailyEpisodeEvents(
+    data.reviewEvents,
+    input.plan,
+    input.vocabularyItemId,
+    data.dailyStudyPlans,
+  );
+  const episodeSchedule = scheduleDailyEpisodeAttempt({
+    previousState,
+    priorEpisodeEvents,
+    rating: input.rating,
+    reviewedAt: now,
+    plan: input.plan,
+  });
+  const scheduled = episodeSchedule.schedule;
+  const elapsedMs =
+    input.elapsedMs === null || input.elapsedMs === undefined
+      ? 0
+      : Math.max(0, Math.round(input.elapsedMs));
+  const nextState: ReviewState = episodeSchedule.isSchedulingAnchor
+    ? {
+        id: previousState?.id ?? makeId("review_state"),
+        personId,
+        vocabularyItemId: input.vocabularyItemId,
+        reviewProfile: "recognition",
+        parameterSetId: RECOGNITION_PARAMETER_SET_ID,
+        firstRatedAt:
+          previousState?.historyOrigin === "legacy_unknown"
+            ? null
+            : previousState?.firstRatedAt ?? now,
+        historyOrigin:
+          previousState?.historyOrigin === "legacy_unknown"
+            ? "legacy_unknown"
+            : "recorded",
+        status: scheduled.status,
+        dueAt: scheduled.dueAt,
+        lastReviewedAt: now,
+        reviewCount: scheduled.reviewCount,
+        lapseCount: scheduled.lapseCount,
+        intervalMinutes: scheduled.intervalMinutes,
+        difficulty: scheduled.difficulty,
+        stability: scheduled.stability,
+        updatedAt: now,
+      }
+    : previousState!;
+  const event: ReviewEvent = {
+    id: makeId("review_event"),
+    promptId: input.promptId ?? null,
+    personId,
+    vocabularyItemId: input.vocabularyItemId,
+    reviewProfile: "recognition",
+    activityType: "recognition_card",
+    answerOutcome: "self_rated",
+    answerNormalizationVersion: null,
+    targetRevision: null,
+    parameterSetId: RECOGNITION_PARAMETER_SET_ID,
+    reviewedAt: now,
+    rating: input.rating,
+    previousDueAt: previousState?.dueAt ?? null,
+    nextDueAt: scheduled.dueAt,
+    previousIntervalMinutes: previousState?.intervalMinutes ?? null,
+    nextIntervalMinutes: scheduled.intervalMinutes,
+    elapsedMs,
+  };
+  const nextReviewStates = previousState
+    ? data.reviewStates.map((state) =>
+        state.personId === personId &&
+        state.vocabularyItemId === input.vocabularyItemId &&
+        state.reviewProfile === "recognition"
           ? nextState
           : state,
       )
