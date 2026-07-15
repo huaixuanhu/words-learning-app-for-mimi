@@ -426,7 +426,31 @@ create table ai_runs (
   constraint ai_runs_person_idempotency_unique unique (person_id, idempotency_key_hash),
   constraint ai_runs_feature_valid
     check (feature in ('enrichment_v1', 'context_explain_v1')),
-  constraint ai_runs_provider_valid check (provider = 'google-gemini-api'),
+  constraint ai_runs_provider_valid
+    check (provider in ('google-gemini-api', 'local-fixture')),
+  constraint ai_runs_provider_lineage_consistent check (
+    (
+      provider = 'google-gemini-api'
+      and model = 'gemini-3.1-flash-lite'
+      and model_label = 'Gemini 3.1 Flash-Lite'
+      and disclosure_version = 'ai-disclosure-v1'
+    )
+    or
+    (
+      provider = 'local-fixture'
+      and model = 'fixture-v1'
+      and model_label = 'Local preview'
+      and prompt_version = 'local-fixture-v1'
+      and disclosure_version = 'local-fixture-no-network-v1'
+      and provider_response_id is null
+      and input_tokens = 0
+      and output_tokens = 0
+      and thinking_tokens = 0
+      and total_tokens = 0
+      and latency_ms = 0
+      and estimated_cost_usd = 0
+    )
+  ),
   constraint ai_runs_status_valid check (status in ('submitted', 'succeeded', 'rejected', 'failed')),
   constraint ai_runs_structure_status_valid
     check (structure_validation_status in ('pending', 'valid', 'invalid', 'unavailable')),
@@ -474,6 +498,11 @@ create table ai_runs (
       input_tokens::bigint + output_tokens::bigint + thinking_tokens::bigint
     and latency_ms >= 0
     and estimated_cost_usd >= 0
+  ),
+  constraint ai_runs_success_usage_present check (
+    provider = 'local-fixture'
+    or status <> 'succeeded'
+    or (input_tokens > 0 and total_tokens > 0)
   )
 );
 
@@ -705,13 +734,13 @@ end;
 $$;
 
 create trigger ai_enrichment_drafts_run_feature_guard
-before insert or update of person_id, ai_run_id
+before insert or update of person_id, source_vocabulary_item_id, ai_run_id
 on ai_enrichment_drafts
 for each row
 execute function ensure_enrichment_lineage_run_valid();
 
 create trigger vocabulary_relations_run_feature_guard
-before insert or update of person_id, ai_run_id
+before insert or update of person_id, source_vocabulary_item_id, ai_run_id
 on vocabulary_relations
 for each row
 execute function ensure_enrichment_lineage_run_valid();
@@ -729,13 +758,9 @@ create table ai_usage_buckets (
   active_provider_calls integer not null default 0,
   updated_at timestamptz not null,
   constraint ai_usage_buckets_scope_valid
-    check (scope in ('global_day', 'global_month', 'person_day', 'global_concurrency')),
+    check (scope in ('global_day', 'global_month', 'global_concurrency')),
   constraint ai_usage_buckets_person_scope_consistent
-    check (
-      (scope = 'person_day' and person_id is not null)
-      or
-      (scope <> 'person_day' and person_id is null)
-    ),
+    check (person_id is null),
   constraint ai_usage_buckets_window_valid check (period_ends_at > period_starts_at),
   constraint ai_usage_buckets_values_non_negative check (
     attempts_reserved >= 0

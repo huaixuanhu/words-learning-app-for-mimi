@@ -52,6 +52,9 @@ describe("V2 context explanation contract", () => {
       sourceTerm: "adapt",
       sourceMeaningsZh: ["适应", "改编"],
       example: "We adapt to change.",
+      exampleIndex: 0,
+      selectedStart: 3,
+      selectedEnd: 8,
       selectedText: "adapt",
     });
     expect(() =>
@@ -93,8 +96,37 @@ describe("V2 context explanation contract", () => {
       ),
     ).toMatchObject({
       example,
+      exampleIndex: 0,
+      selectedStart,
+      selectedEnd: selectedStart + "adapt".length,
       selectedText: "adapt",
     });
+  });
+
+  it("keeps repeated token occurrences distinct after server verification", () => {
+    const example = "I record a record.";
+    const firstStart = example.indexOf("record");
+    const secondStart = example.lastIndexOf("record");
+    const first = buildTrustedAiContextPayload(
+      {
+        ...request,
+        selectedStart: firstStart,
+        selectedEnd: firstStart + "record".length,
+      },
+      { ...entry, examples: [example] },
+    );
+    const second = buildTrustedAiContextPayload(
+      {
+        ...request,
+        selectedStart: secondStart,
+        selectedEnd: secondStart + "record".length,
+      },
+      { ...entry, examples: [example] },
+    );
+
+    expect(first.selectedText).toBe(second.selectedText);
+    expect(first.selectedStart).not.toBe(second.selectedStart);
+    expect(first).not.toEqual(second);
   });
 
   it("validates the bounded structured result against trusted context", () => {

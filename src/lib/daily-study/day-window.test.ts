@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolvePersonDay } from "./day-window";
+import { resolveCalendarMonth, resolvePersonDay } from "./day-window";
 
 describe("resolvePersonDay", () => {
   it("resolves a regular Melbourne day from the learner timezone", () => {
@@ -36,5 +36,15 @@ describe("resolvePersonDay", () => {
     expect(() => resolvePersonDay("2026-07-14T04:00:00.000Z", "Mars/Mimi")).toThrow(
       "Unsupported timezone",
     );
+  });
+
+  it("resolves a Melbourne budget month across the DST boundary", () => {
+    expect(resolveCalendarMonth("2026-10-15T00:00:00.000Z", "Australia/Melbourne"))
+      .toEqual({
+        localMonth: "2026-10",
+        timezone: "Australia/Melbourne",
+        monthStartsAt: "2026-09-30T14:00:00.000Z",
+        monthEndsAt: "2026-10-31T13:00:00.000Z",
+      });
   });
 });

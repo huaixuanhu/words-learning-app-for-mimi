@@ -1,7 +1,7 @@
 # Words Learning App For Mimi V2 Master Plan
 
 Created: 2026-07-13 00:16 AEST
-Last updated: 2026-07-15 16:20 AEST
+Last updated: 2026-07-16 AEST
 
 Source plan:
 - `plan_docs/PLAN_V1_MASTER.md`
@@ -29,11 +29,13 @@ Consumer / next stage:
 - `plan_docs/PLAN_V2_STAGE4_MOBILE_FOUNDATION_COPY.md`
 - `plan_docs/PLAN_V2_STAGE5_DAILY_LEARNING_ENGINE.md`
 - `plan_docs/PLAN_V2_STAGE5_1_DAILY_EPISODE_SCHEDULING_REPAIR.md`
+- `plan_docs/PLAN_V2_STAGE6_ACTIVE_PRACTICE_ENGINE.md`
+- `plan_docs/PLAN_V2_STAGE7A_LOCAL_AI_ENRICHMENT_COST_GUARD.md`
 - Future derived V2 child plans created in the order defined by this document.
 - `plan_docs/PLAN_VERSION_HOLD_MULTI_USER_CONFIDENTIAL_ISOLATION.md`
 
 Document nature:
-This is the canonical V2 product and engineering master plan. It is derived from the completed V1 plan and current Production architecture. V2-1 has an isolated executable contract; V2-2 / 2-B have bounded local AI quality evidence; V2-3 has implemented the local/application Schema Version 6 and backup parity; V2-3.1 and V2-4 have implemented the bounded local Review-interaction and mobile/copy layers; V2-5 has connected the accepted daily plans, metrics, separate Recognition zones, goals, reset, rollback, pronunciation, and guarded keyboard flow to local application behavior and a guarded Postgres/API boundary. V2-5.1 has repaired the mismatch between same-session pass requirements and cross-day scheduling through one Daily Plan-owned Learning Episode per entry. No remote V2 migration, Production provider route, or V2 deployment has been performed.
+This is the canonical V2 product and engineering master plan. It is derived from the completed V1 plan and current Production architecture. V2-1 has an isolated executable contract; V2-2 / 2-B have bounded local AI quality evidence; V2-3 has implemented the local/application Schema Version 6 and backup parity; V2-3.1 and V2-4 have implemented the bounded local Review-interaction and mobile/copy layers; V2-5 / 5.1 have connected daily plans and repaired cross-day scheduling; V2-6 has implemented the independent Active practice engine. V2-7A has completed the browser-local fixture product flow and dormant cost/accounting safety layer. No remote V2 migration, external provider call, Production provider route, or V2 deployment has been performed.
 
 Current operational tier: Tier 3.
 
@@ -41,7 +43,7 @@ Target capability tier: Tier 3. V2 adds a bounded paid AI API（人工智能接�
 
 Working tier: Tier 3.
 
-Status: V2-0 through V2-5.1 are complete locally. V2-5 and its scheduling repair are recorded under `plan_docs/PLAN_V2_STAGE5_DAILY_LEARNING_ENGINE.md` and `plan_docs/PLAN_V2_STAGE5_1_DAILY_EPISODE_SCHEDULING_REPAIR.md`. Schema Version 6 and backup version 3 are implemented on branch `V2`; `0003_v2_schema6_data_model.sql` remains an unexecuted migration draft. The dedicated server study-token secret is intentionally unconfigured, so server-backed prompt/cursor issuance remains fail-closed. The live V1 database remains Schema Version 5. No remote migration, Production external-service route, credential change, or deployment action has been performed.
+Status: V2-0 through V2-7A are complete locally. The Stage 7A outcome is recorded in `plan_docs/PLAN_V2_STAGE7A_LOCAL_AI_ENRICHMENT_COST_GUARD.md`; formal Gemini execution and first external transmission remain a later V2-7B approval gate. Schema Version 6 and backup version 3 are implemented on branch `V2`; `0003_v2_schema6_data_model.sql` remains an unexecuted migration draft. The dedicated server study-token secret is intentionally unconfigured, so server-backed prompt/cursor issuance remains fail-closed. The live V1 database remains Schema Version 5. No remote migration, Production external-service route, credential change, provider call, or deployment action has been performed.
 
 ## Scope
 
@@ -77,7 +79,7 @@ Status: V2-0 through V2-5.1 are complete locally. V2-5 and its scheduling repair
 ## Safety / Side Effects
 
 - The current private trusted group remains behind Production Basic Auth（基础认证）.
-- `person_id` remains a convenience and data-separation field, not an authorization identity. Per-person AI quotas are fairness controls; global quotas are the security and cost boundary.
+- `person_id` remains a convenience and data-separation field, not an authorization identity. V2-7A has no per-person AI ceiling; the shared global request, token, cost, concurrency, Cache, and Kill Switch controls are the security and cost boundary.
 - Any paid provider, credential, environment variable, external API, remote migration, or Production action requires a new bounded child plan and explicit human approval.
 - Preview must not receive the Production AI credential. AI must be disabled or use a non-billable local fixture until a separately approved non-production test route exists.
 - Only the minimum lexical context may be sent externally: word / phrase, selected meanings, selected examples, and lexical candidates. Names, `person_id`, full study history, private notes, credentials, and unrelated vocabulary must not be sent.
@@ -339,25 +341,25 @@ No model is declared higher quality solely from price, provider marketing, or on
 
 ## AI Cost And Abuse Boundary
 
-### Initial Hard Limits
+### Current Stage 7 Hard Limits
 
-The user approved doubling the initial request ceilings:
+The user approved the following shared Production design limits for Stage 7. They supersede the earlier Stage 2 proposal without rewriting its historical test evidence:
 
-- per person: 100 provider attempts per local day;
-- all Production: 200 provider attempts per authoritative budget day;
+- no per-person provider-attempt ceiling;
+- all Production: 300 provider attempts per authoritative budget day;
 - all Production concurrency: 2 provider calls;
 - per-call planning envelope: approximately 2,000 input tokens and 700 output / thinking tokens per provider attempt; V2-2 must configure the lowest supported thinking level and measure actual behavior because thinking cannot be assumed fully disabled;
-- daily global token reservation: 400,000 input tokens and 140,000 output / thinking tokens;
-- app-side estimated cost ceiling: US$0.40 per day and US$2 per month unless a later approved calibration changes it.
+- daily global token reservation: 600,000 input tokens and 210,000 output / thinking tokens;
+- app-side estimated cost ceiling: US$0.50 per day and US$2 per month unless a later approved calibration changes it.
 
-These are independent ceilings. The first reached ceiling stops new provider calls. Per-person limits remain fairness controls because `person_id` is not authentication. Global request, token, cost, and concurrency limits are the enforceable application boundary.
+These are independent ceilings. The first reached ceiling stops new provider calls. There is no personal counter because browser-selectable `person_id` is not authentication; global request, token, cost, and concurrency limits are the enforceable application boundary.
 
 Accounting rules:
 
 - Use one server-owned authoritative budget timezone, initially `Australia/Melbourne`, for the global daily reset. A user-editable person timezone cannot reset the global allowance.
 - Reserve and count one request attempt immediately before calling the provider. Invalid or unauthorized requests rejected before that point do not consume an attempt.
 - Once a provider call is submitted, provider `429`, timeout, network ambiguity, safety refusal, invalid Structured Output, and downstream validation failure still consume the request attempt. Reconcile or release unused token / cost reservation when reliable usage evidence permits, but do not restore the request count.
-- The 100 / 200 request values are burst-abuse ceilings, not promised sustainable monthly throughput. The Stage 3.1 official-price recheck found that synchronous Standard `generateContent` uses US$0.25 / 1M input tokens and US$1.50 / 1M output / thinking tokens; US$0.125 / US$0.75 are Batch/Flex rates. The full 400,000 / 140,000 daily token envelope is therefore US$0.31, still below the independent US$0.40 daily ceiling; a US$2 monthly ceiling represents about 6.45 full-envelope days. See `plan_docs/PLAN_V2_STAGE3_1_REVIEW_INTERACTION_CONTEXT_WORD_ACTIONS.md`.
+- The 300-request value is a burst-abuse ceiling, not promised sustainable monthly throughput. The Stage 3.1 official-price recheck found that synchronous Standard `generateContent` uses US$0.25 / 1M input tokens and US$1.50 / 1M output / thinking tokens; US$0.125 / US$0.75 are Batch/Flex rates. The full 600,000 / 210,000 daily token envelope is therefore US$0.465, below the independent US$0.50 daily ceiling; a US$2 monthly ceiling represents about 4.30 full-envelope days. See `plan_docs/PLAN_V2_STAGE3_1_REVIEW_INTERACTION_CONTEXT_WORD_ACTIONS.md`.
 - App-side cost is an estimate tied to a versioned provider / model / pricing configuration. Missing usage metadata, unknown model version, or stale / missing price configuration fails closed for new calls.
 - The provider Spend Cap and application ledger operate together. Neither an application estimate nor a delayed provider cap alone is presented as an exact billing guarantee.
 
@@ -601,12 +603,16 @@ Status: complete locally on 2026-07-15. Canonical child plan and acceptance reco
 
 ### V2-7 AI Enrichment And Cost Guard
 
-- Implement provider adapters and the accepted Gemini route.
-- Generate the bounded draft directly with the accepted pinned Gemini model; do not add Datamuse or Free Dictionary adapters.
-- Add structured draft review, edit, reject, accept, and `Add to learning`.
+Status: V2-7A completed locally on 2026-07-16. Canonical child plan and outcome: `plan_docs/PLAN_V2_STAGE7A_LOCAL_AI_ENRICHMENT_COST_GUARD.md`. Real provider calls, disclosure-confirmation persistence, credentials, remote migration, WAF, and deployment remain outside V2-7A.
+
+- Added browser-local fixed previews for enrichment and exact example-token explanation, plus structured draft review, edit, reject, accept, and `Add to learning`.
+- Added a pinned Gemini provider adapter, mandatory 90-second timeout, strict formal Route Handler boundary, global atomic Postgres accounting, conservative usage reconciliation, and fail-closed runtime health checks. The formal routes intentionally return a resting state and cannot call Gemini in Stage 7A.
+- Added accepted-only backup/restore and honest `local-fixture` lineage; temporary drafts, rejected content, context Cache, usage buckets, and replay state remain outside user backups.
+- V2-7B must connect the server-owned item lookup, Cache, current Disclosure confirmation, atomic reservation, persistence, and approved provider call before any real route can open. It must generate the bounded draft directly with the accepted pinned Gemini model; Datamuse and Free Dictionary remain excluded.
 - Display one readable supporting line beside each generated draft or its save controls: `Generated by {modelLabel} · AI content may be inaccurate. Please review carefully before saving.` The current accepted label is `Gemini 3.1 Flash-Lite`, derived from server-owned result lineage.
 - Keep Gemini output supplementary; no AI-derived field enters formal learning data without explicit user acceptance.
-- Add atomic quotas, usage reconciliation, WAF rule, provider billing cap, Kill Switch, and minimal audit ledger.
+- Add atomic global quotas, usage reconciliation, Kill Switch, and minimal audit ledger locally; reserve WAF and provider-account changes for separately approved remote execution.
+- Current Stage 7 production-design limits supersede the earlier Stage 2 proposal: no per-person attempt ceiling, 300 global provider attempts per Melbourne budget day, 600,000 input plus 210,000 output/thinking reserved tokens per day, US$0.50 estimated cost per day, US$2 estimated cost per month, and concurrency 2.
 - Run the accepted quality, privacy, cost, abuse, and degraded-mode tests.
 - This stage is required for V2 completion.
 
@@ -639,6 +645,7 @@ npm run typecheck
 npm run test
 npm run backup:dry-run:fixture
 npm run backup:dry-run:schema5-fixture
+npm run backup:dry-run:schema6-fixture
 npm run build
 ```
 

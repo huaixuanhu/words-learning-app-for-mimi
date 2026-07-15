@@ -107,6 +107,7 @@ export function ReviewSession({ zone }: ReviewSessionProps) {
   const {
     data,
     isLoaded,
+    storageRuntime,
     commit,
     today,
     readQueue,
@@ -711,7 +712,15 @@ export function ReviewSession({ zone }: ReviewSessionProps) {
                                   key={`${currentItem.id}-example-${index}`}
                                   example={example}
                                   exampleIndex={index}
+                                  sourceVocabularyItemId={currentItem.id}
                                   sourceSurfaceText={currentItem.surfaceText}
+                                  sourceMeaningsZh={currentMeanings}
+                                  sourceExamples={currentExamples}
+                                  localPreviewEnabled={
+                                    storageRuntime !== "loading" &&
+                                    storageRuntime !== "postgres-preview" &&
+                                    storageRuntime !== "postgres-production"
+                                  }
                                   data={data}
                                   commit={commit}
                                 />

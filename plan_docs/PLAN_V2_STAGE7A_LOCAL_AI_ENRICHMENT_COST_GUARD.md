@@ -1,0 +1,231 @@
+# Words Learning App For Mimi V2 Stage 7A：本地 AI Enrichment 与 Cost Guard
+
+Created: 2026-07-15 AEST
+Last updated: 2026-07-16 AEST
+
+Source plan:
+
+- `plan_docs/PLAN_V2_MASTER.md` 的 `V2-7 AI Enrichment And Cost Guard`
+
+Derived from:
+
+- `plan_docs/PLAN_V2_MASTER.md`
+- `plan_docs/PLAN_V2_STAGE2_AI_QUALITY_SECURITY_GATE.md`
+- `plan_docs/PLAN_V2_STAGE2_B_AI_QUALITY_REFINEMENT.md`
+- `plan_docs/PLAN_V2_STAGE2_B_AI_QUALITY_EVIDENCE.md`
+- `plan_docs/PLAN_V2_STAGE3_DATA_MODEL_BACKUP_PARITY.md`
+- `plan_docs/PLAN_V2_STAGE3_1_REVIEW_INTERACTION_CONTEXT_WORD_ACTIONS.md`
+- `plan_docs/PLAN_V2_STAGE6_ACTIVE_PRACTICE_ENGINE.md`
+- `plan_docs/PLAN_V1_STAGE8_5_DATA_LIFECYCLE_ENVIRONMENT_STRATEGY.md`
+- `ARCHITECTURE.md`
+- `AGENTS.md`
+- 用户在 2026-07-15 对 V2-7A 的确认，以及将 Production 设计限额修订为无个人上限、全应用每日 300 次 provider attempts（供应商调用尝试）和 US$0.50/日
+
+Scope:
+
+- 完成本地、fixture-backed（固定测试数据驱动）的 `enrichment_v1` 与 `context_explain_v1` 正式产品流。
+- 提供严格且保持封闭的 `/api/ai/enrichment` 与 `/api/ai/context-explain` Route Handler（接口处理器），在 Production Basic Auth（基础认证）之外再次检查认证、same-origin（同来源）、JSON Content-Type、body 大小、精确字段和固定 feature/version；Stage 7A 的有效正式请求最终仍返回 resting 状态。
+- 锁定未来正式浏览器请求只能包含 server-owned vocabulary id（服务器拥有的词条编号）、固定功能、Disclosure Version（披露版本）和 Idempotency Key（幂等键）。服务器词条重读、当前 Disclosure 确认和真实外发编排留在 V2-7B，在此之前不存在可提交 provider 的正式路径。
+- 复用 Stage 2 已验证的 Gemini `generateContent` REST request/response、Prompt v2、JSON Schema（JSON 结构）和本地语义校验，不引入 Vercel AI Gateway、自动 provider routing（供应商路由）或自由文本 Prompt。
+- 实现尚未接入正式 Route Handler 的 provider adapter（供应商适配层）与 Postgres atomic accounting（数据库原子核算），以及已接入本地产品流的 fixture provider、bounded Cache、Idempotency；锁定全局 quota（额度）、token/cost reservation（token/费用预留）、usage reconciliation（用量对账）、global concurrency（全局并发）和 Kill Switch（紧急关闭开关）契约。
+- 实现本地模式的诚实来源提示、未来外发字段摘要、降级/错误/Cache 命中状态，以及短而自然的 English-first（英文优先）learner copy（学习者文案）。真实调用前的版本化 Disclosure 确认及确认凭证属于 V2-7B。
+- 实现 enrichment 草稿的预览、逐项编辑/删除、整份拒绝、显式接受，以及 candidate `Add to learning`；保存前确认 Track，重复词条链接到现有 Library 记录。
+- 激活例句 token action 中的 `AI explain` fixture-backed 流程；精确复核 stored example（已保存例句）与 UTF-16 offset（字符位置），并允许将建议内容手动带入 `Add to learning`。
+- 将 accepted enrichment、accepted vocabulary relation 和其最小 AI lineage（AI 血缘）纳入既有 Schema Version 6 / JSON backup version 3 行为；raw Prompt、raw provider response、typed answer 和 audio 不进入正式数据。
+- 添加 focused tests（聚焦测试）、mobile browser acceptance（手机浏览器验收）和 Tier 3 文档/日志同步。
+
+Non-Scope:
+
+- 不读取、复制、修改或使用 `.env.stage2.local`、`.env.local` 或任何 API key。
+- 不发送 Gemini 或其他外部请求，不产生付费调用。
+- 不配置 Production 或 Preview credential，不修改 Vercel WAF，不连接或迁移 Neon，不部署。
+- 不执行 `db/migrations/0003_v2_schema6_data_model.sql`。该 migration 仍是未执行草案；只有本地静态审查证明现有约束不足时，才允许在本阶段补充尚未执行的 forward-only（只向前）草案。
+- 不设置 per-person AI limit（个人 AI 上限）。`person_id` 仍只用于数据归属和审计，不承担防滥用身份边界。
+- 不添加 chat、多轮对话、streaming、工具调用、Search grounding、URL context、File API、audio、microphone、Speech Recognition 或 AI pronunciation scoring。
+- 不添加 Datamuse、Free Dictionary、Groq、provider failover、AI Gateway 或 AI SDK runtime dependency。
+- 不自动接受、自动修改词条、自动创建关系或自动将候选加入学习。
+- 不改 Recognition/Active FSRS、Daily Episode、调度参数、动态效果、Dashboard insight 或 SSO Version-hold 范围。
+
+Exit criteria:
+
+- `enrichment_v1` 和 `context_explain_v1` 具有严格、测试覆盖的 browser request、trusted source、provider request、structured result 和 lifecycle contract。
+- Route Handler 在 handler 内重新检查 Basic Auth，拒绝错误来源、错误 Content-Type、超大 body、未知字段、raw Prompt、model/token/tool control 和过期 Disclosure Version；Stage 7A 没有真实确认状态，且正式请求始终保持封闭。
+- browser-local fixture provider 可以从当前 `localStorage` 词条完整演示生成、Cache、编辑、拒绝、接受和 `Add to learning`，且不会被展示成真实 Gemini 输出。它不调用 `/api/ai/*`，也不把 lexical fields 发送到服务器。
+- Production-capable provider adapter（可用于正式环境的供应商适配层）保持 lazy initialization（按需初始化）、server-only key、pinned model、no tools、no grounding、no retry、700 output/thinking token 上限和 strict local validation；本阶段不调用它。
+- 全局日限额为 300 provider attempts，日 input/output reservation 分别为 600,000 / 210,000 tokens，日估算费用上限为 US$0.50，月估算费用上限为 US$2，并发上限为 2；不存在个人调用上限。
+- 按 Standard price US$0.25 / 1M input tokens 和 US$1.50 / 1M output/thinking tokens 计算，满额 token envelope（token 范围）为 US$0.465，低于独立 US$0.50 日上限。
+- Dormant Postgres accounting 在单元测试中证明：未来每次新 provider attempt 必须先完成 atomic global reservation（全局原子预留）；`429`、timeout、safety refusal、invalid structure 和 ambiguous network failure 保留 attempt count。可靠 usage metadata 存在时才对 token/cost reservation 做保守对账。Stage 7A 正式路由没有 provider attempt。
+- 本地 Cache hit 与 Idempotency replay 不产生新结果；Dormant Postgres accounting 会在检查新调用额度前处理同一 Idempotency Key 的 replay，不同请求复用同一 key 会被拒绝。
+- Kill Switch、provider missing、stale pricing、quota exhausted、accounting unavailable 和 fixture-only 状态都返回短、低压力、可区分的降级结果；Recognition、Active、SpeechSynthesis 和已接受 AI 数据继续可用。
+- 本地 `AI explain` 只接受从当前已保存例句重新构造的一个 exact actionable token span，并保留 example index/start/end，避免重复词位置合并；context Cache TTL 固定为 7 天，source/model/Prompt/schema/disclosure 任一版本变化即失效，并通过读写时 bounded lazy expiry（有界惰性过期）清理，不新增 scheduled job。V2-7B 必须在服务器再次执行同样的词条重读。
+- AI-generated draft 显示 server-owned lineage 文案：`Generated by Gemini 3.1 Flash-Lite · AI content may be inaccurate. Please review carefully before saving.` Fixture 模式显示 `Local preview · No AI request was made.`，不冒充 Gemini。
+- accepted draft/content 与其引用的最小 run lineage 可备份/恢复；pending/unaccepted draft、rejected content、unreferenced runs、usage buckets、replay state 和 context Cache 不进入用户 JSON backup。
+- lint、typecheck、全量 tests、三套 backup dry-run、build、governance preflight、diff check 和 320–1280 px 浏览器矩阵通过。
+- README、Architecture、AGENTS、V2 master、Changelog 和 AI Agent Log 与实现一致。
+
+Document nature:
+
+本文件是 V2-7 的本地实现子计划，不是新的平级 V2 主计划。它只授权本地代码、fixture 数据和本地验证。真实 Gemini 调用、credential、远程 migration、WAF 和 deployment 需要后续 `V2-7B` / `V2-8` 的独立确认。
+
+Status: complete locally on 2026-07-16. The formal Gemini path remains closed. No external call, credential access, remote database action, WAF change, or deployment was authorized or performed.
+
+## 决策摘要
+
+### 当前全局成本边界
+
+Stage 2 文档保留当时 100/person/day 与 200/global/day 的历史证据。自 V2-7A 起，当前 Production 设计由用户修订为：
+
+| Guard | V2-7A value |
+| --- | ---: |
+| Per-person attempts | none |
+| Global provider attempts / Melbourne budget day | 300 |
+| Global concurrency | 2 |
+| Reserved input / attempt | 2,000 tokens |
+| Reserved output/thinking / attempt | 700 tokens |
+| Global input / day | 600,000 tokens |
+| Global output/thinking / day | 210,000 tokens |
+| Estimated cost / day | US$0.50 |
+| Estimated cost / month | US$2.00 |
+
+`person_id` 可被浏览器选择，所以个人计数从未构成安全边界。取消个人上限会减少误伤；全应用 request/token/cost/concurrency/Kill Switch 继续负责阻止 token 爆破。
+
+### Provider 与 UI 边界
+
+V2-7A 的正式 UI 处理 strict structured fields（严格结构字段），不是 chat 或 markdown narrative（自由文本叙述）。因此直接渲染为 editable inputs、lists 和 comparison pairs；不引入 AI Elements。所有字段在显示和保存前都通过现有长度、URL、候选形态、重复项和 example-pair 校验。
+
+Provider adapter 继续使用 Stage 2 已验证的 stateless `generateContent` REST 请求。虽然官方现在也提供 Interactions API，本项目没有多轮状态需求，并继续避免默认 conversation state（对话状态）存储。
+
+### Disclosure Gate
+
+第一次真实外发前必须展示并确认版本化 Disclosure：
+
+- Provider 和 model label；
+- 将发送：term、当前 Chinese meanings、当前 examples；
+- 不发送：person identity、private notes、tags、timestamps、review history、ratings、daily goals、typed answers、audio；
+- Paid content 不用于改进 Google products；仍可能存在有限的 safety/abuse/legal processing 和独立 usage/technical metadata；
+- 当前全局 request/token/cost/concurrency/Kill Switch 边界；
+- AI 内容可能不准确，所有正式保存均由用户编辑和确认。
+
+本地 fixture preview 不需要伪造外发确认，也不得把 fixture 结果标成 Gemini output。未来真实调用必须提供当前 Disclosure Version；provider、terms、sent fields、model family 或 retention statement 的实质变化会使旧确认失效。
+
+## Runtime 设计
+
+### Route Handlers
+
+```text
+POST /api/ai/enrichment
+POST /api/ai/context-explain
+```
+
+Stage 7A 的每条 Route Handler 按顺序执行：
+
+1. handler 内重新检查 Production Basic Auth；
+2. 只允许 same-origin JSON POST，并限制原始 body bytes；
+3. exact-field validator；
+4. 评估 Kill Switch、provider/configuration、pricing freshness 和 accounting health；
+5. 无论配置如何，返回 `resting` / `fixture_only`，不进入词条读取、核算或 provider adapter。
+
+V2-7B 才能在新的明确批准后加入并启用以下顺序：server-side person/item lookup、当前 Disclosure 确认、Cache / Idempotency lookup、global atomic reservation、Gemini adapter、strict result validation、usage reconciliation、minimal persistence 和 server-owned lineage response。正式 route activation 前不得跳过其中任何一层。
+
+生产路径在缺少 Schema Version 6、server key、enabled flag、fresh price 或 accounting transaction 时 fail closed（关闭式失败）。Local fixture path 只在浏览器内用于本地体验和测试，不向 `/api/ai/*` 或外部网络发送 lexical data。
+
+### Cache 与 Idempotency
+
+本地 Enrichment Cache key 包含 source payload、feature、Prompt/schema/disclosure/model version。Context key 额外包含 exact example index/start/end，并有 7 天 TTL。两类 Cache 与本地 Idempotency map 均限制为最多 128 项并在读写时清理；浏览器不能提供内部 Cache key。
+
+未来正式 Enrichment Cache key 必须包含 person、source item、source hash、feature、Prompt/schema/disclosure/model/pricing version。正式 Context key 额外包含 exact example index/start/end。
+
+- Cache 只复用 strict-valid result；
+- source edit 会改变 source hash 并使旧 Cache 不可用；
+- Dormant Postgres accounting 中，successful idempotent replay 返回原 run，且 replay 顺序早于 quota/concurrency 检查；
+- future in-progress replay 必须返回稳定的 `already_processing`；
+- same key + different canonical request hash 返回 `idempotency_conflict`；
+- context Cache 7 天后失效；
+- 无后台清理任务，采用读写时 bounded lazy cleanup。
+
+### Fixture Provider
+
+Browser-local fixture provider 根据当前本地 source term 和 feature 返回 deterministic（确定性的）strict result，用于：
+
+- 演示 UI 和状态；
+- 验证 Cache / replay；
+- 验证 edit/accept/reject/Add to learning；
+- 演练 provider error categories；
+- 确保没有 network call。
+
+它只在显式 local fixture mode 下启用，响应 lineage 为 `Local preview`，model 为 `fixture-v1`。它不调用正式 Route Handler。Production 和 Preview 不能把 fixture 当作 Gemini 结果。
+
+## Human Acceptance
+
+### Enrichment draft
+
+- `additionalMeaningsZh`、`examples`、`similarWords` 和 `confusableWords` 均可逐项修改或删除。
+- 保存前再次运行 strict validator；无效编辑不会写入正式数据。
+- `Reject` 只终止该草稿；不会删除 source vocabulary item。
+- `Accept selected` 保存最终 edited content 与最小 successful run lineage。
+- 原始 provider draft 保留在 application draft lifecycle；用户备份只携带 accepted content。
+
+### Add to learning
+
+- 只能从 visible accepted/preview candidate 或 context suggestion 发起；
+- 打开普通 vocabulary form，允许修改 word/meaning/example；
+- 必须最终确认 Recognition 或 Active Track；
+- duplicate search 覆盖 active、archived 和另一个 Track；
+- 已存在时链接到 Library 记录，不创建第二个 entry；
+- 词面仍与 accepted candidate 相同，新建成功后才写 `sourceKind = ai_add_to_learning` creation fact 与 matching vocabulary relation；用户修改词面时按普通 manual creation 保存，不附加 AI relation；
+- relation 与 accepted source run 使用同一 successful `enrichment_v1` lineage。Context explanation 手动加入若没有 enrichment relation 语义，则走普通 manual creation，不伪造 relation。
+
+## Test Matrix
+
+- strict request/body/origin/auth/content-type/unknown-field rejection；
+- trusted vocabulary ownership 与 exact context span；
+- outbound allowlist 与 source hash；
+- fixture/Gemini lineage 区分；
+- 300 attempts、600k/210k tokens、US$0.50/day、US$2/month、concurrency 2；
+- 无个人限额和不可依赖 `person_id` 逃逸全局边界；
+- parallel reservation race（并行预留竞争）、rollback/reconcile、429/timeout/invalid usage；
+- Cache hit、source edit invalidation、7-day context expiry、idempotent replay/conflict；
+- Kill Switch 和所有 degraded states；
+- edit/reject/accept lifecycle、duplicate guard、Track confirmation、relation lineage；
+- backup accepted-only filtering 与 Schema Version 6 static parity；
+- mobile dialog/bottom sheet、keyboard、focus、light/dark、reduced-motion existing behavior；
+- secret/network guard：Stage 7A test process 不读取 `.env*`，provider fixture 禁止 fetch。
+
+## Implementation Outcome
+
+Stage 7A 完成的本地能力：
+
+- Library 可打开 honest `Local preview`，逐项编辑、Reject、Accept，并在确认 Track 后加入学习；同词条复用已有记录。
+- 例句 exact token 可执行 browser speech、local explanation 和 manual Add to learning；重复词位置保留 example index 与 start/end，不共用错误的 Cache key。
+- Fixture draft、Context Cache 和 Idempotency 均为 versioned、bounded、lazy-cleaned；整个本地界面没有 `fetch`，不会把 lexical data 发送到 Route Handler 或外部服务。
+- Accepted fixture lineage、draft 和 relation 可进入 JSON backup；临时、拒绝和 operational data 被排除。Restore 与 import planner 会重新执行严格 draft 校验，并拒绝伪装成 Gemini 的 `local-fixture` lineage。
+- Restore 对 accepted draft 执行独立的结构、安全与内部重复校验，不会因为 source 后来吸收同一释义/例句而重新套用 generation-time novelty（生成时新增性）并拒绝历史证据。Source 在接受后发生 lexical edit（词汇内容修改）时，旧 draft 仍可备份，但不能再建立 candidate relation，必须生成并接受 fresh preview。
+- Postgres import 会把 `ai_add_to_learning` creation action 一并 remap 到 retained draft；source hard delete 或 Batch rollback 主动移除 lineage 后，派生词条显示中性的 `Suggestion added`，不会把 local fixture 错标为真实 AI。
+- Dormant Gemini adapter 固定 `gemini-3.1-flash-lite`、no tools、minimal thinking、700 output/thinking 上限、无自动重试，并以 90 秒 hard timeout 小于 2 分钟 accounting lease。
+- Dormant Postgres accounting 使用 Melbourne global day/month/concurrency buckets、advisory idempotency lock、先 replay 后 quota、新调用原子预留、可靠 usage 才保守对账；successful settlement 必须携带非空且已校验的 provider usage，不存在 personal bucket。
+- `/api/ai/enrichment` 与 `/api/ai/context-explain` 完成 auth/origin/content-type/body/exact-field/fail-closed 边界，但仍有不可移除的 Stage 7A `fixture_only` gate。
+
+明确留给 V2-7B 的工作：
+
+- 版本化 Disclosure 的实际确认 UI、确认时间与 person/session/version 证据；
+- 服务器词条归属重读、formal Cache、完整 Idempotency result replay 与最小 persistence 编排；
+- 将 atomic accounting 与 provider adapter 接入 route，并仅用另行批准的 non-Production credential 做 synthetic smoke；
+- observed model/usage/cost reconciliation 验证。完成这些条件前，任何配置组合都不能提交真实 Gemini 请求。
+
+最终本地验收已通过：ESLint、TypeScript、53 files / 328 tests（现有 Postgres integration file/test 跳过）、三套 backup dry-run、Next.js Production build、Tier 3 governance preflight 和 `git diff --check`。Forced-local browser acceptance 在 320、390、768、1024、1280 px 均无横向溢出或 console warning/error，并覆盖多行预览、显式接受、Active candidate 加入、exact-token 本地解释和无真实释义时保持 meaning 空白。Next.js 检测到普通且被 Git 忽略的 `.env.local`，但 agent 未检查其中任何值或凭证；未发生 provider 或远程数据库调用。
+
+## 后续 Gate
+
+### V2-7B
+
+需要新的明确批准后才可：
+
+- 使用单独的 non-Production credential；
+- 发送 synthetic fixture；
+- 进行最小真实 Gemini adapter smoke；
+- 验证 observed model、usage metadata、thinking behavior、cost reconciliation 和 disclosure；
+- 仍不迁移 Production 或部署。
+
+### V2-8
+
+继续负责 Dashboard insight、Staging migration rehearsal、Preview、WAF、Production backup、Production credential、migration、deployment 和最终 smoke；每项远程动作仍有独立批准。

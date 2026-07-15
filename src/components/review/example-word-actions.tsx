@@ -12,11 +12,23 @@ import { segmentEnglishExample } from "@/lib/vocabulary/example-segmentation";
 import { normalizeTextList } from "@/lib/vocabulary/normalize";
 import { addVocabularyItem } from "@/lib/vocabulary/repository";
 import type { LearningTrack, VocabularyData } from "@/lib/vocabulary/types";
+import { AI_DISCLOSURE_VERSION } from "@/lib/ai-enrichment/contract";
+import { buildTrustedAiContextPayload } from "@/lib/ai-enrichment/context-contract";
+import {
+  LOCAL_FIXTURE_LINEAGE,
+  runLocalFixtureContextExplanation,
+} from "@/lib/ai-enrichment/local-fixture-runtime";
+import type { AiContextExplanation } from "@/lib/ai-enrichment/types";
+import { makeId } from "@/lib/vocabulary/repository";
 
 type ExampleWordActionsProps = Readonly<{
   example: string;
   exampleIndex: number;
+  sourceVocabularyItemId: string;
   sourceSurfaceText: string;
+  sourceMeaningsZh: readonly string[];
+  sourceExamples: readonly string[];
+  localPreviewEnabled: boolean;
   data: VocabularyData;
   commit: (
     nextData: VocabularyData,
@@ -37,7 +49,11 @@ function detectTimezone() {
 export function ExampleWordActions({
   example,
   exampleIndex,
+  sourceVocabularyItemId,
   sourceSurfaceText,
+  sourceMeaningsZh,
+  sourceExamples,
+  localPreviewEnabled,
   data,
   commit,
 }: ExampleWordActionsProps) {
@@ -50,6 +66,8 @@ export function ExampleWordActions({
   const [draftTrack, setDraftTrack] = useState<LearningTrack>("recognition");
   const [message, setMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [isExplaining, setIsExplaining] = useState(false);
+  const [explanation, setExplanation] = useState<AiContextExplanation | null>(null);
   const titleId = useId();
   const dialogRef = useRef<HTMLElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -120,12 +138,15 @@ export function ExampleWordActions({
     setDraftTrack("recognition");
     setMessage("");
     setIsSaving(false);
+    setIsExplaining(false);
+    setExplanation(null);
   };
 
   const closeWordActions = () => {
     setSelectedWord(null);
     setShowAddForm(false);
     setMessage("");
+    setExplanation(null);
   };
 
   const listen = () => {
@@ -141,6 +162,57 @@ export function ExampleWordActions({
           ? `Playing “${result.spokenText}”.`
           : "Choose a word to hear it.",
     );
+  };
+
+  const explainInContext = () => {
+    if (!selectedWord || !localPreviewEnabled || isExplaining) {
+      return;
+    }
+
+    setIsExplaining(true);
+    setMessage("");
+    try {
+      const trustedContext = buildTrustedAiContextPayload(
+        {
+          vocabularyEntryId: sourceVocabularyItemId,
+          exampleIndex,
+          selectedStart: selectedWord.start,
+          selectedEnd: selectedWord.end,
+          feature: "context_explain_v1",
+          disclosureVersion: AI_DISCLOSURE_VERSION,
+          idempotencyKey: makeId("local_context_preview"),
+        },
+        {
+          surfaceText: sourceSurfaceText,
+          meaningsZh: sourceMeaningsZh,
+          examples: sourceExamples,
+        },
+      );
+      const result = runLocalFixtureContextExplanation(
+        trustedContext,
+        makeId("local_context_result"),
+      );
+      setExplanation(result.value);
+      setMessage(
+        result.cacheStatus === "cached"
+          ? "Loaded the cached local preview."
+          : "Local preview ready.",
+      );
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Could not explain this word.");
+    } finally {
+      setIsExplaining(false);
+    }
+  };
+
+  const openManualAddForm = (contextResult?: AiContextExplanation) => {
+    setShowAddForm(true);
+    setDraftWord(contextResult?.suggestedHeadword ?? selectedWord?.text ?? "");
+    setDraftMeaning(
+      localPreviewEnabled ? "" : contextResult?.meaningInContextZh ?? "",
+    );
+    setDraftExample(example);
+    setMessage("");
   };
 
   const saveToLearning = async (event: FormEvent<HTMLFormElement>) => {
@@ -245,18 +317,18 @@ export function ExampleWordActions({
                 </PressableButton>
                 <PressableButton
                   type="button"
-                  disabled
-                  aria-describedby={`${titleId}-ai-resting`}
+                  disabled={!localPreviewEnabled || isExplaining}
+                  aria-describedby={`${titleId}-ai-note`}
+                  onClick={explainInContext}
                   className="mimi-button-secondary mimi-focus-ring inline-flex items-center justify-center gap-2 px-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-55"
                 >
                   <Sparkles aria-hidden="true" className="size-4" />
-                  AI explain
+                  {isExplaining ? "Explaining..." : "AI explain"}
                 </PressableButton>
                 <PressableButton
                   type="button"
                   onClick={() => {
-                    setShowAddForm(true);
-                    setMessage("");
+                    openManualAddForm();
                   }}
                   className="mimi-button-secondary mimi-focus-ring inline-flex items-center justify-center gap-2 px-3 text-sm font-semibold"
                 >
@@ -265,9 +337,43 @@ export function ExampleWordActions({
                 </PressableButton>
               </div>
 
-              <p id={`${titleId}-ai-resting`} className="mt-2 text-xs leading-5 text-[var(--mimi-text-muted)]">
-                AI explanation is resting for now.
+              <p id={`${titleId}-ai-note`} className="mt-2 text-xs leading-5 text-[var(--mimi-text-muted)]">
+                {localPreviewEnabled
+                  ? LOCAL_FIXTURE_LINEAGE.notice
+                  : "AI explanation is resting for this storage mode."}
               </p>
+
+              {explanation ? (
+                <div className="mt-4 grid gap-3 rounded-md border border-[var(--mimi-border)] bg-[var(--mimi-surface-muted)] p-3">
+                  <div className="flex flex-wrap items-baseline justify-between gap-2">
+                    <p className="text-lg font-semibold text-[var(--mimi-text)]">
+                      {explanation.suggestedHeadword}
+                    </p>
+                    <span className="mimi-pill px-2 py-1 text-xs font-semibold">
+                      {explanation.grammarRoleZh}
+                    </span>
+                  </div>
+                  <p className="text-sm font-semibold text-[var(--mimi-primary-deep)]">
+                    {explanation.meaningInContextZh}
+                  </p>
+                  <p className="text-sm leading-6 text-[var(--mimi-text-soft)]">
+                    {explanation.contextExplanationZh}
+                  </p>
+                  {explanation.phraseInContext ? (
+                    <p className="text-xs text-[var(--mimi-text-muted)]">
+                      In this example: {explanation.phraseInContext}
+                    </p>
+                  ) : null}
+                  <PressableButton
+                    type="button"
+                    onClick={() => openManualAddForm(explanation)}
+                    className="mimi-button-secondary mimi-focus-ring inline-flex items-center justify-center gap-2 px-3 text-sm font-semibold"
+                  >
+                    <BookPlus aria-hidden="true" className="size-4" />
+                    Use this in Add to learning
+                  </PressableButton>
+                </div>
+              ) : null}
 
               {showAddForm ? (
                 <form className="mt-4 grid gap-3 border-t border-[var(--mimi-border)] pt-4" onSubmit={saveToLearning}>

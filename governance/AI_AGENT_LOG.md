@@ -1,5 +1,33 @@
 # AI Agent Log
 
+## 2026-07-16 00:27 AEST
+
+- Task: continue the user-confirmed V2 Stage 7A from the interrupted model-capacity checkpoint and implement the local AI enrichment/context experience plus dormant Production safety boundary.
+- Plan agreed: yes. The user approved the documentation-first Stage 7A scope and then revised the current design to no personal attempt ceiling, 300 global attempts per day, and a US$0.50 daily estimated-cost ceiling.
+- Working tier: Tier 3. Local plans, code, deterministic fixtures, strict dormant routes/adapters/accounting, accepted-only backup, tests, and documentation were in scope. Credential/environment access, external provider requests, remote databases, migrations, Production data, WAF, Vercel, deployment, and GitHub remote actions were outside scope.
+- Changed files:
+  - `enrichment_v1` and `context_explain_v1` contracts, local fixture runtime, strict request guards, runtime availability, direct Gemini adapter, formal Route Handlers, and dormant Postgres accounting;
+  - Library AI suggestions, exact-span example-word explanation, editable accept/reject state, duplicate-aware Track addition, relation lineage, accepted-only backup/import behavior, and focused UI/domain/route tests;
+  - the Stage 7A child/master plan, Schema Version 6 unexecuted draft, architecture, README, AGENTS, Version-hold, changelog, and this log.
+- Reason: make the AI review, editing, acceptance, and optional vocabulary-addition flow usable locally while keeping real study-data transmission, paid use, and remote persistence closed until a separately approved Stage 7B.
+- Decisions:
+  - browser-local preview makes no `/api/ai/*` or provider request and always identifies `provider = local-fixture`, `model = fixture-v1`, and `Local preview · No AI request was made.`;
+  - only accepted enrichment and referenced minimal lineage enter learner backup; pending/rejected drafts, context Cache, quota, and replay records stay operational and excluded;
+  - accepted content is restored as historical evidence with standalone safety/shape validation, so a later source edit cannot make the app reject its own backup; the same edit blocks any new candidate relation until a fresh preview is accepted;
+  - backup import remaps `ai_add_to_learning` actions to the retained accepted draft. If source deletion or Batch rollback intentionally removes that lineage, the surviving target uses the neutral `Suggestion added` label rather than being misidentified as remote AI;
+  - formal routes currently enforce Basic Auth, same-origin bounded JSON, exact public fields, Disclosure Version, and runtime availability before returning a calm resting result; server-trusted vocabulary/context lookup, persisted disclosure confirmation, accounting, and provider orchestration remain Stage 7B work;
+  - Gemini remains pinned, server-only, tool-free, retry-free, structure-validated, and subject to a 90-second timeout. Its adapter was tested with local doubles and was not called externally;
+  - there is no V2 personal AI attempt ceiling. Server-owned Melbourne global boundaries are 300 attempts, 600,000 input tokens, 210,000 output/thinking tokens, and US$0.50 estimated cost per day, US$2 per month, and concurrency 2;
+  - atomic Postgres reservation/settlement and stale in-flight recovery are implemented as dormant-tested code. `person_id` remains audit/data scope and cannot partition the global budget;
+  - a successful Postgres settlement requires non-null validated provider usage metadata at both the TypeScript and runtime/Schema-draft boundaries; rejected or failed calls may retain the conservative reservation when usage is unavailable;
+  - Stage 7B requires a new approval, suitable non-Production credential, and confirmation of the then-current provider/data/retention/cost disclosure before the first real call.
+- Validation:
+  - Passed: `npm run lint` and `npm run typecheck`.
+  - Passed: full Vitest with 53 files / 328 tests passed and the existing Postgres integration file/test intentionally skipped.
+  - Passed: schema 3, 5, and 6 backup dry-runs, Next.js Production build, Tier 3 governance preflight, and `git diff --check`.
+  - Passed: forced-local browser acceptance at 320, 390, 768, 1024, and 1280 px with no horizontal overflow or console warning/error. It covered editable multiline preview acceptance, candidate addition to Active with honest `Local preview added` lineage, exact example-token explanation, and the local-preview blank-meaning safeguard.
+- Safety notes: Next.js detected the ordinary ignored `.env.local` during local startup/build, but no environment value, credential, token, or connection string was inspected, printed, copied, changed, or staged by the agent. No Gemini/provider request, charge, remote database connection/transaction, SQL migration, remote import/restore, Production write, WAF/Vercel action, deployment, commit, push, pull request, or merge occurred. Live V1 remains Schema Version 5 and `0003_v2_schema6_data_model.sql` remains unexecuted.
+
 ## 2026-07-15 19:20 AEST
 
 - Task: execute the user-confirmed V2 Stage 6 and explicitly prevent independent Active scheduling from repeating the final-pass mismatch repaired in Stage 5.1.

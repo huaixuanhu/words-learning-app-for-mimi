@@ -58,7 +58,7 @@ export type AiRunRecord = {
   personId: string;
   sourceVocabularyItemId: string | null;
   feature: AiFeature;
-  provider: "google-gemini-api";
+  provider: "google-gemini-api" | "local-fixture";
   model: string;
   modelLabel: string;
   promptVersion: string;
@@ -126,7 +126,6 @@ export type VocabularyRelationRecord = {
 export type AiUsageBucketScope =
   | "global_day"
   | "global_month"
-  | "person_day"
   | "global_concurrency";
 
 export type AiUsageBucketRecord = {

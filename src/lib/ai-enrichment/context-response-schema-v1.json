@@ -1,0 +1,19 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "suggestedHeadword",
+    "meaningInContextZh",
+    "grammarRoleZh",
+    "contextExplanationZh",
+    "phraseInContext"
+  ],
+  "properties": {
+    "suggestedHeadword": { "type": "string" },
+    "meaningInContextZh": { "type": "string" },
+    "grammarRoleZh": { "type": "string" },
+    "contextExplanationZh": { "type": "string" },
+    "phraseInContext": { "type": ["string", "null"] }
+  }
+}
+

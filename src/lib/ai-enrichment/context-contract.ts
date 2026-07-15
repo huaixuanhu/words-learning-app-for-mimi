@@ -179,6 +179,9 @@ export function buildTrustedAiContextPayload(
     sourceTerm,
     sourceMeaningsZh,
     example,
+    exampleIndex: request.exampleIndex,
+    selectedStart: selected.start,
+    selectedEnd: selected.end,
     selectedText: selected.text,
   };
 

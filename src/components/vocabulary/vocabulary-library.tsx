@@ -1,10 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { Archive, ArrowRightLeft, Download, RotateCcw, Save, Search, Trash2, Upload } from "lucide-react";
+import { Archive, ArrowRightLeft, Download, RotateCcw, Save, Search, Sparkles, Trash2, Upload } from "lucide-react";
 import { useMemo, useState } from "react";
 import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
-import type { ImportBatch, UpdateVocabularyInput, VocabularyItem } from "@/lib/vocabulary/types";
+import type {
+  ImportBatch,
+  UpdateVocabularyInput,
+  VocabularyItem,
+} from "@/lib/vocabulary/types";
 import { getSelectedPersonId } from "@/lib/people/repository";
 import {
   archiveVocabularyItem,
@@ -29,6 +33,9 @@ import {
 import { useVocabularyData } from "./use-vocabulary-data";
 import { PressableButton } from "@/components/ui/motion-primitives";
 import { getLearningStage } from "@/lib/daily-study/runtime-engine";
+import { AiEnrichmentDialog } from "@/components/ai/ai-enrichment-dialog";
+import { getVocabularySourceLabel } from "@/lib/ai-enrichment/source-label";
+import { isPostgresClientStorageRuntime } from "./use-vocabulary-data";
 
 type LibraryFilter =
   | "all"
@@ -126,18 +133,6 @@ function detectTimezone(fallback = "Australia/Melbourne") {
   }
 }
 
-function getSourceLabel(source: VocabularyItem["source"]) {
-  if (source === "json_file" || source === "json_paste") {
-    return "Batch imported";
-  }
-
-  if (source === "manual") {
-    return "Manual";
-  }
-
-  return "Text imported";
-}
-
 function getBatchLabel(batch: ImportBatch) {
   const sourceLabel =
     batch.sourceType === "json_file" || batch.sourceType === "json_paste"
@@ -150,13 +145,14 @@ function getBatchLabel(batch: ImportBatch) {
 }
 
 export function VocabularyLibrary() {
-  const { data, isLoaded, commit } = useVocabularyData();
+  const { data, isLoaded, storageRuntime, commit } = useVocabularyData();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<LibraryFilter>("all");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<EditDraft | null>(null);
   const [pendingAction, setPendingAction] = useState<PendingLibraryAction | null>(null);
   const [message, setMessage] = useState("");
+  const [aiPreviewItemId, setAiPreviewItemId] = useState<string | null>(null);
 
   const selectedPersonId = getSelectedPersonId(data);
   const allItems = getVocabularyItemsForSelectedPerson(data);
@@ -267,6 +263,11 @@ export function VocabularyLibrary() {
         ),
     );
   }, [activeItems, activeTrackItems, allItems, archivedItems, filter, learningStageById, query, recognitionItems, weakWordIds]);
+  const aiPreviewItem = aiPreviewItemId
+    ? data.items.find(
+        (item) => item.id === aiPreviewItemId && item.personId === selectedPersonId,
+      ) ?? null
+    : null;
 
   const startEditing = (item: VocabularyItem) => {
     setEditingId(item.id);
@@ -713,7 +714,7 @@ export function VocabularyLibrary() {
                         <div className="flex flex-wrap items-center gap-2">
                           <h2 className="mimi-word-serif text-2xl text-[#203229]">{item.surfaceText}</h2>
                           <span className="mimi-pill px-2 py-1 text-xs font-semibold">
-                            {getSourceLabel(item.source)}
+                            {getVocabularySourceLabel(data, item)}
                           </span>
                           {!item.archivedAt ? (
                             <span className="mimi-pill px-2 py-1 text-xs font-semibold">
@@ -762,6 +763,16 @@ export function VocabularyLibrary() {
                         </p>
                       </div>
                       <div className="flex flex-wrap items-start gap-2 md:justify-end">
+                        {!item.archivedAt ? (
+                          <PressableButton
+                            type="button"
+                            onClick={() => setAiPreviewItemId(item.id)}
+                            className="mimi-button-secondary mimi-focus-ring inline-flex items-center gap-2 px-3 text-sm font-semibold"
+                          >
+                            <Sparkles aria-hidden="true" className="size-4" />
+                            AI suggestions
+                          </PressableButton>
+                        ) : null}
                         <PressableButton
                           type="button"
                           onClick={() => startEditing(item)}
@@ -819,6 +830,18 @@ export function VocabularyLibrary() {
           </p>
         )}
       </div>
+
+      <AiEnrichmentDialog
+        open={Boolean(aiPreviewItem)}
+        onClose={() => setAiPreviewItemId(null)}
+        item={aiPreviewItem}
+        data={data}
+        localPreviewEnabled={
+          storageRuntime !== "loading" &&
+          !isPostgresClientStorageRuntime(storageRuntime)
+        }
+        commit={commit}
+      />
 
       <ResponsiveDialog
         open={Boolean(pendingAction)}

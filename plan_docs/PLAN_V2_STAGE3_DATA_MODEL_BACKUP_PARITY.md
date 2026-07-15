@@ -68,6 +68,17 @@ Status: local implementation complete on 2026-07-14. The user authorized this st
 
 The amendment passed local/static tests only. It did not execute the migration or contact a remote database.
 
+## Stage 7A Child Amendment
+
+`plan_docs/PLAN_V2_STAGE7A_LOCAL_AI_ENRICHMENT_COST_GUARD.md` later amended the still-unexecuted `0003` draft and the accepted-only backup contract without changing Schema Version 6 or JSON backup version 3:
+
+- accepted local fixture enrichment records keep honest `provider = local-fixture` and `model = fixture-v1` lineage instead of imitating a Gemini run;
+- successful accepted fixture content and its referenced minimal run lineage can round-trip through JSON backup/import, while pending/rejected drafts remain excluded;
+- `ai_usage_buckets` now reserves only global-day, global-month, and global-concurrency accounting; the earlier Stage 3 `person_day` proposal is superseded because browser-selectable `person_id` is not a security or cost boundary;
+- formal Postgres reservation/reconciliation, Idempotency Key replay protection, stale in-flight recovery, and the 90-second provider timeout are implemented as dormant-tested paths and do not authorize a provider call or remote migration.
+
+The Stage 7A amendment passed the full local suite (53 files / 328 tests passed; the existing Postgres integration file/test skipped), schema 3, 5, and 6 backup dry-runs, build, governance, diff, and browser acceptance at 320–1280 px. Accepted historical content survives later source edits, retained AI creation actions remap to their accepted draft, source deletion/rollback keeps a neutral surviving label, and successful non-fixture settlement requires provider usage metadata. Next.js detected the ordinary ignored `.env.local`, but the agent inspected no environment value or credential. No provider or remote database was called, and the migration remains unexecuted.
+
 ## Decision Summary
 
 ### Version choice
@@ -224,12 +235,12 @@ Both item references are person-scoped. Deleting either live entry removes the r
 
 The SQL migration reserves these server-owned domains:
 
-- `ai_usage_buckets`: atomic global-day, global-month, person-day, and concurrency reservations;
+- `ai_usage_buckets`: atomic global-day, global-month, and concurrency reservations under the later Stage 7A amendment; the original person-day proposal is retained above only as historical design context;
 - `study_command_idempotency`: seven-day study/reset replay protection from Stage 1;
 - AI idempotency/Cache identity in the minimal run ledger;
 - future Cache payloads and WAF/provider-side counters.
 
-These records are not learner-authored content and restoring them could replay stale commands or incorrectly consume/release quota. They are therefore excluded from `VocabularyData`, `/api/storage/data`, JSON backup, and backup import mappings. V2-7 must implement reservation/reconciliation transactions before activating a provider route; this stage supplies only the constrained storage contract and static tests.
+These records are not learner-authored content and restoring them could replay stale commands or incorrectly consume/release quota. They are therefore excluded from `VocabularyData`, `/api/storage/data`, JSON backup, and backup import mappings. Stage 7A implements dormant-tested reservation/reconciliation code while keeping the provider route fail-closed; activation still requires the later approved credential, disclosure, environment, migration, and release gates.
 
 ## Mutation And Deletion Rules
 

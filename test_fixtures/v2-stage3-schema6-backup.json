@@ -238,7 +238,7 @@
         "creationFactId": "creation_fact_v2_stage3_adopt",
         "personId": "person_v2_stage3_schema6_fixture",
         "originalVocabularyItemId": "vocab_v2_stage3_adopt",
-        "sourceActionId": "ai_add_action_v2_stage3",
+        "sourceActionId": "ai_draft_v2_stage3_adapt",
         "trackAtCreation": "active",
         "sourceKind": "ai_add_to_learning",
         "historyOrigin": "recorded",
@@ -300,8 +300,8 @@
         "aiRunId": "ai_run_v2_stage3_adapt",
         "status": "accepted",
         "draft": {
-          "additionalMeaningsZh": ["适应"],
-          "examples": ["It takes time to adapt to a new routine."],
+          "additionalMeaningsZh": ["改编"],
+          "examples": ["People adapt gradually."],
           "similarWords": [],
           "confusableWords": [
             {
@@ -313,8 +313,8 @@
           ]
         },
         "acceptedContent": {
-          "additionalMeaningsZh": ["适应"],
-          "examples": ["It takes time to adapt to a new routine."],
+          "additionalMeaningsZh": ["改编"],
+          "examples": ["People adapt gradually."],
           "similarWords": [],
           "confusableWords": [
             {

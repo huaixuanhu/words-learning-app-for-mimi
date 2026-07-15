@@ -11,6 +11,7 @@ import {
   STAGE6B_P1E_SCHEMA5_FIXTURE_FILE_NAME,
   V2_STAGE3_SCHEMA6_FIXTURE_FILE_NAME,
 } from "./backup-import-plan.mjs";
+import { parseVocabularyBackupText } from "../src/lib/backup/json-backup";
 
 function createUuidFactory() {
   let next = 1;
@@ -233,6 +234,11 @@ describe("Stage 5L backup import plan", () => {
       status: "accepted",
       aiRunId: plan.rows.aiRuns[0].id,
     });
+    expect(
+      plan.rows.vocabularyCreationFacts.find(
+        (fact) => fact.sourceKind === "ai_add_to_learning",
+      )?.sourceActionId,
+    ).toBe(plan.rows.aiEnrichmentDrafts[0].id);
     expect(plan.rows.vocabularyRelations[0]).toMatchObject({
       sourceVocabularyItemId: plan.rows.vocabularyItems[0].id,
       targetVocabularyItemId: plan.rows.vocabularyItems[1].id,
@@ -240,6 +246,50 @@ describe("Stage 5L backup import plan", () => {
     });
     expect(plan.rows).not.toHaveProperty("aiUsageBuckets");
     expect(plan.rows).not.toHaveProperty("studyCommandIdempotency");
+  });
+
+  it("restores historical accepted content after the source absorbs it", () => {
+    const backup = createV2Stage3Schema6FixtureBackup();
+    const source = backup.data.items.find(
+      (item) => item.id === "vocab_v2_stage3_adapt",
+    );
+    const accepted = backup.data.aiEnrichmentDrafts[0].acceptedContent;
+    if (!source || !accepted) throw new Error("Schema 6 AI fixture is incomplete");
+
+    source.meaningsZh.push(accepted.additionalMeaningsZh[0]);
+    source.examples.push(accepted.examples[0]);
+
+    expect(() =>
+      buildBackupImportPlan(backup, { uuidFactory: createUuidFactory() }),
+    ).not.toThrow();
+  });
+
+  it("matches app restore rejection for unsafe stored AI content", () => {
+    const mutations = [
+      (content) => {
+        content.confusableWords[0].word = "adapt vs adopt";
+      },
+      (content) => {
+        content.examples[0] = "Incorrect: People adapt gradually.";
+      },
+      (content) => {
+        content.confusableWords[0].differenceZh = "这是一个不正确的形式。";
+      },
+    ];
+
+    for (const mutate of mutations) {
+      const backup = createV2Stage3Schema6FixtureBackup();
+      const record = backup.data.aiEnrichmentDrafts[0];
+      mutate(record.acceptedContent);
+      record.draft = structuredClone(record.acceptedContent);
+      const serialized = JSON.stringify(backup);
+
+      expect(parseVocabularyBackupText(serialized, "2026-07-16T00:00:00.000Z").ok)
+        .toBe(false);
+      expect(() =>
+        buildBackupImportPlan(backup, { uuidFactory: createUuidFactory() }),
+      ).toThrow(BackupImportPlanError);
+    }
   });
 
   it("rejects metadata count mismatches", () => {

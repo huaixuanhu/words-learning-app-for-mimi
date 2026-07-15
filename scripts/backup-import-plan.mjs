@@ -35,6 +35,13 @@ const ANSWER_OUTCOMES = new Set([
 ]);
 const CREATION_SOURCE_KINDS = new Set(["single", "batch", "ai_add_to_learning"]);
 const RELATION_TYPES = new Set(["similar", "spelling", "sound", "usage"]);
+const AI_URL_PATTERN = /(?:https?:\/\/|www\.)/iu;
+const AI_CANDIDATE_PATTERN =
+  /^[A-Za-z]+(?:['’-][A-Za-z]+)*(?: [A-Za-z]+(?:['’-][A-Za-z]+)*)*$/u;
+const AI_ERROR_FORM_EXPLANATION_PATTERN =
+  /(?:拼写错误|语法错误|错误的搭配|错误形式|不正确|非标准|不标准|并不标准|此处应(?:使用|改为)|应改为|不可使用|misspell(?:ing|ed)?|ungrammatical|nonstandard|incorrect form)/iu;
+const AI_EXAMPLE_ERROR_MARKER_PATTERN =
+  /^(?:(?:correct|incorrect|wrong)\s*[:：-]|[✓✗✘]\s*)/iu;
 
 export class BackupImportPlanError extends Error {
   constructor(errors) {
@@ -633,40 +640,168 @@ function validateCreationReversal(record, index, people, errors) {
   }
 }
 
+function normalizedAiText(value) {
+  return value
+    .normalize("NFKC")
+    .trim()
+    .toLocaleLowerCase("en-US")
+    .replace(/\s+/gu, " ")
+    .replace(/[\s,，;；:：。.!！?？、]+$/gu, "")
+    .trim();
+}
+
+function validateBoundedAiText(value, label, maximum, errors) {
+  if (!isString(value) || !value.trim()) {
+    errors.push(`${label} must be non-blank text`);
+    return null;
+  }
+  const text = value.trim();
+  if ([...text].length > maximum) errors.push(`${label} is too long`);
+  if (AI_URL_PATTERN.test(text)) errors.push(`${label} must not contain a URL`);
+  return text;
+}
+
+function validateAiTextArray(
+  value,
+  label,
+  maximumItems,
+  maximumLength,
+  existing,
+  errors,
+  rejectErrorMarkers = false,
+) {
+  if (!isStringArray(value) || value.length > maximumItems) {
+    errors.push(`${label} must contain 0 to ${maximumItems} strings`);
+    return;
+  }
+  const seen = new Set(existing.map(normalizedAiText));
+  value.forEach((entry, index) => {
+    const text = validateBoundedAiText(entry, `${label}[${index}]`, maximumLength, errors);
+    if (!text) return;
+    if (rejectErrorMarkers && AI_EXAMPLE_ERROR_MARKER_PATTERN.test(text)) {
+      errors.push(`${label}[${index}] must not be an error-labelled example`);
+    }
+    const normalized = normalizedAiText(text);
+    if (seen.has(normalized)) errors.push(`${label} must be unique and novel`);
+    seen.add(normalized);
+  });
+}
+
 function validateAiDraftContent(value, label, errors) {
   if (!isRecord(value)) {
     errors.push(`${label} must be an object`);
     return;
   }
-  for (const key of ["additionalMeaningsZh", "examples"]) {
-    if (!isStringArray(value[key])) {
-      errors.push(`${label}.${key} must be an array of strings`);
-    }
+  const expectedKeys = [
+    "additionalMeaningsZh",
+    "examples",
+    "similarWords",
+    "confusableWords",
+  ].sort();
+  if (Object.keys(value).sort().join("|") !== expectedKeys.join("|")) {
+    errors.push(`${label} fields do not match the contract`);
   }
+  validateAiTextArray(
+    value.additionalMeaningsZh,
+    `${label}.additionalMeaningsZh`,
+    3,
+    80,
+    [],
+    errors,
+  );
+  validateAiTextArray(value.examples, `${label}.examples`, 3, 240, [], errors, true);
+  const candidateWords = new Set();
   if (!Array.isArray(value.similarWords)) {
     errors.push(`${label}.similarWords must be an array`);
+  } else if (value.similarWords.length > 3) {
+    errors.push(`${label}.similarWords must contain 0 to 3 items`);
   } else {
     value.similarWords.forEach((entry, index) => {
-      if (!isRecord(entry) || !isString(entry.word) || !isString(entry.differenceZh)) {
+      if (!isRecord(entry) || Object.keys(entry).sort().join("|") !== "differenceZh|word") {
         errors.push(`${label}.similarWords[${index}] is invalid`);
+        return;
       }
+      const word = validateBoundedAiText(entry.word, `${label}.similarWords[${index}].word`, 80, errors);
+      const difference = validateBoundedAiText(
+        entry.differenceZh,
+        `${label}.similarWords[${index}].differenceZh`,
+        180,
+        errors,
+      );
+      if (word && !AI_CANDIDATE_PATTERN.test(word)) {
+        errors.push(`${label}.similarWords[${index}].word is not learnable text`);
+      }
+      const normalized = word ? normalizedAiText(word) : "";
+      if (normalized.split(" ").some((token) => token === "vs" || token === "versus")) {
+        errors.push(`${label}.similarWords[${index}].word contains a comparison label`);
+      }
+      if (difference && AI_ERROR_FORM_EXPLANATION_PATTERN.test(difference)) {
+        errors.push(
+          `${label}.similarWords[${index}].differenceZh describes an incorrect form`,
+        );
+      }
+      if (candidateWords.has(normalized)) errors.push(`${label} candidate words must be unique`);
+      candidateWords.add(normalized);
     });
   }
   if (!Array.isArray(value.confusableWords)) {
     errors.push(`${label}.confusableWords must be an array`);
+  } else if (value.confusableWords.length > 3) {
+    errors.push(`${label}.confusableWords must contain 0 to 3 items`);
   } else {
     value.confusableWords.forEach((entry, index) => {
       if (
         !isRecord(entry) ||
-        !isString(entry.word) ||
-        !isString(entry.differenceZh) ||
+        Object.keys(entry).sort().join("|") !== "differenceZh|examplePair|type|word" ||
         !["spelling", "sound", "usage"].includes(entry.type) ||
         !isStringArray(entry.examplePair) ||
         ![0, 2].includes(Array.isArray(entry.examplePair) ? entry.examplePair.length : -1)
       ) {
         errors.push(`${label}.confusableWords[${index}] is invalid`);
+        return;
       }
+      const word = validateBoundedAiText(entry.word, `${label}.confusableWords[${index}].word`, 80, errors);
+      const difference = validateBoundedAiText(
+        entry.differenceZh,
+        `${label}.confusableWords[${index}].differenceZh`,
+        180,
+        errors,
+      );
+      entry.examplePair.forEach((example, exampleIndex) => {
+        const checkedExample = validateBoundedAiText(
+          example,
+          `${label}.confusableWords[${index}].examplePair[${exampleIndex}]`,
+          240,
+          errors,
+        );
+        if (checkedExample && AI_EXAMPLE_ERROR_MARKER_PATTERN.test(checkedExample)) {
+          errors.push(
+            `${label}.confusableWords[${index}].examplePair[${exampleIndex}] must not be an error-labelled example`,
+          );
+        }
+      });
+      if (word && !AI_CANDIDATE_PATTERN.test(word)) {
+        errors.push(`${label}.confusableWords[${index}].word is not learnable text`);
+      }
+      const normalized = word ? normalizedAiText(word) : "";
+      if (normalized.split(" ").some((token) => token === "vs" || token === "versus")) {
+        errors.push(`${label}.confusableWords[${index}].word contains a comparison label`);
+      }
+      if (difference && AI_ERROR_FORM_EXPLANATION_PATTERN.test(difference)) {
+        errors.push(
+          `${label}.confusableWords[${index}].differenceZh describes an incorrect form`,
+        );
+      }
+      if (candidateWords.has(normalized)) errors.push(`${label} candidate words must be unique`);
+      candidateWords.add(normalized);
     });
+  }
+  if (
+    Array.isArray(value.similarWords) &&
+    Array.isArray(value.confusableWords) &&
+    value.similarWords.length + value.confusableWords.length > 3
+  ) {
+    errors.push(`${label} must contain at most 3 candidates combined`);
   }
 }
 
@@ -704,7 +839,10 @@ function validateAiRun(record, index, people, vocabularyItems, errors) {
   ) {
     errors.push(`${label}.sourceVocabularyItemId does not match an item`);
   }
-  if (record.feature !== "enrichment_v1" || record.provider !== "google-gemini-api") {
+  if (
+    record.feature !== "enrichment_v1" ||
+    !["google-gemini-api", "local-fixture"].includes(record.provider)
+  ) {
     errors.push(`${label} provider or feature is unsupported`);
   }
   if (record.status !== "succeeded" || record.structureValidationStatus !== "valid") {
@@ -729,6 +867,31 @@ function validateAiRun(record, index, people, vocabularyItems, errors) {
   }
   if (!isFiniteNumber(record.estimatedCostUsd) || record.estimatedCostUsd < 0) {
     errors.push(`${label}.estimatedCostUsd must be a non-negative number`);
+  }
+  if (record.provider === "local-fixture") {
+    const localFixtureIsHonest =
+      record.model === "fixture-v1" &&
+      record.modelLabel === "Local preview" &&
+      record.promptVersion === "local-fixture-v1" &&
+      record.disclosureVersion === "local-fixture-no-network-v1" &&
+      record.providerResponseId === null &&
+      record.inputTokens === 0 &&
+      record.outputTokens === 0 &&
+      record.thinkingTokens === 0 &&
+      record.totalTokens === 0 &&
+      record.latencyMs === 0 &&
+      record.estimatedCostUsd === 0;
+    if (!localFixtureIsHonest) errors.push(`${label} local-fixture lineage is inconsistent`);
+  }
+  if (
+    record.provider === "google-gemini-api" &&
+    (
+      record.model !== "gemini-3.1-flash-lite" ||
+      record.modelLabel !== "Gemini 3.1 Flash-Lite" ||
+      record.disclosureVersion !== "ai-disclosure-v1"
+    )
+  ) {
+    errors.push(`${label} Gemini lineage is inconsistent`);
   }
 }
 
@@ -758,6 +921,9 @@ function validateAiEnrichmentDraft(record, index, people, vocabularyItems, aiRun
   }
   validateAiDraftContent(record.draft, `${label}.draft`, errors);
   validateAiDraftContent(record.acceptedContent, `${label}.acceptedContent`, errors);
+  if (JSON.stringify(record.draft) !== JSON.stringify(record.acceptedContent)) {
+    errors.push(`${label}.draft must equal acceptedContent in a user backup`);
+  }
 }
 
 function validateVocabularyRelation(record, index, people, vocabularyItems, aiRuns, errors) {
@@ -793,7 +959,17 @@ function validateVocabularyRelation(record, index, people, vocabularyItems, aiRu
   }
   if (!isStringArray(record.examplePair) || ![0, 2].includes(record.examplePair?.length ?? -1)) {
     errors.push(`${label}.examplePair must be empty or contain two strings`);
+  } else {
+    record.examplePair.forEach((example, exampleIndex) =>
+      validateBoundedAiText(
+        example,
+        `${label}.examplePair[${exampleIndex}]`,
+        240,
+        errors,
+      ),
+    );
   }
+  validateBoundedAiText(record.differenceZh, `${label}.differenceZh`, 180, errors);
   if (!aiRuns.has(`${record.personId}:${record.aiRunId}`)) {
     errors.push(`${label}.aiRunId does not match a retained run`);
   }
@@ -1083,7 +1259,14 @@ function validateBackup(backup) {
     );
 
     data.aiEnrichmentDrafts.forEach((record, index) =>
-      validateAiEnrichmentDraft(record, index, people, vocabularyItems, aiRuns, errors),
+      validateAiEnrichmentDraft(
+        record,
+        index,
+        people,
+        vocabularyItems,
+        aiRuns,
+        errors,
+      ),
     );
     requireUnique(
       data.aiEnrichmentDrafts
@@ -1349,9 +1532,16 @@ export function buildBackupImportPlan(backup, options = {}) {
     if (!sourceActionMap.has(actionKey)) {
       const importedBatch = importBatchMap.get(actionKey);
       const importedItem = originalVocabularyItemMap.get(actionKey);
+      const importedDraft = aiEnrichmentDraftMap.get(actionKey);
+      const mappedActionId =
+        fact.sourceKind === "batch"
+          ? importedBatch?.targetId
+          : fact.sourceKind === "ai_add_to_learning"
+            ? importedDraft?.targetId
+            : importedItem?.targetId;
       sourceActionMap.set(
         actionKey,
-        importedBatch?.targetId ?? importedItem?.targetId ?? uuidFactory(),
+        mappedActionId ?? uuidFactory(),
       );
     }
   }
@@ -2150,9 +2340,10 @@ export function createV2Stage3Schema6FixtureBackup() {
   const recognitionItemId = "vocab_v2_stage3_adapt";
   const activeItemId = "vocab_v2_stage3_adopt";
   const aiRunId = "ai_run_v2_stage3_adapt";
+  const aiDraftId = "ai_draft_v2_stage3_adapt";
   const acceptedDraft = {
-    additionalMeaningsZh: ["适应"],
-    examples: ["It takes time to adapt to a new routine."],
+    additionalMeaningsZh: ["改编"],
+    examples: ["People adapt gradually."],
     similarWords: [],
     confusableWords: [
       {
@@ -2378,7 +2569,7 @@ export function createV2Stage3Schema6FixtureBackup() {
         creationFactId: "creation_fact_v2_stage3_adopt",
         personId,
         originalVocabularyItemId: activeItemId,
-        sourceActionId: "ai_add_action_v2_stage3",
+        sourceActionId: aiDraftId,
         trackAtCreation: "active",
         sourceKind: "ai_add_to_learning",
         historyOrigin: "recorded",
@@ -2434,7 +2625,7 @@ export function createV2Stage3Schema6FixtureBackup() {
     ],
     aiEnrichmentDrafts: [
       {
-        id: "ai_draft_v2_stage3_adapt",
+        id: aiDraftId,
         personId,
         sourceVocabularyItemId: recognitionItemId,
         aiRunId,

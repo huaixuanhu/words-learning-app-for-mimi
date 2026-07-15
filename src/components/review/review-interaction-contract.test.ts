@@ -33,14 +33,19 @@ describe("V2 Stage 3.1 review interaction UI contract", () => {
     expect(reviewSource).toContain("reviewRatings.map");
   });
 
-  it("keeps example Listen and manual add local while AI explanation rests", () => {
+  it("keeps Listen, local context preview, and manual add free of network calls", () => {
     expect(reviewSource).toContain("ExampleWordActions");
     expect(exampleActionsSource).toContain("segmentEnglishExample");
     expect(exampleActionsSource).toContain("speakEnglishText");
     expect(exampleActionsSource).toContain('source: "manual"');
     expect(exampleActionsSource).toContain('type: "vocabulary.add"');
     expect(exampleActionsSource).toContain("findSelectedPersonVocabularyDuplicate");
-    expect(exampleActionsSource).toContain("AI explanation is resting for now.");
+    expect(exampleActionsSource).toContain("runLocalFixtureContextExplanation");
+    expect(exampleActionsSource).toContain("buildTrustedAiContextPayload");
+    expect(exampleActionsSource).toContain("LOCAL_FIXTURE_LINEAGE.notice");
+    expect(exampleActionsSource).toContain(
+      'localPreviewEnabled ? "" : contextResult?.meaningInContextZh ?? ""',
+    );
     expect(exampleActionsSource).toContain("createPortal");
     expect(exampleActionsSource).not.toContain("fetch(");
     expect(exampleActionsSource).not.toContain("/api/ai");

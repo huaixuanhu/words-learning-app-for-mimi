@@ -2,6 +2,9 @@ import { migrateVocabularyData } from "@/lib/vocabulary/local-storage-repository
 import type { VocabularyData } from "@/lib/vocabulary/types";
 import { getSelectedReviewSettings } from "@/lib/review/settings";
 import {
+  validateStoredAiEnrichmentDraft,
+} from "@/lib/ai-enrichment/contract";
+import {
   BACKUP_APP_NAME,
   BACKUP_FORMAT,
   BACKUP_VERSION,
@@ -784,7 +787,10 @@ function validateAiRun(value: unknown, index: number, errors: string[]) {
   if (!isStringOrNull(value.sourceVocabularyItemId)) {
     errors.push(`${label}.sourceVocabularyItemId must be a string or null`);
   }
-  if (value.feature !== "enrichment_v1" || value.provider !== "google-gemini-api") {
+  if (
+    value.feature !== "enrichment_v1" ||
+    !["google-gemini-api", "local-fixture"].includes(String(value.provider))
+  ) {
     errors.push(`${label} provider or feature is unsupported`);
   }
   if (!AI_RUN_STATUSES.has(String(value.status))) {
@@ -821,6 +827,33 @@ function validateAiRun(value: unknown, index: number, errors: string[]) {
   }
   if (typeof value.estimatedCostUsd !== "number" || !Number.isFinite(value.estimatedCostUsd) || value.estimatedCostUsd < 0) {
     errors.push(`${label}.estimatedCostUsd must be a non-negative number`);
+  }
+  if (value.provider === "local-fixture") {
+    const localFixtureIsHonest =
+      value.model === "fixture-v1" &&
+      value.modelLabel === "Local preview" &&
+      value.promptVersion === "local-fixture-v1" &&
+      value.disclosureVersion === "local-fixture-no-network-v1" &&
+      value.providerResponseId === null &&
+      value.inputTokens === 0 &&
+      value.outputTokens === 0 &&
+      value.thinkingTokens === 0 &&
+      value.totalTokens === 0 &&
+      value.latencyMs === 0 &&
+      value.estimatedCostUsd === 0;
+    if (!localFixtureIsHonest) {
+      errors.push(`${label} local-fixture lineage is inconsistent`);
+    }
+  }
+  if (
+    value.provider === "google-gemini-api" &&
+    (
+      value.model !== "gemini-3.1-flash-lite" ||
+      value.modelLabel !== "Gemini 3.1 Flash-Lite" ||
+      value.disclosureVersion !== "ai-disclosure-v1"
+    )
+  ) {
+    errors.push(`${label} Gemini lineage is inconsistent`);
   }
 }
 
@@ -889,10 +922,10 @@ function validateVocabularyRelation(value: unknown, index: number, errors: strin
 function validateSchema6References(
   value: Record<string, unknown>,
   personIds: Set<unknown>,
-  itemTrackByKey: Map<string, unknown>,
+  itemByKey: Map<string, Record<string, unknown>>,
   errors: string[],
 ) {
-  const itemKeys = new Set(itemTrackByKey.keys());
+  const itemKeys = new Set(itemByKey.keys());
   const seenDefaults = new Set<string>();
   const seenPlans = new Set<string>();
   const seenPlanIds = new Set<string>();
@@ -906,6 +939,7 @@ function validateSchema6References(
   const seenReversalKeys = new Set<string>();
   const seenReversalIds = new Set<string>();
   const runKeys = new Set<string>();
+  const runByKey = new Map<string, Record<string, unknown>>();
   const succeededRunKeys = new Set<string>();
   const seenRunIdempotencyKeys = new Set<string>();
   const seenDraftIds = new Set<string>();
@@ -1044,6 +1078,7 @@ function validateSchema6References(
         errors.push(`${label}.id is duplicated for the person`);
       }
       runKeys.add(key);
+      runByKey.set(key, record);
       const idempotencyKey = `${record.personId}:${record.idempotencyKeyHash}`;
       if (seenRunIdempotencyKeys.has(idempotencyKey)) {
         errors.push(`${label}.idempotencyKeyHash is duplicated for the person`);
@@ -1079,6 +1114,24 @@ function validateSchema6References(
       }
       if (!succeededRunKeys.has(runKey)) {
         errors.push(`${label}.aiRunId does not match a succeeded retained run`);
+      }
+      const source = itemByKey.get(itemKey);
+      const run = runByKey.get(runKey);
+      if (source && run) {
+        try {
+          const accepted = validateStoredAiEnrichmentDraft(record.acceptedContent);
+          const exportedDraft = validateStoredAiEnrichmentDraft(record.draft);
+          if (JSON.stringify(accepted) !== JSON.stringify(exportedDraft)) {
+            errors.push(`${label}.draft must equal acceptedContent in a user backup`);
+          }
+          if (run.feature !== "enrichment_v1") {
+            errors.push(`${label}.aiRunId must reference enrichment_v1`);
+          }
+        } catch (error) {
+          errors.push(
+            `${label} content is invalid: ${error instanceof Error ? error.message : "unknown error"}`,
+          );
+        }
       }
     });
   }
@@ -1247,6 +1300,7 @@ function validateBackupData(value: unknown, errors: string[]) {
         : [],
     );
     const itemTrackByKey = new Map<string, unknown>();
+    const itemByKey = new Map<string, Record<string, unknown>>();
 
     value.items.filter(isRecord).forEach((item) => {
       const itemKey =
@@ -1256,6 +1310,7 @@ function validateBackupData(value: unknown, errors: string[]) {
 
       if (isString(itemKey)) {
         itemTrackByKey.set(itemKey, item.learningTrack);
+        itemByKey.set(itemKey, item);
       }
     });
 
@@ -1314,7 +1369,7 @@ function validateBackupData(value: unknown, errors: string[]) {
     }
 
     if (requiresV2Fields) {
-      validateSchema6References(value, personIds, itemTrackByKey, errors);
+      validateSchema6References(value, personIds, itemByKey, errors);
     }
   }
 }

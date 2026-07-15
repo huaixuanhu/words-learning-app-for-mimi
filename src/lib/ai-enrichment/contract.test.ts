@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   AI_MAX_COMBINED_CANDIDATES,
+  AI_DISCLOSURE,
   AI_DISCLOSURE_VERSION,
   AI_PRODUCTION_LIMITS,
   AI_STAGE2_EVALUATION_LIMITS,
@@ -12,6 +13,7 @@ import {
   getAiGenerationAvailability,
   isGeminiPricingFresh,
   reserveAiProviderAttempt,
+  settleAiProviderAttempt,
   validateAiEnrichmentDraft,
   validateGeminiUsage,
   validatePublicAiEnrichmentRequest,
@@ -108,6 +110,29 @@ describe("V2 Stage 2 AI enrichment contract", () => {
         personId: "person-1",
       }),
     ).toThrow("lexicalPayload fields do not match the contract");
+
+    expect(
+      validateTrustedAiLexicalPayload({
+        term: "untranslated",
+        meaningsZh: [],
+        examples: [],
+      }),
+    ).toEqual({ term: "untranslated", meaningsZh: [], examples: [] });
+  });
+
+  it("versions the exact outbound and excluded disclosure fields", () => {
+    expect(AI_DISCLOSURE.sentFields).toEqual(["term", "meaningsZh", "examples"]);
+    expect(AI_DISCLOSURE.excludedFields).toEqual([
+      "person identity",
+      "private notes",
+      "tags",
+      "timestamps",
+      "review history",
+      "ratings",
+      "daily goals",
+      "typed answers",
+      "audio",
+    ]);
   });
 
   it("accepts a compact valid draft", () => {
@@ -432,7 +457,6 @@ describe("V2 Stage 2 AI enrichment contract", () => {
     });
 
     const allowed = reserveAiProviderAttempt({
-      personAttemptsToday: 0,
       globalAttemptsToday: 0,
       activeProviderCalls: 0,
       reservedInputTokensToday: 0,
@@ -443,7 +467,6 @@ describe("V2 Stage 2 AI enrichment contract", () => {
     expect(allowed.allowed).toBe(true);
     if (allowed.allowed) {
       expect(allowed.next).toMatchObject({
-        personAttemptsToday: 1,
         globalAttemptsToday: 1,
         activeProviderCalls: 1,
         reservedInputTokensToday: 2_000,
@@ -452,7 +475,6 @@ describe("V2 Stage 2 AI enrichment contract", () => {
     }
 
     const blocked = reserveAiProviderAttempt({
-      personAttemptsToday: AI_PRODUCTION_LIMITS.personAttemptsPerDay,
       globalAttemptsToday: AI_PRODUCTION_LIMITS.globalAttemptsPerDay,
       activeProviderCalls: AI_PRODUCTION_LIMITS.globalConcurrency,
       reservedInputTokensToday: AI_PRODUCTION_LIMITS.globalInputTokensPerDay,
@@ -463,7 +485,6 @@ describe("V2 Stage 2 AI enrichment contract", () => {
     expect(blocked).toMatchObject({
       allowed: false,
       reasons: expect.arrayContaining([
-        "person_attempt_limit",
         "global_attempt_limit",
         "global_concurrency_limit",
         "daily_input_token_limit",
@@ -476,7 +497,6 @@ describe("V2 Stage 2 AI enrichment contract", () => {
 
   it("rejects understated token or cost reservations", () => {
     const emptySnapshot = {
-      personAttemptsToday: 0,
       globalAttemptsToday: 0,
       activeProviderCalls: 0,
       reservedInputTokensToday: 0,
@@ -500,6 +520,74 @@ describe("V2 Stage 2 AI enrichment contract", () => {
         estimatedCostUsd: 0,
       }),
     ).toThrow("must not understate the configured token cost");
+  });
+
+  it("enforces one shared 300-attempt budget without a person counter", () => {
+    const reservation = buildDefaultAttemptReservation();
+    expect(reservation.estimatedCostUsd * AI_PRODUCTION_LIMITS.globalAttemptsPerDay)
+      .toBeCloseTo(0.465, 9);
+    expect(AI_PRODUCTION_LIMITS.estimatedCostUsdPerDay).toBe(0.5);
+    let snapshot = {
+      globalAttemptsToday: 0,
+      activeProviderCalls: 0,
+      reservedInputTokensToday: 0,
+      reservedOutputTokensToday: 0,
+      estimatedCostUsdToday: 0,
+      estimatedCostUsdMonth: 0,
+    };
+
+    for (let attempt = 0; attempt < AI_PRODUCTION_LIMITS.globalAttemptsPerDay; attempt += 1) {
+      const decision = reserveAiProviderAttempt(snapshot, reservation);
+      expect(decision.allowed).toBe(true);
+      if (!decision.allowed) throw new Error("expected a shared-budget reservation");
+      snapshot = settleAiProviderAttempt(decision.next, reservation, null);
+    }
+
+    const blocked = reserveAiProviderAttempt(snapshot, reservation);
+    expect(blocked).toMatchObject({
+      allowed: false,
+      reasons: expect.arrayContaining(["global_attempt_limit"]),
+    });
+    expect(snapshot.globalAttemptsToday).toBe(300);
+    expect(snapshot).not.toHaveProperty("personAttemptsToday");
+  });
+
+  it("reconciles reliable usage while retaining conservative reservations on ambiguity", () => {
+    const reservation = buildDefaultAttemptReservation();
+    const reserved = reserveAiProviderAttempt(
+      {
+        globalAttemptsToday: 0,
+        activeProviderCalls: 0,
+        reservedInputTokensToday: 0,
+        reservedOutputTokensToday: 0,
+        estimatedCostUsdToday: 0,
+        estimatedCostUsdMonth: 0,
+      },
+      reservation,
+    );
+    if (!reserved.allowed) throw new Error("expected a reservation");
+
+    const ambiguous = settleAiProviderAttempt(reserved.next, reservation, null);
+    expect(ambiguous).toMatchObject({
+      globalAttemptsToday: 1,
+      activeProviderCalls: 0,
+      reservedInputTokensToday: 2_000,
+      reservedOutputTokensToday: 700,
+    });
+
+    const reliable = settleAiProviderAttempt(reserved.next, reservation, {
+      promptTokenCount: 100,
+      candidatesTokenCount: 80,
+      thoughtsTokenCount: 20,
+      totalTokenCount: 200,
+    });
+    expect(reliable).toMatchObject({
+      globalAttemptsToday: 1,
+      activeProviderCalls: 0,
+      reservedInputTokensToday: 100,
+      reservedOutputTokensToday: 100,
+    });
+    expect(reliable.estimatedCostUsdToday).toBeCloseTo(0.000175, 9);
   });
 
   it("returns calm degraded states in priority order", () => {

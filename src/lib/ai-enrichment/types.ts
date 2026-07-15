@@ -11,6 +11,7 @@ export const AI_GENERATION_UNAVAILABLE_REASONS = [
   "pricing_stale",
   "usage_accounting_unavailable",
   "quota_exhausted",
+  "fixture_only",
 ] as const;
 
 export type AiEnrichmentFeature = (typeof AI_ENRICHMENT_FEATURES)[number];
@@ -47,6 +48,9 @@ export type TrustedAiContextPayload = Readonly<{
   sourceTerm: string;
   sourceMeaningsZh: readonly string[];
   example: string;
+  exampleIndex: number;
+  selectedStart: number;
+  selectedEnd: number;
   selectedText: string;
 }>;
 
@@ -94,7 +98,6 @@ export type GeminiPricing = Readonly<{
 }>;
 
 export type AiProductionLimits = Readonly<{
-  personAttemptsPerDay: number;
   globalAttemptsPerDay: number;
   globalConcurrency: number;
   reservedInputTokensPerAttempt: number;
@@ -106,7 +109,6 @@ export type AiProductionLimits = Readonly<{
 }>;
 
 export type AiBudgetSnapshot = Readonly<{
-  personAttemptsToday: number;
   globalAttemptsToday: number;
   activeProviderCalls: number;
   reservedInputTokensToday: number;

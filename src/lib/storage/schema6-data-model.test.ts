@@ -80,9 +80,14 @@ describe("V2 Schema Version 6 data model", () => {
     }
     expect(migrationSql).toContain("ensure_ai_run_source_person");
     expect(migrationSql).toContain("provider text not null");
-    expect(migrationSql).toContain("provider = 'google-gemini-api'");
+    expect(migrationSql).toContain("'google-gemini-api', 'local-fixture'");
     expect(migrationSql).toContain("feature in ('enrichment_v1', 'context_explain_v1')");
     expect(migrationSql).toContain("ai_runs_lifecycle_consistent");
+    expect(migrationSql).toContain("ai_runs_provider_lineage_consistent");
+    expect(migrationSql).toContain("ai_runs_success_usage_present");
+    expect(migrationSql).toContain("model = 'fixture-v1'");
+    expect(migrationSql).toContain("model_label = 'Local preview'");
+    expect(migrationSql).toContain("disclosure_version = 'local-fixture-no-network-v1'");
     expect(migrationSql).toContain(
       "total_tokens::bigint >=",
     );
@@ -113,6 +118,10 @@ describe("V2 Schema Version 6 data model", () => {
     expect(migrationSql).toContain("ai_context_explanation_cache_expiry_idx");
     expect(migrationSql).toContain("ensure_enrichment_lineage_run_valid");
     expect(migrationSql).toContain("ai_enrichment_drafts_run_feature_guard");
+    expect(migrationSql).toContain(
+      "before insert or update of person_id, source_vocabulary_item_id, ai_run_id",
+    );
+    expect(migrationSql).not.toContain("person_day");
     expect(migrationSql).toContain("vocabulary_relations_run_feature_guard");
     expect(backupMappingSection).not.toContain("'ai_context_explanation_cache'");
   });

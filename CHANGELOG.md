@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## 2026-07-16 00:27 AEST
+
+- Completed the local V2 Stage 7A AI Enrichment and Cost Guard capability from the documentation-first child plan; the formal provider path remains closed for Stage 7B.
+- Added honest browser-local `local-fixture` enrichment in Library with editable meanings, examples, similar/confusable candidates, explicit reject/accept, Track confirmation, duplicate reuse, relation provenance, and `Add to learning`.
+- Activated exact-span example-word fixture explanation and reuse of the existing manual addition form. Every fixture result says `Local preview · No AI request was made.` and is never labelled as Gemini output.
+- Added strict formal `/api/ai/enrichment` and `/api/ai/context-explain` handlers plus a lazy direct Gemini adapter. Stage 7A handlers enforce Basic Auth, same-origin, Content-Type/body limits, exact public fields, Disclosure Version, and a fail-closed resting state; trusted server lookup, persisted disclosure confirmation, accounting/provider orchestration, and real calls remain Stage 7B work. The dormant adapter validates model/usage/structure, uses no tools or retries, and has a 90-second timeout.
+- Added dormant-tested atomic Postgres reservation, settlement, stale in-flight recovery, Idempotency Key replay/conflict handling, and global accounting. The current design has no personal attempt ceiling; global limits are 300 attempts, 600,000 input tokens, 210,000 output/thinking tokens, and US$0.50 per Melbourne budget day, plus US$2 per month and concurrency 2.
+- Preserved accepted-only JSON backup behavior with honest `local-fixture` lineage. Restore validates accepted content as historical evidence, Postgres import keeps the creation-action-to-draft link, source changes require a fresh preview before a later candidate link, and removed lineage degrades to `Suggestion added`. Pending/rejected drafts, context Cache, quota buckets, and replay state remain outside learner backups.
+- Required non-null provider usage metadata before any successful Postgres AI settlement; the unexecuted Schema Version 6 draft carries the same invariant for non-fixture successful runs.
+- Passed ESLint, TypeScript, the full Vitest suite (53 files / 328 tests passed; 1 Postgres integration file/test skipped), all three backup dry-runs, Next.js Production build, Tier 3 governance preflight, and `git diff --check`.
+- Forced-local browser acceptance passed at 320, 390, 768, 1024, and 1280 px with no horizontal overflow or console warning/error. It covered multiline preview acceptance, honest candidate addition to Active, exact example-token explanation, and blank target meaning when a local fixture has no real definition.
+- Next.js detected the ordinary ignored `.env.local`, but no value, credential, or secret was inspected, copied, changed, or staged by the agent. No Gemini/provider request, charge, remote database connection, migration, Production write, Vercel action, deployment, commit, push, pull request, or merge occurred. The first real call remains a separately approved Stage 7B action and requires confirmation of the then-current disclosure.
+- Reason: make the AI review and acceptance experience usable locally while keeping paid usage, study-data transmission, and cost accounting closed until the provider path is explicitly approved.
+
 ## 2026-07-15 19:20 AEST
 
 - Completed documentation-first V2 Stage 6 Active Practice Engine and synchronized the parent plan, architecture, README, AGENTS, and governance log.

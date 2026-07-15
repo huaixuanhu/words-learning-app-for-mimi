@@ -32,14 +32,13 @@ export const GEMINI_PRICING_2026_07_14_STANDARD: GeminiPricing = Object.freeze({
 });
 
 export const AI_PRODUCTION_LIMITS: AiProductionLimits = Object.freeze({
-  personAttemptsPerDay: 100,
-  globalAttemptsPerDay: 200,
+  globalAttemptsPerDay: 300,
   globalConcurrency: 2,
   reservedInputTokensPerAttempt: 2_000,
   reservedOutputTokensPerAttempt: 700,
-  globalInputTokensPerDay: 400_000,
-  globalOutputTokensPerDay: 140_000,
-  estimatedCostUsdPerDay: 0.4,
+  globalInputTokensPerDay: 600_000,
+  globalOutputTokensPerDay: 210_000,
+  estimatedCostUsdPerDay: 0.5,
   estimatedCostUsdPerMonth: 2,
 });
 
@@ -65,6 +64,7 @@ export const AI_DISCLOSURE = Object.freeze({
     "review history",
     "ratings",
     "daily goals",
+    "typed answers",
     "audio",
   ],
   retentionSummary:
@@ -318,7 +318,7 @@ export function validateTrustedAiLexicalPayload(
 
   const payload = {
     term: boundedText(record.term, "term", 120),
-    meaningsZh: boundedTextArray(record.meaningsZh, "meaningsZh", 1, 8, 160),
+    meaningsZh: boundedTextArray(record.meaningsZh, "meaningsZh", 0, 8, 160),
     examples: boundedTextArray(record.examples, "examples", 0, 8, 320),
   };
   const serializedLength = codePointLength(JSON.stringify(payload));
@@ -328,14 +328,15 @@ export function validateTrustedAiLexicalPayload(
   return payload;
 }
 
-export function validateAiEnrichmentDraft(
+function validateAiEnrichmentDraftInternal(
   value: unknown,
-  sourceContext: TrustedAiLexicalPayload,
+  sourceContext: TrustedAiLexicalPayload | null,
 ): AiEnrichmentDraft {
   const record = asRecord(value, "draft");
   exactKeys(record, DRAFT_KEYS, "draft");
-  const lexicalSource = validateTrustedAiLexicalPayload(sourceContext);
-  const source = normalizeAiCandidate(lexicalSource.term);
+  const lexicalSource = sourceContext
+    ? validateTrustedAiLexicalPayload(sourceContext)
+    : null;
 
   const additionalMeaningsZh = uniqueNovelGeneratedTextArray(
     record.additionalMeaningsZh,
@@ -343,7 +344,7 @@ export function validateAiEnrichmentDraft(
     0,
     3,
     80,
-    lexicalSource.meaningsZh,
+    lexicalSource?.meaningsZh ?? [],
   );
   const examples = uniqueNovelGeneratedTextArray(
     record.examples,
@@ -351,7 +352,7 @@ export function validateAiEnrichmentDraft(
     0,
     3,
     240,
-    lexicalSource.examples,
+    lexicalSource?.examples ?? [],
     true,
   );
 
@@ -370,7 +371,9 @@ export function validateAiEnrichmentDraft(
     );
   }
 
-  const seen = new Set<string>([source]);
+  const seen = new Set<string>(
+    lexicalSource ? [normalizeAiCandidate(lexicalSource.term)] : [],
+  );
   const similarWords = record.similarWords.map((entry, index) => {
     const item = asRecord(entry, `similarWords[${index}]`);
     exactKeys(item, SIMILAR_WORD_KEYS, `similarWords[${index}]`);
@@ -433,6 +436,19 @@ export function validateAiEnrichmentDraft(
   });
 
   return { additionalMeaningsZh, examples, similarWords, confusableWords };
+}
+
+export function validateAiEnrichmentDraft(
+  value: unknown,
+  sourceContext: TrustedAiLexicalPayload,
+): AiEnrichmentDraft {
+  return validateAiEnrichmentDraftInternal(value, sourceContext);
+}
+
+// Novelty is a generation/acceptance rule. A retained accepted draft is
+// historical evidence and may later overlap a legitimately edited source item.
+export function validateStoredAiEnrichmentDraft(value: unknown): AiEnrichmentDraft {
+  return validateAiEnrichmentDraftInternal(value, null);
 }
 
 export function validateGeminiUsage(value: unknown): GeminiUsage {
@@ -509,10 +525,6 @@ export function reserveAiProviderAttempt(
   limits: AiProductionLimits = AI_PRODUCTION_LIMITS,
 ): AiReservationDecision {
   const checked = {
-    personAttemptsToday: nonNegativeInteger(
-      snapshot.personAttemptsToday,
-      "personAttemptsToday",
-    ),
     globalAttemptsToday: nonNegativeInteger(
       snapshot.globalAttemptsToday,
       "globalAttemptsToday",
@@ -568,9 +580,6 @@ export function reserveAiProviderAttempt(
     );
   }
   const reasons: string[] = [];
-  if (checked.personAttemptsToday + 1 > limits.personAttemptsPerDay) {
-    reasons.push("person_attempt_limit");
-  }
   if (checked.globalAttemptsToday + 1 > limits.globalAttemptsPerDay) {
     reasons.push("global_attempt_limit");
   }
@@ -608,7 +617,6 @@ export function reserveAiProviderAttempt(
     allowed: true,
     reasons: [],
     next: {
-      personAttemptsToday: checked.personAttemptsToday + 1,
       globalAttemptsToday: checked.globalAttemptsToday + 1,
       activeProviderCalls: checked.activeProviderCalls + 1,
       reservedInputTokensToday:
@@ -620,6 +628,62 @@ export function reserveAiProviderAttempt(
       estimatedCostUsdMonth:
         checked.estimatedCostUsdMonth + attempt.estimatedCostUsd,
     },
+  };
+}
+
+export function settleAiProviderAttempt(
+  snapshot: AiBudgetSnapshot,
+  reservation: AiAttemptReservation,
+  usage: GeminiUsage | null,
+  pricing: GeminiPricing = GEMINI_PRICING_2026_07_14_STANDARD,
+): AiBudgetSnapshot {
+  if (snapshot.activeProviderCalls < 1) {
+    throw new AiEnrichmentContractError(
+      "cannot settle a provider attempt without an active reservation",
+    );
+  }
+
+  if (!usage) {
+    return {
+      ...snapshot,
+      activeProviderCalls: snapshot.activeProviderCalls - 1,
+    };
+  }
+
+  const checkedUsage = validateGeminiUsage(usage);
+  const actualOutputTokens =
+    checkedUsage.candidatesTokenCount + checkedUsage.thoughtsTokenCount;
+  if (
+    checkedUsage.promptTokenCount > reservation.inputTokens ||
+    actualOutputTokens > reservation.outputTokens
+  ) {
+    throw new AiEnrichmentContractError(
+      "provider usage exceeds the reserved token envelope",
+    );
+  }
+
+  const actualCostUsd = estimateGeminiCostUsd(checkedUsage, pricing);
+  if (actualCostUsd > reservation.estimatedCostUsd + Number.EPSILON) {
+    throw new AiEnrichmentContractError(
+      "provider usage exceeds the reserved cost envelope",
+    );
+  }
+
+  return {
+    ...snapshot,
+    activeProviderCalls: snapshot.activeProviderCalls - 1,
+    reservedInputTokensToday:
+      snapshot.reservedInputTokensToday -
+      reservation.inputTokens +
+      checkedUsage.promptTokenCount,
+    reservedOutputTokensToday:
+      snapshot.reservedOutputTokensToday -
+      reservation.outputTokens +
+      actualOutputTokens,
+    estimatedCostUsdToday:
+      snapshot.estimatedCostUsdToday - reservation.estimatedCostUsd + actualCostUsd,
+    estimatedCostUsdMonth:
+      snapshot.estimatedCostUsdMonth - reservation.estimatedCostUsd + actualCostUsd,
   };
 }
 

@@ -1,7 +1,7 @@
 # Words Learning App For Mimi Version-Hold: Multi-User Confidential Isolation
 
 Created: 2026-07-13 00:16 AEST
-Last updated: 2026-07-13 00:16 AEST
+Last updated: 2026-07-16 00:27 AEST
 
 Source plan:
 - `plan_docs/PLAN_V2_MASTER.md`
@@ -36,7 +36,7 @@ Working tier: Tier 3 for this documentation-only hold record.
 - Define what confidential multi-user isolation would need to cover in a future version.
 - Define the events that should reactivate planning.
 - Preserve migration and deletion questions so V2 does not accidentally imply stronger identity guarantees.
-- Keep V2 AI quotas honest: per-person limits are fairness controls and global limits remain the cost-security boundary.
+- Keep V2 AI quotas honest: Stage 7A has no per-person attempt ceiling, and server-owned global request, token, cost, concurrency, and Kill Switch limits remain the cost-security boundary.
 
 ## Non-Scope
 
@@ -141,8 +141,9 @@ A reactivated stage must decide, with current official evidence:
 
 - V2 keeps the shared Basic Auth entrance.
 - V2 continues to scope study rows and AI-derived rows by `person_id` for data organization.
-- V2 AI per-person request limits are convenience / fairness limits.
+- V2 Stage 7A deliberately has no per-person AI request ceiling. `person_id` is retained for data ownership and audit only and cannot partition or reset the shared budget.
 - V2 global request, token, cost, concurrency, provider billing, and Kill Switch controls protect the shared paid resource.
+- A future enforceable personal quota requires an authenticated identity binding and is one reason to reactivate this Version-hold plan.
 - V2 must not describe a selected person as a secure account or private tenant.
 - V2 exports and backups must retain sufficient person ownership metadata for a future explicit identity migration.
 

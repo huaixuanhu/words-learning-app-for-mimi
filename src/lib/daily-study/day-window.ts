@@ -20,6 +20,13 @@ export type ResolvedPersonDay = Readonly<{
   dayEndsAt: string;
 }>;
 
+export type ResolvedCalendarMonth = Readonly<{
+  localMonth: string;
+  timezone: string;
+  monthStartsAt: string;
+  monthEndsAt: string;
+}>;
+
 const formatterCache = new Map<string, Intl.DateTimeFormat>();
 
 function getFormatter(timezone: string) {
@@ -166,5 +173,30 @@ export function resolvePersonDay(
     timezone: normalizedTimezone,
     dayStartsAt: new Date(startsAt).toISOString(),
     dayEndsAt: new Date(endsAt).toISOString(),
+  };
+}
+
+export function resolveCalendarMonth(
+  now: string | Date,
+  timezone: string,
+): ResolvedCalendarMonth {
+  const normalizedTimezone = timezone.trim();
+  const date = getLocalCalendarDate(now, normalizedTimezone);
+  const first = { year: date.year, month: date.month, day: 1 };
+  const next = date.month === 12
+    ? { year: date.year + 1, month: 1, day: 1 }
+    : { year: date.year, month: date.month + 1, day: 1 };
+  const startsAt = localMidnightToUtc(first, normalizedTimezone);
+  const endsAt = localMidnightToUtc(next, normalizedTimezone);
+
+  if (endsAt <= startsAt) {
+    throw new DailyStudyContractError("Resolved calendar month must end after it starts");
+  }
+
+  return {
+    localMonth: `${String(date.year).padStart(4, "0")}-${String(date.month).padStart(2, "0")}`,
+    timezone: normalizedTimezone,
+    monthStartsAt: new Date(startsAt).toISOString(),
+    monthEndsAt: new Date(endsAt).toISOString(),
   };
 }
