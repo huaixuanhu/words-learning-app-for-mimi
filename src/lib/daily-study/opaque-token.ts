@@ -3,11 +3,6 @@ import type { PromptSeed } from "./runtime-engine";
 import type { TrustedPromptClaims } from "./types";
 import { StudyPromptError } from "./prompt-errors";
 
-type RecognitionPromptClaims = Extract<
-  TrustedPromptClaims,
-  { reviewProfile: "recognition" }
->;
-
 const TOKEN_VERSION = 1;
 const MINIMUM_SECRET_BYTES = 32;
 
@@ -124,12 +119,20 @@ export function issueServerPromptToken(
   const expiresAt = new Date(
     new Date(now).getTime() + (options.ttlMs ?? 30 * 60 * 1000),
   ).toISOString();
-  const claims = {
-    ...seed,
-    promptId,
-    expiresAt,
-    targetRevision: null,
-  } as const;
+  const claims =
+    seed.reviewProfile === "recognition"
+      ? {
+          ...seed,
+          promptId,
+          expiresAt,
+          targetRevision: null,
+        }
+      : {
+          ...seed,
+          promptId,
+          expiresAt,
+          targetRevision: seed.targetRevision,
+        };
   const promptToken = signOpaqueStudyToken(
     {
       version: TOKEN_VERSION,
@@ -151,16 +154,13 @@ export function verifyServerPromptToken(
   now: string,
   secret: string,
   options: Readonly<{ allowExpired?: boolean }> = {},
-): RecognitionPromptClaims {
+): TrustedPromptClaims {
   const envelope = verifyOpaqueStudyToken<
-    Omit<RecognitionPromptClaims, "promptToken">
+    Omit<TrustedPromptClaims, "promptToken">
   >(promptToken, "prompt", now, secret, options);
   const claims = envelope.claims;
 
   if (
-    claims.reviewProfile !== "recognition" ||
-    claims.activityType !== "recognition_card" ||
-    claims.targetRevision !== null ||
     typeof claims.promptId !== "string" ||
     typeof claims.personId !== "string" ||
     typeof claims.planId !== "string" ||
@@ -170,9 +170,28 @@ export function verifyServerPromptToken(
   ) {
     throw new StudyPromptError(
       "prompt_invalid",
-      "Recognition prompt claims are invalid",
+      "Study prompt claims are invalid",
     );
   }
 
-  return { ...claims, promptToken };
+  const recognition =
+    claims.reviewProfile === "recognition" &&
+    claims.activityType === "recognition_card" &&
+    claims.targetRevision === null;
+  const active =
+    claims.reviewProfile === "active" &&
+    (claims.activityType === "say" ||
+      claims.activityType === "spell" ||
+      claims.activityType === "dictation") &&
+    typeof claims.targetRevision === "string" &&
+    Boolean(claims.targetRevision.trim());
+
+  if (!recognition && !active) {
+    throw new StudyPromptError(
+      "prompt_invalid",
+      "Study prompt profile claims are invalid",
+    );
+  }
+
+  return { ...claims, promptToken } as TrustedPromptClaims;
 }

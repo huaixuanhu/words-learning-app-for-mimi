@@ -8,6 +8,11 @@ import {
   applyRecognitionFsrsRating,
   createRecognitionFsrsCardFromReviewState,
 } from "./fsrs-recognition";
+import {
+  applyActiveFsrsRating,
+  createActiveFsrsCardFromReviewState,
+} from "./fsrs-active";
+import type { ReviewProfile } from "./types";
 
 export type ScheduledReview = {
   status: ReviewState["status"];
@@ -39,6 +44,35 @@ export function scheduleNextReview(
 ): ScheduledReview {
   const card = createRecognitionFsrsCardFromReviewState(previousState, reviewedAt);
   const outcome = applyRecognitionFsrsRating(card, rating, reviewedAt);
+
+  return {
+    status: toReviewStateStatus(outcome.state),
+    dueAt: outcome.dueAt,
+    intervalMinutes: getIntervalMinutes(reviewedAt, outcome.dueAt),
+    lapseCount: outcome.lapses,
+    reviewCount: outcome.reps,
+    difficulty: outcome.difficulty,
+    stability: outcome.stability,
+    scheduledDays: outcome.scheduledDays,
+  };
+}
+
+export function scheduleNextReviewForProfile(
+  reviewProfile: ReviewProfile,
+  previousState: ReviewState | undefined,
+  rating: ReviewRating,
+  reviewedAt = new Date().toISOString(),
+): ScheduledReview {
+  if (previousState && previousState.reviewProfile !== reviewProfile) {
+    throw new Error("Review Profile state does not match the requested scheduler");
+  }
+
+  if (reviewProfile === "recognition") {
+    return scheduleNextReview(previousState, rating, reviewedAt);
+  }
+
+  const card = createActiveFsrsCardFromReviewState(previousState, reviewedAt);
+  const outcome = applyActiveFsrsRating(card, rating, reviewedAt);
 
   return {
     status: toReviewStateStatus(outcome.state),

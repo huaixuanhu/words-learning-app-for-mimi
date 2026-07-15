@@ -1,5 +1,27 @@
 # AI Agent Log
 
+## 2026-07-15 19:20 AEST
+
+- Task: execute the user-confirmed V2 Stage 6 and explicitly prevent independent Active scheduling from repeating the final-pass mismatch repaired in Stage 5.1.
+- Plan agreed: yes. The documentation-first child plan `plan_docs/PLAN_V2_STAGE6_ACTIVE_PRACTICE_ENGINE.md` froze scope, non-scope, exit criteria, first-attempt Active scheduling, three activity flows, raw-answer boundary, Track transition, and safety stops before implementation.
+- Working tier: Tier 3. Local plans/code/tests, dormant guarded Postgres application paths, forced-local browser data, and screenshots outside tracked source were in scope. Credentials, providers, remote databases, migrations, Production data, Vercel, deployment, and GitHub remote actions were outside scope.
+- Changed files:
+  - the Stage 6 child/master/status documents, architecture, README, AGENTS, changelog, and this log;
+  - independent Active FSRS adapter/tests, profile-aware Daily Episode/repository/runtime/prompt/Postgres paths, strict study/storage routes, and the study hook;
+  - Practice Lab three-mode session UI, Home/Study entry points, Library `Start fresh` flow, and focused Active/UI/route/parity tests.
+- Reason: activate output practice while keeping weak first attempts visible to cross-day scheduling and preventing final-pass completion from overstating mastery.
+- Decisions:
+  - `active-fsrs-v1` owns separate parameters, state, events, replay, rollback, and rebuild; Recognition parameters remain untouched;
+  - the earliest Active event in one persisted plan window is the sole cross-day scheduling anchor, while later passes remain evidence and may complete the daily episode once;
+  - `Spell it` / `Dictation` persist only `exact | normalized_match | different | revealed_without_answer`; `Say it` stores self-rating without audio/transcript; raw input stays in component state;
+  - queue/cursor/prompt/refresh/repeat/rating evidence binds plan, selected activity, and non-lexical item revision, and current target is rechecked before write;
+  - whole-day reset rebuilds Recognition and Active independently; legacy Recognition reset behavior remains Recognition-only;
+  - history-bearing Track transition is an explicit write that retains source rows, creates/copies no target rows, and refuses a target with retained history;
+  - accepted motion and reduced-motion values were not changed.
+- Validation: TypeScript and ESLint passed; Vitest passed 42 files / 277 tests with 1 existing Postgres integration file/test intentionally skipped; schema 3, 5, and 6 backup dry-runs, Next.js Production build, Tier 3 governance preflight, and `git diff --check` passed; responsive browser acceptance passed at 320, 375, 390, 768, 820, 1023, 1024, and 1280 px.
+- Browser acceptance: forced `MIMI_STORAGE_RUNTIME=local`; verified Spell wrong answer → Arrow/Enter `forgot` → same-session repeat → exact recovery, Say Space reveal, Dictation target hiding before reveal, light/dark 390 px, no horizontal overflow, error overlay, or console error. The generated test entry/events were deleted and its goal was restored to `0`.
+- Safety notes: framework startup/build detected the ordinary ignored `.env.local`, but no value, credential, token, or connection string was read, printed, copied, changed, or staged. Local storage API probes returned 403 and fell back to browser storage; no remote database transaction occurred. No Gemini/provider call, charge, SQL migration, remote import/restore, Production write, Vercel action, deployment, commit, push, pull request, merge, or server study-secret configuration occurred. Live V1 remains Schema Version 5 and `0003_v2_schema6_data_model.sql` remains unexecuted.
+
 ## 2026-07-15 16:20 AEST
 
 - Task: implement Mimi's V2 scheduling repair so the required same-day passing rating does not overwrite the learning signal from earlier failed attempts.

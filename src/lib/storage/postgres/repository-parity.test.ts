@@ -36,15 +36,15 @@ describe("Postgres repository parity source", () => {
 
   it("rebuilds review state from remaining events with local natural-day semantics", () => {
     expect(repositorySource).toContain("getLocalDateKey");
-    expect(repositorySource).toContain("rebuildReviewStateFromEvents");
-    expect(repositorySource).toContain("scheduleNextReview");
+    expect(repositorySource).toContain("rebuildReviewProfileStateFromEvents");
+    expect(repositorySource).toContain("scheduleNextReviewForProfile");
     expect(repositorySource).toContain("getLocalDateKey(context.now, settings.timezone)");
   });
 
   it("uses the shared Daily Episode policy for V2 rating and rebuild paths", () => {
     expect(repositorySource).toContain("scheduleDailyEpisodeAttempt");
     expect(repositorySource).toContain("getDailyEpisodeEvents");
-    expect(repositorySource).toContain("rebuildRecognitionStateFromEvents");
+    expect(repositorySource).toContain("rebuildReviewProfileStateFromEvents");
     expect(repositorySource).toContain("{ dailyStudyPlans, makeStateId: randomUUID }");
 
     const ratingSource = repositorySource.slice(
@@ -74,6 +74,8 @@ describe("Postgres repository parity source", () => {
     expect(repositorySource).toContain("insertVocabularyCreationFact");
     expect(repositorySource).toContain("vocabularyItemHasReviewHistory");
     expect(repositorySource).toContain("Start it fresh in the other Track instead");
+    expect(repositorySource).toContain("startFreshInTrack");
+    expect(repositorySource).toContain("vocabularyItemHasReviewHistoryForProfile");
     expect(repositorySource).toContain("insert into vocabulary_creation_reversals");
   });
 

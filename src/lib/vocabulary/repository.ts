@@ -310,6 +310,78 @@ export function updateVocabularyItem(
   };
 }
 
+export function startVocabularyItemFreshInTrack(
+  data: VocabularyData,
+  id: string,
+  targetTrack: VocabularyItem["learningTrack"],
+  now = new Date().toISOString(),
+) {
+  const selectedPersonId = getSelectedPersonId(data);
+  const currentItem = data.items.find(
+    (item) => item.id === id && item.personId === selectedPersonId,
+  );
+
+  if (!currentItem) {
+    throw new Error(`Vocabulary item not found: ${id}`);
+  }
+
+  const normalizedTarget = normalizeLearningTrack(targetTrack);
+
+  if (normalizedTarget === currentItem.learningTrack) {
+    throw new Error("Choose the other Track to start fresh");
+  }
+
+  const sourceHistoryExists =
+    data.reviewStates.some(
+      (state) =>
+        state.personId === selectedPersonId &&
+        state.vocabularyItemId === id &&
+        state.reviewProfile === currentItem.learningTrack,
+    ) ||
+    data.reviewEvents.some(
+      (event) =>
+        event.personId === selectedPersonId &&
+        event.vocabularyItemId === id &&
+        event.reviewProfile === currentItem.learningTrack,
+    );
+  const targetHistoryExists =
+    data.reviewStates.some(
+      (state) =>
+        state.personId === selectedPersonId &&
+        state.vocabularyItemId === id &&
+        state.reviewProfile === normalizedTarget,
+    ) ||
+    data.reviewEvents.some(
+      (event) =>
+        event.personId === selectedPersonId &&
+        event.vocabularyItemId === id &&
+        event.reviewProfile === normalizedTarget,
+    );
+
+  if (!sourceHistoryExists) {
+    throw new Error("This entry has no study history; change its Track while editing instead");
+  }
+
+  if (targetHistoryExists) {
+    throw new Error("This entry already has history in the other Track and cannot start fresh there");
+  }
+
+  const updatedItem = {
+    ...currentItem,
+    learningTrack: normalizedTarget,
+    updatedAt: now,
+  };
+
+  return {
+    data: {
+      ...data,
+      items: data.items.map((item) => (item.id === id ? updatedItem : item)),
+      updatedAt: now,
+    },
+    item: updatedItem,
+  };
+}
+
 export function archiveVocabularyItem(data: VocabularyData, id: string, now = new Date().toISOString()) {
   const selectedPersonId = getSelectedPersonId(data);
 

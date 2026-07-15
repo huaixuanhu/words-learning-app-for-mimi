@@ -19,13 +19,13 @@
 - **ADHD-friendly 学习体验**：把任务拆小、保持明确反馈，并允许保守地回退和重新开始。
 - **长期数据可控**：正式学习数据保存在云端数据库，同时保留导出和备份能力。
 
-当前 V1 已作为受保护的私人应用上线。V2 的文档基线已在 `V2` 分支确认，主线包括每日学习分区、独立 Active 练习、手机端改造、学习情况可视化和第一代付费 AI enrichment（AI 词汇补充）。Stage 1–4 已完成指标契约、AI 质量证据、Schema Version 6（数据结构第 6 版）、Review 交互和手机基础界面。Stage 5/5.1 已在本地接通每日计划并修复同日过关与跨日调度不匹配：每个词条当天只由第一次作答决定跨日 FSRS，后续尝试保留为学习记录；首次失败或新词直接选择“模糊记得”会在下一本地日再次检查。Recognition 继续提供 `Review` / `New Words`、自由目标、读音、`回退1词`、整日重置及鼠标/键盘操作。`AI explain` 与 Active 三种练习仍处于 resting 状态，没有调用 Gemini。线上数据库仍是 Schema Version 5。
+当前 V1 已作为受保护的私人应用上线。V2 的文档基线已在 `V2` 分支确认，主线包括每日学习分区、独立 Active 练习、手机端改造、学习情况可视化和第一代付费 AI enrichment（AI 词汇补充）。Stage 1–4 已完成指标契约、AI 质量证据、Schema Version 6（数据结构第 6 版）、Review 交互和手机基础界面。Stage 5/5.1 已在本地接通每日计划并修复同日过关与跨日调度不匹配：每个词条当天只由第一次作答决定跨日 FSRS，后续尝试保留为学习记录；首次失败或新词直接选择“模糊记得”会在下一本地日再次检查。Stage 6 已在本地实现独立 Active `Review` / `New Words`、`Say it`、`Spell it`、`Dictation`、浏览器读音、同场重练和 Track 从头开始操作，并沿用同一首次作答调度规则。`AI explain` 仍处于 resting 状态，没有调用 Gemini。线上数据库仍是 Schema Version 5。
 
 ## 正式版本
 
 - 访问地址：[words-learning-app-for-mimi.vercel.app](https://words-learning-app-for-mimi.vercel.app)
 - 当前线上版本：cloud-backed V1（云端持久化 V1）
-- 当前开发分支：`V2`；Stage 1–5.1 已完成本地契约、AI 质量证据、Schema Version 6 数据层、Review/手机交互、每日学习引擎和当日学习轮次调度修复；尚未执行远程迁移、Production AI 或部署
+- 当前开发分支：`V2`；Stage 1–6 已完成本地契约、AI 质量证据、Schema Version 6 数据层、Review/手机交互、每日学习引擎、当日学习轮次调度修复和独立 Active 练习；尚未执行远程迁移、Production AI 或部署
 - 访问方式：私人 Basic Auth（基础认证）；账号信息不会存放在仓库中
 - 正式数据：Neon Postgres（关系型数据库）
 
@@ -50,6 +50,7 @@
 - 新词在第一次提交有效记忆评分之后才进入该 Track 的复习状态。
 - 上述每日值、Recognition 两个分区、今日/未来目标、学习阶段、读音、回退、整日重置和 Review 键盘操作已经在 Stage 5 本地实现。
 - Stage 5.1 已将一次当日学习中的首次作答设为唯一跨日调度依据；后续纠正不会冲淡首次失败，完成数量只在达到“模糊记得”或“完全记得”后增加，未完成词条刷新后仍回到原分区。
+- Stage 6 已把同一规则独立接入 Active；`Spell it` / `Dictation` 只保存结构化比对结果，不保存原始输入，`Say it` 不录音。
 - Recognition 与 Active 使用同一 FSRS-6 算法家族，但参数、状态、事件和测试完全独立。
 - Active 提供 `Say it`、`Spell it` 和 `Dictation`；Recognition 卡片增加浏览器读音按钮。
 - 付费 AI 提供补充释义、例句、相似词和混淆词草稿；保存前必须由使用者预览、修改或拒绝。
@@ -57,14 +58,14 @@
 - 普通界面继续使用简短自然的英文；不可逆操作和重要隐私提示保留中文或双语。
 
 完整范围和阶段顺序见 [V2 Master Plan](./plan_docs/PLAN_V2_MASTER.md)。
-Stage 1 的冻结口径、图示和可执行边界见 [V2 Stage 1 Contract](./plan_docs/PLAN_V2_STAGE1_PRODUCT_METRIC_DATA_CONTRACT.md)。Stage 2 的安全边界、首次测试和第二轮结论见 [V2 Stage 2 Gate](./plan_docs/PLAN_V2_STAGE2_AI_QUALITY_SECURITY_GATE.md)、[V2 Stage 2 Evidence](./plan_docs/PLAN_V2_STAGE2_AI_QUALITY_EVIDENCE.md)、[V2 Stage 2-B Refinement](./plan_docs/PLAN_V2_STAGE2_B_AI_QUALITY_REFINEMENT.md) 和 [V2 Stage 2-B Evidence](./plan_docs/PLAN_V2_STAGE2_B_AI_QUALITY_EVIDENCE.md)。Stage 3 的数据、迁移草案、备份范围和远程执行边界见 [V2 Stage 3 Data Model](./plan_docs/PLAN_V2_STAGE3_DATA_MODEL_BACKUP_PARITY.md)；Review 交互与例句词汇操作见 [V2 Stage 3.1](./plan_docs/PLAN_V2_STAGE3_1_REVIEW_INTERACTION_CONTEXT_WORD_ACTIONS.md)；手机基础界面与精简文案见 [V2 Stage 4](./plan_docs/PLAN_V2_STAGE4_MOBILE_FOUNDATION_COPY.md)；每日学习运行规则和验收见 [V2 Stage 5](./plan_docs/PLAN_V2_STAGE5_DAILY_LEARNING_ENGINE.md)，本次调度修复见 [V2 Stage 5.1](./plan_docs/PLAN_V2_STAGE5_1_DAILY_EPISODE_SCHEDULING_REPAIR.md)。
+Stage 1 的冻结口径、图示和可执行边界见 [V2 Stage 1 Contract](./plan_docs/PLAN_V2_STAGE1_PRODUCT_METRIC_DATA_CONTRACT.md)。Stage 2 的安全边界、首次测试和第二轮结论见 [V2 Stage 2 Gate](./plan_docs/PLAN_V2_STAGE2_AI_QUALITY_SECURITY_GATE.md)、[V2 Stage 2 Evidence](./plan_docs/PLAN_V2_STAGE2_AI_QUALITY_EVIDENCE.md)、[V2 Stage 2-B Refinement](./plan_docs/PLAN_V2_STAGE2_B_AI_QUALITY_REFINEMENT.md) 和 [V2 Stage 2-B Evidence](./plan_docs/PLAN_V2_STAGE2_B_AI_QUALITY_EVIDENCE.md)。Stage 3 的数据、迁移草案、备份范围和远程执行边界见 [V2 Stage 3 Data Model](./plan_docs/PLAN_V2_STAGE3_DATA_MODEL_BACKUP_PARITY.md)；Review 交互与例句词汇操作见 [V2 Stage 3.1](./plan_docs/PLAN_V2_STAGE3_1_REVIEW_INTERACTION_CONTEXT_WORD_ACTIONS.md)；手机基础界面与精简文案见 [V2 Stage 4](./plan_docs/PLAN_V2_STAGE4_MOBILE_FOUNDATION_COPY.md)；每日学习运行规则和验收见 [V2 Stage 5](./plan_docs/PLAN_V2_STAGE5_DAILY_LEARNING_ENGINE.md)，调度修复见 [V2 Stage 5.1](./plan_docs/PLAN_V2_STAGE5_1_DAILY_EPISODE_SCHEDULING_REPAIR.md)，独立 Active 练习见 [V2 Stage 6](./plan_docs/PLAN_V2_STAGE6_ACTIVE_PRACTICE_ENGINE.md)。
 
 ## 两条学习轨道
 
 | 学习轨道 | 当前 V1 | 已确认 V2 方向 |
 | --- | --- | --- |
 | Recognition Vocabulary | 已启用 FSRS-6 复习 | 已本地实现 Review / New Words、每日六项信息、读音按钮；学习预测在 V2-8 |
-| Active Vocabulary（输出词汇） | 仅保存和展示 | 独立 FSRS 参数与状态；`Say it`、`Spell it`、`Dictation` |
+| Active Vocabulary（输出词汇） | 仅保存和展示 | 已本地实现独立 FSRS 参数与状态、Review / New Words、`Say it`、`Spell it`、`Dictation` |
 
 V2 的 `Say it` 仅用于单词或词组回忆并由使用者自评；V2 不录制或上传麦克风音频。PTE / IELTS 写作题型、考试口语题型、自由写作评分和外源题库继续留给后续版本。
 
@@ -74,7 +75,7 @@ V2 的 `Say it` 仅用于单词或词组回忆并由使用者自评；V2 不录�
 - React 19 + TypeScript
 - Tailwind CSS 4 + Motion for React
 - Neon Postgres + `@neondatabase/serverless`
-- `ts-fsrs` Recognition scheduler（阅读词汇调度器）
+- `ts-fsrs`，Recognition / Active 使用相同算法家族和独立参数模块
 - Vitest + ESLint
 - GitHub + Vercel
 
@@ -124,7 +125,7 @@ npm run build
 
 - 当前产品面向私人熟人小组，不是公开注册服务。
 - Production 不接收 Development / Preview 的测试数据。
-- Active Vocabulary 在当前线上 V1 中没有调度行为；其独立练习属于已确认但尚未实现的 V2。
+- Active Vocabulary 在当前线上 V1 中没有调度行为；其独立练习已在 `V2` 分支本地实现，尚未部署。
 - `V2` 分支已把本地快照和 JSON backup 升级到 Schema Version 6 / backup version 3；`db/migrations/0003_v2_schema6_data_model.sql` 尚未连接或执行到任何远程数据库，线上 V1 继续使用 Schema Version 5。
 - Stage 5 的服务器 prompt/cursor（提示/分页证据）需要未来专用 `MIMI_STUDY_TOKEN_SECRET`；当前未配置，因此 Postgres `/api/study` 中需要签发或验证这些证据的队列与评分操作会安全停止。浏览器本地模式仍可用于本地验证。
 - V2 计划使用受硬额度保护的付费 Gemini API；当前 Stage 2 固定测试 `gemini-3.1-flash-lite`，使用 120 条非个人测试词条，并已从路线中移除 Datamuse、Free Dictionary、Groq 对比和会热切换的 `gemini-flash-latest`。当前线上 V1 尚未调用任何 AI 服务。
@@ -153,6 +154,7 @@ README 面向第一次看到仓库的人。详细架构、历史决策、执行�
 - [V2 Stage 4 Mobile Foundation](./plan_docs/PLAN_V2_STAGE4_MOBILE_FOUNDATION_COPY.md)：手机/平板导航、Safe Area、响应式面板和精简英文文案
 - [V2 Stage 5 Daily Learning Engine](./plan_docs/PLAN_V2_STAGE5_DAILY_LEARNING_ENGINE.md)：每日计划、六项数据、Recognition 分区、目标、回退和整日重置
 - [V2 Stage 5.1 Daily Episode Repair](./plan_docs/PLAN_V2_STAGE5_1_DAILY_EPISODE_SCHEDULING_REPAIR.md)：首次作答调度锚点、次日巩固、完成统计、刷新恢复和重建规则
+- [V2 Stage 6 Active Practice Engine](./plan_docs/PLAN_V2_STAGE6_ACTIVE_PRACTICE_ENGINE.md)：独立 Active 调度、三种练习、结构化答案证据和 Track 从头开始
 - [Version-hold Multi-User Isolation](./plan_docs/PLAN_VERSION_HOLD_MULTI_USER_CONFIDENTIAL_ISOLATION.md)：暂缓的 SSO 与多人机密隔离边界
 - [Stage 8 Review Memory Algorithm](./plan_docs/PLAN_V1_STAGE8_REVIEW_MEMORY_ALGORITHM.md)：Recognition FSRS 与 Active 隔离设计
 - [Stage 8.5 Data Lifecycle](./plan_docs/PLAN_V1_STAGE8_5_DATA_LIFECYCLE_ENVIRONMENT_STRATEGY.md)：环境、备份和数据生命周期策略

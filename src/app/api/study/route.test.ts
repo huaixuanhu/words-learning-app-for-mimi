@@ -172,6 +172,7 @@ describe("/api/study", () => {
       planId: "33333333-3333-4333-8333-333333333333",
       localDate: "2026-07-14",
       reviewProfile: "recognition",
+      activityType: "recognition_card",
       expectedPlanVersion: 1,
       requestedPageSize: 100,
       zone: "new",
@@ -189,6 +190,32 @@ describe("/api/study", () => {
       queueRequest,
       expect.any(String),
     );
+  });
+
+  it("rejects an Active queue with a Recognition activity", async () => {
+    const { POST } = await import("./route");
+    const response = await POST(
+      request({
+        selectedPersonId: personId,
+        operation: {
+          type: "readQueue",
+          request: {
+            personId,
+            planId: "33333333-3333-4333-8333-333333333333",
+            localDate: "2026-07-14",
+            reviewProfile: "active",
+            activityType: "recognition_card",
+            expectedPlanVersion: 1,
+            requestedPageSize: 100,
+            zone: "new",
+            cursorToken: null,
+          },
+        },
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    expect(serviceMocks.readPostgresDailyStudyQueue).not.toHaveBeenCalled();
   });
 
   it("routes a strict current-card prompt refresh", async () => {

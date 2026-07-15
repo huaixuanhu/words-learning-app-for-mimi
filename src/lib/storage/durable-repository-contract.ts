@@ -131,6 +131,11 @@ export type VocabularyRepositoryPort = Readonly<{
     vocabularyItemId: string,
     input: UpdateVocabularyInput,
   ): Promise<VocabularyItem>;
+  startFreshInTrack(
+    context: TimestampedPersonContext,
+    vocabularyItemId: string,
+    targetTrack: VocabularyItem["learningTrack"],
+  ): Promise<VocabularyItem>;
   archiveItem(context: TimestampedPersonContext, vocabularyItemId: string): Promise<VocabularyItem>;
   restoreItem(context: TimestampedPersonContext, vocabularyItemId: string): Promise<VocabularyItem>;
   deleteItem(

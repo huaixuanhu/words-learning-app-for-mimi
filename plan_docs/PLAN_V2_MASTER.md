@@ -590,11 +590,14 @@ Status: complete locally on 2026-07-15. Canonical child plan and acceptance evid
 
 ### V2-6 Active Practice Engine
 
-- Build `Say it`, `Spell it`, and `Dictation`.
-- Add browser SpeechSynthesis playback and typed-answer normalization.
-- Add independent Active FSRS parameters, state, events, rebuild, backup, and tests.
-- Retain the completed Recognition `Listen` button and regression-check that it has no scheduling side effect.
-- Keep Speech Recognition / microphone-AI scoring deferred.
+Status: complete locally on 2026-07-15. Canonical child plan and acceptance record: `plan_docs/PLAN_V2_STAGE6_ACTIVE_PRACTICE_ENGINE.md`. The implementation applies the Stage 5.1 first-attempt scheduling anchor independently to Active, so a later same-day pass cannot hide the first failure or advance cross-day FSRS state again. Schema Version 6 and JSON backup version 3 remain unchanged; no provider, remote database, credential, migration, Production, or deployment action occurred.
+
+- Built independent Active `Review` and `New Words` entry points plus `Say it`, `Spell it`, and `Dictation`.
+- Added browser SpeechSynthesis playback, typed-answer normalization, non-lexical target revision binding, same-session repeat, rollback, and two-profile whole-day rebuild.
+- Added independent `active-fsrs-v1` parameters, state/events, first-attempt Daily Episode scheduling, local/Postgres application parity, and focused tests.
+- Added explicit history-bearing Track transition with retained read-only source history and no state copy.
+- Retained the completed Recognition `Listen` behavior and kept Speech Recognition / microphone-AI scoring deferred.
+- Passed the 320–1280 px responsive matrix, light/dark phone checks, mouse/keyboard flow, 277 local tests with the existing Postgres integration test skipped, and local build/governance/backup checks recorded in the child plan.
 
 ### V2-7 AI Enrichment And Cost Guard
 

@@ -1,6 +1,10 @@
 import {
+  ACTIVE_PARAMETER_SET_ID,
   RECOGNITION_PARAMETER_SET_ID,
+  type ReviewActivityType,
+  type ReviewAnswerOutcome,
   type ReviewEvent,
+  type ReviewProfile,
   type ReviewRating,
   type ReviewState,
 } from "./types";
@@ -9,7 +13,12 @@ import type { DailyStudyPlanRecord } from "@/lib/storage/v2-data-model";
 import { makeId } from "@/lib/vocabulary/repository";
 import { getSelectedPersonId } from "@/lib/people/repository";
 import { getSelectedReviewSettings } from "./settings";
-import { getLocalDateKey, scheduleNextReview, selectReviewQueue } from "./scheduler";
+import {
+  getLocalDateKey,
+  scheduleNextReview,
+  scheduleNextReviewForProfile,
+  selectReviewQueue,
+} from "./scheduler";
 import {
   findDailyEpisodePlan,
   getDailyEpisodeEvents,
@@ -27,6 +36,14 @@ export type RecordDailyReviewInput = RecordReviewInput & {
   plan: DailyStudyPlanRecord;
 };
 
+export type RecordDailyStudyReviewInput = RecordReviewInput & {
+  plan: DailyStudyPlanRecord;
+  activityType: ReviewActivityType;
+  answerOutcome: ReviewAnswerOutcome;
+  answerNormalizationVersion: "active-answer-v1" | null;
+  targetRevision: string | null;
+};
+
 export function getReviewState(data: VocabularyData, vocabularyItemId: string) {
   const personId = getSelectedPersonId(data);
 
@@ -35,6 +52,21 @@ export function getReviewState(data: VocabularyData, vocabularyItemId: string) {
       state.personId === personId &&
       state.vocabularyItemId === vocabularyItemId &&
       state.reviewProfile === "recognition",
+  );
+}
+
+export function getReviewStateForProfile(
+  data: VocabularyData,
+  vocabularyItemId: string,
+  reviewProfile: ReviewProfile,
+) {
+  const personId = getSelectedPersonId(data);
+
+  return data.reviewStates.find(
+    (state) =>
+      state.personId === personId &&
+      state.vocabularyItemId === vocabularyItemId &&
+      state.reviewProfile === reviewProfile,
   );
 }
 
@@ -56,9 +88,16 @@ function sortReviewEventsByReviewedAt(a: ReviewEvent, b: ReviewEvent) {
   return a.id.localeCompare(b.id);
 }
 
-export function rebuildRecognitionStateFromEvents(
+function parameterSetIdForProfile(reviewProfile: ReviewProfile) {
+  return reviewProfile === "recognition"
+    ? RECOGNITION_PARAMETER_SET_ID
+    : ACTIVE_PARAMETER_SET_ID;
+}
+
+export function rebuildReviewProfileStateFromEvents(
   personId: string,
   vocabularyItemId: string,
+  reviewProfile: ReviewProfile,
   events: ReviewEvent[],
   previousState: ReviewState | undefined,
   options: Readonly<{
@@ -66,7 +105,19 @@ export function rebuildRecognitionStateFromEvents(
     makeStateId?: () => string;
   }> = {},
 ) {
-  const orderedEvents = [...events].sort(sortReviewEventsByReviewedAt);
+  if (previousState && previousState.reviewProfile !== reviewProfile) {
+    throw new Error("Cannot rebuild one Review Profile from another profile state");
+  }
+
+  const orderedEvents = [...events]
+    .map((event) => {
+      if (event.reviewProfile !== reviewProfile) {
+        throw new Error("Cannot rebuild one Review Profile from another profile event");
+      }
+
+      return event;
+    })
+    .sort(sortReviewEventsByReviewedAt);
   const seenPlanIds = new Set<string>();
   let state: ReviewState | undefined;
 
@@ -93,7 +144,12 @@ export function rebuildRecognitionStateFromEvents(
           reviewedAt: event.reviewedAt,
           plan,
         }).schedule
-      : scheduleNextReview(state, event.rating, event.reviewedAt);
+      : scheduleNextReviewForProfile(
+          reviewProfile,
+          state,
+          event.rating,
+          event.reviewedAt,
+        );
 
     state = {
       id:
@@ -102,8 +158,8 @@ export function rebuildRecognitionStateFromEvents(
         (options.makeStateId ?? (() => makeId("review_state")))(),
       personId,
       vocabularyItemId,
-      reviewProfile: "recognition",
-      parameterSetId: RECOGNITION_PARAMETER_SET_ID,
+      reviewProfile,
+      parameterSetId: parameterSetIdForProfile(reviewProfile),
       firstRatedAt:
         previousState?.historyOrigin === "legacy_unknown"
           ? null
@@ -123,6 +179,46 @@ export function rebuildRecognitionStateFromEvents(
   }
 
   return state;
+}
+
+export function rebuildRecognitionStateFromEvents(
+  personId: string,
+  vocabularyItemId: string,
+  events: ReviewEvent[],
+  previousState: ReviewState | undefined,
+  options: Readonly<{
+    dailyStudyPlans?: readonly DailyStudyPlanRecord[];
+    makeStateId?: () => string;
+  }> = {},
+) {
+  return rebuildReviewProfileStateFromEvents(
+    personId,
+    vocabularyItemId,
+    "recognition",
+    events,
+    previousState,
+    options,
+  );
+}
+
+export function rebuildActiveStateFromEvents(
+  personId: string,
+  vocabularyItemId: string,
+  events: ReviewEvent[],
+  previousState: ReviewState | undefined,
+  options: Readonly<{
+    dailyStudyPlans?: readonly DailyStudyPlanRecord[];
+    makeStateId?: () => string;
+  }> = {},
+) {
+  return rebuildReviewProfileStateFromEvents(
+    personId,
+    vocabularyItemId,
+    "active",
+    events,
+    previousState,
+    options,
+  );
 }
 
 export function resetTodayReviewTask(data: VocabularyData, now = new Date().toISOString()) {
@@ -223,6 +319,24 @@ export function rollbackReviewEvent(
     throw new Error(`Review event not found: ${reviewEventId}`);
   }
 
+  return rollbackStudyReviewEvent(data, reviewEventId, now);
+}
+
+export function rollbackStudyReviewEvent(
+  data: VocabularyData,
+  reviewEventId: string,
+  now = new Date().toISOString(),
+) {
+  const personId = getSelectedPersonId(data);
+  const event = data.reviewEvents.find(
+    (candidate) =>
+      candidate.id === reviewEventId && candidate.personId === personId,
+  );
+
+  if (!event) {
+    throw new Error(`Review event not found: ${reviewEventId}`);
+  }
+
   const remainingEvents = data.reviewEvents.filter(
     (candidate) => !(candidate.id === reviewEventId && candidate.personId === personId),
   );
@@ -230,19 +344,20 @@ export function rollbackReviewEvent(
     (state) =>
       state.personId === personId &&
       state.vocabularyItemId === event.vocabularyItemId &&
-      state.reviewProfile === "recognition",
+      state.reviewProfile === event.reviewProfile,
   );
   const earlierEvents = remainingEvents
     .filter(
       (candidate) =>
-        candidate.reviewProfile === "recognition" &&
+        candidate.reviewProfile === event.reviewProfile &&
         candidate.personId === personId &&
         candidate.vocabularyItemId === event.vocabularyItemId,
     )
     .sort(sortReviewEventsByReviewedAt);
-  const rebuiltState = rebuildRecognitionStateFromEvents(
+  const rebuiltState = rebuildReviewProfileStateFromEvents(
     personId,
     event.vocabularyItemId,
+    event.reviewProfile,
     earlierEvents,
     previousState,
     { dailyStudyPlans: data.dailyStudyPlans },
@@ -257,7 +372,7 @@ export function rollbackReviewEvent(
         ...data.reviewStates.filter(
           (state) =>
             !(
-              state.reviewProfile === "recognition" &&
+              state.reviewProfile === event.reviewProfile &&
               state.personId === personId &&
               state.vocabularyItemId === event.vocabularyItemId
             ),
@@ -356,7 +471,55 @@ export function recordDailyReview(
   input: RecordDailyReviewInput,
   now = new Date().toISOString(),
 ) {
+  return recordDailyStudyReview(
+    data,
+    {
+      ...input,
+      activityType: "recognition_card",
+      answerOutcome: "self_rated",
+      answerNormalizationVersion: null,
+      targetRevision: null,
+    },
+    now,
+  );
+}
+
+function assertDailyEvidence(input: RecordDailyStudyReviewInput) {
+  const profile = input.plan.reviewProfile;
+  const recognition =
+    profile === "recognition" &&
+    input.activityType === "recognition_card" &&
+    input.answerOutcome === "self_rated" &&
+    input.answerNormalizationVersion === null &&
+    input.targetRevision === null;
+  const activeSay =
+    profile === "active" &&
+    input.activityType === "say" &&
+    input.answerOutcome === "self_rated" &&
+    input.answerNormalizationVersion === null &&
+    Boolean(input.targetRevision?.trim());
+  const activeTyped =
+    profile === "active" &&
+    (input.activityType === "spell" || input.activityType === "dictation") &&
+    (input.answerOutcome === "exact" ||
+      input.answerOutcome === "normalized_match" ||
+      input.answerOutcome === "different" ||
+      input.answerOutcome === "revealed_without_answer") &&
+    input.answerNormalizationVersion === "active-answer-v1" &&
+    Boolean(input.targetRevision?.trim());
+
+  if (!recognition && !activeSay && !activeTyped) {
+    throw new Error("Daily review evidence does not match its Review Profile");
+  }
+}
+
+export function recordDailyStudyReview(
+  data: VocabularyData,
+  input: RecordDailyStudyReviewInput,
+  now = new Date().toISOString(),
+) {
   const personId = getSelectedPersonId(data);
+  assertDailyEvidence(input);
   const item = data.items.find(
     (candidate) =>
       candidate.id === input.vocabularyItemId && candidate.personId === personId,
@@ -366,20 +529,23 @@ export function recordDailyReview(
     !item ||
     item.status === "archived" ||
     item.archivedAt ||
-    item.learningTrack !== "recognition"
+    item.learningTrack !== input.plan.reviewProfile
   ) {
     throw new Error(`Reviewable vocabulary item not found: ${input.vocabularyItemId}`);
   }
 
   if (
     input.plan.personId !== personId ||
-    input.plan.reviewProfile !== "recognition" ||
     input.plan.localDate.trim() === ""
   ) {
-    throw new Error("Daily review does not match the selected Recognition plan");
+    throw new Error("Daily review does not match the selected plan");
   }
 
-  const previousState = getReviewState(data, input.vocabularyItemId);
+  const previousState = getReviewStateForProfile(
+    data,
+    input.vocabularyItemId,
+    input.plan.reviewProfile,
+  );
   const priorEpisodeEvents = getDailyEpisodeEvents(
     data.reviewEvents,
     input.plan,
@@ -403,8 +569,8 @@ export function recordDailyReview(
         id: previousState?.id ?? makeId("review_state"),
         personId,
         vocabularyItemId: input.vocabularyItemId,
-        reviewProfile: "recognition",
-        parameterSetId: RECOGNITION_PARAMETER_SET_ID,
+        reviewProfile: input.plan.reviewProfile,
+        parameterSetId: parameterSetIdForProfile(input.plan.reviewProfile),
         firstRatedAt:
           previousState?.historyOrigin === "legacy_unknown"
             ? null
@@ -429,12 +595,12 @@ export function recordDailyReview(
     promptId: input.promptId ?? null,
     personId,
     vocabularyItemId: input.vocabularyItemId,
-    reviewProfile: "recognition",
-    activityType: "recognition_card",
-    answerOutcome: "self_rated",
-    answerNormalizationVersion: null,
-    targetRevision: null,
-    parameterSetId: RECOGNITION_PARAMETER_SET_ID,
+    reviewProfile: input.plan.reviewProfile,
+    activityType: input.activityType,
+    answerOutcome: input.answerOutcome,
+    answerNormalizationVersion: input.answerNormalizationVersion,
+    targetRevision: input.targetRevision,
+    parameterSetId: parameterSetIdForProfile(input.plan.reviewProfile),
     reviewedAt: now,
     rating: input.rating,
     previousDueAt: previousState?.dueAt ?? null,
@@ -447,7 +613,7 @@ export function recordDailyReview(
     ? data.reviewStates.map((state) =>
         state.personId === personId &&
         state.vocabularyItemId === input.vocabularyItemId &&
-        state.reviewProfile === "recognition"
+        state.reviewProfile === input.plan.reviewProfile
           ? nextState
           : state,
       )

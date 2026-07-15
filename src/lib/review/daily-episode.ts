@@ -1,11 +1,7 @@
 import type { DailyStudyPlanRecord } from "@/lib/storage/v2-data-model";
-import { scheduleNextReview, type ScheduledReview } from "./scheduler";
+import { scheduleNextReviewForProfile, type ScheduledReview } from "./scheduler";
 import { isPassingSessionRating } from "./session-queue";
 import type { ReviewEvent, ReviewRating, ReviewState } from "./types";
-
-type RecognitionPlan = DailyStudyPlanRecord & {
-  reviewProfile: "recognition";
-};
 
 function timestamp(value: string, label: string) {
   const time = new Date(value).getTime();
@@ -17,11 +13,9 @@ function timestamp(value: string, label: string) {
   return time;
 }
 
-function assertRecognitionPlan(
-  plan: DailyStudyPlanRecord,
-): asserts plan is RecognitionPlan {
-  if (plan.reviewProfile !== "recognition") {
-    throw new Error("Daily Recognition scheduling requires a Recognition plan");
+function assertReviewPlan(plan: DailyStudyPlanRecord) {
+  if (plan.reviewProfile !== "recognition" && plan.reviewProfile !== "active") {
+    throw new Error("Daily scheduling requires a supported Review Profile plan");
   }
 
   const startsAt = timestamp(plan.dayStartsAt, "plan.dayStartsAt");
@@ -91,13 +85,13 @@ export function getDailyEpisodeEvents(
   vocabularyItemId: string,
   allPlans: readonly DailyStudyPlanRecord[] = [plan],
 ) {
-  assertRecognitionPlan(plan);
+  assertReviewPlan(plan);
 
   return events
     .filter(
       (event) =>
         event.vocabularyItemId === vocabularyItemId &&
-        event.reviewProfile === "recognition" &&
+        event.reviewProfile === plan.reviewProfile &&
         findDailyEpisodePlan(event, allPlans)?.id === plan.id,
     )
     .sort(sortReviewEvents);
@@ -218,7 +212,7 @@ export function scheduleDailyEpisodeAttempt(input: {
   reviewedAt: string;
   plan: DailyStudyPlanRecord;
 }) {
-  assertRecognitionPlan(input.plan);
+  assertReviewPlan(input.plan);
   const reviewedAt = timestamp(input.reviewedAt, "reviewedAt");
   const startsAt = timestamp(input.plan.dayStartsAt, "plan.dayStartsAt");
   const endsAt = timestamp(input.plan.dayEndsAt, "plan.dayEndsAt");
@@ -228,7 +222,10 @@ export function scheduleDailyEpisodeAttempt(input: {
   }
 
   for (const event of input.priorEpisodeEvents) {
-    if (!isReviewEventInDailyPlan(event, input.plan)) {
+    if (
+      event.reviewProfile !== input.plan.reviewProfile ||
+      !isReviewEventInDailyPlan(event, input.plan)
+    ) {
       throw new Error(`Review event ${event.id} does not belong to the supplied plan`);
     }
   }
@@ -248,7 +245,8 @@ export function scheduleDailyEpisodeAttempt(input: {
   const wasNewAtPlanStart = !input.previousState;
   const failedAnchor = input.rating === "forgot" || input.rating === "hard";
   const effectiveRating: ReviewRating = failedAnchor ? "forgot" : input.rating;
-  const scheduled = scheduleNextReview(
+  const scheduled = scheduleNextReviewForProfile(
+    input.plan.reviewProfile,
     input.previousState,
     effectiveRating,
     input.reviewedAt,

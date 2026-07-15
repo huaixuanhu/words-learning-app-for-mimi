@@ -230,6 +230,7 @@ type StudyQueueQueryBase = Readonly<{
   planId: string;
   localDate: string;
   reviewProfile: ReviewProfile;
+  activityType?: StudyActivityType;
   expectedPlanVersion: number;
   requestedPageSize?: number;
 }>;

@@ -10,6 +10,7 @@ const repositoryMocks = vi.hoisted(() => ({
 const repositoryMethodMocks = vi.hoisted(() => ({
   deleteItem: vi.fn(),
   rollbackImportBatch: vi.fn(),
+  startFreshInTrack: vi.fn(),
   resetToday: vi.fn(),
   rollbackEvent: vi.fn(),
 }));
@@ -108,6 +109,7 @@ describe("/api/storage/data runtime contract", () => {
     repositoryMocks.getPostgresVocabularyDataSnapshot.mockReset();
     repositoryMethodMocks.deleteItem.mockReset();
     repositoryMethodMocks.rollbackImportBatch.mockReset();
+    repositoryMethodMocks.startFreshInTrack.mockReset();
     repositoryMethodMocks.resetToday.mockReset();
     repositoryMethodMocks.rollbackEvent.mockReset();
     repositoryMocks.createPostgresRepository.mockReturnValue({
@@ -117,6 +119,7 @@ describe("/api/storage/data runtime contract", () => {
       vocabulary: {
         deleteItem: repositoryMethodMocks.deleteItem,
         rollbackImportBatch: repositoryMethodMocks.rollbackImportBatch,
+        startFreshInTrack: repositoryMethodMocks.startFreshInTrack,
       },
       review: {
         resetToday: repositoryMethodMocks.resetToday,
@@ -211,6 +214,38 @@ describe("/api/storage/data runtime contract", () => {
       data: fakeData,
     });
     expect(repositoryMocks.getPostgresVocabularyDataSnapshot).toHaveBeenCalledWith(personId);
+  });
+
+  it("routes an explicit start-fresh Track change", async () => {
+    setRuntimeEnv({
+      MIMI_STORAGE_RUNTIME: "postgres-production",
+      VERCEL_ENV: "production",
+      NODE_ENV: "production",
+    });
+    const { POST } = await import("./route");
+    const response = await POST(
+      dataPostRequest({
+        selectedPersonId: personId,
+        mutation: {
+          type: "vocabulary.startFreshInTrack",
+          vocabularyItemId: "22222222-2222-4222-8222-222222222222",
+          targetTrack: "active",
+          now: "2026-07-15T08:00:00.000Z",
+          timezone: "Australia/Melbourne",
+        },
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(repositoryMethodMocks.startFreshInTrack).toHaveBeenCalledWith(
+      expect.objectContaining({
+        personId,
+        now: "2026-07-15T08:00:00.000Z",
+        timezone: "Australia/Melbourne",
+      }),
+      "22222222-2222-4222-8222-222222222222",
+      "active",
+    );
   });
 
   it("keeps Preview writes behind the preview-only UI write gate", async () => {

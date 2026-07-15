@@ -22,6 +22,7 @@ import type {
   ReviewProfile,
   RefreshStudyPromptCommand,
   RollbackStudyRatingCommand,
+  StudyActivityType,
   StudyQueueRequest,
   UpdateDefaultGoalsCommand,
 } from "@/lib/daily-study/types";
@@ -85,6 +86,19 @@ function parseReviewProfile(value: unknown): ReviewProfile {
   return value;
 }
 
+function parseStudyActivityType(value: unknown): StudyActivityType {
+  if (
+    value !== "recognition_card" &&
+    value !== "say" &&
+    value !== "spell" &&
+    value !== "dictation"
+  ) {
+    throw new Error("Unsupported activityType");
+  }
+
+  return value;
+}
+
 function parseQueueRequest(value: unknown): StudyQueueRequest {
   if (!isRecord(value)) {
     throw new Error("operation.request is required");
@@ -97,6 +111,7 @@ function parseQueueRequest(value: unknown): StudyQueueRequest {
       "planId",
       "localDate",
       "reviewProfile",
+      "activityType",
       "expectedPlanVersion",
       "requestedPageSize",
       "zone",
@@ -128,11 +143,22 @@ function parseQueueRequest(value: unknown): StudyQueueRequest {
     throw new Error("cursorToken must be opaque text or null");
   }
 
+  const reviewProfile = parseReviewProfile(value.reviewProfile);
+  const activityType = parseStudyActivityType(value.activityType);
+
+  if (
+    (reviewProfile === "recognition" && activityType !== "recognition_card") ||
+    (reviewProfile === "active" && activityType === "recognition_card")
+  ) {
+    throw new Error("Queue activity does not match reviewProfile");
+  }
+
   return {
     personId: requiredString(value.personId, "request.personId"),
     planId: requiredString(value.planId, "request.planId"),
     localDate: requiredString(value.localDate, "request.localDate"),
-    reviewProfile: parseReviewProfile(value.reviewProfile),
+    reviewProfile,
+    activityType,
     expectedPlanVersion: value.expectedPlanVersion as number,
     requestedPageSize: value.requestedPageSize as number,
     zone: value.zone,

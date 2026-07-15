@@ -35,6 +35,33 @@ describe("opaque study tokens", () => {
     ).toEqual(issued.claims);
   });
 
+  it("round trips a non-lexical Active target revision", () => {
+    const issued = issueServerPromptToken(
+      {
+        personId: "person-1",
+        planId: "plan-1",
+        planVersion: 1,
+        localDate: "2026-07-14",
+        vocabularyItemId: "item-1",
+        reviewProfile: "active",
+        activityType: "dictation",
+        targetRevision: "active-target-v1:item-1:revision-1",
+      },
+      "2026-07-14T04:00:00.000Z",
+      SECRET,
+      { promptId: "prompt-active-1", ttlMs: 60_000 },
+    );
+
+    expect(
+      verifyServerPromptToken(
+        issued.promptToken,
+        "2026-07-14T04:00:30.000Z",
+        SECRET,
+      ),
+    ).toEqual(issued.claims);
+    expect(JSON.stringify(issued.claims)).not.toContain("adapt");
+  });
+
   it("rejects tampering, wrong token kinds, and expiry", () => {
     const token = signOpaqueStudyToken(
       {

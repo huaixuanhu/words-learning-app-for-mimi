@@ -19,6 +19,7 @@ import {
   type StudyPromptErrorCode,
 } from "@/lib/daily-study/prompt-errors";
 import {
+  createActiveTargetRevision,
   readDailyStudyQueue,
   resetDailyStudyToday,
   resolveDailyStudyToday,
@@ -34,11 +35,16 @@ import type {
   ResetTodayCommand,
   RollbackStudyRatingCommand,
   StudyQueueEntryFact,
+  StudyActivityType,
+  ReviewProfile,
   StudyZone,
   UpdateDefaultGoalsCommand,
   UpdateTodayGoalsCommand,
 } from "@/lib/daily-study/types";
-import { recordDailyReview, rollbackReviewEvent } from "@/lib/review/repository";
+import {
+  recordDailyStudyReview,
+  rollbackStudyReviewEvent,
+} from "@/lib/review/repository";
 import type { ReviewEvent, ReviewState } from "@/lib/review/types";
 import type { VocabularyData } from "@/lib/vocabulary/types";
 
@@ -60,6 +66,8 @@ export type DailyStudyQueueResult = Readonly<{
     planId: string;
     planVersion: number;
     localDate: string;
+    reviewProfile: ReviewProfile;
+    activityType: StudyActivityType;
   }>;
 }>;
 
@@ -181,27 +189,32 @@ export function useDailyStudy() {
 
   const readQueue = useCallback(
     async (
-      zone: StudyZone,
+      input: Readonly<{
+        reviewProfile: ReviewProfile;
+        activityType: StudyActivityType;
+        zone: StudyZone;
+      }>,
       localSourceData?: VocabularyData,
     ): Promise<DailyStudyQueueResult> => {
       const resolved =
         !isPostgresClientStorageRuntime(storageRuntime) && localSourceData
           ? resolveDailyStudyToday(localSourceData)
           : await resolveCurrent();
-      const recognition = resolved.today.tracks.recognition;
+      const track = resolved.today.tracks[input.reviewProfile];
 
-      if (recognition.status !== "available") {
-        throw new Error("Recognition study is temporarily unavailable");
+      if (track.status !== "available") {
+        throw new Error("This study Track is temporarily unavailable");
       }
 
       const request = {
         personId: resolved.today.personId,
-        planId: recognition.planId,
+        planId: track.planId,
         localDate: resolved.today.localDate,
-        reviewProfile: "recognition" as const,
-        expectedPlanVersion: recognition.planVersion,
+        reviewProfile: input.reviewProfile,
+        activityType: input.activityType,
+        expectedPlanVersion: track.planVersion,
         requestedPageSize: 100,
-        zone,
+        zone: input.zone,
         cursorToken: null,
       };
 
@@ -218,6 +231,8 @@ export function useDailyStudy() {
             planId: request.planId,
             planVersion: request.expectedPlanVersion,
             localDate: request.localDate,
+            reviewProfile: request.reviewProfile,
+            activityType: request.activityType,
           },
         };
       }
@@ -237,6 +252,8 @@ export function useDailyStudy() {
           planId: request.planId,
           planVersion: request.expectedPlanVersion,
           localDate: request.localDate,
+          reviewProfile: request.reviewProfile,
+          activityType: request.activityType,
         },
       };
     },
@@ -307,14 +324,14 @@ export function useDailyStudy() {
           candidate.id === record.claims.planId &&
           candidate.personId === command.personId &&
           candidate.localDate === record.claims.localDate &&
-          candidate.reviewProfile === "recognition" &&
+          candidate.reviewProfile === record.claims.reviewProfile &&
           candidate.planVersion === record.claims.planVersion,
       );
       const item = data.items.find(
         (candidate) =>
           candidate.id === record.claims.vocabularyItemId &&
           candidate.personId === command.personId &&
-          candidate.learningTrack === "recognition" &&
+          candidate.learningTrack === record.claims.reviewProfile &&
           candidate.status !== "archived" &&
           candidate.archivedAt === null,
       );
@@ -325,6 +342,8 @@ export function useDailyStudy() {
         record.claims.personId !== command.personId ||
         !plan ||
         !item ||
+        (record.claims.reviewProfile === "active" &&
+          createActiveTargetRevision(item) !== record.claims.targetRevision) ||
         nowTime < new Date(plan.dayStartsAt).getTime() ||
         nowTime >= new Date(plan.dayEndsAt).getTime()
       ) {
@@ -373,11 +392,24 @@ export function useDailyStudy() {
           candidate.id === command.planId &&
           candidate.personId === command.personId &&
           candidate.localDate === command.localDate &&
-          candidate.reviewProfile === "recognition",
+          candidate.reviewProfile === command.evidence.reviewProfile,
       );
 
       if (!plan) {
-        throw new Error("Today’s Recognition plan could not be found");
+        throw new Error("Today’s study plan could not be found");
+      }
+
+      const item = data.items.find(
+        (candidate) =>
+          candidate.id === command.vocabularyItemId &&
+          candidate.personId === command.personId &&
+          candidate.learningTrack === command.evidence.reviewProfile &&
+          candidate.status !== "archived" &&
+          candidate.archivedAt === null,
+      );
+
+      if (!item) {
+        throw new Error("This study entry is no longer available");
       }
 
       const now = new Date().toISOString();
@@ -396,11 +428,14 @@ export function useDailyStudy() {
           newWordGoal: plan.newWordGoal,
         },
         trustedPrompt: prompt.claims,
-        currentTargetRevision: null,
+        currentTargetRevision:
+          command.evidence.reviewProfile === "active"
+            ? createActiveTargetRevision(item)
+            : null,
         consumedByIdempotencyKey: prompt.consumedByIdempotencyKey,
         now,
       });
-      const review = recordDailyReview(
+      const review = recordDailyStudyReview(
         data,
         {
           plan,
@@ -408,6 +443,11 @@ export function useDailyStudy() {
           rating: command.evidence.memoryRating,
           elapsedMs: command.evidence.elapsedMs,
           promptId: validated.promptId,
+          activityType: command.evidence.activityType,
+          answerOutcome: command.evidence.answerOutcome,
+          answerNormalizationVersion:
+            command.evidence.answerNormalizationVersion,
+          targetRevision: validated.targetRevision,
         },
         now,
       );
@@ -422,15 +462,27 @@ export function useDailyStudy() {
           command.evidence.memoryRating === "forgot" ||
           command.evidence.memoryRating === "hard"
             ? issueLocalPromptToken(
-                {
-                  personId: command.personId,
-                  planId: command.planId,
-                  planVersion: plan.planVersion,
-                  localDate: command.localDate,
-                  vocabularyItemId: command.vocabularyItemId,
-                  reviewProfile: "recognition",
-                  activityType: "recognition_card",
-                },
+                command.evidence.reviewProfile === "recognition"
+                  ? {
+                      personId: command.personId,
+                      planId: command.planId,
+                      planVersion: plan.planVersion,
+                      localDate: command.localDate,
+                      vocabularyItemId: command.vocabularyItemId,
+                      reviewProfile: "recognition",
+                      activityType: "recognition_card",
+                      targetRevision: null,
+                    }
+                  : {
+                      personId: command.personId,
+                      planId: command.planId,
+                      planVersion: plan.planVersion,
+                      localDate: command.localDate,
+                      vocabularyItemId: command.vocabularyItemId,
+                      reviewProfile: "active",
+                      activityType: command.evidence.activityType,
+                      targetRevision: createActiveTargetRevision(item),
+                    },
                 now,
               )
             : null,
@@ -462,7 +514,6 @@ export function useDailyStudy() {
           candidate.id === command.planId &&
           candidate.personId === command.personId &&
           candidate.localDate === command.localDate &&
-          candidate.reviewProfile === "recognition" &&
           candidate.planVersion === command.expectedPlanVersion,
       );
       const event = data.reviewEvents.find(
@@ -470,7 +521,7 @@ export function useDailyStudy() {
           candidate.id === command.eventId &&
           candidate.personId === command.personId &&
           candidate.vocabularyItemId === command.vocabularyItemId &&
-          candidate.reviewProfile === "recognition",
+          candidate.reviewProfile === plan?.reviewProfile,
       );
 
       if (!plan || !event) {
@@ -487,18 +538,42 @@ export function useDailyStudy() {
       }
 
       const now = new Date().toISOString();
-      const rollback = rollbackReviewEvent(data, command.eventId, now);
+      const rollback = rollbackStudyReviewEvent(data, command.eventId, now);
       await commit(rollback.data);
+      const item = data.items.find(
+        (candidate) =>
+          candidate.id === command.vocabularyItemId &&
+          candidate.personId === command.personId &&
+          candidate.learningTrack === event.reviewProfile &&
+          candidate.status !== "archived" &&
+          candidate.archivedAt === null,
+      );
+
+      if (event.reviewProfile === "active" && !item) {
+        throw new Error("This Active entry is no longer available");
+      }
       const promptToken = issueLocalPromptToken(
-        {
-          personId: command.personId,
-          planId: command.planId,
-          planVersion: command.expectedPlanVersion,
-          localDate: command.localDate,
-          vocabularyItemId: command.vocabularyItemId,
-          reviewProfile: "recognition",
-          activityType: "recognition_card",
-        },
+        event.reviewProfile === "recognition"
+          ? {
+              personId: command.personId,
+              planId: command.planId,
+              planVersion: command.expectedPlanVersion,
+              localDate: command.localDate,
+              vocabularyItemId: command.vocabularyItemId,
+              reviewProfile: "recognition",
+              activityType: "recognition_card",
+              targetRevision: null,
+            }
+          : {
+              personId: command.personId,
+              planId: command.planId,
+              planVersion: command.expectedPlanVersion,
+              localDate: command.localDate,
+              vocabularyItemId: command.vocabularyItemId,
+              reviewProfile: "active",
+              activityType: event.activityType as "say" | "spell" | "dictation",
+              targetRevision: createActiveTargetRevision(item!),
+            },
         now,
       );
       const resolved = resolveDailyStudyToday(rollback.data, now);

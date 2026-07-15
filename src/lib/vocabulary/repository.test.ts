@@ -11,6 +11,7 @@ import {
   getArchivedVocabularyItems,
   restoreVocabularyItem,
   rollbackImportBatch,
+  startVocabularyItemFreshInTrack,
   updateVocabularyItem,
 } from "./repository";
 
@@ -232,6 +233,49 @@ describe("vocabulary repository", () => {
         "2026-07-04T00:03:00.000Z",
       ),
     ).toThrow("Start it fresh in the other Track");
+  });
+
+  it("starts fresh in the other Track without copying or deleting old history", () => {
+    const added = addVocabularyItem(
+      createEmptyVocabularyData("2026-07-04T00:00:00.000Z"),
+      {
+        id: "vocab-start-fresh",
+        surfaceText: "articulate",
+        learningTrack: "recognition",
+        source: "manual",
+        timezone: "Australia/Melbourne",
+      },
+      "2026-07-04T00:01:00.000Z",
+    );
+    const reviewed = recordReview(
+      added.data,
+      { vocabularyItemId: "vocab-start-fresh", rating: "remembered" },
+      "2026-07-04T00:02:00.000Z",
+    );
+    const moved = startVocabularyItemFreshInTrack(
+      reviewed.data,
+      "vocab-start-fresh",
+      "active",
+      "2026-07-04T00:03:00.000Z",
+    );
+
+    expect(moved.item.learningTrack).toBe("active");
+    expect(moved.data.reviewStates).toEqual(reviewed.data.reviewStates);
+    expect(moved.data.reviewEvents).toEqual(reviewed.data.reviewEvents);
+    expect(
+      moved.data.reviewStates.some(
+        (state) =>
+          state.vocabularyItemId === "vocab-start-fresh" &&
+          state.reviewProfile === "active",
+      ),
+    ).toBe(false);
+    expect(
+      moved.data.reviewEvents.some(
+        (event) =>
+          event.vocabularyItemId === "vocab-start-fresh" &&
+          event.reviewProfile === "active",
+      ),
+    ).toBe(false);
   });
 
   it("removes an empty import batch without inventing a reversal fact", () => {

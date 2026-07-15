@@ -42,16 +42,19 @@ import {
 import { createDefaultReviewSettings, normalizeReviewSettings } from "@/lib/review/settings";
 import {
   getLocalDateKey,
-  scheduleNextReview,
+  scheduleNextReviewForProfile,
   selectReviewQueue,
 } from "@/lib/review/scheduler";
 import {
   getDailyEpisodeEvents,
   scheduleDailyEpisodeAttempt,
 } from "@/lib/review/daily-episode";
-import { rebuildRecognitionStateFromEvents } from "@/lib/review/repository";
+import { rebuildReviewProfileStateFromEvents } from "@/lib/review/repository";
 import {
+  ACTIVE_PARAMETER_SET_ID,
   RECOGNITION_PARAMETER_SET_ID,
+  type ReviewActivityType,
+  type ReviewAnswerOutcome,
   type PersonReviewSettings,
   type ReviewEvent,
   type ReviewState,
@@ -83,8 +86,9 @@ import type {
 } from "@/lib/vocabulary/types";
 import type { DailyStudyPlanRecord } from "@/lib/storage/v2-data-model";
 import {
+  createActiveTargetRevision,
   readDailyStudyQueue,
-  rebuildRecognitionStateAfterDayReset,
+  rebuildReviewProfileStateAfterDayReset,
   resolveDailyStudyToday,
   updateDailyStudyDefaults,
   updateDailyStudyTodayGoals,
@@ -109,6 +113,7 @@ import type {
   RollbackStudyRatingCommand,
   ReviewQueueCursor,
   ReviewProfile,
+  StudyActivityType,
   StudyQueueRequest,
   TrustedStudyQueueQuery,
   UpdateDefaultGoalsCommand,
@@ -225,6 +230,7 @@ async function selectVocabularyItem(
   queryable: PostgresQueryable,
   context: PersonScopedContext,
   vocabularyItemId: string,
+  options: Readonly<{ forUpdate?: boolean }> = {},
 ) {
   assertPersonContext(context);
   assertDatabaseUuid(vocabularyItemId, "vocabularyItemId");
@@ -255,6 +261,7 @@ async function selectVocabularyItem(
       from vocabulary_items
       where person_id = $1 and id = $2
       limit 1
+      ${options.forUpdate ? "for update" : ""}
     `,
     [context.personId, vocabularyItemId],
   );
@@ -291,6 +298,7 @@ async function getReviewState(
   queryable: PostgresQueryable,
   context: PersonScopedContext,
   vocabularyItemId: string,
+  reviewProfile: ReviewProfile = "recognition",
 ) {
   assertPersonContext(context);
   assertDatabaseUuid(vocabularyItemId, "vocabularyItemId");
@@ -317,10 +325,10 @@ async function getReviewState(
       from review_states
       where person_id = $1
         and vocabulary_item_id = $2
-        and review_profile = 'recognition'
+        and review_profile = $3
       limit 1
     `,
-    [context.personId, vocabularyItemId],
+    [context.personId, vocabularyItemId, reviewProfile],
   );
 
   return result.rows[0] ? mapReviewStateRow(result.rows[0]) : null;
@@ -739,6 +747,7 @@ type StudyCursorClaims = Readonly<{
   planId: string;
   localDate: string;
   reviewProfile: ReviewProfile;
+  activityType: StudyActivityType;
   zone: "review" | "new";
   expectedPlanVersion: number;
   cursor: NewQueueCursor | ReviewQueueCursor;
@@ -883,6 +892,9 @@ function assertCursorBinding(
     claims.planId !== request.planId ||
     claims.localDate !== request.localDate ||
     claims.reviewProfile !== request.reviewProfile ||
+    claims.activityType !==
+      (request.activityType ??
+        (request.reviewProfile === "recognition" ? "recognition_card" : null)) ||
     claims.zone !== request.zone ||
     claims.expectedPlanVersion !== request.expectedPlanVersion
   ) {
@@ -896,6 +908,13 @@ export async function readPostgresDailyStudyQueue(
   secret = getStudyTokenSecret(),
 ) {
   const resolved = await resolvePostgresDailyStudyToday(request.personId, now);
+  const activityType =
+    request.activityType ??
+    (request.reviewProfile === "recognition" ? "recognition_card" : null);
+
+  if (!activityType) {
+    throw new Error("Active queue requests require an activityType");
+  }
   let cursor: NewQueueCursor | ReviewQueueCursor | null = null;
 
   if (request.cursorToken) {
@@ -914,6 +933,7 @@ export async function readPostgresDailyStudyQueue(
     planId: request.planId,
     localDate: request.localDate,
     reviewProfile: request.reviewProfile,
+    activityType,
     expectedPlanVersion: request.expectedPlanVersion,
     requestedPageSize: request.requestedPageSize,
     zone: request.zone,
@@ -935,6 +955,7 @@ export async function readPostgresDailyStudyQueue(
             planId: request.planId,
             localDate: request.localDate,
             reviewProfile: request.reviewProfile,
+            activityType,
             zone: request.zone,
             expectedPlanVersion: request.expectedPlanVersion,
             cursor: page.nextCursor,
@@ -977,14 +998,14 @@ export async function refreshPostgresDailyStudyPrompt(
       candidate.id === trustedPrompt.planId &&
       candidate.personId === command.personId &&
       candidate.localDate === trustedPrompt.localDate &&
-      candidate.reviewProfile === "recognition" &&
+      candidate.reviewProfile === trustedPrompt.reviewProfile &&
       candidate.planVersion === trustedPrompt.planVersion,
   );
   const item = resolved.data.items.find(
     (candidate) =>
       candidate.id === trustedPrompt.vocabularyItemId &&
       candidate.personId === command.personId &&
-      candidate.learningTrack === "recognition" &&
+      candidate.learningTrack === trustedPrompt.reviewProfile &&
       candidate.status !== "archived" &&
       candidate.archivedAt === null,
   );
@@ -993,6 +1014,8 @@ export async function refreshPostgresDailyStudyPrompt(
   if (
     !plan ||
     !item ||
+    (trustedPrompt.reviewProfile === "active" &&
+      createActiveTargetRevision(item) !== trustedPrompt.targetRevision) ||
     nowTime < new Date(plan.dayStartsAt).getTime() ||
     nowTime >= new Date(plan.dayEndsAt).getTime()
   ) {
@@ -1040,17 +1063,32 @@ export async function refreshPostgresDailyStudyPrompt(
       );
     }
 
+    const seed =
+      trustedPrompt.reviewProfile === "recognition"
+        ? {
+            personId: trustedPrompt.personId,
+            planId: trustedPrompt.planId,
+            planVersion: trustedPrompt.planVersion,
+            localDate: trustedPrompt.localDate,
+            vocabularyItemId: trustedPrompt.vocabularyItemId,
+            reviewProfile: "recognition" as const,
+            activityType: "recognition_card" as const,
+            targetRevision: null,
+          }
+        : {
+            personId: trustedPrompt.personId,
+            planId: trustedPrompt.planId,
+            planVersion: trustedPrompt.planVersion,
+            localDate: trustedPrompt.localDate,
+            vocabularyItemId: trustedPrompt.vocabularyItemId,
+            reviewProfile: "active" as const,
+            activityType: trustedPrompt.activityType,
+            targetRevision: trustedPrompt.targetRevision,
+          };
+
     return {
       promptToken: issueServerPromptToken(
-        {
-          personId: trustedPrompt.personId,
-          planId: trustedPrompt.planId,
-          planVersion: trustedPrompt.planVersion,
-          localDate: trustedPrompt.localDate,
-          vocabularyItemId: trustedPrompt.vocabularyItemId,
-          reviewProfile: "recognition",
-          activityType: "recognition_card",
-        },
+        seed,
         now,
         secret,
         { promptId: trustedPrompt.promptId },
@@ -1376,9 +1414,24 @@ async function completeStudyCommand(
   );
 }
 
-async function recordRecognitionReviewInTransaction(
+type StudyReviewCommand = RecordReviewCommand &
+  Readonly<{
+    reviewProfile: ReviewProfile;
+    activityType: ReviewActivityType;
+    answerOutcome: ReviewAnswerOutcome;
+    answerNormalizationVersion: "active-answer-v1" | null;
+    targetRevision: string | null;
+  }>;
+
+function parameterSetIdForProfile(reviewProfile: ReviewProfile) {
+  return reviewProfile === "recognition"
+    ? RECOGNITION_PARAMETER_SET_ID
+    : ACTIVE_PARAMETER_SET_ID;
+}
+
+async function recordStudyReviewInTransaction(
   queryable: PostgresQueryable,
-  command: RecordReviewCommand,
+  command: StudyReviewCommand,
   plan?: DailyStudyPlanRecord,
 ) {
   const item = await selectVocabularyItem(queryable, command, command.vocabularyItemId);
@@ -1387,18 +1440,24 @@ async function recordRecognitionReviewInTransaction(
     !item ||
     item.status === "archived" ||
     item.archivedAt ||
-    item.learningTrack !== "recognition"
+    item.learningTrack !== command.reviewProfile
   ) {
     throw new Error(`Reviewable vocabulary item not found: ${command.vocabularyItemId}`);
   }
 
-  const previousState = await getReviewState(queryable, command, command.vocabularyItemId);
+  const previousState = await getReviewState(
+    queryable,
+    command,
+    command.vocabularyItemId,
+    command.reviewProfile,
+  );
   const priorEpisodeEvents = plan
     ? getDailyEpisodeEvents(
         await listReviewEventsForVocabularyItem(
           queryable,
           command,
           command.vocabularyItemId,
+          command.reviewProfile,
         ),
         plan,
         command.vocabularyItemId,
@@ -1416,7 +1475,8 @@ async function recordRecognitionReviewInTransaction(
     : null;
   const scheduled =
     episodeSchedule?.schedule ??
-    scheduleNextReview(
+    scheduleNextReviewForProfile(
+      command.reviewProfile,
       previousState ?? undefined,
       command.rating,
       command.reviewedAt,
@@ -1437,8 +1497,8 @@ async function recordRecognitionReviewInTransaction(
           id: previousState?.id ?? randomUUID(),
           personId: command.personId,
           vocabularyItemId: command.vocabularyItemId,
-          reviewProfile: "recognition",
-          parameterSetId: RECOGNITION_PARAMETER_SET_ID,
+          reviewProfile: command.reviewProfile,
+          parameterSetId: parameterSetIdForProfile(command.reviewProfile),
           firstRatedAt:
             previousState?.historyOrigin === "legacy_unknown"
               ? null
@@ -1479,8 +1539,8 @@ async function recordRecognitionReviewInTransaction(
         elapsed_ms
       )
       values (
-        $1, $2, $3, $4, 'recognition', 'recognition_card', 'self_rated',
-        null, null, $5, $6, $7, $8, $9, $10, $11, $12
+        $1, $2, $3, $4, $5, $6, $7,
+        $8, $9, $10, $11, $12, $13, $14, $15, $16, $17
       )
       returning
         id,
@@ -1506,7 +1566,12 @@ async function recordRecognitionReviewInTransaction(
       command.promptId ?? null,
       command.personId,
       command.vocabularyItemId,
-      RECOGNITION_PARAMETER_SET_ID,
+      command.reviewProfile,
+      command.activityType,
+      command.answerOutcome,
+      command.answerNormalizationVersion,
+      command.targetRevision,
+      parameterSetIdForProfile(command.reviewProfile),
       command.reviewedAt,
       command.rating,
       previousState?.dueAt ?? null,
@@ -1522,6 +1587,25 @@ async function recordRecognitionReviewInTransaction(
     event: mapReviewEventRow(eventResult.rows[0]),
     state,
   };
+}
+
+async function recordRecognitionReviewInTransaction(
+  queryable: PostgresQueryable,
+  command: RecordReviewCommand,
+  plan?: DailyStudyPlanRecord,
+) {
+  return recordStudyReviewInTransaction(
+    queryable,
+    {
+      ...command,
+      reviewProfile: "recognition",
+      activityType: "recognition_card",
+      answerOutcome: "self_rated",
+      answerNormalizationVersion: null,
+      targetRevision: null,
+    },
+    plan,
+  );
 }
 
 export async function recordPostgresDailyStudyRating(
@@ -1543,11 +1627,24 @@ export async function recordPostgresDailyStudyRating(
       candidate.id === trustedPrompt.planId &&
       candidate.personId === personId &&
       candidate.localDate === trustedPrompt.localDate &&
-      candidate.reviewProfile === "recognition",
+      candidate.reviewProfile === trustedPrompt.reviewProfile,
   );
 
   if (!plan) {
     throw new Error("Rating command plan could not be resolved");
+  }
+
+  const item = resolved.data.items.find(
+    (candidate) =>
+      candidate.id === trustedPrompt.vocabularyItemId &&
+      candidate.personId === personId &&
+      candidate.learningTrack === trustedPrompt.reviewProfile &&
+      candidate.status !== "archived" &&
+      candidate.archivedAt === null,
+  );
+
+  if (!item) {
+    throw new Error("Rating command vocabulary item could not be resolved");
   }
 
   const nowTime = new Date(now).getTime();
@@ -1573,7 +1670,10 @@ export async function recordPostgresDailyStudyRating(
       newWordGoal: plan.newWordGoal,
     },
     trustedPrompt,
-    currentTargetRevision: null,
+    currentTargetRevision:
+      trustedPrompt.reviewProfile === "active"
+        ? createActiveTargetRevision(item)
+        : null,
     consumedByIdempotencyKey: null,
     now,
   });
@@ -1632,7 +1732,26 @@ export async function recordPostgresDailyStudyRating(
       );
     }
 
-    const result = await recordRecognitionReviewInTransaction(
+    const lockedItem = await selectVocabularyItem(
+      client,
+      { personId: command.personId },
+      command.vocabularyItemId,
+      { forUpdate: true },
+    );
+
+    if (
+      !lockedItem ||
+      lockedItem.learningTrack !== command.evidence.reviewProfile ||
+      (command.evidence.reviewProfile === "active" &&
+        createActiveTargetRevision(lockedItem) !== validated.targetRevision)
+    ) {
+      throw new StudyPromptError(
+        "prompt_stale",
+        "The study target changed after this card was shown",
+      );
+    }
+
+    const result = await recordStudyReviewInTransaction(
       client,
       {
         personId: command.personId,
@@ -1641,6 +1760,12 @@ export async function recordPostgresDailyStudyRating(
         elapsedMs: command.evidence.elapsedMs,
         reviewedAt: now,
         promptId: validated.promptId,
+        reviewProfile: command.evidence.reviewProfile,
+        activityType: command.evidence.activityType,
+        answerOutcome: command.evidence.answerOutcome,
+        answerNormalizationVersion:
+          command.evidence.answerNormalizationVersion,
+        targetRevision: validated.targetRevision,
       },
       plan,
     );
@@ -1648,15 +1773,27 @@ export async function recordPostgresDailyStudyRating(
       command.evidence.memoryRating === "forgot" ||
       command.evidence.memoryRating === "hard"
         ? issueServerPromptToken(
-            {
-              personId: command.personId,
-              planId: command.planId,
-              planVersion: trustedPrompt.planVersion,
-              localDate: command.localDate,
-              vocabularyItemId: command.vocabularyItemId,
-              reviewProfile: "recognition",
-              activityType: "recognition_card",
-            },
+            command.evidence.reviewProfile === "recognition"
+              ? {
+                  personId: command.personId,
+                  planId: command.planId,
+                  planVersion: trustedPrompt.planVersion,
+                  localDate: command.localDate,
+                  vocabularyItemId: command.vocabularyItemId,
+                  reviewProfile: "recognition",
+                  activityType: "recognition_card",
+                  targetRevision: null,
+                }
+              : {
+                  personId: command.personId,
+                  planId: command.planId,
+                  planVersion: trustedPrompt.planVersion,
+                  localDate: command.localDate,
+                  vocabularyItemId: command.vocabularyItemId,
+                  reviewProfile: "active",
+                  activityType: command.evidence.activityType,
+                  targetRevision: validated.targetRevision!,
+                },
             now,
             secret,
           ).promptToken
@@ -1694,12 +1831,11 @@ export async function rollbackPostgresDailyStudyRating(
       candidate.personId === command.personId &&
       candidate.id === command.planId &&
       candidate.localDate === command.localDate &&
-      candidate.reviewProfile === "recognition" &&
       candidate.planVersion === command.expectedPlanVersion,
   );
 
   if (!plan) {
-    throw new Error("The Recognition plan changed. Start this zone again.");
+    throw new Error("The study plan changed. Start this zone again.");
   }
 
   const event = resolved.data.reviewEvents.find(
@@ -1707,30 +1843,55 @@ export async function rollbackPostgresDailyStudyRating(
       candidate.id === command.eventId &&
       candidate.personId === command.personId &&
       candidate.vocabularyItemId === command.vocabularyItemId &&
-      candidate.reviewProfile === "recognition" &&
+      candidate.reviewProfile === plan.reviewProfile &&
       new Date(candidate.reviewedAt).getTime() >= new Date(plan.dayStartsAt).getTime() &&
       new Date(candidate.reviewedAt).getTime() < new Date(plan.dayEndsAt).getTime(),
   );
 
   if (!event) {
-    throw new Error("Only a Recognition rating from this study day can be returned");
+    throw new Error("Only a rating from this study day can be returned");
   }
 
   const rollback = await rollbackReviewEvent(
     { personId: command.personId, now, timezone: plan.timezone },
     command.eventId,
     resolved.data.dailyStudyPlans,
+    plan.reviewProfile,
   );
+  const item = resolved.data.items.find(
+    (candidate) =>
+      candidate.id === command.vocabularyItemId &&
+      candidate.personId === command.personId &&
+      candidate.learningTrack === event.reviewProfile &&
+      candidate.status !== "archived" &&
+      candidate.archivedAt === null,
+  );
+
+  if (event.reviewProfile === "active" && !item) {
+    throw new Error("This Active entry is no longer available");
+  }
   const promptToken = issueServerPromptToken(
-    {
-      personId: command.personId,
-      planId: command.planId,
-      planVersion: command.expectedPlanVersion,
-      localDate: command.localDate,
-      vocabularyItemId: command.vocabularyItemId,
-      reviewProfile: "recognition",
-      activityType: "recognition_card",
-    },
+    event.reviewProfile === "recognition"
+      ? {
+          personId: command.personId,
+          planId: command.planId,
+          planVersion: command.expectedPlanVersion,
+          localDate: command.localDate,
+          vocabularyItemId: command.vocabularyItemId,
+          reviewProfile: "recognition",
+          activityType: "recognition_card",
+          targetRevision: null,
+        }
+      : {
+          personId: command.personId,
+          planId: command.planId,
+          planVersion: command.expectedPlanVersion,
+          localDate: command.localDate,
+          vocabularyItemId: command.vocabularyItemId,
+          reviewProfile: "active",
+          activityType: event.activityType as "say" | "spell" | "dictation",
+          targetRevision: createActiveTargetRevision(item!),
+        },
     now,
     secret,
   ).promptToken;
@@ -2146,6 +2307,37 @@ async function vocabularyItemHasReviewHistory(
   return result.rows[0]?.has_review_history ?? false;
 }
 
+async function vocabularyItemHasReviewHistoryForProfile(
+  queryable: PostgresQueryable,
+  context: PersonScopedContext,
+  vocabularyItemId: string,
+  reviewProfile: ReviewProfile,
+) {
+  assertPersonContext(context);
+  assertDatabaseUuid(vocabularyItemId, "vocabularyItemId");
+
+  const result = await queryable.query<{ has_review_history: boolean }>(
+    `
+      select exists (
+        select 1
+        from review_states
+        where person_id = $1
+          and vocabulary_item_id = $2
+          and review_profile = $3
+        union all
+        select 1
+        from review_events
+        where person_id = $1
+          and vocabulary_item_id = $2
+          and review_profile = $3
+      ) as has_review_history
+    `,
+    [context.personId, vocabularyItemId, reviewProfile],
+  );
+
+  return result.rows[0]?.has_review_history ?? false;
+}
+
 async function setVocabularyArchiveState(
   queryable: PostgresQueryable,
   context: TimestampedPersonContext,
@@ -2347,24 +2539,6 @@ function sortReviewEventsByReviewedAt(a: ReviewEvent, b: ReviewEvent) {
   return a.id.localeCompare(b.id);
 }
 
-function rebuildReviewStateFromEvents(
-  personId: string,
-  vocabularyItemId: string,
-  events: ReviewEvent[],
-  previousState: ReviewState | null,
-  dailyStudyPlans: readonly DailyStudyPlanRecord[] = [],
-) {
-  return (
-    rebuildRecognitionStateFromEvents(
-      personId,
-      vocabularyItemId,
-      events,
-      previousState ?? undefined,
-      { dailyStudyPlans, makeStateId: randomUUID },
-    ) ?? null
-  );
-}
-
 async function upsertReviewState(queryable: PostgresQueryable, state: ReviewState) {
   const stateResult = await queryable.query<ReviewStateRow>(
     `
@@ -2449,6 +2623,7 @@ async function listReviewEventsForVocabularyItem(
   queryable: PostgresQueryable,
   context: PersonScopedContext,
   vocabularyItemId: string,
+  reviewProfile: ReviewProfile = "recognition",
 ) {
   assertPersonContext(context);
   assertDatabaseUuid(vocabularyItemId, "vocabularyItemId");
@@ -2476,10 +2651,10 @@ async function listReviewEventsForVocabularyItem(
       from review_events
       where person_id = $1
         and vocabulary_item_id = $2
-        and review_profile = 'recognition'
+        and review_profile = $3
       order by reviewed_at asc, id asc
     `,
-    [context.personId, vocabularyItemId],
+    [context.personId, vocabularyItemId, reviewProfile],
   );
 
   return result.rows.map(mapReviewEventRow);
@@ -2572,26 +2747,25 @@ async function resetTodayReview(
           new Date(event.reviewedAt).getTime() < new Date(options.dayEndsAt).getTime()
         : getLocalDateKey(event.reviewedAt, settings.timezone) === todayKey;
 
-    if (
-      options &&
-      events.some(
-        (event) =>
-          event.personId === context.personId &&
-          event.reviewProfile === "active" &&
-          isTargetEvent(event),
-      )
-    ) {
-      throw new Error(
-        "Active practice history is present today. Reset is paused until the Active rebuild is available.",
-      );
-    }
-
     const todayEvents = events.filter(
       (event) =>
-        event.reviewProfile === "recognition" &&
-        isTargetEvent(event),
+        isTargetEvent(event) &&
+        (options ? true : event.reviewProfile === "recognition"),
     );
-    const affectedItemIds = Array.from(new Set(todayEvents.map((event) => event.vocabularyItemId)));
+    const affectedScopes = new Map<
+      string,
+      { reviewProfile: ReviewProfile; vocabularyItemId: string }
+    >();
+
+    for (const event of todayEvents) {
+      affectedScopes.set(`${event.reviewProfile}\u0000${event.vocabularyItemId}`, {
+        reviewProfile: event.reviewProfile,
+        vocabularyItemId: event.vocabularyItemId,
+      });
+    }
+    const affectedItemIds = Array.from(
+      new Set(todayEvents.map((event) => event.vocabularyItemId)),
+    );
 
     if (!todayEvents.length) {
       if (options) {
@@ -2609,12 +2783,20 @@ async function resetTodayReview(
       };
     }
 
-    const previousStateByItemId = new Map(
+    const previousStateByScope = new Map(
       await Promise.all(
-        affectedItemIds.map(async (vocabularyItemId) => [
-          vocabularyItemId,
-          await getReviewState(client, context, vocabularyItemId),
-        ] as const),
+        Array.from(affectedScopes.entries()).map(
+          async ([scopeKey, { reviewProfile, vocabularyItemId }]) =>
+            [
+              scopeKey,
+              await getReviewState(
+                client,
+                context,
+                vocabularyItemId,
+                reviewProfile,
+              ),
+            ] as const,
+        ),
       ),
     );
 
@@ -2625,31 +2807,43 @@ async function resetTodayReview(
       `,
       [context.personId, todayEvents.map((event) => event.id)],
     );
+    const affectedScopeRecords = Array.from(affectedScopes.values());
+
     await client.query(
       `
         delete from review_states
-        where person_id = $1
-          and vocabulary_item_id = any($2::uuid[])
-          and review_profile = 'recognition'
+        using unnest($2::uuid[], $3::text[]) as scope(vocabulary_item_id, review_profile)
+        where review_states.person_id = $1
+          and review_states.vocabulary_item_id = scope.vocabulary_item_id
+          and review_states.review_profile = scope.review_profile
       `,
-      [context.personId, affectedItemIds],
+      [
+        context.personId,
+        affectedScopeRecords.map((scope) => scope.vocabularyItemId),
+        affectedScopeRecords.map((scope) => scope.reviewProfile),
+      ],
     );
 
-    for (const vocabularyItemId of affectedItemIds) {
+    for (const [scopeKey, { reviewProfile, vocabularyItemId }] of affectedScopes) {
       const earlierEvents = events
         .filter(
           (event) =>
             event.vocabularyItemId === vocabularyItemId &&
-            event.reviewProfile === "recognition" &&
+            event.reviewProfile === reviewProfile &&
             !isTargetEvent(event),
         )
         .sort(sortReviewEventsByReviewedAt);
-      const rebuiltState = rebuildRecognitionStateAfterDayReset(
+      const rebuiltState = rebuildReviewProfileStateAfterDayReset(
+        reviewProfile,
         context.personId,
         vocabularyItemId,
-        previousStateByItemId.get(vocabularyItemId) ?? undefined,
+        previousStateByScope.get(scopeKey) ?? undefined,
         earlierEvents,
-        todayEvents.filter((event) => event.vocabularyItemId === vocabularyItemId),
+        todayEvents.filter(
+          (event) =>
+            event.reviewProfile === reviewProfile &&
+            event.vocabularyItemId === vocabularyItemId,
+        ),
         context.now,
         { dailyStudyPlans, makeStateId: randomUUID },
       );
@@ -2681,6 +2875,7 @@ async function rollbackReviewEvent(
   context: TimestampedPersonContext,
   reviewEventId: string,
   dailyStudyPlans: readonly DailyStudyPlanRecord[] = [],
+  reviewProfile: ReviewProfile = "recognition",
 ): Promise<RollbackReviewEventResult> {
   assertPersonContext(context);
   assertDatabaseUuid(reviewEventId, "reviewEventId");
@@ -2710,10 +2905,10 @@ async function rollbackReviewEvent(
           next_interval_minutes,
           elapsed_ms
         from review_events
-        where person_id = $1 and id = $2 and review_profile = 'recognition'
+        where person_id = $1 and id = $2 and review_profile = $3
         limit 1
       `,
-      [context.personId, reviewEventId],
+      [context.personId, reviewEventId, reviewProfile],
     );
     const eventRow = eventResult.rows[0];
 
@@ -2722,11 +2917,17 @@ async function rollbackReviewEvent(
     }
 
     const event = mapReviewEventRow(eventRow);
-    const previousState = await getReviewState(client, context, event.vocabularyItemId);
+    const previousState = await getReviewState(
+      client,
+      context,
+      event.vocabularyItemId,
+      reviewProfile,
+    );
     const remainingEvents = (await listReviewEventsForVocabularyItem(
       client,
       context,
       event.vocabularyItemId,
+      reviewProfile,
     )).filter((candidate) => candidate.id !== reviewEventId);
 
     await client.query(
@@ -2741,17 +2942,18 @@ async function rollbackReviewEvent(
         delete from review_states
         where person_id = $1
           and vocabulary_item_id = $2
-          and review_profile = 'recognition'
+          and review_profile = $3
       `,
-      [context.personId, event.vocabularyItemId],
+      [context.personId, event.vocabularyItemId, reviewProfile],
     );
 
-    const rebuiltState = rebuildReviewStateFromEvents(
+    const rebuiltState = rebuildReviewProfileStateFromEvents(
       context.personId,
       event.vocabularyItemId,
+      reviewProfile,
       remainingEvents.sort(sortReviewEventsByReviewedAt),
-      previousState,
-      rebuildPlans,
+      previousState ?? undefined,
+      { dailyStudyPlans: rebuildPlans, makeStateId: randomUUID },
     );
 
     return {
@@ -2944,6 +3146,56 @@ export function createPostgresRepository(): DurableRepositoryPort {
 
         return updateVocabularyItem(queryable, context, vocabularyItemId, nextItem);
       },
+      startFreshInTrack: (context, vocabularyItemId, targetTrack) =>
+        withPostgresTransaction(async (client) => {
+          const currentItem = await selectVocabularyItem(
+            client,
+            context,
+            vocabularyItemId,
+            { forUpdate: true },
+          );
+
+          if (!currentItem) {
+            throw new Error(`Vocabulary item not found: ${vocabularyItemId}`);
+          }
+
+          const normalizedTarget = normalizeLearningTrack(targetTrack);
+
+          if (normalizedTarget === currentItem.learningTrack) {
+            throw new Error("Choose the other Track to start fresh");
+          }
+
+          const sourceHistoryExists = await vocabularyItemHasReviewHistoryForProfile(
+            client,
+            context,
+            vocabularyItemId,
+            currentItem.learningTrack,
+          );
+          const targetHistoryExists = await vocabularyItemHasReviewHistoryForProfile(
+            client,
+            context,
+            vocabularyItemId,
+            normalizedTarget,
+          );
+
+          if (!sourceHistoryExists) {
+            throw new Error(
+              "This entry has no study history; change its Track while editing instead",
+            );
+          }
+
+          if (targetHistoryExists) {
+            throw new Error(
+              "This entry already has history in the other Track and cannot start fresh there",
+            );
+          }
+
+          return updateVocabularyItem(client, context, vocabularyItemId, {
+            ...currentItem,
+            learningTrack: normalizedTarget,
+            updatedAt: context.now,
+          });
+        }),
       archiveItem: (context, vocabularyItemId) =>
         setVocabularyArchiveState(queryable, context, vocabularyItemId, true),
       restoreItem: (context, vocabularyItemId) =>

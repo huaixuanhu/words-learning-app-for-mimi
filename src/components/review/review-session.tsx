@@ -170,7 +170,11 @@ export function ReviewSession({ zone }: ReviewSessionProps) {
     setIsSessionLoading(true);
     setMessage("");
 
-    void readQueueRef.current(zone)
+    void readQueueRef.current({
+      reviewProfile: "recognition",
+      activityType: "recognition_card",
+      zone,
+    })
       .then((page) => {
         if (cancelled) {
           return;

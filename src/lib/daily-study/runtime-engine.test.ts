@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { getSelectedPersonId } from "@/lib/people/repository";
 import {
   recordDailyReview,
+  recordDailyStudyReview,
   recordReview,
   rollbackReviewEvent,
 } from "@/lib/review/repository";
@@ -9,12 +10,14 @@ import { addVocabularyItem, createEmptyVocabularyData } from "@/lib/vocabulary/r
 import type { VocabularyData } from "@/lib/vocabulary/types";
 import {
   getLearningStage,
+  createActiveTargetRevision,
   readDailyStudyQueue,
   resetDailyStudyToday,
   resolveDailyStudyToday,
   updateDailyStudyDefaults,
   updateDailyStudyTodayGoals,
 } from "./runtime-engine";
+import type { PromptSeed } from "./runtime-engine";
 
 const DAY_NOW = "2026-07-14T04:00:00.000Z";
 
@@ -185,6 +188,162 @@ describe("daily study runtime engine", () => {
       "prompt-1",
       "prompt-2",
     ]);
+  });
+
+  it("keeps Active mixed attempts on the first scheduling anchor", () => {
+    let data = configuredData();
+
+    data = addItem(data, {
+      id: "active-episode-1",
+      surfaceText: "take into account",
+      learningTrack: "active",
+    });
+    const resolved = resolveDailyStudyToday(data, DAY_NOW, {
+      makePlanId: (() => {
+        let number = 0;
+        return () => `active-plan-${++number}`;
+      })(),
+    });
+    const active = resolved.today.tracks.active;
+
+    if (active.status !== "available") {
+      throw new Error("Active plan should be available");
+    }
+
+    let issuedSeed: PromptSeed | undefined;
+    const page = readDailyStudyQueue(
+      resolved.data,
+      {
+        personId: resolved.today.personId,
+        planId: active.planId,
+        localDate: resolved.today.localDate,
+        reviewProfile: "active",
+        activityType: "spell",
+        expectedPlanVersion: active.planVersion,
+        requestedPageSize: 100,
+        zone: "new",
+        cursor: null,
+      },
+      (seed) => {
+        issuedSeed = seed;
+        return "active-prompt";
+      },
+    );
+
+    expect(page.entries.map((entry) => entry.vocabularyItemId)).toEqual([
+      "active-episode-1",
+    ]);
+    expect(issuedSeed!).toMatchObject({
+      reviewProfile: "active",
+      activityType: "spell",
+      targetRevision: createActiveTargetRevision(
+        resolved.data.items.find((item) => item.id === "active-episode-1")!,
+      ),
+    });
+    expect(JSON.stringify(issuedSeed!)).not.toContain("take into account");
+
+    const plan = resolved.data.dailyStudyPlans.find(
+      (candidate) => candidate.id === active.planId,
+    )!;
+    const first = recordDailyStudyReview(
+      resolved.data,
+      {
+        plan,
+        vocabularyItemId: "active-episode-1",
+        rating: "forgot",
+        promptId: "active-prompt-1",
+        elapsedMs: 1_000,
+        activityType: "spell",
+        answerOutcome: "different",
+        answerNormalizationVersion: "active-answer-v1",
+        targetRevision: "target-revision-1",
+      },
+      "2026-07-14T05:00:00.000Z",
+    );
+    const recovered = recordDailyStudyReview(
+      first.data,
+      {
+        plan,
+        vocabularyItemId: "active-episode-1",
+        rating: "remembered",
+        promptId: "active-prompt-2",
+        elapsedMs: 2_000,
+        activityType: "dictation",
+        answerOutcome: "exact",
+        answerNormalizationVersion: "active-answer-v1",
+        targetRevision: "target-revision-1",
+      },
+      "2026-07-14T05:10:00.000Z",
+    );
+
+    expect(recovered.data.reviewEvents).toHaveLength(2);
+    expect(recovered.state).toMatchObject({
+      reviewProfile: "active",
+      parameterSetId: "active-fsrs-v1",
+      dueAt: first.state.dueAt,
+      lastReviewedAt: first.state.lastReviewedAt,
+      reviewCount: first.state.reviewCount,
+      lapseCount: first.state.lapseCount,
+      difficulty: first.state.difficulty,
+      stability: first.state.stability,
+    });
+    const refreshed = resolveDailyStudyToday(
+      recovered.data,
+      "2026-07-14T05:11:00.000Z",
+    );
+    expect(refreshed.today.tracks.active).toMatchObject({
+      status: "available",
+      metrics: { learnedToday: 1, attemptsToday: 2 },
+    });
+  });
+
+  it("omits an Active entry without a Chinese meaning without deleting it", () => {
+    let data = configuredData();
+    data = addVocabularyItem(
+      data,
+      {
+        id: "active-missing-meaning",
+        surfaceText: "articulate",
+        meaningZh: "",
+        meaningsZh: [],
+        learningTrack: "active",
+        source: "manual",
+        timezone: "Australia/Melbourne",
+      },
+      "2026-07-14T01:00:00.000Z",
+    ).data;
+    data = addItem(data, {
+      id: "active-ready",
+      surfaceText: "take into account",
+      learningTrack: "active",
+    });
+    const resolved = resolveDailyStudyToday(data, DAY_NOW, {
+      makePlanId: () => "active-meaning-plan",
+    });
+    const active = resolved.today.tracks.active;
+
+    if (active.status !== "available") {
+      throw new Error("Active plan should be available");
+    }
+
+    const page = readDailyStudyQueue(resolved.data, {
+      personId: resolved.today.personId,
+      planId: active.planId,
+      localDate: resolved.today.localDate,
+      reviewProfile: "active",
+      activityType: "say",
+      expectedPlanVersion: active.planVersion,
+      requestedPageSize: 100,
+      zone: "new",
+      cursor: null,
+    });
+
+    expect(page.entries.map((entry) => entry.vocabularyItemId)).toEqual([
+      "active-ready",
+    ]);
+    expect(
+      resolved.data.items.some((item) => item.id === "active-missing-meaning"),
+    ).toBe(true);
   });
 
   it("moves the first-rated entry from New to In review and counts one learned entry", () => {
@@ -655,7 +814,7 @@ describe("daily study runtime engine", () => {
     expect(reset.data.vocabularyCreationFacts).toHaveLength(1);
   });
 
-  it("fails closed when an Active event exists inside the target day", () => {
+  it("removes Active events and rebuilds the profile during whole-day reset", () => {
     const resolved = resolveDailyStudyToday(configuredData(), DAY_NOW, {
       makePlanId: () => "plan-active-guard",
     });
@@ -688,16 +847,19 @@ describe("daily study runtime engine", () => {
       }],
     };
 
-    expect(() =>
-      resetDailyStudyToday(guardedData, {
+    const reset = resetDailyStudyToday(guardedData, {
         personId: resolved.today.personId,
         planId: recognition.planId,
         localDate: resolved.today.localDate,
         contractVersion: "v2-stage1",
         finalConfirmation: "confirmed_after_second_gate",
         idempotencyKey: "reset-active-guard",
-      }),
-    ).toThrow("Reset is paused");
+      });
+
+    expect(reset.resetEventsCount).toBe(1);
+    expect(reset.resetItemsCount).toBe(1);
+    expect(reset.data.reviewEvents).toHaveLength(0);
+    expect(reset.data.reviewStates).toHaveLength(0);
     expect(guardedData.reviewEvents).toHaveLength(1);
   });
 });

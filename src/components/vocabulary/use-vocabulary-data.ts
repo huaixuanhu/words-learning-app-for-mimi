@@ -41,6 +41,13 @@ export type VocabularyStorageMutation =
       timezone: string;
     }
   | {
+      type: "vocabulary.startFreshInTrack";
+      vocabularyItemId: string;
+      targetTrack: "recognition" | "active";
+      now: string;
+      timezone: string;
+    }
+  | {
       type: "vocabulary.archive";
       vocabularyItemId: string;
       now: string;

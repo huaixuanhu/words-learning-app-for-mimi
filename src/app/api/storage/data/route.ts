@@ -54,6 +54,13 @@ type StorageUiMutation =
       timezone: string;
     }
   | {
+      type: "vocabulary.startFreshInTrack";
+      vocabularyItemId: string;
+      targetTrack: "recognition" | "active";
+      now: string;
+      timezone: string;
+    }
+  | {
       type: "vocabulary.archive";
       vocabularyItemId: string;
       now: string;
@@ -168,6 +175,27 @@ function parseMutation(value: unknown): StorageUiMutation {
         input: {
           displayName: requiredString(input.displayName, "mutation.input.displayName"),
         },
+      };
+    }
+    case "vocabulary.startFreshInTrack": {
+      const targetTrack = requiredString(
+        value.targetTrack,
+        "mutation.targetTrack",
+      );
+
+      if (targetTrack !== "recognition" && targetTrack !== "active") {
+        throw new Error("mutation.targetTrack must be recognition or active");
+      }
+
+      return {
+        type,
+        vocabularyItemId: requiredString(
+          value.vocabularyItemId,
+          "mutation.vocabularyItemId",
+        ),
+        targetTrack,
+        now: requiredString(value.now, "mutation.now"),
+        timezone: requiredString(value.timezone, "mutation.timezone"),
       };
     }
     case "vocabulary.add":
@@ -369,6 +397,23 @@ export async function POST(request: NextRequest) {
           );
 
           await repository.vocabulary.updateItem(context, mutation.vocabularyItemId, mutation.input);
+          nextSelectedPersonId = context.personId;
+        }
+        break;
+      case "vocabulary.startFreshInTrack":
+        {
+          const context = await mutationContext(
+            repository,
+            selectedPersonId,
+            mutation.now,
+            mutation.timezone,
+          );
+
+          await repository.vocabulary.startFreshInTrack(
+            context,
+            mutation.vocabularyItemId,
+            mutation.targetTrack,
+          );
           nextSelectedPersonId = context.personId;
         }
         break;

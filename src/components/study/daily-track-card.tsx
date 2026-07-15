@@ -75,9 +75,22 @@ export function DailyTrackCard({
               </Link>
             </div>
           ) : (
-            <p className="rounded-md border border-[var(--mimi-border)] bg-[var(--mimi-surface-muted)] px-3 py-2 text-sm leading-6 text-[var(--mimi-text-soft)]">
-              Say it, Spell it, and Dictation are resting for now.
-            </p>
+            <div className="grid grid-cols-2 gap-2">
+              <Link
+                href="/practice-lab?zone=review"
+                className="mimi-button mimi-focus-ring inline-flex min-h-11 items-center justify-center gap-2 px-3 text-sm font-semibold"
+              >
+                Review
+                <ArrowRight aria-hidden="true" className="size-4" />
+              </Link>
+              <Link
+                href="/practice-lab?zone=new"
+                className="mimi-button-secondary mimi-focus-ring inline-flex min-h-11 items-center justify-center gap-2 px-3 text-sm font-semibold"
+              >
+                New Words
+                <ArrowRight aria-hidden="true" className="size-4" />
+              </Link>
+            </div>
           )}
 
           <TodayGoalsForm

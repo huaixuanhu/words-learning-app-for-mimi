@@ -91,10 +91,10 @@ export function HomeDashboard() {
             <HomeTrackCard
               title="Active Vocabulary"
               eyebrow="Recall and sound"
-              description="Say it, Spell it, and Dictation are resting for now."
+              description="Recall aloud, spell from meaning, or write what you hear."
               track={today?.tracks.active ?? null}
-              href="/practice-lab"
-              cta="See practice modes"
+              href="/practice-lab?zone=review"
+              cta="Start Active Review"
               Icon={AudioWaveform}
               tone="bg-[#e7decb] text-[#5b4c2c]"
             />
@@ -159,7 +159,7 @@ export function HomeDashboard() {
             <div>
               <h2 className="text-base font-semibold text-[var(--mimi-text)]">Practice Lab</h2>
               <p className="mt-2 text-sm leading-6 text-[var(--mimi-text-soft)]">
-                Active practice is resting for now.
+                Choose Say it, Spell it, or Dictation for one focused session.
               </p>
             </div>
           </div>

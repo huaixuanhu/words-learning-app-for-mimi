@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## 2026-07-15 19:20 AEST
+
+- Completed documentation-first V2 Stage 6 Active Practice Engine and synchronized the parent plan, architecture, README, AGENTS, and governance log.
+- Added independent `active-fsrs-v1` scheduling, profile-scoped Active states/events/rebuilds, and the Stage 5.1 first-attempt Daily Episode rule. A later required pass completes today without replacing the first failure or advancing cross-day FSRS again.
+- Activated separate Active `Review` / `New Words` entry points plus `Say it`, `Spell it`, and `Dictation`; all three share one Active Review Profile while retaining activity type per event.
+- Added browser SpeechSynthesis playback, deterministic `active-answer-v1` comparison, structured typed outcomes, and non-lexical target-revision binding. Raw typed answers, audio, and transcripts are not persisted.
+- Generalized prompt refresh/retry, same-session repeat, `回退1词`, and two-profile whole-day reset for local and guarded Postgres application paths while retaining Recognition wrappers.
+- Added explicit `Start fresh in the other Track` for history-bearing entries. Source history stays read-only, target history/state is not copied, and an already history-bearing target fails closed.
+- Preserved the current card/rating motion and reduced-motion rules. Added guarded Active keyboard behavior: Say uses `Space`; revealed cards use Arrow selection and `Enter`; typed inputs retain normal typing and use `Enter` to check.
+- Passed TypeScript, ESLint, 42 test files / 277 tests with 1 existing Postgres integration file/test skipped, all three backup dry-runs, Next.js Production build, Tier 3 governance preflight, final diff checks, and the local browser matrix from 320 through 1280 px.
+- Browser-local acceptance covered wrong Spell answer → keyboard `forgot` → same-session return → exact recovery, Say `Space` reveal, Dictation target hiding, both themes, no horizontal overflow, no framework overlay, and no console error. The disposable Active entry/events and temporary goal were removed/restored.
+- Kept Schema Version 6 / backup version 3 and the accepted motion unchanged. No environment value or secret was inspected or changed; no Gemini/provider call, remote database connection, migration, Production write, Vercel action, deployment, commit, push, pull request, or merge occurred.
+- Reason: make Active practice usable while preventing the same final-pass scheduling distortion already repaired for Recognition.
+
 ## 2026-07-15 16:20 AEST
 
 - Completed the documentation-first V2 Stage 5.1 Daily Episode scheduling repair requested from Mimi's real-use feedback; no V1 Hotfix was created.

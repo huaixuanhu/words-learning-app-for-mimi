@@ -11,7 +11,7 @@ const MAX_PROMPT_RECORDS = 300;
 const EXPIRED_PROMPT_REFRESH_RETENTION_MS = 48 * 60 * 60 * 1000;
 
 type LocalPromptRecord = Readonly<{
-  claims: Extract<TrustedPromptClaims, { reviewProfile: "recognition" }>;
+  claims: TrustedPromptClaims;
   consumedByIdempotencyKey: string | null;
 }>;
 
@@ -107,13 +107,22 @@ export function issueLocalPromptToken(
   const promptToken = randomId("local_prompt_token");
   const promptId = randomId("local_prompt");
   const expiresAt = new Date(new Date(now).getTime() + 30 * 60 * 1000).toISOString();
-  const claims = {
-    ...seed,
-    promptId,
-    promptToken,
-    targetRevision: null,
-    expiresAt,
-  } satisfies Extract<TrustedPromptClaims, { reviewProfile: "recognition" }>;
+  const claims: TrustedPromptClaims =
+    seed.reviewProfile === "recognition"
+      ? {
+          ...seed,
+          promptId,
+          promptToken,
+          targetRevision: null,
+          expiresAt,
+        }
+      : {
+          ...seed,
+          promptId,
+          promptToken,
+          targetRevision: seed.targetRevision,
+          expiresAt,
+        };
   const current = readState();
   const refreshablePrompts = current.prompts.filter(
     (record) =>

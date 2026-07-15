@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Archive, Download, RotateCcw, Save, Search, Trash2, Upload } from "lucide-react";
+import { Archive, ArrowRightLeft, Download, RotateCcw, Save, Search, Trash2, Upload } from "lucide-react";
 import { useMemo, useState } from "react";
 import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import type { ImportBatch, UpdateVocabularyInput, VocabularyItem } from "@/lib/vocabulary/types";
@@ -16,6 +16,7 @@ import {
   getVocabularyItemsForSelectedPerson,
   restoreVocabularyItem,
   rollbackImportBatch,
+  startVocabularyItemFreshInTrack,
   updateVocabularyItem,
 } from "@/lib/vocabulary/repository";
 import {
@@ -49,6 +50,13 @@ type PendingLibraryAction =
       batchId: string;
       label: string;
       remainingItems: number;
+    }
+  | {
+      type: "startFresh";
+      itemId: string;
+      label: string;
+      sourceTrack: VocabularyItem["learningTrack"];
+      targetTrack: VocabularyItem["learningTrack"];
     };
 
 type EditDraft = Pick<
@@ -167,6 +175,24 @@ export function VocabularyLibrary() {
           .map((state) => state.vocabularyItemId),
       ),
     [data.reviewStates, selectedPersonId],
+  );
+  const historyProfilesByItemId = useMemo(
+    () => {
+      const profiles = new Map<string, Set<VocabularyItem["learningTrack"]>>();
+
+      for (const record of [...data.reviewStates, ...data.reviewEvents]) {
+        if (record.personId !== selectedPersonId) {
+          continue;
+        }
+
+        const itemProfiles = profiles.get(record.vocabularyItemId) ?? new Set();
+        itemProfiles.add(record.reviewProfile);
+        profiles.set(record.vocabularyItemId, itemProfiles);
+      }
+
+      return profiles;
+    },
+    [data.reviewEvents, data.reviewStates, selectedPersonId],
   );
   const learningStageById = useMemo(
     () =>
@@ -359,6 +385,32 @@ export function VocabularyLibrary() {
     }
   };
 
+  const startFreshInTrack = async (
+    itemId: string,
+    targetTrack: VocabularyItem["learningTrack"],
+  ) => {
+    const now = new Date().toISOString();
+
+    try {
+      const result = startVocabularyItemFreshInTrack(data, itemId, targetTrack, now);
+
+      await commit(result.data, {
+        type: "vocabulary.startFreshInTrack",
+        vocabularyItemId: itemId,
+        targetTrack,
+        now,
+        timezone: detectTimezone(),
+      });
+      setEditingId(null);
+      setDraft(null);
+      setMessage(
+        `Started ${result.item.surfaceText} fresh in ${targetTrack === "active" ? "Active" : "Recognition"}.`,
+      );
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Could not start this entry fresh");
+    }
+  };
+
   const confirmPendingAction = async () => {
     if (!pendingAction) {
       return;
@@ -370,6 +422,11 @@ export function VocabularyLibrary() {
 
     if (action.type === "delete") {
       await deleteItem(action.itemId);
+      return;
+    }
+
+    if (action.type === "startFresh") {
+      await startFreshInTrack(action.itemId, action.targetTrack);
       return;
     }
 
@@ -483,6 +540,11 @@ export function VocabularyLibrary() {
               const isEditing = editingId === item.id && draft;
               const itemMeanings = getItemMeanings(item);
               const itemExamples = getItemExamples(item);
+              const historyProfiles = historyProfilesByItemId.get(item.id);
+              const otherTrack = item.learningTrack === "active" ? "recognition" : "active";
+              const canStartFresh =
+                Boolean(historyProfiles?.has(item.learningTrack)) &&
+                !historyProfiles?.has(otherTrack);
 
               return (
                 <div key={item.id} className="grid gap-3 p-4 transition hover:bg-[#fffaf1]/72">
@@ -518,29 +580,55 @@ export function VocabularyLibrary() {
                       </label>
                       <fieldset className="grid gap-2">
                         <legend className="text-sm font-semibold text-[#203229]">Learning track</legend>
-                        <div className="grid gap-2 sm:grid-cols-2">
-                          {[
-                            { value: "recognition", label: "Recognition" },
-                            { value: "active", label: "Active" },
-                          ].map((track) => (
-                            <label
-                              key={track.value}
-                              className="mimi-focus-ring flex min-h-11 items-center justify-center rounded-md border border-[#d8d1c2] bg-[#fffaf1] px-3 text-sm font-semibold text-[#203229] transition has-checked:border-[#5f7d66] has-checked:bg-[#d9e5d5]"
-                            >
-                              <input
-                                className="sr-only"
-                                name={`learning_track_${item.id}`}
-                                type="radio"
-                                value={track.value}
-                                checked={draft.learningTrack === track.value}
-                                onChange={(event) =>
-                                  setDraft({ ...draft, learningTrack: event.target.value as VocabularyItem["learningTrack"] })
+                        {historyProfiles?.size ? (
+                          <div className="grid gap-2 rounded-md border border-[#d8d1c2] bg-[#fffaf1] p-3 sm:grid-cols-[1fr_auto] sm:items-center">
+                            <p className="text-sm leading-6 text-[#5f6d62]">
+                              Current: <span className="font-semibold text-[#203229]">{item.learningTrack === "active" ? "Active" : "Recognition"}</span>. {canStartFresh ? "Old progress will stay read-only." : "A retained history already exists in the other Track, so another Track change is unavailable."}
+                            </p>
+                            {canStartFresh ? (
+                              <PressableButton
+                                type="button"
+                                onClick={() =>
+                                  setPendingAction({
+                                    type: "startFresh",
+                                    itemId: item.id,
+                                    label: item.surfaceText,
+                                    sourceTrack: item.learningTrack,
+                                    targetTrack: otherTrack,
+                                  })
                                 }
-                              />
-                              {track.label}
-                            </label>
-                          ))}
-                        </div>
+                                className="mimi-button-secondary mimi-focus-ring inline-flex min-h-11 items-center justify-center gap-2 px-3 text-sm font-semibold"
+                              >
+                                <ArrowRightLeft aria-hidden="true" className="size-4" />
+                                Start fresh in {otherTrack === "active" ? "Active" : "Recognition"}
+                              </PressableButton>
+                            ) : null}
+                          </div>
+                        ) : (
+                          <div className="grid gap-2 sm:grid-cols-2">
+                            {[
+                              { value: "recognition", label: "Recognition" },
+                              { value: "active", label: "Active" },
+                            ].map((track) => (
+                              <label
+                                key={track.value}
+                                className="mimi-focus-ring flex min-h-11 items-center justify-center rounded-md border border-[#d8d1c2] bg-[#fffaf1] px-3 text-sm font-semibold text-[#203229] transition has-checked:border-[#5f7d66] has-checked:bg-[#d9e5d5]"
+                              >
+                                <input
+                                  className="sr-only"
+                                  name={`learning_track_${item.id}`}
+                                  type="radio"
+                                  value={track.value}
+                                  checked={draft.learningTrack === track.value}
+                                  onChange={(event) =>
+                                    setDraft({ ...draft, learningTrack: event.target.value as VocabularyItem["learningTrack"] })
+                                  }
+                                />
+                                {track.label}
+                              </label>
+                            ))}
+                          </div>
+                        )}
                       </fieldset>
                       <fieldset className="grid gap-2">
                         <legend className="text-sm font-semibold text-[#203229]">Tags</legend>
@@ -744,16 +832,24 @@ export function VocabularyLibrary() {
           <>
             {pendingAction.type === "delete" ? (
               <Trash2 aria-hidden="true" className="mx-auto size-9 text-[#8a4d21]" />
+            ) : pendingAction.type === "startFresh" ? (
+              <ArrowRightLeft aria-hidden="true" className="mx-auto size-9 text-[var(--mimi-primary)]" />
             ) : (
               <RotateCcw aria-hidden="true" className="mx-auto size-9 text-[var(--mimi-primary)]" />
             )}
             <h2 id="library-confirm-title" className="mt-4 text-xl font-semibold text-[var(--mimi-text)]">
-              {pendingAction.type === "delete" ? "确认删除这个词条？" : "确认撤销这批导入？"}
+              {pendingAction.type === "delete"
+                ? "确认删除这个词条？"
+                : pendingAction.type === "startFresh"
+                  ? `Start fresh in ${pendingAction.targetTrack === "active" ? "Active" : "Recognition"}?`
+                  : "确认撤销这批导入？"}
             </h2>
             <p id="library-confirm-description" className="mt-2 text-sm leading-6 text-[var(--mimi-text-soft)]">
               {pendingAction.type === "delete"
                 ? `将删除 ${pendingAction.label} 和它的复习记录。`
-                : `将删除 ${pendingAction.remainingItems} 个仍在词库中的词条，并移除相关复习记录。`}
+                : pendingAction.type === "startFresh"
+                  ? `${pendingAction.label} will start with no progress in the new Track. Its ${pendingAction.sourceTrack === "active" ? "Active" : "Recognition"} history will stay read-only and will not be copied.`
+                  : `将删除 ${pendingAction.remainingItems} 个仍在词库中的词条，并移除相关复习记录。`}
             </p>
             <div className="mt-5 grid grid-cols-2 gap-3">
               <PressableButton
