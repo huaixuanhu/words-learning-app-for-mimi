@@ -590,6 +590,37 @@ describe("V2 Stage 2 AI enrichment contract", () => {
     expect(reliable.estimatedCostUsdToday).toBeCloseTo(0.000175, 9);
   });
 
+  it("records reliable usage above the reservation so later attempts remain bounded", () => {
+    const reservation = buildDefaultAttemptReservation();
+    const reserved = reserveAiProviderAttempt(
+      {
+        globalAttemptsToday: 0,
+        activeProviderCalls: 0,
+        reservedInputTokensToday: 0,
+        reservedOutputTokensToday: 0,
+        estimatedCostUsdToday: 0,
+        estimatedCostUsdMonth: 0,
+      },
+      reservation,
+    );
+    if (!reserved.allowed) throw new Error("expected a reservation");
+
+    const settled = settleAiProviderAttempt(reserved.next, reservation, {
+      promptTokenCount: 2_001,
+      candidatesTokenCount: 650,
+      thoughtsTokenCount: 51,
+      totalTokenCount: 2_702,
+    });
+    expect(settled).toMatchObject({
+      activeProviderCalls: 0,
+      reservedInputTokensToday: 2_001,
+      reservedOutputTokensToday: 701,
+    });
+    expect(settled.estimatedCostUsdToday).toBeGreaterThan(
+      reservation.estimatedCostUsd,
+    );
+  });
+
   it("returns calm degraded states in priority order", () => {
     expect(
       getAiGenerationAvailability({

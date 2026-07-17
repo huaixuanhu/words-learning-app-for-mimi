@@ -1,5 +1,33 @@
 # AI Agent Log
 
+## 2026-07-17 23:52 AEST
+
+- Task: execute the next V2 AI stage using the user's required `V2-7B-1` / `V2-7B-2` names, completing only the local formal orchestration slice.
+- Plan agreed: yes. The user explicitly approved direct `V2-7B-1` execution and corrected the split naming. The documentation-first child plan kept V2-7B-2 credentials, temporary non-Production Schema 6, provider calls, synthetic smoke, cleanup, Vercel, and deployment outside this execution.
+- Working tier: Tier 3. Local plans, the unexecuted forward-only schema draft, code, fake-provider/database tests, local build, browser checks, backup parity, and governance synchronization were in scope.
+- Changed files:
+  - current Disclosure contract/session evidence, canonical hashes, formal orchestration, runtime hard gate, direct Gemini adapter, accounting, Postgres formal store/actions, Route Handlers, and client helpers;
+  - Library enrichment and exact example-word actions for formal disclosure/generation/accept/reject/add while preserving the local fixture route;
+  - Schema Version 6 unexecuted draft, backup validation/mapping, focused tests, V2-7B-1/master plans, architecture, README, AGENTS, changelog, migration mapping, and this log.
+- Reason: make the formal AI workflow locally complete and testable while ensuring that environment configuration alone cannot activate paid external transmission before the separately approved V2-7B-2 gate.
+- Decisions:
+  - the accepted split is exactly `V2-7B-1` and `V2-7B-2`; no A/B parallel labels are used;
+  - a code-owned `v2-7b-2-required` activation state prevents environment variables alone from making the formal routes instantiate or call Gemini;
+  - confirmation binds the server-derived person, a random HttpOnly/SameSite=Strict browser session, current Disclosure version/digest, and time; only the session hash is persisted and this evidence is not authentication;
+  - server item lookup and exact UTF-16 context reconstruction precede hashes, Cache, quota, and provider work; archived/missing/changed sources fail closed;
+  - Cache and completed replay occur before a new reservation; same-Cache processing has one owner and a 150-second lease, and submitted attempts retain request count even when output later fails;
+  - reliable provider usage is reconciled for invalid/safety/over-reservation outputs; missing usage/model lineage remains fail closed;
+  - the Gemini request places `store: false` at the top-level REST request, uses minimal thinking, strict schema, no tools/grounding/retry, a 700-token ceiling, and a 90-second timeout;
+  - accepted formal mutations are server transactions. Candidate addition reuses duplicates, requires explicit Track for a new entry, and preserves candidate relation provenance only for an unchanged generated candidate;
+  - operational Disclosure/session/Idempotency/Cache/quota data stays outside backup version 3. Historical accepted lineage remains restorable without creating a current confirmation;
+  - existing motion and reduced-motion behavior was not modified.
+- Validation:
+  - Passed: `npm run lint`, `npm run typecheck`, and full Vitest with 61 files / 356 tests passed; the existing Postgres integration file/test was intentionally skipped.
+  - Passed: schema 3, 5, and 6 backup dry-runs, Next.js Production build, Tier 3 governance preflight, and `git diff --check`.
+  - Passed: local Production-build Home/Library checks at 320, 390, 768, 1024, and 1280 px with no horizontal overflow or browser console error.
+  - Development-mode browser startup exposed a machine-level `EMFILE` watcher exhaustion and returned framework 404. The same already-built revision served correctly through `next start`; no source or motion change was made for that local resource condition.
+- Safety notes: Next.js reported the existence of the ordinary ignored `.env.local`, but no value, credential, token, or connection string was read, printed, copied, changed, or staged. No Gemini/provider request, charge, remote database connection/transaction, SQL migration, remote import/restore, Production write, WAF/Vercel action, deployment, commit, push, pull request, or merge occurred. Live V1 remains Schema Version 5, `0003_v2_schema6_data_model.sql` remains unexecuted, and V2-7B-2 is not started.
+
 ## 2026-07-16 00:27 AEST
 
 - Task: continue the user-confirmed V2 Stage 7A from the interrupted model-capacity checkpoint and implement the local AI enrichment/context experience plus dormant Production safety boundary.

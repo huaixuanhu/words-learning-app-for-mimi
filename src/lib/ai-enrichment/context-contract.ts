@@ -7,6 +7,10 @@ import type {
   TrustedAiContextPayload,
 } from "./types";
 
+export const AI_CONTEXT_PROMPT_VERSION = "v2-context-explain-prompt-v1" as const;
+export const AI_CONTEXT_OUTPUT_SCHEMA_VERSION =
+  "v2-context-explanation-v1" as const;
+
 const PUBLIC_CONTEXT_REQUEST_KEYS = [
   "vocabularyEntryId",
   "exampleIndex",

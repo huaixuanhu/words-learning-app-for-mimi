@@ -542,6 +542,7 @@ async function listAiRuns(queryable: PostgresQueryable, context: PersonScopedCon
         cache_key_hash,
         status,
         structure_validation_status,
+        terminal_category,
         provider_response_id,
         input_tokens,
         output_tokens,

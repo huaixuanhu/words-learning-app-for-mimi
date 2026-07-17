@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { resolveAiRuntimeHealth } from "./runtime-config";
 
-describe("V2 Stage 7A AI runtime health", () => {
+describe("V2-7B-1 AI runtime health", () => {
   const now = "2026-07-15T00:00:00.000Z";
 
   it("fails closed when activation, a credential, or accounting is missing", () => {
@@ -25,7 +25,7 @@ describe("V2 Stage 7A AI runtime health", () => {
     });
   });
 
-  it("becomes available only with every gate present", () => {
+  it("keeps the code-owned V2-7B-2 gate closed even when environment claims readiness", () => {
     expect(
       resolveAiRuntimeHealth(
         {
@@ -36,6 +36,9 @@ describe("V2 Stage 7A AI runtime health", () => {
         },
         now,
       ),
-    ).toMatchObject({ availability: { status: "available", reason: null } });
+    ).toMatchObject({
+      enabled: true,
+      availability: { status: "resting", reason: "provider_activation_pending" },
+    });
   });
 });

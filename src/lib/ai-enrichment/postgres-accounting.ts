@@ -31,6 +31,11 @@ type TransactionRunner = <T>(
   callback: (queryable: PostgresQueryable) => Promise<T>,
 ) => Promise<T>;
 
+type TransactionalPersistence = (
+  queryable: PostgresQueryable,
+  aiRunId: string,
+) => Promise<void>;
+
 type AiUsageBucketRow = {
   bucket_key: string;
   scope: "global_day" | "global_month" | "global_concurrency";
@@ -106,11 +111,13 @@ export type PostgresAiSettlement =
       Readonly<{
         outcome: "succeeded";
         usage: GeminiUsage;
+        terminalCategory?: null;
       }>)
   | (PostgresAiSettlementEvidence &
       Readonly<{
         outcome: "rejected" | "failed";
         usage: GeminiUsage | null;
+        terminalCategory: string;
       }>);
 
 function nonNegativeNumber(value: number | string, label: string) {
@@ -293,6 +300,7 @@ async function expireStaleProviderLeases(
       set
         status = 'failed',
         structure_validation_status = 'unavailable',
+        terminal_category = 'provider_lease_expired',
         completed_at = $1
       where status = 'submitted'
         and created_at < $2
@@ -370,13 +378,14 @@ export async function reservePostgresAiProviderAttempt(
           model_label, prompt_version, source_hash, output_schema_version,
           disclosure_version, idempotency_key_hash, cache_key_hash,
           status, structure_validation_status, provider_response_id,
+          terminal_category,
           input_tokens, output_tokens, thinking_tokens, total_tokens,
           latency_ms, estimated_cost_usd, created_at, completed_at
         )
         values (
           $1, $2, $3, $4, 'google-gemini-api', $5,
           $6, $7, $8, $9, $10, $11, $12,
-          'submitted', 'pending', null, 0, 0, 0, 0, 0, 0, $13, null
+          'submitted', 'pending', null, null, 0, 0, 0, 0, 0, 0, $13, null
         )
         on conflict (person_id, idempotency_key_hash) do nothing
         returning id
@@ -485,7 +494,11 @@ export async function reservePostgresAiProviderAttempt(
 export async function settlePostgresAiProviderAttempt(
   handle: PostgresAiReservationHandle,
   settlement: PostgresAiSettlement,
-  dependencies: Readonly<{ transaction?: TransactionRunner }> = {},
+  dependencies: Readonly<{
+    transaction?: TransactionRunner;
+    persistResult?: TransactionalPersistence;
+    persistFailure?: TransactionalPersistence;
+  }> = {},
 ) {
   databaseUuid(handle.aiRunId, "AI run id");
   if (settlement.outcome === "succeeded" && !settlement.usage) {
@@ -496,6 +509,12 @@ export async function settlePostgresAiProviderAttempt(
   }
   if (!Number.isSafeInteger(settlement.latencyMs) || settlement.latencyMs < 0) {
     throw new Error("AI settlement latencyMs is invalid");
+  }
+  if (
+    settlement.outcome !== "succeeded" &&
+    !settlement.terminalCategory.trim()
+  ) {
+    throw new Error("A failed AI settlement requires a terminal category");
   }
   const transaction = dependencies.transaction ?? withPostgresTransaction;
 
@@ -579,14 +598,15 @@ export async function settlePostgresAiProviderAttempt(
         set
           status = $2,
           structure_validation_status = $3,
-          provider_response_id = $4,
-          input_tokens = $5,
-          output_tokens = $6,
-          thinking_tokens = $7,
-          total_tokens = $8,
-          latency_ms = $9,
-          estimated_cost_usd = $10,
-          completed_at = $11
+          terminal_category = $4,
+          provider_response_id = $5,
+          input_tokens = $6,
+          output_tokens = $7,
+          thinking_tokens = $8,
+          total_tokens = $9,
+          latency_ms = $10,
+          estimated_cost_usd = $11,
+          completed_at = $12
         where id = $1 and status = 'submitted'
         returning id
       `,
@@ -594,6 +614,7 @@ export async function settlePostgresAiProviderAttempt(
         handle.aiRunId,
         settlement.outcome,
         structureStatus,
+        settlement.outcome === "succeeded" ? null : settlement.terminalCategory,
         settlement.providerResponseId,
         actualInputTokens,
         actualOutputTokens,
@@ -606,6 +627,14 @@ export async function settlePostgresAiProviderAttempt(
     );
     if (!updatedRun.rows.length) {
       throw new Error("AI run changed before settlement completed");
+    }
+    if (settlement.outcome === "succeeded") {
+      if (!dependencies.persistResult) {
+        throw new Error("A successful AI settlement requires atomic result persistence");
+      }
+      await dependencies.persistResult(queryable, handle.aiRunId);
+    } else if (dependencies.persistFailure) {
+      await dependencies.persistFailure(queryable, handle.aiRunId);
     }
     await queryable.query(
       `

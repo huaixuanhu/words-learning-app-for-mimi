@@ -33,12 +33,27 @@ export type GeminiProviderMaterials = Readonly<{
 export class GeminiProviderAdapterError extends Error {
   readonly category: string;
   readonly httpStatus: number | null;
+  readonly usage: GeminiUsage | null;
+  readonly modelVersion: string | null;
+  readonly providerResponseId: string | null;
 
-  constructor(category: string, message: string, httpStatus: number | null = null) {
+  constructor(
+    category: string,
+    message: string,
+    httpStatus: number | null = null,
+    evidence: Readonly<{
+      usage?: GeminiUsage | null;
+      modelVersion?: string | null;
+      providerResponseId?: string | null;
+    }> = {},
+  ) {
     super(message);
     this.name = "GeminiProviderAdapterError";
     this.category = category;
     this.httpStatus = httpStatus;
+    this.usage = evidence.usage ?? null;
+    this.modelVersion = evidence.modelVersion ?? null;
+    this.providerResponseId = evidence.providerResponseId ?? null;
   }
 }
 
@@ -61,6 +76,7 @@ function buildRequestBody(
   materials: GeminiProviderMaterials,
 ) {
   return {
+    store: false,
     systemInstruction: { parts: [{ text: materials.systemPrompt }] },
     contents: [
       { role: "user", parts: [{ text: JSON.stringify(trustedPayload) }] },
@@ -96,13 +112,21 @@ function createBoundedProviderSignal(parentSignal?: AbortSignal) {
   };
 }
 
-function parseVisibleJson(body: Record<string, unknown>) {
+type ProviderEvidence = Readonly<{
+  usage: GeminiUsage;
+  modelVersion: string;
+  providerResponseId: string | null;
+}>;
+
+function parseVisibleJson(body: Record<string, unknown>, evidence: ProviderEvidence) {
   const candidates = Array.isArray(body.candidates) ? body.candidates : [];
   const candidate = record(candidates[0]);
   if (!candidate || candidate.finishReason !== "STOP") {
     throw new GeminiProviderAdapterError(
       "provider_nonstop_finish",
       "Gemini did not return one complete structured result.",
+      null,
+      evidence,
     );
   }
   const content = record(candidate.content);
@@ -118,6 +142,8 @@ function parseVisibleJson(body: Record<string, unknown>) {
     throw new GeminiProviderAdapterError(
       "provider_response_contract",
       "Gemini returned no visible structured result.",
+      null,
+      evidence,
     );
   }
 
@@ -127,6 +153,8 @@ function parseVisibleJson(body: Record<string, unknown>) {
     throw new GeminiProviderAdapterError(
       "provider_response_contract",
       "Gemini returned invalid structured JSON.",
+      null,
+      evidence,
     );
   }
 }
@@ -140,22 +168,52 @@ function parseProviderEnvelope(bodyValue: unknown) {
     );
   }
   const promptFeedback = record(body.promptFeedback);
+  const providerResponseId =
+    typeof body.responseId === "string" && body.responseId.trim()
+      ? body.responseId
+      : null;
+  const reportedModelVersion =
+    typeof body.modelVersion === "string" && body.modelVersion.trim()
+      ? body.modelVersion
+      : null;
   if (
     promptFeedback &&
     typeof promptFeedback.blockReason === "string" &&
     promptFeedback.blockReason !== "BLOCK_REASON_UNSPECIFIED"
   ) {
+    let blockedUsage: GeminiUsage | null = null;
+    try {
+      blockedUsage = validateGeminiUsage(body.usageMetadata);
+    } catch {
+      blockedUsage = null;
+    }
     throw new GeminiProviderAdapterError(
       "provider_content_block",
       "Gemini did not return content for this request.",
+      null,
+      {
+        usage: blockedUsage,
+        modelVersion: reportedModelVersion,
+        providerResponseId,
+      },
     );
   }
 
-  const usage = validateGeminiUsage(body.usageMetadata);
+  let usage: GeminiUsage;
+  try {
+    usage = validateGeminiUsage(body.usageMetadata);
+  } catch {
+    throw new GeminiProviderAdapterError(
+      "provider_usage_invalid",
+      "Gemini returned missing or invalid usage metadata.",
+    );
+  }
   if (usage.promptTokenCount > AI_PRODUCTION_LIMITS.reservedInputTokensPerAttempt) {
     throw new GeminiProviderAdapterError(
       "provider_usage_exceeded",
       "Gemini input usage exceeded the reserved limit.",
+      null,
+      { usage, modelVersion: reportedModelVersion, providerResponseId },
     );
   }
   if (
@@ -165,15 +223,26 @@ function parseProviderEnvelope(bodyValue: unknown) {
     throw new GeminiProviderAdapterError(
       "provider_usage_exceeded",
       "Gemini output usage exceeded the reserved limit.",
+      null,
+      { usage, modelVersion: reportedModelVersion, providerResponseId },
     );
   }
 
-  const modelVersion =
-    typeof body.modelVersion === "string" ? body.modelVersion : GEMINI_STAGE2_MODEL;
+  const modelVersion = reportedModelVersion;
+  if (!modelVersion) {
+    throw new GeminiProviderAdapterError(
+      "provider_model_missing",
+      "Gemini returned no model version evidence.",
+      null,
+      { usage, modelVersion: reportedModelVersion, providerResponseId },
+    );
+  }
   if (!modelVersion.startsWith(GEMINI_STAGE2_MODEL)) {
     throw new GeminiProviderAdapterError(
       "provider_model_mismatch",
       "Gemini returned an unexpected model version.",
+      null,
+      { usage, modelVersion, providerResponseId },
     );
   }
 
@@ -181,25 +250,22 @@ function parseProviderEnvelope(bodyValue: unknown) {
     body,
     usage,
     modelVersion,
-    providerResponseId:
-      typeof body.responseId === "string" && body.responseId.trim()
-        ? body.responseId
-        : null,
+    providerResponseId,
   };
 }
 
 export function createGeminiProviderAdapter(input: Readonly<{
   apiKey: string;
   fetchImpl?: FetchLike;
-}>) {
-  const apiKey = input.apiKey.trim();
+}> | string) {
+  const apiKey = typeof input === "string" ? input.trim() : input.apiKey.trim();
   if (!apiKey) {
     throw new GeminiProviderAdapterError(
       "provider_not_configured",
       "The Gemini provider is not configured.",
     );
   }
-  const fetchImpl = input.fetchImpl ?? fetch;
+  const fetchImpl = typeof input === "string" ? fetch : input.fetchImpl ?? fetch;
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_STAGE2_MODEL}:generateContent`;
 
   async function generate<T>(
@@ -248,9 +314,20 @@ export function createGeminiProviderAdapter(input: Readonly<{
       }
 
       const envelope = parseProviderEnvelope(bodyValue);
-      const parsed = parseVisibleJson(envelope.body);
+      const parsed = parseVisibleJson(envelope.body, envelope);
+      let value: T;
+      try {
+        value = validate(parsed);
+      } catch {
+        throw new GeminiProviderAdapterError(
+          "provider_response_contract",
+          "Gemini returned content that did not pass the app contract.",
+          null,
+          envelope,
+        );
+      }
       return {
-        value: validate(parsed),
+        value,
         usage: envelope.usage,
         modelVersion: envelope.modelVersion,
         providerResponseId: envelope.providerResponseId,

@@ -72,7 +72,7 @@ function submission(
     promptVersion: "v2-ai-enrichment-prompt-v2",
     sourceHash: "source-hash-1",
     outputSchemaVersion: "v2-ai-enrichment-draft-v2",
-    disclosureVersion: "ai-disclosure-v1",
+    disclosureVersion: "ai-disclosure-v2",
     idempotencyKeyHash: "idempotency-hash-1",
     cacheKeyHash: "cache-hash-1",
     createdAt: NOW,
@@ -274,7 +274,7 @@ class AccountingFake {
         const run = this.runs.find((candidate) => candidate.id === values[0]);
         if (run && run.status === "submitted") {
           run.status = values[1] as RunStatus;
-          run.completedAt = String(values[10]);
+          run.completedAt = String(values[11]);
           return queryResult([{ id: run.id }] as unknown as TRow[]) as never;
         }
         return queryResult([]) as never;
@@ -613,7 +613,7 @@ describe("Postgres AI quota accounting", () => {
         latencyMs: 90_000,
         completedAt: NOW,
       },
-      { transaction: fake.transaction },
+      { transaction: fake.transaction, persistResult: async () => undefined },
     );
 
     expect(result).toEqual({ status: "settled", runStatus: "succeeded" });

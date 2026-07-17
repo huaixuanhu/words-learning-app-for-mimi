@@ -34,7 +34,7 @@ function providerResponse(draft: unknown, overrides: Record<string, unknown> = {
   };
 }
 
-describe("V2 Stage 7A Gemini provider adapter", () => {
+describe("V2-7B-1 Gemini provider adapter", () => {
   it("uses the pinned REST model, strict structure, and no optional tools", async () => {
     const fetchImpl = vi.fn(async (input: string, init: RequestInit) => {
       void input;
@@ -63,6 +63,7 @@ describe("V2 Stage 7A Gemini provider adapter", () => {
     expect(url).not.toContain("test-key");
     expect(init.headers).toMatchObject({ "x-goog-api-key": "test-key" });
     const requestBody = JSON.parse(String(init.body));
+    expect(requestBody.store).toBe(false);
     expect(requestBody.generationConfig).toMatchObject({
       responseMimeType: "application/json",
       thinkingConfig: { thinkingLevel: "minimal" },
@@ -131,6 +132,57 @@ describe("V2 Stage 7A Gemini provider adapter", () => {
 
     await expect(adapter.generateEnrichment(source, materials)).rejects.toMatchObject({
       category: "provider_usage_exceeded",
+      usage: { totalTokenCount: 801 },
+    });
+  });
+
+  it("fails closed when modelVersion evidence is missing", async () => {
+    const fetchImpl = vi.fn(async () => Response.json(
+      providerResponse(
+        { additionalMeaningsZh: [], examples: [], similarWords: [], confusableWords: [] },
+        { modelVersion: undefined },
+      ),
+    ));
+    const adapter = createGeminiProviderAdapter({ apiKey: "test-key", fetchImpl });
+
+    await expect(adapter.generateEnrichment(source, materials)).rejects.toMatchObject({
+      category: "provider_model_missing",
+      usage: { totalTokenCount: 200 },
+      providerResponseId: "provider-response-1",
+    });
+  });
+
+  it("preserves reliable usage when visible content fails local validation", async () => {
+    const fetchImpl = vi.fn(async () => Response.json(
+      providerResponse({
+        additionalMeaningsZh: [],
+        examples: ["We adapt to change."],
+        similarWords: [],
+        confusableWords: [],
+      }),
+    ));
+    const adapter = createGeminiProviderAdapter({ apiKey: "test-key", fetchImpl });
+
+    await expect(adapter.generateEnrichment(source, materials)).rejects.toMatchObject({
+      category: "provider_response_contract",
+      usage: { promptTokenCount: 100, totalTokenCount: 200 },
+      modelVersion: "gemini-3.1-flash-lite-001",
+    });
+  });
+
+  it("preserves reliable usage on a provider content block", async () => {
+    const fetchImpl = vi.fn(async () => Response.json(
+      providerResponse(null, {
+        promptFeedback: { blockReason: "SAFETY" },
+        candidates: [],
+      }),
+    ));
+    const adapter = createGeminiProviderAdapter({ apiKey: "test-key", fetchImpl });
+
+    await expect(adapter.generateEnrichment(source, materials)).rejects.toMatchObject({
+      category: "provider_content_block",
+      usage: { totalTokenCount: 200 },
+      providerResponseId: "provider-response-1",
     });
   });
 });

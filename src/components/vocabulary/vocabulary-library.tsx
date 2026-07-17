@@ -145,7 +145,7 @@ function getBatchLabel(batch: ImportBatch) {
 }
 
 export function VocabularyLibrary() {
-  const { data, isLoaded, storageRuntime, commit } = useVocabularyData();
+  const { data, isLoaded, storageRuntime, commit, refresh } = useVocabularyData();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<LibraryFilter>("all");
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -840,6 +840,8 @@ export function VocabularyLibrary() {
           storageRuntime !== "loading" &&
           !isPostgresClientStorageRuntime(storageRuntime)
         }
+        formalRouteEnabled={isPostgresClientStorageRuntime(storageRuntime)}
+        refresh={refresh}
         commit={commit}
       />
 

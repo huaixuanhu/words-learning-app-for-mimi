@@ -7,6 +7,8 @@ import type { AiGenerationAvailability } from "./types";
 
 type AiRuntimeEnvironment = Readonly<Record<string, string | undefined>>;
 
+export const AI_PROVIDER_ACTIVATION_STATE = "v2-7b-2-required" as const;
+
 export type AiRuntimeHealth = Readonly<{
   enabled: boolean;
   availability: AiGenerationAvailability;
@@ -26,6 +28,16 @@ export function resolveAiRuntimeHealth(
       env.MIMI_AI_SCHEMA6_READY === "true",
     quotaAvailable: env.MIMI_AI_QUOTA_AVAILABLE !== "false",
   });
+
+  if (availability.status === "available") {
+    return {
+      enabled,
+      availability: {
+        status: "resting",
+        reason: "provider_activation_pending",
+      },
+    };
+  }
 
   return { enabled, availability };
 }

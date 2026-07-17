@@ -721,6 +721,10 @@ export function ReviewSession({ zone }: ReviewSessionProps) {
                                     storageRuntime !== "postgres-preview" &&
                                     storageRuntime !== "postgres-production"
                                   }
+                                  formalRouteEnabled={
+                                    storageRuntime === "postgres-preview" ||
+                                    storageRuntime === "postgres-production"
+                                  }
                                   data={data}
                                   commit={commit}
                                 />

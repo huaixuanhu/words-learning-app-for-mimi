@@ -1,4 +1,4 @@
--- V2 Stage 3 Schema Version 6 data-model draft, amended by V2 Stage 3.1.
+-- V2 Stage 3 Schema Version 6 data-model draft, amended through V2 Stage 7B-1.
 -- Apply only after db/migrations/0001_initial.sql and
 -- db/migrations/0002_schema5_production_runtime.sql.
 -- Local/static validation is allowed in V2 Stage 3. Any Development / Staging
@@ -413,6 +413,7 @@ create table ai_runs (
   cache_key_hash text not null,
   status text not null,
   structure_validation_status text not null,
+  terminal_category text null,
   provider_response_id text null,
   input_tokens integer not null default 0,
   output_tokens integer not null default 0,
@@ -433,7 +434,7 @@ create table ai_runs (
       provider = 'google-gemini-api'
       and model = 'gemini-3.1-flash-lite'
       and model_label = 'Gemini 3.1 Flash-Lite'
-      and disclosure_version = 'ai-disclosure-v1'
+      and disclosure_version in ('ai-disclosure-v1', 'ai-disclosure-v2')
     )
     or
     (
@@ -458,24 +459,30 @@ create table ai_runs (
     (
       status = 'submitted'
       and structure_validation_status = 'pending'
+      and terminal_category is null
       and completed_at is null
     )
     or
     (
       status = 'succeeded'
       and structure_validation_status = 'valid'
+      and terminal_category is null
       and completed_at is not null
     )
     or
     (
       status = 'rejected'
       and structure_validation_status = 'invalid'
+      and terminal_category is not null
+      and length(trim(terminal_category)) > 0
       and completed_at is not null
     )
     or
     (
       status = 'failed'
       and structure_validation_status in ('invalid', 'unavailable')
+      and terminal_category is not null
+      and length(trim(terminal_category)) > 0
       and completed_at is not null
     )
   ),
@@ -529,6 +536,88 @@ before insert or update of person_id, source_vocabulary_item_id
 on ai_runs
 for each row
 execute function ensure_ai_run_source_person();
+
+-- Disclosure confirmation and request replay are operational controls. The
+-- raw browser session token and raw Idempotency Key are never stored.
+create table ai_disclosure_confirmations (
+  id uuid primary key,
+  person_id uuid not null references people(id) on delete restrict,
+  session_token_hash text not null,
+  disclosure_version text not null,
+  disclosure_digest text not null,
+  confirmed_at timestamptz not null,
+  constraint ai_disclosure_confirmations_unique
+    unique (person_id, session_token_hash, disclosure_version, disclosure_digest),
+  constraint ai_disclosure_confirmations_current_version
+    check (disclosure_version = 'ai-disclosure-v2'),
+  constraint ai_disclosure_confirmations_text_not_blank check (
+    length(trim(session_token_hash)) > 0
+    and length(trim(disclosure_digest)) > 0
+  )
+);
+
+create table ai_request_idempotency (
+  person_id uuid not null references people(id) on delete restrict,
+  idempotency_key_hash text not null,
+  request_hash text not null,
+  cache_key_hash text not null,
+  feature text not null,
+  source_vocabulary_item_id uuid not null,
+  status text not null,
+  result_ai_run_id uuid null,
+  terminal_category text null,
+  lease_expires_at timestamptz null,
+  created_at timestamptz not null,
+  updated_at timestamptz not null,
+  primary key (person_id, idempotency_key_hash),
+  constraint ai_request_idempotency_source_person_fk
+    foreign key (person_id, source_vocabulary_item_id)
+    references vocabulary_items(person_id, id)
+    on delete cascade,
+  constraint ai_request_idempotency_run_person_fk
+    foreign key (person_id, result_ai_run_id)
+    references ai_runs(person_id, id)
+    on delete restrict,
+  constraint ai_request_idempotency_feature_valid
+    check (feature in ('enrichment_v1', 'context_explain_v1')),
+  constraint ai_request_idempotency_status_valid
+    check (status in ('processing', 'succeeded', 'failed')),
+  constraint ai_request_idempotency_lifecycle_consistent check (
+    (
+      status = 'processing'
+      and result_ai_run_id is null
+      and terminal_category is null
+      and lease_expires_at is not null
+      and lease_expires_at > updated_at
+    )
+    or
+    (
+      status = 'succeeded'
+      and result_ai_run_id is not null
+      and terminal_category is null
+      and lease_expires_at is null
+    )
+    or
+    (
+      status = 'failed'
+      and result_ai_run_id is null
+      and terminal_category is not null
+      and length(trim(terminal_category)) > 0
+      and lease_expires_at is null
+    )
+  ),
+  constraint ai_request_idempotency_time_order
+    check (updated_at >= created_at),
+  constraint ai_request_idempotency_text_not_blank check (
+    length(trim(idempotency_key_hash)) > 0
+    and length(trim(request_hash)) > 0
+    and length(trim(cache_key_hash)) > 0
+  )
+);
+
+create unique index ai_request_idempotency_processing_cache_unique
+  on ai_request_idempotency(person_id, cache_key_hash)
+  where status = 'processing';
 
 create table ai_enrichment_drafts (
   id uuid primary key,
@@ -853,6 +942,16 @@ create index ai_runs_person_created_at_idx
 
 create index ai_runs_cache_key_idx
   on ai_runs(cache_key_hash, created_at desc);
+
+create index ai_disclosure_confirmations_person_session_idx
+  on ai_disclosure_confirmations(person_id, session_token_hash, confirmed_at desc);
+
+create index ai_request_idempotency_cache_idx
+  on ai_request_idempotency(person_id, cache_key_hash, updated_at desc);
+
+create index ai_request_idempotency_lease_idx
+  on ai_request_idempotency(lease_expires_at)
+  where status = 'processing';
 
 create index ai_enrichment_drafts_person_source_idx
   on ai_enrichment_drafts(person_id, source_vocabulary_item_id, updated_at desc);

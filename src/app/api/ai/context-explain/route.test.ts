@@ -14,10 +14,10 @@ function request(body: unknown) {
   }) as NextRequest;
 }
 
-describe("/api/ai/context-explain Stage 7A boundary", () => {
+describe("/api/ai/context-explain V2-7B-1 boundary", () => {
   afterEach(() => vi.unstubAllEnvs());
 
-  it("accepts only exact offsets and stays closed before Stage 7B", async () => {
+  it("accepts only exact offsets and stays closed before V2-7B-2", async () => {
     vi.stubEnv("VERCEL_ENV", "development");
     vi.stubEnv("MIMI_AI_KILL_SWITCH", "true");
     const { POST } = await import("./route");
@@ -34,7 +34,7 @@ describe("/api/ai/context-explain Stage 7A boundary", () => {
     );
 
     expect(response.status).toBe(503);
-    expect(await response.json()).toMatchObject({ reason: "kill_switch" });
+    expect(await response.json()).toMatchObject({ reason: "provider_activation_pending" });
   });
 
   it("rejects client-supplied selected text", async () => {

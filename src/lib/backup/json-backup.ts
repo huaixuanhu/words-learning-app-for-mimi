@@ -850,7 +850,9 @@ function validateAiRun(value: unknown, index: number, errors: string[]) {
     (
       value.model !== "gemini-3.1-flash-lite" ||
       value.modelLabel !== "Gemini 3.1 Flash-Lite" ||
-      value.disclosureVersion !== "ai-disclosure-v1"
+      !["ai-disclosure-v1", "ai-disclosure-v2"].includes(
+        String(value.disclosureVersion),
+      )
     )
   ) {
     errors.push(`${label} Gemini lineage is inconsistent`);

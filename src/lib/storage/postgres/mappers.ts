@@ -171,6 +171,7 @@ export type AiRunRow = {
   cache_key_hash: string;
   status: AiRunRecord["status"];
   structure_validation_status: AiRunRecord["structureValidationStatus"];
+  terminal_category?: string | null;
   provider_response_id: string | null;
   input_tokens: number;
   output_tokens: number;

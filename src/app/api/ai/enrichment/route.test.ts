@@ -32,7 +32,7 @@ function validBody() {
   };
 }
 
-describe("/api/ai/enrichment Stage 7A boundary", () => {
+describe("/api/ai/enrichment V2-7B-1 boundary", () => {
   afterEach(() => vi.unstubAllEnvs());
 
   it("rechecks Production Basic Auth before reading the request", async () => {
@@ -59,7 +59,7 @@ describe("/api/ai/enrichment Stage 7A boundary", () => {
     expect(await rawPrompt.json()).toMatchObject({ reason: "request_contract_invalid" });
   });
 
-  it("keeps a valid formal request closed during fixture-only Stage 7A", async () => {
+  it("keeps a valid formal request behind the V2-7B-2 activation gate", async () => {
     vi.stubEnv("VERCEL_ENV", "development");
     vi.stubEnv("MIMI_AI_KILL_SWITCH", "true");
     const { POST } = await import("./route");
@@ -69,8 +69,7 @@ describe("/api/ai/enrichment Stage 7A boundary", () => {
     expect(await response.json()).toMatchObject({
       ok: false,
       status: "resting",
-      reason: "kill_switch",
+      reason: "provider_activation_pending",
     });
   });
 });
-

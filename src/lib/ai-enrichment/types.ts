@@ -12,6 +12,7 @@ export const AI_GENERATION_UNAVAILABLE_REASONS = [
   "usage_accounting_unavailable",
   "quota_exhausted",
   "fixture_only",
+  "provider_activation_pending",
 ] as const;
 
 export type AiEnrichmentFeature = (typeof AI_ENRICHMENT_FEATURES)[number];
@@ -26,6 +27,12 @@ export type PublicAiEnrichmentRequest = Readonly<{
   feature: AiEnrichmentFeature;
   disclosureVersion: string;
   idempotencyKey: string;
+}>;
+
+export type PublicAiDisclosureConfirmationRequest = Readonly<{
+  vocabularyEntryId: string;
+  disclosureVersion: string;
+  confirmed: true;
 }>;
 
 export type TrustedAiLexicalPayload = Readonly<{

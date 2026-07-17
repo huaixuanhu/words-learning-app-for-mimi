@@ -13,13 +13,14 @@ import type {
   GeminiPricing,
   GeminiUsage,
   PublicAiEnrichmentRequest,
+  PublicAiDisclosureConfirmationRequest,
   TrustedAiLexicalPayload,
 } from "./types";
 
 export const GEMINI_STAGE2_MODEL = "gemini-3.1-flash-lite" as const;
 export const AI_PROMPT_VERSION = "v2-ai-enrichment-prompt-v2" as const;
 export const AI_OUTPUT_SCHEMA_VERSION = "v2-ai-enrichment-draft-v2" as const;
-export const AI_DISCLOSURE_VERSION = "ai-disclosure-v1" as const;
+export const AI_DISCLOSURE_VERSION = "ai-disclosure-v2" as const;
 export const AI_MAX_COMBINED_CANDIDATES = 3 as const;
 
 export const GEMINI_PRICING_2026_07_14_STANDARD: GeminiPricing = Object.freeze({
@@ -68,9 +69,19 @@ export const AI_DISCLOSURE = Object.freeze({
     "audio",
   ],
   retentionSummary:
-    "Paid content is not used to improve Google products; limited safety, abuse, legal, and technical processing may still occur.",
+    "Paid content is not used to improve Google products. Prompt, context, and output may be retained for abuse monitoring for up to 55 days, and flagged content may be reviewed by authorized Google personnel.",
   costBoundary:
     "Generation is bounded by independent request, token, estimated-cost, concurrency, and emergency-stop controls.",
+});
+
+export const AI_DISCLOSURE_DIGEST_MATERIAL = Object.freeze({
+  version: AI_DISCLOSURE.version,
+  provider: AI_DISCLOSURE.provider,
+  model: AI_DISCLOSURE.model,
+  sentFields: AI_DISCLOSURE.sentFields,
+  excludedFields: AI_DISCLOSURE.excludedFields,
+  retentionSummary: AI_DISCLOSURE.retentionSummary,
+  costBoundary: AI_DISCLOSURE.costBoundary,
 });
 
 const PUBLIC_REQUEST_KEYS = [
@@ -78,6 +89,11 @@ const PUBLIC_REQUEST_KEYS = [
   "feature",
   "disclosureVersion",
   "idempotencyKey",
+] as const;
+const PUBLIC_DISCLOSURE_CONFIRMATION_KEYS = [
+  "vocabularyEntryId",
+  "disclosureVersion",
+  "confirmed",
 ] as const;
 const TRUSTED_LEXICAL_KEYS = ["term", "meaningsZh", "examples"] as const;
 const DRAFT_KEYS = [
@@ -307,6 +323,33 @@ export function validatePublicAiEnrichmentRequest(
     feature: feature as PublicAiEnrichmentRequest["feature"],
     disclosureVersion,
     idempotencyKey: boundedText(record.idempotencyKey, "idempotencyKey", 160),
+  };
+}
+
+export function validatePublicAiDisclosureConfirmationRequest(
+  value: unknown,
+): PublicAiDisclosureConfirmationRequest {
+  const record = asRecord(value, "request");
+  exactKeys(record, PUBLIC_DISCLOSURE_CONFIRMATION_KEYS, "request");
+  const disclosureVersion = boundedText(
+    record.disclosureVersion,
+    "disclosureVersion",
+    80,
+  );
+  if (disclosureVersion !== AI_DISCLOSURE_VERSION) {
+    throw new AiEnrichmentContractError("disclosureVersion is not current");
+  }
+  if (record.confirmed !== true) {
+    throw new AiEnrichmentContractError("confirmed must be true");
+  }
+  return {
+    vocabularyEntryId: boundedText(
+      record.vocabularyEntryId,
+      "vocabularyEntryId",
+      128,
+    ),
+    disclosureVersion,
+    confirmed: true,
   };
 }
 
@@ -653,21 +696,7 @@ export function settleAiProviderAttempt(
   const checkedUsage = validateGeminiUsage(usage);
   const actualOutputTokens =
     checkedUsage.candidatesTokenCount + checkedUsage.thoughtsTokenCount;
-  if (
-    checkedUsage.promptTokenCount > reservation.inputTokens ||
-    actualOutputTokens > reservation.outputTokens
-  ) {
-    throw new AiEnrichmentContractError(
-      "provider usage exceeds the reserved token envelope",
-    );
-  }
-
   const actualCostUsd = estimateGeminiCostUsd(checkedUsage, pricing);
-  if (actualCostUsd > reservation.estimatedCostUsd + Number.EPSILON) {
-    throw new AiEnrichmentContractError(
-      "provider usage exceeds the reserved cost envelope",
-    );
-  }
 
   return {
     ...snapshot,

@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## 2026-07-17 23:52 AEST
+
+- Completed documentation-first `V2-7B-1` under the accepted `V2-7B-1` / `V2-7B-2` naming. `V2-7B-2` remains unstarted and retains all credential, temporary non-Production Schema 6, provider-call, and synthetic-smoke work behind separate approval.
+- Added `ai-disclosure-v2`, session-bound confirmation evidence, server-owned lexical source reconstruction, canonical SHA-256 source/request/idempotency/cache hashes, complete replay/conflict behavior, Cache-before-quota, same-Cache processing ownership, and a 150-second bounded lease.
+- Connected dormant formal orchestration through global atomic reservation, reliable failed-output usage reconciliation, source revalidation, terminal categories, and atomic result/settlement persistence. The code-owned activation gate remains closed for every environment-variable combination before V2-7B-2.
+- Tightened the lazy Gemini adapter to top-level `store: false`, `thinkingLevel: minimal`, strict structured output, no tools/grounding/retry, 700 output/thinking token maximum, and 90-second timeout; reliable usage and lineage are retained for conservative failure accounting.
+- Added formal Postgres draft accept/reject and candidate `Add to learning` transactions, plus Library/example-word UI disclosure and formal actions while preserving the browser-local fixture zero-request path and all accepted motion/reduced-motion behavior.
+- Extended the unexecuted Schema Version 6 draft with Disclosure confirmation, request Idempotency/in-flight lease, and terminal category records. JSON backup stays at version 3; operational confirmations, sessions, replay, Cache ownership, quotas, and rejected/temporary data remain excluded.
+- Passed ESLint, TypeScript, the full Vitest suite (61 files / 356 tests passed; 1 Postgres integration file/test skipped), all three backup dry-runs, Next.js Production build, Tier 3 governance preflight, and `git diff --check`.
+- Browser acceptance on the local Production build passed Home and Library at 320, 390, 768, 1024, and 1280 px with no horizontal overflow or console error. Next.js development mode hit the machine-level `EMFILE` watcher limit and returned 404; the already-passing Production build served the routes normally, so no code or motion adjustment was made for that local resource condition.
+- No environment value, credential, or secret was inspected, changed, or staged. No Gemini/provider request, charge, remote database connection, SQL execution, Production write, Vercel action, deployment, commit, push, pull request, or merge occurred.
+- Reason: make the formal AI path locally complete and testable while ensuring that accidental environment configuration cannot activate paid external transmission before the separately approved V2-7B-2 gate.
+
 ## 2026-07-16 00:27 AEST
 
 - Completed the local V2 Stage 7A AI Enrichment and Cost Guard capability from the documentation-first child plan; the formal provider path remains closed for Stage 7B.

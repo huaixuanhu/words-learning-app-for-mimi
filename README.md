@@ -19,7 +19,7 @@
 - **ADHD-friendly 学习体验**：把任务拆小、保持明确反馈，并允许保守地回退和重新开始。
 - **长期数据可控**：正式学习数据保存在云端数据库，同时保留导出和备份能力。
 
-当前 V1 已作为受保护的私人应用上线。V2 的文档基线已在 `V2` 分支确认，主线包括每日学习分区、独立 Active 练习、手机端改造、学习情况可视化和第一代付费 AI enrichment（AI 词汇补充）。Stage 1–4 已完成指标契约、AI 质量证据、Schema Version 6（数据结构第 6 版）、Review 交互和手机基础界面。Stage 5/5.1 已在本地接通每日计划并修复同日过关与跨日调度不匹配：每个词条当天只由第一次作答决定跨日 FSRS，后续尝试保留为学习记录；首次失败或新词直接选择“模糊记得”会在下一本地日再次检查。Stage 6 已在本地实现独立 Active `Review` / `New Words`、`Say it`、`Spell it`、`Dictation`、浏览器读音、同场重练和 Track 从头开始操作，并沿用同一首次作答调度规则。Stage 7A 已接通明确标为 `Local preview · No AI request was made.` 的本地固定 AI suggestions 与例句词汇解释，可编辑、拒绝、接受并手动加入学习；正式 Gemini 路线仍安全关闭。线上数据库仍是 Schema Version 5。
+当前 V1 已作为受保护的私人应用上线。V2 的文档基线已在 `V2` 分支确认，主线包括每日学习分区、独立 Active 练习、手机端改造、学习情况可视化和第一代付费 AI enrichment（AI 词汇补充）。Stage 1–4 已完成指标契约、AI 质量证据、Schema Version 6（数据结构第 6 版）、Review 交互和手机基础界面。Stage 5/5.1 已在本地接通每日计划并修复同日过关与跨日调度不匹配：每个词条当天只由第一次作答决定跨日 FSRS，后续尝试保留为学习记录；首次失败或新词直接选择“模糊记得”会在下一本地日再次检查。Stage 6 已在本地实现独立 Active `Review` / `New Words`、`Say it`、`Spell it`、`Dictation`、浏览器读音、同场重练和 Track 从头开始操作，并沿用同一首次作答调度规则。Stage 7A 已接通明确标为 `Local preview · No AI request was made.` 的本地固定 AI suggestions 与例句词汇解释，可编辑、拒绝、接受并手动加入学习。`V2-7B-1` 已在本地完成正式服务器编排、Disclosure、Cache、Idempotency、费用边界和正式保存操作，同时保留 code-owned provider-off gate；`V2-7B-2` 才可能在另行批准后使用临时非生产 Schema 6、Auth Key 与两次以内的合成测试。线上数据库仍是 Schema Version 5。
 
 ## 正式版本
 
@@ -59,7 +59,7 @@
 - 普通界面继续使用简短自然的英文；不可逆操作和重要隐私提示保留中文或双语。
 
 完整范围和阶段顺序见 [V2 Master Plan](./plan_docs/PLAN_V2_MASTER.md)。
-Stage 1 的冻结口径、图示和可执行边界见 [V2 Stage 1 Contract](./plan_docs/PLAN_V2_STAGE1_PRODUCT_METRIC_DATA_CONTRACT.md)。Stage 2 的安全边界、首次测试和第二轮结论见 [V2 Stage 2 Gate](./plan_docs/PLAN_V2_STAGE2_AI_QUALITY_SECURITY_GATE.md)、[V2 Stage 2 Evidence](./plan_docs/PLAN_V2_STAGE2_AI_QUALITY_EVIDENCE.md)、[V2 Stage 2-B Refinement](./plan_docs/PLAN_V2_STAGE2_B_AI_QUALITY_REFINEMENT.md) 和 [V2 Stage 2-B Evidence](./plan_docs/PLAN_V2_STAGE2_B_AI_QUALITY_EVIDENCE.md)。Stage 3 的数据、迁移草案、备份范围和远程执行边界见 [V2 Stage 3 Data Model](./plan_docs/PLAN_V2_STAGE3_DATA_MODEL_BACKUP_PARITY.md)；Review 交互与例句词汇操作见 [V2 Stage 3.1](./plan_docs/PLAN_V2_STAGE3_1_REVIEW_INTERACTION_CONTEXT_WORD_ACTIONS.md)；手机基础界面与精简文案见 [V2 Stage 4](./plan_docs/PLAN_V2_STAGE4_MOBILE_FOUNDATION_COPY.md)；每日学习运行规则和验收见 [V2 Stage 5](./plan_docs/PLAN_V2_STAGE5_DAILY_LEARNING_ENGINE.md)，调度修复见 [V2 Stage 5.1](./plan_docs/PLAN_V2_STAGE5_1_DAILY_EPISODE_SCHEDULING_REPAIR.md)，独立 Active 练习见 [V2 Stage 6](./plan_docs/PLAN_V2_STAGE6_ACTIVE_PRACTICE_ENGINE.md)，本地 AI enrichment 与费用保护见 [V2 Stage 7A](./plan_docs/PLAN_V2_STAGE7A_LOCAL_AI_ENRICHMENT_COST_GUARD.md)。
+Stage 1 的冻结口径、图示和可执行边界见 [V2 Stage 1 Contract](./plan_docs/PLAN_V2_STAGE1_PRODUCT_METRIC_DATA_CONTRACT.md)。Stage 2 的安全边界、首次测试和第二轮结论见 [V2 Stage 2 Gate](./plan_docs/PLAN_V2_STAGE2_AI_QUALITY_SECURITY_GATE.md)、[V2 Stage 2 Evidence](./plan_docs/PLAN_V2_STAGE2_AI_QUALITY_EVIDENCE.md)、[V2 Stage 2-B Refinement](./plan_docs/PLAN_V2_STAGE2_B_AI_QUALITY_REFINEMENT.md) 和 [V2 Stage 2-B Evidence](./plan_docs/PLAN_V2_STAGE2_B_AI_QUALITY_EVIDENCE.md)。Stage 3 的数据、迁移草案、备份范围和远程执行边界见 [V2 Stage 3 Data Model](./plan_docs/PLAN_V2_STAGE3_DATA_MODEL_BACKUP_PARITY.md)；Review 交互与例句词汇操作见 [V2 Stage 3.1](./plan_docs/PLAN_V2_STAGE3_1_REVIEW_INTERACTION_CONTEXT_WORD_ACTIONS.md)；手机基础界面与精简文案见 [V2 Stage 4](./plan_docs/PLAN_V2_STAGE4_MOBILE_FOUNDATION_COPY.md)；每日学习运行规则和验收见 [V2 Stage 5](./plan_docs/PLAN_V2_STAGE5_DAILY_LEARNING_ENGINE.md)，调度修复见 [V2 Stage 5.1](./plan_docs/PLAN_V2_STAGE5_1_DAILY_EPISODE_SCHEDULING_REPAIR.md)，独立 Active 练习见 [V2 Stage 6](./plan_docs/PLAN_V2_STAGE6_ACTIVE_PRACTICE_ENGINE.md)，本地 AI enrichment 与费用保护见 [V2 Stage 7A](./plan_docs/PLAN_V2_STAGE7A_LOCAL_AI_ENRICHMENT_COST_GUARD.md)，正式本地服务器闭环见 [V2 Stage 7B-1](./plan_docs/PLAN_V2_STAGE7B_1_FORMAL_AI_LOCAL_ORCHESTRATION.md)。
 
 ## 两条学习轨道
 
@@ -130,8 +130,8 @@ npm run build
 - `V2` 分支已把本地快照和 JSON backup 升级到 Schema Version 6 / backup version 3；`db/migrations/0003_v2_schema6_data_model.sql` 尚未连接或执行到任何远程数据库，线上 V1 继续使用 Schema Version 5。
 - Stage 5 的服务器 prompt/cursor（提示/分页证据）需要未来专用 `MIMI_STUDY_TOKEN_SECRET`；当前未配置，因此 Postgres `/api/study` 中需要签发或验证这些证据的队列与评分操作会安全停止。浏览器本地模式仍可用于本地验证。
 - V2 计划使用受硬额度保护的付费 Gemini API；当前 Stage 2 固定测试 `gemini-3.1-flash-lite`，使用 120 条非个人测试词条，并已从路线中移除 Datamuse、Free Dictionary、Groq 对比和会热切换的 `gemini-flash-latest`。当前线上 V1 尚未调用任何 AI 服务。
-- 当前 Stage 7A 没有个人 AI 次数上限；全应用按 `Australia/Melbourne` 预算日限制为 300 次、600,000 input tokens、210,000 output/thinking tokens、US$0.50 估算费用，并另设 US$2/月与并发 2。`person_id` 不能拆分或重置这些全局边界。
-- 首次付费 AI 外发属于后续 Stage 7B：届时会显示并要求确认当前服务商、发送字段、排除字段、有限内容保留、单独的技术 / 用量 metadata（元数据）及费用边界；界面不宣称 Zero Retention（零保留）。Stage 7A 本地启动和构建由 Next.js 检测到被 Git 忽略的 `.env.local`，但 agent（执行代理）没有检查其中任何值或凭证，也没有调用 Gemini、远程数据库或其他外部 provider。
+- 当前 V2-7B-1 没有个人 AI 次数上限；全应用按 `Australia/Melbourne` 预算日限制为 300 次、600,000 input tokens、210,000 output/thinking tokens、US$0.50 估算费用，并另设 US$2/月与并发 2。`person_id` 不能拆分或重置这些全局边界。
+- V2-7B-1 已实现外发前的服务商、发送字段、排除字段、最多 55 天有限内容保留、单独技术 / 用量 metadata（元数据）和费用边界说明，并要求当前 session 的明确确认；界面不宣称 Zero Retention（零保留）。真实付费外发仍属于未开始的 V2-7B-2。Stage 7A / V2-7B-1 本地启动和构建由 Next.js 检测到被 Git 忽略的 `.env.local`，但 agent（执行代理）没有检查其中任何值或凭证，也没有调用 Gemini、远程数据库或其他外部 provider。
 - Stage 2 的本地测试密钥只放在被 Git 忽略的专用环境文件中，不进入 Vercel、Preview、Production 或浏览器。正式 V2 接入仍需新的 Production-only（仅生产环境）密钥与审批。
 - Stage 2-B 的相同 120 条第二轮测试得到 120 个本地结构有效草稿、0 个供应商失败。Runner（测试执行器）当时用 Batch/Flex 费率记录为 US$0.027943；按同步 Standard `generateContent` 官方费率修正为 US$0.055886。已知释义、例句、顺序和关系分类误差被接受为可编辑 AI 草稿的限制；未来结果会显示 `Generated by Gemini 3.1 Flash-Lite · AI content may be inaccurate. Please review carefully before saving.`，线上 V1 仍不调用 AI 服务。
 - Automated Speech Recognition（自动语音识别）、麦克风上传和 AI 发音评分暂缓，不属于已确认 V2 基线。

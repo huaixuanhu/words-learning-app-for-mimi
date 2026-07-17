@@ -74,6 +74,8 @@ describe("V2 Schema Version 6 data model", () => {
       "ai_context_explanation_cache",
       "vocabulary_relations",
       "ai_usage_buckets",
+      "ai_disclosure_confirmations",
+      "ai_request_idempotency",
       "study_command_idempotency",
     ]) {
       expect(migrationSql).toContain(`create table ${table}`);
@@ -85,6 +87,9 @@ describe("V2 Schema Version 6 data model", () => {
     expect(migrationSql).toContain("ai_runs_lifecycle_consistent");
     expect(migrationSql).toContain("ai_runs_provider_lineage_consistent");
     expect(migrationSql).toContain("ai_runs_success_usage_present");
+    expect(migrationSql).toContain("terminal_category text null");
+    expect(migrationSql).toContain("ai_request_idempotency_processing_cache_unique");
+    expect(migrationSql).toContain("ai-disclosure-v2");
     expect(migrationSql).toContain("model = 'fixture-v1'");
     expect(migrationSql).toContain("model_label = 'Local preview'");
     expect(migrationSql).toContain("disclosure_version = 'local-fixture-no-network-v1'");
@@ -95,6 +100,8 @@ describe("V2 Schema Version 6 data model", () => {
     expect(backupSource).not.toContain("aiUsageBuckets:");
     expect(backupSource).not.toContain("studyCommandIdempotency:");
     expect(backupSource).not.toContain("aiContextExplanationCache:");
+    expect(backupSource).not.toContain("aiDisclosureConfirmations:");
+    expect(backupSource).not.toContain("aiRequestIdempotency:");
   });
 
   it("keeps context explanations temporary and tied to one trusted source span", () => {
