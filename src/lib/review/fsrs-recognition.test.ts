@@ -3,10 +3,12 @@ import { FSRSVersion, Rating, State } from "ts-fsrs";
 import {
   applyRecognitionFsrsRating,
   createRecognitionFsrsCard,
+  getRecognitionFsrsRetrievability,
   getRecognitionFsrsParameterSnapshot,
   mapReviewRatingToFsrsRating,
   previewRecognitionFsrsOutcomes,
 } from "./fsrs-recognition";
+import type { ReviewState } from "./types";
 
 const REVIEWED_AT = "2026-07-08T00:00:00.000Z";
 
@@ -82,5 +84,37 @@ describe("recognition FSRS calibration", () => {
     expect(applyRecognitionFsrsRating(card, "remembered", REVIEWED_AT)).toEqual(
       applyRecognitionFsrsRating(card, "remembered", REVIEWED_AT),
     );
+  });
+
+  it("calculates Retrievability with the Recognition parameter set only", () => {
+    const state: ReviewState = {
+      id: "state-recognition",
+      personId: "person-mimi",
+      vocabularyItemId: "word-one",
+      reviewProfile: "recognition",
+      parameterSetId: "recognition-fsrs-v1",
+      firstRatedAt: REVIEWED_AT,
+      historyOrigin: "recorded",
+      status: "review",
+      dueAt: "2026-07-11T00:00:00.000Z",
+      lastReviewedAt: REVIEWED_AT,
+      reviewCount: 1,
+      lapseCount: 0,
+      intervalMinutes: 4320,
+      difficulty: 4,
+      stability: 3,
+      updatedAt: REVIEWED_AT,
+    };
+
+    expect(getRecognitionFsrsRetrievability(state, "2026-07-09T00:00:00.000Z"))
+      .toBeGreaterThan(0);
+    expect(getRecognitionFsrsRetrievability(state, "2026-07-09T00:00:00.000Z"))
+      .toBeLessThanOrEqual(1);
+    expect(() =>
+      getRecognitionFsrsRetrievability(
+        { ...state, reviewProfile: "active" },
+        "2026-07-09T00:00:00.000Z",
+      ),
+    ).toThrow("Recognition FSRS cannot consume another Review Profile state");
   });
 });

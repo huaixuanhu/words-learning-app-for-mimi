@@ -158,8 +158,23 @@ export function resolvePersonDay(
   now: string | Date,
   timezone: string,
 ): ResolvedPersonDay {
+  return resolvePersonDayOffset(now, timezone, 0);
+}
+
+export function resolvePersonDayOffset(
+  now: string | Date,
+  timezone: string,
+  calendarDayOffset: number,
+): ResolvedPersonDay {
+  if (!Number.isSafeInteger(calendarDayOffset) || Math.abs(calendarDayOffset) > 36_600) {
+    throw new DailyStudyContractError("calendarDayOffset must be a bounded whole number");
+  }
+
   const normalizedTimezone = timezone.trim();
-  const date = getLocalCalendarDate(now, normalizedTimezone);
+  const date = addCalendarDays(
+    getLocalCalendarDate(now, normalizedTimezone),
+    calendarDayOffset,
+  );
   const nextDate = addCalendarDays(date, 1);
   const startsAt = localMidnightToUtc(date, normalizedTimezone);
   const endsAt = localMidnightToUtc(nextDate, normalizedTimezone);

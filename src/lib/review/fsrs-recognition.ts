@@ -142,6 +142,21 @@ export function previewRecognitionFsrsOutcomes(card: Card, reviewedAt: string | 
   } satisfies Record<ReviewRating, RecognitionFsrsOutcome>;
 }
 
+export function getRecognitionFsrsRetrievability(
+  state: ReviewState,
+  now: string | Date,
+) {
+  if (state.reviewProfile !== "recognition") {
+    throw new Error("Recognition FSRS cannot consume another Review Profile state");
+  }
+
+  return recognitionScheduler.get_retrievability(
+    createRecognitionFsrsCardFromReviewState(state, now),
+    now,
+    false,
+  );
+}
+
 export function getRecognitionFsrsParameterSnapshot() {
   return {
     requestRetention: RECOGNITION_FSRS_PARAMETERS.request_retention,

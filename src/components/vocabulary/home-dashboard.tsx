@@ -23,6 +23,7 @@ import {
   getArchivedVocabularyItems,
   getRecognitionVocabularyItems,
 } from "@/lib/vocabulary/repository";
+import { DashboardInsights } from "./dashboard-insights";
 import { HomeTrackCard } from "./home-track-card";
 
 function getFirstMeaning(item: { meaningsZh: string[]; meaningZh: string }) {
@@ -81,7 +82,6 @@ export function HomeDashboard() {
             <HomeTrackCard
               title="Recognition Vocabulary"
               eyebrow="Reading and meaning"
-              description="Review familiar entries or meet today’s New Words."
               track={today?.tracks.recognition ?? null}
               href="/review?zone=review"
               cta="Start Review"
@@ -91,7 +91,6 @@ export function HomeDashboard() {
             <HomeTrackCard
               title="Active Vocabulary"
               eyebrow="Recall and sound"
-              description="Recall aloud, spell from meaning, or write what you hear."
               track={today?.tracks.active ?? null}
               href="/practice-lab?zone=review"
               cta="Start Active Review"
@@ -121,6 +120,8 @@ export function HomeDashboard() {
           </p>
         </section>
       </CalmEntrance>
+
+      <DashboardInsights data={data} isLoaded={isLoaded} />
 
       <div className="grid gap-4 lg:grid-cols-3">
         <section className="mimi-panel p-4">

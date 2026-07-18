@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   createActiveFsrsCard,
   createActiveFsrsCardFromReviewState,
+  getActiveFsrsRetrievability,
   getActiveFsrsParameterSnapshot,
   previewActiveFsrsOutcomes,
 } from "./fsrs-active";
@@ -60,5 +61,31 @@ describe("Active FSRS adapter", () => {
     expect(() =>
       createActiveFsrsCardFromReviewState(recognitionState, REVIEWED_AT),
     ).toThrow("Active FSRS cannot consume another Review Profile state");
+  });
+
+  it("calculates Retrievability with the independent Active parameter set", () => {
+    const state: ReviewState = {
+      id: "state-active",
+      personId: "person-mimi",
+      vocabularyItemId: "active-one",
+      reviewProfile: "active",
+      parameterSetId: "active-fsrs-v1",
+      firstRatedAt: REVIEWED_AT,
+      historyOrigin: "recorded",
+      status: "review",
+      dueAt: "2026-07-18T08:00:00.000Z",
+      lastReviewedAt: REVIEWED_AT,
+      reviewCount: 1,
+      lapseCount: 0,
+      intervalMinutes: 4320,
+      difficulty: 5,
+      stability: 3,
+      updatedAt: REVIEWED_AT,
+    };
+
+    expect(getActiveFsrsRetrievability(state, "2026-07-16T08:00:00.000Z"))
+      .toBeGreaterThan(0);
+    expect(getActiveFsrsRetrievability(state, "2026-07-16T08:00:00.000Z"))
+      .toBeLessThanOrEqual(1);
   });
 });

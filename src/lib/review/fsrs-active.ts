@@ -143,6 +143,21 @@ export function previewActiveFsrsOutcomes(card: Card, reviewedAt: string | Date)
   } satisfies Record<ReviewRating, ActiveFsrsOutcome>;
 }
 
+export function getActiveFsrsRetrievability(
+  state: ReviewState,
+  now: string | Date,
+) {
+  if (state.reviewProfile !== "active") {
+    throw new Error("Active FSRS cannot consume another Review Profile state");
+  }
+
+  return activeScheduler.get_retrievability(
+    createActiveFsrsCardFromReviewState(state, now),
+    now,
+    false,
+  );
+}
+
 export function getActiveFsrsParameterSnapshot() {
   return {
     requestRetention: ACTIVE_FSRS_PARAMETERS.request_retention,

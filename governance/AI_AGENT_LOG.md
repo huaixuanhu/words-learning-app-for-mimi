@@ -1,5 +1,24 @@
 # AI Agent Log
 
+## 2026-07-18 17:01 AEST
+
+- Task: execute the user-confirmed documentation-first `V2-8-1` Dashboard Insights local slice.
+- Plan agreed: yes. The user confirmed the proposed `V2-8-1` / `V2-8-2` / `V2-8-3` split and directed execution. This entry covers only `V2-8-1` local data derivation, UI, tests, and browser evidence.
+- Working tier: Tier 3. Current work is local and read-only with respect to learner data; it derives dashboard values from already loaded snapshots and performs no remote or persistent-data mutation.
+- Changed files:
+  - pure Dashboard insights, Melbourne/DST-safe day offsets, profile-specific FSRS Retrievability adapters, and focused tests;
+  - compact Today Track cards with four-value 2×2 grids and exact zero-goal Actual progress;
+  - responsive `Learning rhythm` and `Memory outlook` components with direct values, non-color distinctions, keyboard controls, accessible labels, honest loading/empty states, and no new chart dependency;
+  - V2-8-1 child/master plans, Architecture, README, AGENTS, Changelog, and this execution record.
+- Reason: add an honest, compact view of actual study activity and FSRS estimates without combining local Dashboard authorization with later Staging or Production authority.
+- Validation:
+  - Passed focused Dashboard/day-window/FSRS/UI tests: 5 files / 23 tests.
+  - Passed `npm run lint`, `npm run typecheck`, and full Vitest: 63 files / 371 tests; the existing Postgres integration file/test was skipped.
+  - Passed schema 3, schema 5, and schema 6 backup dry-runs, Next.js Production build, Tier 3 governance preflight, and `git diff --check`.
+  - Local Production-build browser acceptance used a synthetic Schema Version 6 backup on isolated `127.0.0.1:3028`. Widths 320, 375, 390, 768, 820, 1023, 1024, and 1280 had no horizontal overflow or framework overlay; browser logs contained no warning/error.
+  - Recognition/Active and 7/14-day controls updated correctly. Mobile navigation was solely visible at 1023 px and desktop navigation solely visible at 1024 px. Representative 390 px Today, Insights, and Memory-outlook screenshots were retained under `/private/tmp`.
+- Safety notes: the local synthetic restore was confined to a unique loopback origin and did not inspect or replace the user's normal browser data. Next.js reported the existence of ignored `.env.local` during build, but no value was read or copied. No schema, backup shape, persistent application write path, remote database, credential, provider request, Vercel/Production action, deployment, commit, push, pull request, merge, Motion, or reduced-motion change occurred. Live V1 remains Schema Version 5; V2-8-2 and V2-8-3 remain unapproved and unstarted.
+
 ## 2026-07-18 14:27 AEST
 
 - Task: complete and clean up the approved `V2-7B-2` non-Production provider proof.

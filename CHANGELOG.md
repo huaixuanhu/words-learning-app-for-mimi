@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## 2026-07-18 17:01 AEST
+
+- Implemented the local, documentation-first `V2-8-1` Dashboard Insights slice and split remaining release work into separately approved `V2-8-2` Preview rehearsal and `V2-8-3` Production execution.
+- Reworked each Recognition / Active Today card into a compact 2-by-2 plan grid for `Added today`, `Suggested review`, `Review goal`, and `New-word goal`, plus distinct `Reviewed today` / `Learned today` progress rows. Zero goals display `No goal` without division or hidden clamping.
+- Added a 7/14-day `Learning rhythm` view backed by person-local calendar days. Passing entries are distinct per day, attempts retain all unique review events, missing full days are explicit zeroes, and Recognition / Active remain separate.
+- Added a profile-isolated `Memory outlook` with five calm schedule windows and three FSRS retrievability bands. New, incomplete legacy, future-reviewed, archived, wrong-profile, and wrong-Parameter-Set rows are excluded instead of receiving invented estimates.
+- Added timezone-offset helpers, Recognition / Active retrievability adapters, pure Dashboard derivation, accessible non-color chart distinctions, loading/unavailable states, and focused data/UI tests. No chart dependency, schema, route, backup-shape, storage write, external request, or motion rule changed.
+- Passed focused Dashboard/day-window/FSRS/UI tests, ESLint, TypeScript, 63 test files / 371 tests with the existing Postgres integration file/test skipped, all three backup dry-runs, Next.js Production build, Tier 3 governance preflight, and `git diff --check`.
+- Local Production-build browser acceptance passed at 320, 375, 390, 768, 820, 1023, 1024 and 1280 px with no horizontal overflow, framework overlay, console warning or console error. Track/period controls and the 1023/1024 navigation handoff worked; representative 390 px screenshots were retained outside the repository.
+- Reason: make daily activity and the current learning outlook visible without overstating prediction certainty or widening this local UI stage into release authority.
+
 ## 2026-07-18 14:27 AEST
 
 - Completed the approved `V2-7B-2` disposable non-Production provider proof and synchronized its child plan, parent plan, Architecture, README, database mapping, AGENTS, and governance record.
