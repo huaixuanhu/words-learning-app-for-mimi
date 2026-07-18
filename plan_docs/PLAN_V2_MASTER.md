@@ -1,7 +1,7 @@
 # Words Learning App For Mimi V2 Master Plan
 
 Created: 2026-07-13 00:16 AEST
-Last updated: 2026-07-16 AEST
+Last updated: 2026-07-18 AEST
 
 Source plan:
 - `plan_docs/PLAN_V1_MASTER.md`
@@ -31,11 +31,13 @@ Consumer / next stage:
 - `plan_docs/PLAN_V2_STAGE5_1_DAILY_EPISODE_SCHEDULING_REPAIR.md`
 - `plan_docs/PLAN_V2_STAGE6_ACTIVE_PRACTICE_ENGINE.md`
 - `plan_docs/PLAN_V2_STAGE7A_LOCAL_AI_ENRICHMENT_COST_GUARD.md`
+- `plan_docs/PLAN_V2_STAGE7B_1_FORMAL_AI_LOCAL_ORCHESTRATION.md`
+- `plan_docs/PLAN_V2_STAGE7B_2_NONPRODUCTION_PROVIDER_PROOF.md`
 - Future derived V2 child plans created in the order defined by this document.
 - `plan_docs/PLAN_VERSION_HOLD_MULTI_USER_CONFIDENTIAL_ISOLATION.md`
 
 Document nature:
-This is the canonical V2 product and engineering master plan. It is derived from the completed V1 plan and current Production architecture. V2-1 has an isolated executable contract; V2-2 / 2-B have bounded local AI quality evidence; V2-3 has implemented the local/application Schema Version 6 and backup parity; V2-3.1 and V2-4 have implemented the bounded local Review-interaction and mobile/copy layers; V2-5 / 5.1 have connected daily plans and repaired cross-day scheduling; V2-6 has implemented the independent Active practice engine. V2-7A has completed the browser-local fixture product flow and dormant cost/accounting safety layer, and V2-7B-1 has completed the provider-closed formal local orchestration. No remote V2 migration, external provider call, Production provider route, or V2 deployment has been performed.
+This is the canonical V2 product and engineering master plan. It is derived from the completed V1 plan and current Production architecture. V2-1 has an isolated executable contract; V2-2 / 2-B have bounded local AI quality evidence; V2-3 has implemented the local/application Schema Version 6 and backup parity; V2-3.1 and V2-4 have implemented the bounded local Review-interaction and mobile/copy layers; V2-5 / 5.1 have connected daily plans and repaired cross-day scheduling; V2-6 has implemented the independent Active practice engine. V2-7A completed the browser-local fixture product flow and dormant safety layer, V2-7B-1 completed provider-closed formal orchestration, and V2-7B-2 completed one disposable non-Production provider/accounting proof. Its first unused temporary key appeared once in browser-structure output and was revoked before any call; the replacement key completed the proof. The temporary target and both Auth Keys were deleted; no Production provider route or V2 deployment has been performed.
 
 Current operational tier: Tier 3.
 
@@ -43,7 +45,7 @@ Target capability tier: Tier 3. V2 adds a bounded paid AI API（人工智能接�
 
 Working tier: Tier 3.
 
-Status: V2-0 through V2-7B-1 are complete locally. The accepted names are `V2-7B-1` and `V2-7B-2`; `V2-7B-2` retains every credential, temporary non-Production Schema 6, provider-call, and synthetic-smoke action behind a later approval and is not started. The Stage 7A outcome is recorded in `plan_docs/PLAN_V2_STAGE7A_LOCAL_AI_ENRICHMENT_COST_GUARD.md`, and the completed formal-local outcome is recorded in `plan_docs/PLAN_V2_STAGE7B_1_FORMAL_AI_LOCAL_ORCHESTRATION.md`. Schema Version 6 and backup version 3 are implemented on branch `V2`; `0003_v2_schema6_data_model.sql` remains an unexecuted migration draft. The dedicated server study-token secret is intentionally unconfigured, so server-backed prompt/cursor issuance remains fail-closed. The live V1 database remains Schema Version 5. No remote migration, Production external-service route, credential change, provider call, or deployment action has been performed.
+Status: V2-0 through V2-7B-2 are complete under their approved local/disposable scopes. The accepted names are `V2-7B-1` and `V2-7B-2`. Schema Version 6 and backup version 3 are implemented on branch `V2`; `0003_v2_schema6_data_model.sql` was executed once on the deleted schema-only proof branch and remains unexecuted on long-term `staging` and Production. The dedicated server study-token secret is intentionally unconfigured. The live V1 database remains Schema Version 5. No Production migration, Production external-service route, Vercel credential change, or deployment action has been performed. The next product stage is V2-8 and requires its own derived plan and approval.
 
 ## Scope
 
@@ -608,9 +610,10 @@ Status: V2-7A completed locally on 2026-07-16. Canonical child plan and outcome:
 - Added browser-local fixed previews for enrichment and exact example-token explanation, plus structured draft review, edit, reject, accept, and `Add to learning`.
 - Added a pinned Gemini provider adapter, mandatory 90-second timeout, strict formal Route Handler boundary, global atomic Postgres accounting, conservative usage reconciliation, and fail-closed runtime health checks. The formal routes intentionally return a resting state and cannot call Gemini in Stage 7A.
 - Added accepted-only backup/restore and honest `local-fixture` lineage; temporary drafts, rejected content, context Cache, usage buckets, and replay state remain outside user backups.
-- V2-7B uses the accepted names `V2-7B-1` and `V2-7B-2`; do not use A/B naming. `V2-7B-1` connects and locally tests server-owned item lookup, current Disclosure confirmation, Cache, complete Idempotency, same-Cache in-flight protection, atomic reservation, strict provider orchestration, result persistence, and formal human-decision mutations while retaining a hard provider-off gate. `V2-7B-2` alone may later use an approved temporary non-Production Schema 6 target and Auth Key for at most one synthetic call per formal feature.
+- V2-7B uses the accepted names `V2-7B-1` and `V2-7B-2`; do not use A/B naming. `V2-7B-1` connects and locally tests server-owned item lookup, current Disclosure confirmation, Cache, complete Idempotency, same-Cache in-flight protection, atomic reservation, strict provider orchestration, result persistence, and formal human-decision mutations while retaining a hard provider-off default. `V2-7B-2` completed the separately approved temporary non-Production Schema 6/Auth Key proof with one synthetic call per formal feature.
 - `V2-7B-1` canonical child plan: `plan_docs/PLAN_V2_STAGE7B_1_FORMAL_AI_LOCAL_ORCHESTRATION.md`. It must generate the bounded draft directly with the accepted pinned Gemini model when fake dependencies exercise the closed orchestration; Datamuse and Free Dictionary remain excluded.
-- Status: `V2-7B-1` completed locally on 2026-07-17 with 61 test files / 356 tests passing, three backup dry-runs, build, governance, diff, and 320–1280 px responsive checks. The code-owned provider gate remains closed. `V2-7B-2` has not begun.
+- `V2-7B-2` canonical child plan: `plan_docs/PLAN_V2_STAGE7B_2_NONPRODUCTION_PROVIDER_PROOF.md`. The user approved its temporary Neon child branch/role, new ignored Gemini Auth Key, at most one synthetic call per formal feature, zero-call replay/Cache/Kill Switch checks, and complete cleanup on 2026-07-18.
+- Status: `V2-7B-1` completed locally on 2026-07-17. `V2-7B-2` completed on 2026-07-18 with two successful pinned-model attempts, Replay/Cache zero-call evidence, a database-enforced third-attempt rejection, Kill Switch proof, `1,185` observed tokens, and `US$0.000677` estimated cost. Both temporary Auth Keys, the schema-only branch/role, and the mode-`600` environment file were deleted. Final validation passed 61 files / 360 tests, three backup dry-runs, build, governance, and diff checks.
 - Display one readable supporting line beside each generated draft or its save controls: `Generated by {modelLabel} · AI content may be inaccurate. Please review carefully before saving.` The current accepted label is `Gemini 3.1 Flash-Lite`, derived from server-owned result lineage.
 - Keep Gemini output supplementary; no AI-derived field enters formal learning data without explicit user acceptance.
 - Add atomic global quotas, usage reconciliation, Kill Switch, and minimal audit ledger locally; reserve WAF and provider-account changes for separately approved remote execution.

@@ -850,7 +850,7 @@ function validateAiRun(value: unknown, index: number, errors: string[]) {
     (
       value.model !== "gemini-3.1-flash-lite" ||
       value.modelLabel !== "Gemini 3.1 Flash-Lite" ||
-      !["ai-disclosure-v1", "ai-disclosure-v2"].includes(
+      !["ai-disclosure-v1", "ai-disclosure-v2", "ai-disclosure-v3"].includes(
         String(value.disclosureVersion),
       )
     )

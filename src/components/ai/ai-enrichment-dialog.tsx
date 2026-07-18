@@ -359,9 +359,8 @@ export function AiEnrichmentDialog({
             AI data and retention
           </summary>
           <p className="mt-1">
-            Only {AI_DISCLOSURE.sentFields.join(", ")} may be sent. Paid content is not used to
-            improve Google products. Prompt, context, and output may be kept for abuse monitoring
-            for up to 55 days; flagged content may be reviewed by authorized Google personnel.
+            Only {AI_DISCLOSURE.sentFields.join(", ")} may be sent. {AI_DISCLOSURE.retentionSummary}{" "}
+            {AI_DISCLOSURE.projectLoggingSummary}
           </p>
         </details>
         {formalRouteEnabled && !draftId ? (

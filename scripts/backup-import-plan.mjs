@@ -888,7 +888,9 @@ function validateAiRun(record, index, people, vocabularyItems, errors) {
     (
       record.model !== "gemini-3.1-flash-lite" ||
       record.modelLabel !== "Gemini 3.1 Flash-Lite" ||
-      record.disclosureVersion !== "ai-disclosure-v1"
+      !["ai-disclosure-v1", "ai-disclosure-v2", "ai-disclosure-v3"].includes(
+        record.disclosureVersion,
+      )
     )
   ) {
     errors.push(`${label} Gemini lineage is inconsistent`);

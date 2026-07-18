@@ -12,7 +12,7 @@ import { segmentEnglishExample } from "@/lib/vocabulary/example-segmentation";
 import { normalizeTextList } from "@/lib/vocabulary/normalize";
 import { addVocabularyItem } from "@/lib/vocabulary/repository";
 import type { LearningTrack, VocabularyData } from "@/lib/vocabulary/types";
-import { AI_DISCLOSURE_VERSION } from "@/lib/ai-enrichment/contract";
+import { AI_DISCLOSURE, AI_DISCLOSURE_VERSION } from "@/lib/ai-enrichment/contract";
 import {
   confirmFormalAiDisclosure,
   requestFormalAiContextExplanation,
@@ -385,8 +385,8 @@ export function ExampleWordActions({
                 <div className="mt-3 rounded-md border border-[var(--mimi-border)] bg-[var(--mimi-surface-muted)] p-3">
                   <p className="text-xs leading-5 text-[var(--mimi-text-soft)]">
                     The word, its Chinese meanings, this example, and the selected position may be sent to Gemini.
-                    Study history, answers, notes, and audio stay out. Content may be retained for abuse monitoring
-                    for up to 55 days.
+                    Study history, answers, notes, and audio stay out. {AI_DISCLOSURE.retentionSummary}{" "}
+                    {AI_DISCLOSURE.projectLoggingSummary}
                   </p>
                   <label className="mt-2 flex items-start gap-2 text-xs leading-5 text-[var(--mimi-text-soft)]">
                     <input

@@ -20,7 +20,7 @@ import type {
 export const GEMINI_STAGE2_MODEL = "gemini-3.1-flash-lite" as const;
 export const AI_PROMPT_VERSION = "v2-ai-enrichment-prompt-v2" as const;
 export const AI_OUTPUT_SCHEMA_VERSION = "v2-ai-enrichment-draft-v2" as const;
-export const AI_DISCLOSURE_VERSION = "ai-disclosure-v2" as const;
+export const AI_DISCLOSURE_VERSION = "ai-disclosure-v3" as const;
 export const AI_MAX_COMBINED_CANDIDATES = 3 as const;
 
 export const GEMINI_PRICING_2026_07_14_STANDARD: GeminiPricing = Object.freeze({
@@ -69,7 +69,9 @@ export const AI_DISCLOSURE = Object.freeze({
     "audio",
   ],
   retentionSummary:
-    "Paid content is not used to improve Google products. Prompt, context, and output may be retained for abuse monitoring for up to 55 days, and flagged content may be reviewed by authorized Google personnel.",
+    "Paid content is not used to improve Google products. Google may retain prompt, context, and output for a limited period for safety, abuse prevention, and legal requirements; authorized review may occur.",
+  projectLoggingSummary:
+    "This app sends store=false. Optional project request logging must remain off for this route.",
   costBoundary:
     "Generation is bounded by independent request, token, estimated-cost, concurrency, and emergency-stop controls.",
 });
@@ -81,6 +83,7 @@ export const AI_DISCLOSURE_DIGEST_MATERIAL = Object.freeze({
   sentFields: AI_DISCLOSURE.sentFields,
   excludedFields: AI_DISCLOSURE.excludedFields,
   retentionSummary: AI_DISCLOSURE.retentionSummary,
+  projectLoggingSummary: AI_DISCLOSURE.projectLoggingSummary,
   costBoundary: AI_DISCLOSURE.costBoundary,
 });
 

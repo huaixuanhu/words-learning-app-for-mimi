@@ -1,5 +1,29 @@
 # CHANGELOG
 
+## 2026-07-18 14:27 AEST
+
+- Completed the approved `V2-7B-2` disposable non-Production provider proof and synchronized its child plan, parent plan, Architecture, README, database mapping, AGENTS, and governance record.
+- Executed the forward-only Schema 6 draft on one schema-only Neon child of `staging` after proving all core tables empty. The child contained only one synthetic person plus `adapt` and `mitigate`; a dedicated runtime role received application table/sequence access after the one-time owner migration.
+- Confirmed AI Studio Project logging `Disabled`, used `ai-disclosure-v3`, generated local-only Basic Auth, and sent no existing learner credential or real learning row.
+- Completed exactly two Gemini attempts: one `enrichment_v1` and one exact-span `context_explain_v1`. Both succeeded with the pinned model, current disclosure, valid structure, provider response ids, and atomic stored results.
+- Proved same-key Replay and different-key Cache for both features, database rejection of a third new attempt, and live Kill Switch rejection. These checks left the provider attempt count at `2`.
+- Observed 881 input, 304 output, 0 thinking, and 1,185 total tokens with US$0.000677 estimated cost, below the US$0.00310 reservation. The final ledger had no submitted run or active provider call.
+- Contained one credential-handling incident: the first temporary key appeared in browser-structure tool output before use. It was never saved or called and was manually revoked. The replacement proof key was also manually revoked after Google rejected automated deletion. Refreshed AI Studio confirmed both temporary key names absent.
+- Permanently deleted the Neon child branch/endpoint/role and `.env.v2-7b-2.local`, then cleared active Gemini, database, and generated local-auth values from automation memory. Production, long-term `staging`, Vercel, real learning data, and existing motion/reduced-motion behavior were unchanged.
+- Passed ESLint, TypeScript, 61 test files / 360 tests with the existing Postgres integration file/test skipped, all three backup dry-runs, Next.js Production build, Tier 3 governance preflight, and `git diff --check`.
+- Reason: establish real provider, accounting, replay, Cache, cap, and Kill Switch evidence without leaving behind a credential, remote test target, or Production activation path.
+
+## 2026-07-18 12:41 AEST
+
+- Started the user-approved, documentation-first `V2-7B-2` temporary non-Production provider proof under `plan_docs/PLAN_V2_STAGE7B_2_NONPRODUCTION_PROVIDER_PROOF.md`.
+- Upgraded new formal confirmations to `ai-disclosure-v3`. The concise UI now separates limited safety / abuse / legal logging from optional Project logging and no longer describes abuse monitoring as a fixed 55-day period; historical v1/v2 accepted lineage remains readable.
+- Added a code-owned localhost-only activation boundary that requires exact smoke scope, loopback origin, `postgres-preview`, Schema 6/accounting readiness, a confirmed temporary target, confirmed Auth Key type, confirmed disabled Project logging, no Vercel runtime, and the existing Kill Switch.
+- Added an independent database-atomic two-provider-attempt ceiling for this proof. Completed replay and Cache remain ahead of reservation; success or failure counts toward the ceiling, and a third new attempt is rejected before a new `ai_runs` row or provider call.
+- Added guarded temporary-target inventory/migration/seed/inspection and provider-proof scripts. The database tool requires an ignored mode-`600` environment file, matching pooled/unpooled Neon endpoint, a dedicated temporary role/database, a schema-only empty target, explicit migration/seed flags, and fixed synthetic vocabulary.
+- Passed ESLint, TypeScript, the full Vitest suite (61 files / 360 tests passed; 1 Postgres integration file/test skipped), all three backup dry-runs, Next.js Production build, and `git diff --check` before any external action.
+- No Gemini/provider request, charge, credential creation/read, remote database connection, SQL execution, Production write, Vercel action, deployment, commit, push, pull request, or merge has occurred at this checkpoint. The live V1 database remains Schema Version 5 and existing motion/reduced-motion behavior is unchanged.
+- Reason: prove the completed formal route with two synthetic, mechanically bounded calls while keeping every credential, database write, and provider action temporary, localhost-only, and independently removable.
+
 ## 2026-07-17 23:52 AEST
 
 - Completed documentation-first `V2-7B-1` under the accepted `V2-7B-1` / `V2-7B-2` naming. `V2-7B-2` remains unstarted and retains all credential, temporary non-Production Schema 6, provider-call, and synthetic-smoke work behind separate approval.

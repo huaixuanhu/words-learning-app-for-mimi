@@ -43,8 +43,8 @@ export function getDatabaseUrl() {
   return databaseUrl;
 }
 
-export function createPool() {
-  const pool = new Pool({ connectionString: getDatabaseUrl() });
+export function createPool(connectionString = getDatabaseUrl()) {
+  const pool = new Pool({ connectionString });
 
   pool.on("error", (error) => {
     console.error(`Database pool error code: ${error?.code || "unknown"}`);

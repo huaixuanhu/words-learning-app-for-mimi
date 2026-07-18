@@ -1,7 +1,7 @@
 # Local Backup To Postgres Migration Mapping
 
 Created: 2026-07-05 01:08 AEST
-Last updated: 2026-07-17 23:52 AEST
+Last updated: 2026-07-18 14:27 AEST
 
 Source plan:
 
@@ -17,6 +17,7 @@ Derived from:
 - `plan_docs/PLAN_V2_MASTER.md`
 - `plan_docs/PLAN_V2_STAGE1_PRODUCT_METRIC_DATA_CONTRACT.md`
 - `plan_docs/PLAN_V2_STAGE7B_1_FORMAL_AI_LOCAL_ORCHESTRATION.md`
+- `plan_docs/PLAN_V2_STAGE7B_2_NONPRODUCTION_PROVIDER_PROOF.md`
 
 Scope:
 
@@ -68,7 +69,9 @@ V2 Stage 3 extends the local harness to Schema Version 6 and backup wrapper vers
 
 V2 Stage 3.1 later reserves `context_explain_v1` in that same unexecuted `0003` draft and adds `ai_context_explanation_cache`. This table is expiring operational data tied to one exact stored example-token span and a matching successful context run. It has no JSON backup collection or `backup_import_mappings` entity type, and the backup selector excludes context runs plus any formal draft/relation carrying feature-mismatched lineage. Enrichment drafts and vocabulary relations continue requiring a matching succeeded/valid `enrichment_v1` run. Stage 3.1 did not execute SQL remotely.
 
-V2-7B-1 extends the same unexecuted draft with `ai_disclosure_confirmations`, `ai_request_idempotency`, a bounded processing lease, same-Cache in-flight ownership, and `ai_runs.terminal_category`. These are operational safety/diagnostic records and remain excluded from JSON backup and `backup_import_mappings`. Accepted enrichment content, its successful source run, and referenced learning relations continue using the existing backup version 3 collections; historical `ai-disclosure-v1` lineage remains readable while new accepted formal lineage uses `ai-disclosure-v2`. Restore never creates a current Disclosure confirmation, request replay record, Cache owner, quota reservation, or browser session. V2-7B-1 did not execute SQL or connect to a remote database.
+V2-7B-1 extends the same draft with `ai_disclosure_confirmations`, `ai_request_idempotency`, a bounded processing lease, same-Cache in-flight ownership, and `ai_runs.terminal_category`. These are operational safety/diagnostic records and remain excluded from JSON backup and `backup_import_mappings`. Accepted enrichment content, its successful source run, and referenced learning relations continue using the existing backup version 3 collections. V2-7B-2 later permits historical `ai-disclosure-v1` / `ai-disclosure-v2` lineage while requiring `ai-disclosure-v3` for new formal confirmation. Restore never creates a current Disclosure confirmation, request replay record, Cache owner, quota reservation, or browser session.
+
+V2-7B-2 executed `0003_v2_schema6_data_model.sql` once on an approved schema-only child of `staging`. Migration preflight found every core table empty; the disposable target then received one synthetic person and two fixed vocabulary entries. Schema 6 inspection, two provider attempts, Replay/Cache, the database attempt cap, and Kill Switch passed. The child branch/role and local environment file were deleted after evidence capture. Long-term `staging`, Production, and formal user backup import remain untouched and still require separate approval.
 
 ## Migration Principle
 

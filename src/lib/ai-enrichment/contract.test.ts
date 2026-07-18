@@ -121,6 +121,7 @@ describe("V2 Stage 2 AI enrichment contract", () => {
   });
 
   it("versions the exact outbound and excluded disclosure fields", () => {
+    expect(AI_DISCLOSURE_VERSION).toBe("ai-disclosure-v3");
     expect(AI_DISCLOSURE.sentFields).toEqual(["term", "meaningsZh", "examples"]);
     expect(AI_DISCLOSURE.excludedFields).toEqual([
       "person identity",
@@ -133,6 +134,10 @@ describe("V2 Stage 2 AI enrichment contract", () => {
       "typed answers",
       "audio",
     ]);
+    expect(AI_DISCLOSURE.retentionSummary).toContain("limited period");
+    expect(AI_DISCLOSURE.retentionSummary).not.toContain("55 days");
+    expect(AI_DISCLOSURE.projectLoggingSummary).toContain("store=false");
+    expect(AI_DISCLOSURE.projectLoggingSummary).toContain("must remain off");
   });
 
   it("accepts a compact valid draft", () => {

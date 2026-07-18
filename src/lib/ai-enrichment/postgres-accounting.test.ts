@@ -72,7 +72,7 @@ function submission(
     promptVersion: "v2-ai-enrichment-prompt-v2",
     sourceHash: "source-hash-1",
     outputSchemaVersion: "v2-ai-enrichment-draft-v2",
-    disclosureVersion: "ai-disclosure-v2",
+    disclosureVersion: "ai-disclosure-v3",
     idempotencyKeyHash: "idempotency-hash-1",
     cacheKeyHash: "cache-hash-1",
     createdAt: NOW,
@@ -215,6 +215,14 @@ class AccountingFake {
       ) {
         const count = this.runs.filter((run) => run.status === "submitted").length;
         return queryResult([{ count }] as unknown as TRow[]) as never;
+      }
+
+      if (
+        sql.includes("count(*)") &&
+        sql.includes("from ai_runs") &&
+        sql.includes("provider = 'google-gemini-api'")
+      ) {
+        return queryResult([{ count: this.runs.length }] as unknown as TRow[]) as never;
       }
 
       if (
@@ -379,6 +387,7 @@ describe("Postgres AI quota accounting", () => {
 
     const result = await reservePostgresAiProviderAttempt(input, {
       transaction: fake.transaction,
+      maximumProviderAttempts: 1,
     });
 
     expect(result).toEqual({
@@ -486,6 +495,39 @@ describe("Postgres AI quota accounting", () => {
     expect(lockIndex).toBeGreaterThanOrEqual(0);
     expect(runInsertIndex).toBeGreaterThan(lockIndex);
     expect(reservationUpdateIndex).toBeGreaterThan(runInsertIndex);
+  });
+
+  it("blocks a third V2-7B-2 provider attempt before creating a run", async () => {
+    const first = submission({
+      id: "00000000-0000-4000-8000-000000007a21",
+      idempotencyKeyHash: "first-key",
+      cacheKeyHash: "first-cache",
+    });
+    const second = submission({
+      id: "00000000-0000-4000-8000-000000007a22",
+      idempotencyKeyHash: "second-key",
+      cacheKeyHash: "second-cache",
+    });
+    const fake = new AccountingFake({
+      runs: [
+        runFromSubmission(first, { status: "succeeded", completedAt: NOW }),
+        runFromSubmission(second, { status: "failed", completedAt: NOW }),
+      ],
+    });
+
+    const result = await reservePostgresAiProviderAttempt(submission(), {
+      transaction: fake.transaction,
+      maximumProviderAttempts: 2,
+    });
+
+    expect(result).toEqual({
+      status: "blocked",
+      reasons: ["stage7b2_smoke_attempt_limit"],
+    });
+    expect(fake.runs).toHaveLength(2);
+    expect(
+      fake.logs.some((entry) => entry.sql.startsWith("insert into ai_runs")),
+    ).toBe(false);
   });
 
   it("expires stale submitted leases without refunding their consumed budget", async () => {

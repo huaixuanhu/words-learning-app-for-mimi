@@ -44,6 +44,7 @@ import type {
 } from "./types";
 import { withPostgresTransaction } from "@/lib/storage/postgres/client";
 import { resolveAiRuntimeHealth } from "./runtime-config";
+import { AI_STAGE7B2_MAX_PROVIDER_ATTEMPTS } from "./runtime-config";
 
 function getGeminiAdapter() {
   return createGeminiProviderAdapter(process.env.GEMINI_API_KEY ?? "");
@@ -122,6 +123,7 @@ function commonDependencies<
     async reserveProviderAttempt(identity) {
       const reservation = await reservePostgresAiProviderAttempt(
         runSubmission(identity, input.promptVersion, input.outputSchemaVersion),
+        { maximumProviderAttempts: AI_STAGE7B2_MAX_PROVIDER_ATTEMPTS },
       );
       if (reservation.status === "reserved") {
         return { status: "reserved", handle: reservation.handle };

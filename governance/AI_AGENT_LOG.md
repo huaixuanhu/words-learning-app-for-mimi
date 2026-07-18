@@ -1,5 +1,54 @@
 # AI Agent Log
 
+## 2026-07-18 14:27 AEST
+
+- Task: complete and clean up the approved `V2-7B-2` non-Production provider proof.
+- Plan agreed: yes. The user confirmed the exact temporary Neon/Auth Key/two-call scope, later performed the provider UI actions that Google rejected under browser automation, and kept public-app legal work outside this private personal-app stage.
+- Working tier: Tier 3. External authority remained limited to one disposable schema-only child/role, temporary Auth Keys, two synthetic provider attempts, and their cleanup. Production, Vercel, long-term `staging`, real learning data, deployment, and GitHub remote actions remained out of scope.
+- Changed files:
+  - `ai-disclosure-v3`, exact localhost formal-route activation, the database-atomic two-attempt ceiling, historical backup compatibility, and focused runtime/accounting/Schema/UI tests;
+  - guarded disposable-target migration/seed/inspection and provider Replay/Cache/cap/Kill Switch proof scripts;
+  - V2-7B-2 child/master plans, Architecture, README, database mapping, AGENTS, Changelog, and this governance record.
+- Result:
+  - created schema-only child `v2-7b-2-smoke-20260718` from `staging`; pre-migration core counts were all zero;
+  - resolved inherited-object ownership by rotating `neondb_owner` only on the disposable branch, applying Schema 6 once, immediately removing the owner credential, and granting the dedicated runtime role application access;
+  - seeded one synthetic person plus `adapt` and `mitigate` only;
+  - confirmed Project logging `Disabled`, current `ai-disclosure-v3`, a new Auth Key, generated local Basic Auth, exact localhost-only route wiring, and no Vercel marker;
+  - completed one enrichment and one context provider attempt; both succeeded and persisted atomically;
+  - proved Replay, Cache, third-attempt database cap, and Kill Switch without increasing the two-attempt count;
+  - measured 881 input + 304 output + 0 thinking = 1,185 total tokens and US$0.000677 estimated cost; zero active call remained.
+- Credential incident: the first manually created temporary key was unintentionally exposed in browser-structure tool output before use. It was treated as compromised, never saved to `.env.v2-7b-2.local`, never called, and manually revoked. The replacement proof key completed the two calls and was also manually revoked after Google rejected automated deletion. The final refreshed AI Studio list showed both names absent.
+- Cleanup: permanently deleted the Neon child/endpoint/role and synthetic ledger; deleted `.env.v2-7b-2.local`; cleared Gemini, database, owner, dedicated-role, and generated local Basic Auth values from the active automation memory; stopped all local proof servers.
+- Validation: `npm run lint`, `npm run typecheck`, focused AI tests, script syntax, full Vitest (`61` files / `360` tests; existing Postgres integration file/test skipped), all three backup dry-runs, Next.js Production build, Tier 3 governance preflight, and `git diff --check` passed.
+- Safety notes: Next.js reported ignored `.env.local` during build, but its values were not read or copied. No Production/staging data write, Production provider call, Vercel credential change, deployment, commit, push, pull request, merge, audio transmission, real-user transmission, or motion/reduced-motion change occurred. Live V1 remains Schema Version 5.
+- Reason: prove the formal AI route and its paid-usage safeguards with minimal synthetic evidence, then return the repository and external services to a credential-free, provider-resting state.
+
+## 2026-07-18 12:41 AEST
+
+- Task: execute the user-confirmed `V2-7B-2` non-Production provider proof, including accurate `ai-disclosure-v3`, a temporary schema-only Neon child target, a new Gemini Auth Key, at most two synthetic provider attempts, zero-call replay/Cache/Kill Switch checks, and complete cleanup.
+- Plan agreed: yes. The user explicitly confirmed the earlier bounded execution plan and requested that legal discussion remain proportionate to the current private personal app. `plan_docs/PLAN_V2_STAGE7B_2_NONPRODUCTION_PROVIDER_PROOF.md` records Source plan, Derived from, Scope, Non-Scope, Exit criteria, cost ceiling, execution order, and immediate stop conditions.
+- Working tier: Tier 3. The approval covers creation/deletion of one temporary Neon child branch and role, creation/revocation of one new Gemini Auth Key, an ignored local environment file, at most one synthetic call per formal feature, and local proof queries. Production, Vercel, deployment, GitHub remote actions, real learning data, and long-term Staging writes remain outside scope.
+- Changed files:
+  - `ai-disclosure-v3` and backup/Schema compatibility for historical v1/v2 plus new v3 lineage;
+  - exact localhost/loopback formal-route wiring and Kill Switch-aware runtime health;
+  - a two-attempt database-atomic override in the existing global accounting transaction;
+  - guarded schema-only target inventory, Schema 6 migration, fixed synthetic seed, evidence inspection, provider/replay/Cache/cap/Kill Switch proof scripts;
+  - V2 child/master plan, Architecture, AGENTS, Changelog, focused tests, and this log.
+- Reason: obtain minimal real-provider evidence for the already completed formal architecture without widening access to Production, Vercel, real study data, or uncontrolled paid usage.
+- Decisions:
+  - optional Project logging and paid-service limited safety / abuse / legal handling are disclosed separately; `store: false` remains explicit and the project logging setting must be confirmed off before provider use;
+  - the temporary branch must be a schema-only child of `staging`, so no existing staging rows are copied; the migration tool refuses any populated core table;
+  - both pooled and unpooled URLs must match the approved temporary Neon endpoint, dedicated role, and database; neither URL nor any secret is printed;
+  - only the exact local scope with no Vercel marker can wire the formal runners, and the request URL must use a loopback hostname;
+  - the two-call ceiling is applied inside the locked global accounting transaction. A prior failed/succeeded Gemini run counts; Idempotency replay is returned before the ceiling, and a third new run stops before insertion/provider submission;
+  - fixed synthetic entries are `adapt` and `mitigate`; no personal learning evidence or audio is included;
+  - the accepted animation and reduced-motion rules remain unchanged.
+- Validation:
+  - Passed: `npm run lint`, `npm run typecheck`, script syntax checks, and focused AI route/runtime/accounting/Schema/UI tests.
+  - Passed: full Vitest with 61 files / 360 tests; the existing Postgres integration file/test was intentionally skipped.
+  - Passed: schema 3, 5, and 6 backup dry-runs, Next.js Production build, and `git diff --check`.
+- Safety notes: Next.js reported the existence of the ordinary ignored `.env.local` during build, but no value was read or copied. No new credential, Auth Key, environment value, provider request, charge, remote database connection/transaction, SQL execution, Production write, WAF/Vercel action, deployment, commit, push, pull request, or merge has occurred yet. External proof and cleanup remain pending.
+
 ## 2026-07-17 23:52 AEST
 
 - Task: execute the next V2 AI stage using the user's required `V2-7B-1` / `V2-7B-2` names, completing only the local formal orchestration slice.

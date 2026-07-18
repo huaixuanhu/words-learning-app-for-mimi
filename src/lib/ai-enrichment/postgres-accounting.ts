@@ -316,9 +316,19 @@ async function expireStaleProviderLeases(
 
 export async function reservePostgresAiProviderAttempt(
   input: PostgresAiRunSubmission,
-  dependencies: Readonly<{ transaction?: TransactionRunner }> = {},
+  dependencies: Readonly<{
+    transaction?: TransactionRunner;
+    maximumProviderAttempts?: number;
+  }> = {},
 ): Promise<PostgresAiReservationResult> {
   validateSubmission(input);
+  if (
+    dependencies.maximumProviderAttempts !== undefined &&
+    (!Number.isSafeInteger(dependencies.maximumProviderAttempts) ||
+      dependencies.maximumProviderAttempts < 1)
+  ) {
+    throw new Error("maximumProviderAttempts must be a positive safe whole number");
+  }
   const keys = buildBudgetKeys(input.createdAt);
   const reservation = buildDefaultAttemptReservation();
   const transaction = dependencies.transaction ?? withPostgresTransaction;
@@ -353,6 +363,25 @@ export async function reservePostgresAiProviderAttempt(
     }
 
     const rows = await ensureAndLockBuckets(queryable, keys, input.createdAt);
+    if (dependencies.maximumProviderAttempts !== undefined) {
+      const submittedAttempts = await queryable.query<{ count: number | string }>(
+        `
+          select count(*)::integer as count
+          from ai_runs
+          where provider = 'google-gemini-api'
+        `,
+      );
+      const attemptCount = wholeNumber(
+        submittedAttempts.rows[0]?.count ?? 0,
+        "bounded provider attempts",
+      );
+      if (attemptCount >= dependencies.maximumProviderAttempts) {
+        return {
+          status: "blocked",
+          reasons: ["stage7b2_smoke_attempt_limit"],
+        };
+      }
+    }
     const activeProviderCalls = await expireStaleProviderLeases(
       queryable,
       input.createdAt,

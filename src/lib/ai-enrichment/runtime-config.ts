@@ -7,12 +7,59 @@ import type { AiGenerationAvailability } from "./types";
 
 type AiRuntimeEnvironment = Readonly<Record<string, string | undefined>>;
 
-export const AI_PROVIDER_ACTIVATION_STATE = "v2-7b-2-required" as const;
+export const AI_PROVIDER_ACTIVATION_STATE = "v2-7b-2-local-smoke" as const;
+export const AI_STAGE7B2_EXECUTION_SCOPE = "v2-7b-2-local-smoke" as const;
+export const AI_STAGE7B2_MAX_PROVIDER_ATTEMPTS = 2 as const;
 
 export type AiRuntimeHealth = Readonly<{
   enabled: boolean;
   availability: AiGenerationAvailability;
 }>;
+
+function clean(value: string | undefined) {
+  return value?.trim() ?? "";
+}
+
+export function isStage7b2LocalSmokeConfigured(env: AiRuntimeEnvironment) {
+  return (
+    clean(env.MIMI_AI_EXECUTION_SCOPE) === AI_STAGE7B2_EXECUTION_SCOPE &&
+    env.MIMI_AI_RUNTIME_ENABLED === "true" &&
+    env.MIMI_AI_ACCOUNTING_READY === "true" &&
+    env.MIMI_AI_SCHEMA6_READY === "true" &&
+    env.MIMI_STORAGE_RUNTIME === "postgres-preview" &&
+    env.STAGE5F_DATABASE_TARGET === "preview" &&
+    env.MIMI_V2_7B2_TEMP_TARGET_CONFIRMED === "true" &&
+    env.MIMI_AI_AUTH_KEY_TYPE_CONFIRMED === "auth-key" &&
+    env.MIMI_AI_PROJECT_LOGGING_DISABLED_CONFIRMED === "true" &&
+    Boolean(clean(env.GEMINI_API_KEY)) &&
+    !clean(env.VERCEL) &&
+    !clean(env.VERCEL_ENV) &&
+    env.NODE_ENV !== "test"
+  );
+}
+
+export function isStage7b2LocalSmokeRuntime(env: AiRuntimeEnvironment) {
+  return (
+    isStage7b2LocalSmokeConfigured(env) &&
+    env.MIMI_AI_KILL_SWITCH !== "true"
+  );
+}
+
+export function isStage7b2LoopbackRequest(request: Request) {
+  try {
+    const hostname = new URL(request.url).hostname.toLocaleLowerCase("en-US");
+    return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "[::1]";
+  } catch {
+    return false;
+  }
+}
+
+export function canRunStage7b2FormalRoute(
+  request: Request,
+  env: AiRuntimeEnvironment = process.env,
+) {
+  return isStage7b2LocalSmokeConfigured(env) && isStage7b2LoopbackRequest(request);
+}
 
 export function resolveAiRuntimeHealth(
   env: AiRuntimeEnvironment,
@@ -29,7 +76,7 @@ export function resolveAiRuntimeHealth(
     quotaAvailable: env.MIMI_AI_QUOTA_AVAILABLE !== "false",
   });
 
-  if (availability.status === "available") {
+  if (availability.status === "available" && !isStage7b2LocalSmokeRuntime(env)) {
     return {
       enabled,
       availability: {

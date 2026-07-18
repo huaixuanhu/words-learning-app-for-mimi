@@ -1,8 +1,9 @@
--- V2 Stage 3 Schema Version 6 data-model draft, amended through V2 Stage 7B-1.
+-- V2 Stage 3 Schema Version 6 data-model draft, amended through V2 Stage 7B-2.
 -- Apply only after db/migrations/0001_initial.sql and
 -- db/migrations/0002_schema5_production_runtime.sql.
--- Local/static validation is allowed in V2 Stage 3. Any Development / Staging
--- or Production execution requires a separate Tier 3 approval, an exact target
+-- V2-7B-2 executed this file once on an approved disposable schema-only child
+-- of staging, then deleted that branch. Long-term Development / Staging or
+-- Production execution still requires a separate Tier 3 approval, exact target
 -- check, and the accepted backup/rehearsal gate. This file contains no credential.
 
 begin;
@@ -434,7 +435,7 @@ create table ai_runs (
       provider = 'google-gemini-api'
       and model = 'gemini-3.1-flash-lite'
       and model_label = 'Gemini 3.1 Flash-Lite'
-      and disclosure_version in ('ai-disclosure-v1', 'ai-disclosure-v2')
+      and disclosure_version in ('ai-disclosure-v1', 'ai-disclosure-v2', 'ai-disclosure-v3')
     )
     or
     (
@@ -549,7 +550,7 @@ create table ai_disclosure_confirmations (
   constraint ai_disclosure_confirmations_unique
     unique (person_id, session_token_hash, disclosure_version, disclosure_digest),
   constraint ai_disclosure_confirmations_current_version
-    check (disclosure_version = 'ai-disclosure-v2'),
+    check (disclosure_version = 'ai-disclosure-v3'),
   constraint ai_disclosure_confirmations_text_not_blank check (
     length(trim(session_token_hash)) > 0
     and length(trim(disclosure_digest)) > 0

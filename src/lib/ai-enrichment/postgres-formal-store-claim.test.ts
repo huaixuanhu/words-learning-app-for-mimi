@@ -97,7 +97,7 @@ function identity(overrides: Partial<FormalAiRequestIdentity> = {}): FormalAiReq
     requestHash: "request-hash",
     idempotencyKeyHash: "idempotency-one",
     cacheKeyHash: "cache-one",
-    disclosureVersion: "ai-disclosure-v2",
+    disclosureVersion: "ai-disclosure-v3",
     disclosureDigest: "disclosure-digest",
     now: "2026-07-17T00:00:00.000Z",
     ...overrides,

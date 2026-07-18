@@ -89,7 +89,7 @@ describe("V2 Schema Version 6 data model", () => {
     expect(migrationSql).toContain("ai_runs_success_usage_present");
     expect(migrationSql).toContain("terminal_category text null");
     expect(migrationSql).toContain("ai_request_idempotency_processing_cache_unique");
-    expect(migrationSql).toContain("ai-disclosure-v2");
+    expect(migrationSql).toContain("ai-disclosure-v3");
     expect(migrationSql).toContain("model = 'fixture-v1'");
     expect(migrationSql).toContain("model_label = 'Local preview'");
     expect(migrationSql).toContain("disclosure_version = 'local-fixture-no-network-v1'");
