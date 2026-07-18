@@ -69,7 +69,7 @@ export function PersonSettingsForm() {
 
       <form className="grid gap-2" onSubmit={handleAddPerson}>
         <label className="grid gap-2">
-          <span className="text-sm font-semibold text-[#203229]">Add private person</span>
+          <span className="text-sm font-semibold text-[#203229]">Add person</span>
           <input
             value={displayName}
             onChange={(event) => setDisplayName(event.target.value)}
@@ -92,7 +92,7 @@ export function PersonSettingsForm() {
           <Users aria-hidden="true" className="size-4" />
           {activePeople.length} {activePeople.length === 1 ? "person" : "people"}
         </p>
-        <p className="mt-1">私人项目内的数据切换，不是密码或安全隔离。</p>
+        <p className="mt-1">只切换学习数据，不是账号或密码隔离。</p>
       </div>
 
       {message ? <p className="rounded-md bg-[#d9e5d5] px-3 py-2 text-sm text-[#274331]">{message}</p> : null}

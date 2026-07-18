@@ -1,5 +1,27 @@
 # AI Agent Log
 
+## 2026-07-18 21:58 AEST
+
+- Task: execute the user-confirmed documentation-first `V2-8-1.1` Learner-facing Copy Audit inserted before `V2-8-2`.
+- Plan agreed: yes. The user confirmed the proposed local copy-audit scope after requesting a full check for learner-visible wording unrelated to learning or function, including the visible `V2 Stage 3 Schema 6 Fixture` label.
+- Working tier: Tier 3. This slice changed local documentation, presentational React copy, synthetic fixture display names, and tests. It did not authorize or perform a remote database operation, credential/environment inspection, provider call, migration, Vercel action, deployment, or GitHub remote action.
+- Changed files:
+  - removed the global atmosphere slogan, page subtitles, desktop encouragement card, duplicate headings/instructions, generic completion encouragement, and developer-facing fixture display names;
+  - shortened Home, Insights, Practice Lab, Review/Active, Settings, Batch import, and AI preview states while keeping learning values, errors, recovery, accessibility, and safety boundaries;
+  - made Batch import start with an empty paste field and kept JSON guidance in collapsed `Example format`;
+  - changed only synthetic fixture `displayName` values to `Mimi`, retaining technical IDs/slugs and serialized compatibility;
+  - added the repository-wide Learner Copy Contract, updated focused UI contracts, and synchronized the child/master plans, Architecture, README, AGENTS, Changelog, and this record.
+- Preserved contract: `Batch imported`, `Actual`, `FSRS estimate`, Daily Plan semantics, distinct-entry meaning, Space/Arrow/Enter guidance, whole-day reset gates, backup replacement warning, person switching boundary, formal AI model/inaccuracy/outbound/retention disclosure, and honest no-request local fixture notice remain available. The accepted Motion and reduced-motion implementation was not edited.
+- Validation:
+  - Passed focused tests: 4 files / 14 tests.
+  - Passed `npm run lint`, `npm run typecheck`, and full Vitest: 64 passed files / 375 passed tests; the existing Postgres integration file/test was skipped.
+  - Passed schema 3, schema 5, and schema 6 backup dry-runs, Next.js Production build, Tier 3 governance preflight, and `git diff --check`.
+  - Local Production-build browser acceptance used a synthetic Schema Version 6 fixture on isolated `127.0.0.1:3031` and a browser-only local storage-response stub, so no database route or provider was contacted. Widths 320, 375, 390, 768, 820, 1023, 1024, and 1280 had no horizontal overflow, framework overlay, internal fixture label, or new console error; navigation switched exactly at 1024 px.
+  - The home matrix itself logged no warning/error. A later rapid multi-route sweep emitted one browser image-preload warning for the existing brand image and no runtime error. Visual frames were allowed to settle before screenshots were retained.
+  - Retained `mobile-320-today.png`, `mobile-390-today.png`, and `mobile-390-batch-import.png` under `/Users/anoria/.codex/visualizations/2026/07/12/019f5666-33bb-7b00-9a86-f9f416237386/learningWordsformimi-v2-8-1-1/`.
+- Safety notes: Next.js reported the existence of ignored `.env.local` during build, but no value was read or copied. No real learner row was rewritten; fixture edits are repository-owned synthetic data only. Schema Version 6, backup version 3, application data shapes, storage routes, learning/scheduling behavior, and live V1 Schema Version 5 remain unchanged. `V2-8-2` remains unstarted and requires separate approval.
+- Reason: reduce non-learning and development-process wording before the release rehearsal while preserving every action, state, disclosure, and irreversible-operation boundary that affects a learner decision.
+
 ## 2026-07-18 17:01 AEST
 
 - Task: execute the user-confirmed documentation-first `V2-8-1` Dashboard Insights local slice.

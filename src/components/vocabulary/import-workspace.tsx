@@ -1,6 +1,6 @@
 "use client";
 
-import { ClipboardList, Save, Upload } from "lucide-react";
+import { Save, Upload } from "lucide-react";
 import type { FormEvent } from "react";
 import { useMemo, useState, useSyncExternalStore } from "react";
 import type { ImportCandidate, ImportSourceType, LearningTrack, VocabularyTag } from "@/lib/vocabulary/types";
@@ -24,21 +24,8 @@ const JSON_IMPORT_SAMPLE = `{
     {
       "word": "allocate",
       "track": "recognition",
-      "meaningsZh": ["分配", "拨出时间或资源"],
-      "examples": [
-        "The tutor allocated extra practice time.",
-        "The budget allocates more money to language support."
-      ],
-      "tags": ["PTE"],
-      "rarityScore": 3
-    },
-    {
-      "word": "coherent",
-      "track": "active",
-      "meaningsZh": ["连贯的", "条理清楚的"],
-      "examples": ["Her explanation remained coherent throughout."],
-      "tags": null,
-      "rarityScore": null
+      "meaningsZh": ["分配"],
+      "examples": ["The tutor allocated extra practice time."]
     }
   ]
 }`;
@@ -114,7 +101,7 @@ export function ImportWorkspace() {
   const [singleTrack, setSingleTrack] = useState<LearningTrack>("recognition");
   const [singleTags, setSingleTags] = useState<VocabularyTag[] | null>(null);
   const [singleRarityScore, setSingleRarityScore] = useState("");
-  const [jsonText, setJsonText] = useState(JSON_IMPORT_SAMPLE);
+  const [jsonText, setJsonText] = useState("");
   const [fileName, setFileName] = useState<string | null>(null);
   const [sourceType, setSourceType] = useState<ImportSourceType>("json_paste");
   const [candidates, setCandidates] = useState<ImportCandidate[]>([]);
@@ -400,6 +387,7 @@ export function ImportWorkspace() {
                   <textarea
                     rows={15}
                     value={jsonText}
+                    placeholder="Paste your JSON list here"
                     onChange={(event) => {
                       setJsonText(event.target.value);
                       setSourceType("json_paste");
@@ -410,19 +398,17 @@ export function ImportWorkspace() {
                 </label>
               </div>
               <aside className="rounded-md border border-[#d8d1c2] bg-[#fffaf1]/72 p-4 text-sm leading-6 text-[#5f6d62]">
-                <div className="mb-3 inline-flex size-9 items-center justify-center rounded-md bg-[#d9e5d5] text-[#274331]">
-                  <ClipboardList aria-hidden="true" className="size-4" />
-                </div>
-                <p className="font-semibold text-[#203229]">Bring in several words at once</p>
-                <p className="mt-2">Choose a prepared file or paste a list, then review every word before saving.</p>
-                <details className="mt-3 rounded-md border border-[var(--mimi-border)] bg-[var(--mimi-surface-strong)] px-3 py-2">
+                <details className="rounded-md border border-[var(--mimi-border)] bg-[var(--mimi-surface-strong)] px-3 py-2">
                   <summary className="mimi-focus-ring cursor-pointer font-semibold text-[var(--mimi-primary-deep)]">
                     Example format
                   </summary>
                   <div className="mt-3 grid gap-2 text-xs leading-5 text-[var(--mimi-text-soft)]">
-                    <p><code>track</code> accepts <code>recognition</code> or <code>active</code>.</p>
-                    <p><code>meaningsZh</code> and <code>examples</code> each need at least one item.</p>
-                    <p><code>tags</code> and <code>rarityScore</code> are optional.</p>
+                    <p>Choose Recognition or Active.</p>
+                    <p>Add at least one Chinese meaning and example.</p>
+                    <p>Tags and rarity are optional.</p>
+                    <pre className="whitespace-pre-wrap break-words rounded bg-[var(--mimi-surface-muted)] p-2 font-mono text-[0.68rem] leading-4 text-[var(--mimi-text)]">
+                      {JSON_IMPORT_SAMPLE}
+                    </pre>
                   </div>
                 </details>
               </aside>

@@ -8,19 +8,16 @@ import { useMimiTheme } from "@/components/theme-provider";
 const themeOptions: Array<{
   value: MimiTheme;
   label: string;
-  detail: string;
   icon: LucideIcon;
 }> = [
   {
     value: "dark",
     label: "Dark",
-    detail: "Deep sage focus",
     icon: Moon,
   },
   {
     value: "light",
     label: "Light",
-    detail: "Soft sage paper",
     icon: Sun,
   },
 ];
@@ -51,16 +48,13 @@ export function ThemeSettingsForm() {
                 <span className="grid size-10 shrink-0 place-items-center rounded-md bg-[var(--mimi-surface)] text-[var(--mimi-primary-deep)] shadow-[inset_0_0_0_1px_var(--mimi-border)]">
                   <Icon aria-hidden="true" className="size-5" />
                 </span>
-                <span>
-                  <span className="block text-base font-semibold">{option.label}</span>
-                  <span className="mt-1 block text-sm leading-5 text-[var(--mimi-text-soft)]">{option.detail}</span>
-                </span>
+                <span className="text-base font-semibold">{option.label}</span>
               </span>
             </button>
           );
         })}
       </div>
-      <p className="text-sm leading-6 text-[var(--mimi-text-soft)]">Saved on this device.</p>
+      <p className="text-sm leading-6 text-[var(--mimi-text-soft)]">This device only.</p>
     </div>
   );
 }

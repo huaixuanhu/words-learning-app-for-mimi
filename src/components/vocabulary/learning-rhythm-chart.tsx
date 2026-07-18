@@ -51,7 +51,7 @@ export const LearningRhythmChart = memo(function LearningRhythmChart({
             <span className="mimi-pill-muted px-2 py-0.5 text-[0.68rem] font-semibold">Actual</span>
           </div>
           <p className="mt-1 text-xs leading-5 text-[var(--mimi-text-soft)]">
-            Distinct completed entries and every attempt.
+            Completed entries · All attempts
           </p>
         </div>
         <div className="inline-flex rounded-md border border-[var(--mimi-border)] bg-[var(--mimi-surface-muted)] p-0.5" role="group" aria-label="Learning rhythm range">

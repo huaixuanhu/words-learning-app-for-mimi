@@ -2092,7 +2092,7 @@ export function createStage5LFixtureBackup() {
     people: [
       {
         id: personId,
-        displayName: "Stage 5L Fixture",
+        displayName: "Mimi",
         slug: "stage5l-fixture",
         isActive: true,
         createdAt,
@@ -2203,7 +2203,7 @@ export function createStage6BP1ESchema5FixtureBackup() {
     people: [
       {
         id: personId,
-        displayName: "Stage 6B P1-E Schema 5 Fixture",
+        displayName: "Mimi",
         slug: "stage6b-p1e-schema5-fixture",
         isActive: true,
         createdAt,
@@ -2361,7 +2361,7 @@ export function createV2Stage3Schema6FixtureBackup() {
     people: [
       {
         id: personId,
-        displayName: "V2 Stage 3 Schema 6 Fixture",
+        displayName: "Mimi",
         slug: "v2-stage3-schema6-fixture",
         isActive: true,
         createdAt,

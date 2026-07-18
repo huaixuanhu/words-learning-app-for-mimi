@@ -42,7 +42,7 @@ export const MemoryOutlookCard = memo(function MemoryOutlookCard({
         <span className="mimi-pill-muted px-2 py-0.5 text-[0.68rem] font-semibold">FSRS estimate</span>
       </div>
       <p className="mt-1 text-xs leading-5 text-[var(--mimi-text-soft)]">
-        Current schedule snapshot. It changes after study.
+        Updates after study.
       </p>
 
       <div className="mt-4">

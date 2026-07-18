@@ -62,10 +62,6 @@ export function DesktopSidebar() {
         })}
       </nav>
 
-      <div className="mt-auto rounded-md border border-[var(--mimi-brand-border)] bg-[var(--mimi-rail-card-bg)] p-4 text-sm text-[var(--mimi-rail-soft)]">
-        <p className="font-semibold text-[var(--mimi-rail-strong)]">Small steps today.</p>
-        <p className="mt-1 leading-6 text-[var(--mimi-rail-muted)]">Review gently, remember deeply.</p>
-      </div>
     </aside>
   );
 }
@@ -148,12 +144,9 @@ export function MobileBottomNav() {
         panelClassName="sm:max-w-md"
       >
         <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--mimi-text-muted)]">Navigate</p>
-            <h2 id="mobile-more-title" className="mt-1 text-2xl font-semibold text-[var(--mimi-text)]">
-              More
-            </h2>
-          </div>
+          <h2 id="mobile-more-title" className="text-2xl font-semibold text-[var(--mimi-text)]">
+            More
+          </h2>
           <button
             type="button"
             onClick={() => setMoreOpen(false)}

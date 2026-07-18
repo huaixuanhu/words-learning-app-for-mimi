@@ -496,7 +496,7 @@ export function ReviewSession({ zone }: ReviewSessionProps) {
           ? `Saved. ${currentItem.surfaceText} could not be repeated in this session.`
           : nextSession.repeatedSession
             ? `Saved. ${currentItem.surfaceText} will return later in this session.`
-            : `Saved. ${currentItem.surfaceText} is resting until ${new Date(result.state.dueAt).toLocaleString()}.`;
+            : `Saved. Next review: ${new Date(result.state.dueAt).toLocaleString()}.`;
       setMessage(
         submission.refreshed
           ? `${PROMPT_REFRESHED_COPY} ${savedMessage}`
@@ -755,7 +755,6 @@ export function ReviewSession({ zone }: ReviewSessionProps) {
                         ? "No New Words are planned right now."
                         : "Nothing is ready for Review right now."}
                 </p>
-                <p className="text-sm leading-6 text-[var(--mimi-text-soft)]">You are building something valuable.</p>
                 <Link
                   href="/study"
                   className="mimi-button-secondary mimi-focus-ring inline-flex min-h-11 items-center justify-center px-4 text-sm font-semibold"

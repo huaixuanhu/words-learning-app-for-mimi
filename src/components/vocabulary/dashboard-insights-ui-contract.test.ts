@@ -39,7 +39,7 @@ describe("V2-8-1 Dashboard Insights UI contract", () => {
     expect(rhythmSource).toContain("Entries");
     expect(rhythmSource).toContain("Attempts");
     expect(outlookSource).toContain("FSRS estimate");
-    expect(outlookSource).toContain("Current schedule snapshot");
+    expect(outlookSource).toContain("Updates after study.");
     expect(combinedInsightsSource).not.toContain("fetch(");
     expect(combinedInsightsSource).not.toContain("localStorage");
   });

@@ -10,7 +10,6 @@ import { playReviewCompleteSound, playSoftButtonClick } from "@/lib/ui/sound-pla
 type SoundRow = {
   key: "button" | "reviewComplete";
   title: string;
-  detail: string;
   previewLabel: string;
   icon: LucideIcon;
 };
@@ -19,14 +18,12 @@ const soundRows: SoundRow[] = [
   {
     key: "button",
     title: "Button sound",
-    detail: "Soft tactile click for normal app buttons.",
     previewLabel: "Preview button sound",
     icon: Volume2,
   },
   {
     key: "reviewComplete",
     title: "Review complete",
-    detail: "Mimi custom sound after today's review task is confirmed.",
     previewLabel: "Preview review-complete sound",
     icon: Volume2,
   },
@@ -34,7 +31,7 @@ const soundRows: SoundRow[] = [
 
 export function SoundSettingsForm() {
   const { settings, setButtonSound, setReviewCompleteSound } = useMimiSound();
-  const [status, setStatus] = useState("Sound preferences stay on this device.");
+  const [status, setStatus] = useState("This device only.");
 
   const setEnabled = (key: SoundRow["key"], enabled: boolean) => {
     if (key === "button") {
@@ -75,7 +72,6 @@ export function SoundSettingsForm() {
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0">
                   <p className="font-semibold text-[var(--mimi-text)]">{row.title}</p>
-                  <p className="mt-1 text-sm leading-6 text-[var(--mimi-text-soft)]">{row.detail}</p>
                 </div>
 
                 <div className="flex shrink-0 items-center gap-2">

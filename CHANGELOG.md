@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## 2026-07-18 21:58 AEST
+
+- Completed the documentation-first `V2-8-1.1` Learner-facing Copy Audit before any remote rehearsal. Added a derived child plan and synchronized the V2 master plan, Architecture, README, AGENTS, and governance record.
+- Removed the global atmosphere slogan, page subtitles, desktop encouragement card, duplicated headings/instructions, generic completion encouragement, and developer-facing `V2 Stage ... Schema ... Fixture` display names from learner surfaces.
+- Shortened Home, Insights, Practice Lab, Review/Active completion, Settings, Batch import, and AI preview states. Preserved `Batch imported`, `Actual`, `FSRS estimate`, Daily Plan meaning, keyboard controls, error/retry paths, destructive-action warnings, person-separation boundaries, and formal AI model/outbound/retention disclosure.
+- Made Batch import start with an empty paste field and moved its compact JSON guidance into collapsed `Example format`. Synthetic fixture display names now read `Mimi`, while technical IDs/slugs and backup compatibility remain intact.
+- Added a repository-wide Learner Copy Contract and updated focused AI/Dashboard UI contracts. No route, schema, backup shape, scheduler, persistence behavior, dependency, Motion, or reduced-motion rule changed.
+- Passed focused tests (4 files / 14 tests), ESLint, TypeScript, 64 test files / 375 tests with the existing Postgres integration file/test skipped, all three backup dry-runs, Next.js Production build, Tier 3 governance preflight, and `git diff --check`.
+- Local browser acceptance passed at 320, 375, 390, 768, 820, 1023, 1024, and 1280 px with no horizontal overflow, framework overlay, internal fixture label, or new console error. Retained 320/390 px Today and 390 px Batch import screenshots outside the repository.
+- Reason: keep ordinary screens focused on learning, actions, and trustworthy state before beginning the separately approved V2-8-2 remote rehearsal.
+
 ## 2026-07-18 17:01 AEST
 
 - Implemented the local, documentation-first `V2-8-1` Dashboard Insights slice and split remaining release work into separately approved `V2-8-2` Preview rehearsal and `V2-8-3` Production execution.

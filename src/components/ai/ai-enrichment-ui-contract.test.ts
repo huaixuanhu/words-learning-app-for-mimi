@@ -14,6 +14,10 @@ const sourceLabelSource = readFileSync(
   join(process.cwd(), "src", "lib", "ai-enrichment", "source-label.ts"),
   "utf8",
 );
+const localFixtureSource = readFileSync(
+  join(process.cwd(), "src", "lib", "ai-enrichment", "local-fixture-runtime.ts"),
+  "utf8",
+);
 
 describe("V2-7B-1 AI enrichment UI contract", () => {
   it("exposes a responsive local preview from each active Library entry", () => {
@@ -26,7 +30,7 @@ describe("V2-7B-1 AI enrichment UI contract", () => {
     expect(dialogSource).toContain("ResponsiveDialog");
     expect(dialogSource).toContain("Create local preview");
     expect(dialogSource).toContain("LOCAL_FIXTURE_LINEAGE.notice");
-    expect(dialogSource).toContain("No Gemini request is made.");
+    expect(localFixtureSource).toContain("Local preview · No AI request was made.");
     expect(dialogSource).toContain("AI data and retention");
     expect(dialogSource).toContain("AI_DISCLOSURE.retentionSummary");
     expect(dialogSource).toContain("AI_DISCLOSURE.projectLoggingSummary");

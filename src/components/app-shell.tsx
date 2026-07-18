@@ -5,11 +5,10 @@ import { BrandIdentity } from "@/components/brand-identity";
 
 type AppShellProps = {
   title: string;
-  subtitle?: string;
   children: ReactNode;
 };
 
-export function AppShell({ title, subtitle, children }: AppShellProps) {
+export function AppShell({ title, children }: AppShellProps) {
   return (
     <div className="mimi-shell">
       <div className="min-h-dvh lg:flex">
@@ -28,13 +27,7 @@ export function AppShell({ title, subtitle, children }: AppShellProps) {
 
           <main className="mimi-main-content mx-auto w-full max-w-6xl px-4 pt-5 sm:px-6 lg:px-8 lg:pt-8">
             <div className="mimi-page-heading mb-6">
-              <p className="mimi-page-kicker text-sm font-medium">Calm mind. Clear words.</p>
-              <h1 className="mt-2 text-3xl font-semibold tracking-normal sm:text-4xl">{title}</h1>
-              {subtitle ? (
-                <p className="mimi-page-copy mt-3 max-w-2xl text-sm leading-6">
-                  {subtitle}
-                </p>
-              ) : null}
+              <h1 className="text-3xl font-semibold tracking-normal sm:text-4xl">{title}</h1>
             </div>
             {children}
           </main>

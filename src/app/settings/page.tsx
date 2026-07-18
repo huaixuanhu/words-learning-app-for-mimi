@@ -7,7 +7,7 @@ import { ThemeSettingsForm } from "@/components/settings/theme-settings-form";
 
 export default function SettingsPage() {
   return (
-    <AppShell title="Settings" subtitle="Choose how the app feels and who is studying.">
+    <AppShell title="Settings">
       <div className="grid gap-4">
         <SimplePanel title="Theme">
           <ThemeSettingsForm />

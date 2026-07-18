@@ -726,11 +726,11 @@ export function ActivePracticeSession({ zone, mode }: Props) {
                     ? "This Active session is complete."
                     : "No eligible entries are planned here right now."}
               </p>
-              <p className="text-sm leading-6 text-[var(--mimi-text-soft)]">
-                {sessionTotal
-                  ? "Choose another mode or return to Study when you are ready."
-                  : "Active entries need a Chinese meaning before practice."}
-              </p>
+              {!sessionTotal ? (
+                <p className="text-sm leading-6 text-[var(--mimi-text-soft)]">
+                  Active entries need a Chinese meaning before practice.
+                </p>
+              ) : null}
               <div className="flex flex-wrap justify-center gap-2">
                 <Link href="/library" className="mimi-button-secondary mimi-focus-ring inline-flex min-h-11 items-center justify-center px-4 text-sm font-semibold">
                   Open Library

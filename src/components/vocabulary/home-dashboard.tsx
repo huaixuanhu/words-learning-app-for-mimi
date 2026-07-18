@@ -61,10 +61,7 @@ export function HomeDashboard() {
                 <Leaf aria-hidden="true" className="size-3.5" />
                 {selectedPerson.displayName}
               </div>
-              <h2 className="text-xl font-semibold text-[var(--mimi-text)]">Today Hub</h2>
-              <p className="mt-2 max-w-xl text-sm leading-6 text-[var(--mimi-text-soft)]">
-                Choose one Track and one clear goal.
-              </p>
+              <h2 className="text-xl font-semibold text-[var(--mimi-text)]">Today’s plan</h2>
               {todayMessage ? (
                 <p className="mt-2 text-xs leading-5 text-[var(--mimi-text-soft)]">{todayMessage}</p>
               ) : null}
@@ -115,9 +112,6 @@ export function HomeDashboard() {
               </div>
             ))}
           </div>
-          <p className="mt-3 text-sm leading-6 text-[var(--mimi-panel-dark-muted)]">
-            Each phrase or fixed expression counts as one entry.
-          </p>
         </section>
       </CalmEntrance>
 
@@ -147,7 +141,7 @@ export function HomeDashboard() {
             </div>
           ) : (
             <p className="rounded-md border border-dashed border-[var(--mimi-border-strong)] bg-[var(--mimi-surface)] p-3 text-sm leading-6 text-[var(--mimi-text-soft)]">
-              {isLoaded ? "Your first entry can begin in Add Words." : "Loading entries..."}
+              {isLoaded ? "No entries yet." : "Loading entries..."}
             </p>
           )}
         </section>
@@ -159,9 +153,6 @@ export function HomeDashboard() {
             </span>
             <div>
               <h2 className="text-base font-semibold text-[var(--mimi-text)]">Practice Lab</h2>
-              <p className="mt-2 text-sm leading-6 text-[var(--mimi-text-soft)]">
-                Choose Say it, Spell it, or Dictation for one focused session.
-              </p>
             </div>
           </div>
           <div className="mt-3 flex flex-wrap gap-1.5">
@@ -190,7 +181,7 @@ export function HomeDashboard() {
         </section>
 
         <section className="mimi-panel p-4">
-          <h2 className="text-base font-semibold text-[var(--mimi-text)]">Quiet tools</h2>
+          <h2 className="text-base font-semibold text-[var(--mimi-text)]">More</h2>
           <div className="mt-3 grid gap-2">
             {[
               { href: "/import", label: "Add words", icon: Upload },

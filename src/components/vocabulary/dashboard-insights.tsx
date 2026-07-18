@@ -61,9 +61,6 @@ export function DashboardInsights({ data, isLoaded }: DashboardInsightsProps) {
             <h2 id="dashboard-insights-title" className="text-base font-semibold text-[var(--mimi-text)]">
               Insights
             </h2>
-            <p className="mt-1 text-sm leading-5 text-[var(--mimi-text-soft)]">
-              Actual activity and a calm look ahead.
-            </p>
           </div>
           <div className="inline-flex rounded-md border border-[var(--mimi-border)] bg-[var(--mimi-surface-muted)] p-0.5" role="group" aria-label="Insights Track">
             {(["recognition", "active"] as const).map((reviewProfile) => (
@@ -103,7 +100,7 @@ export function DashboardInsights({ data, isLoaded }: DashboardInsightsProps) {
           <p className="mt-4 rounded-md border border-dashed border-[var(--mimi-border-strong)] bg-[var(--mimi-surface)] px-3 py-8 text-center text-sm text-[var(--mimi-text-soft)]">
             {result.status === "loading"
               ? "Loading insights..."
-              : "Insights are resting for now."}
+              : "Insights unavailable."}
           </p>
         )}
       </section>

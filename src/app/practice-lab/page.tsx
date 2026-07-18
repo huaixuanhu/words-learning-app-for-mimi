@@ -26,10 +26,7 @@ export default async function PracticeLabPage({
 
   if (mode) {
     return (
-      <AppShell
-        title={zone === "new" ? "Active New Words" : "Active Review"}
-        subtitle="Recall the whole entry, then rate your memory."
-      >
+      <AppShell title={zone === "new" ? "Active New Words" : "Active Review"}>
         <ActivePracticeSession zone={zone} mode={mode} />
       </AppShell>
     );
@@ -57,7 +54,7 @@ export default async function PracticeLabPage({
   ] as const;
 
   return (
-    <AppShell title="Practice Lab" subtitle="A quiet space for Active Vocabulary.">
+    <AppShell title="Practice Lab">
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1.35fr)_minmax(280px,0.65fr)]">
         <section className="mimi-panel p-5 sm:p-6">
           <div className="flex items-start gap-4">
@@ -65,11 +62,7 @@ export default async function PracticeLabPage({
               <AudioWaveform aria-hidden="true" className="size-6" />
             </span>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-normal text-[#879087]">Practice Lab</p>
-              <h2 className="mt-2 text-2xl font-semibold text-[#203229]">Active Vocabulary</h2>
-              <p className="mt-3 max-w-2xl text-sm leading-6 text-[#5f6d62]">
-                Say it, spell it, or write what you hear. Choose one mode for this session.
-              </p>
+              <h2 className="text-2xl font-semibold text-[#203229]">Active Vocabulary</h2>
             </div>
           </div>
 
@@ -99,9 +92,11 @@ export default async function PracticeLabPage({
         </section>
 
         <aside className="mimi-panel-dark p-5">
-          <h2 className="text-base font-semibold text-[var(--mimi-panel-dark-text)]">Choose one mode</h2>
+          <h2 className="text-base font-semibold text-[var(--mimi-panel-dark-text)]">
+            {zone === "new" ? "New Words" : "Review"}
+          </h2>
           <p className="mt-3 text-sm leading-6 text-[var(--mimi-panel-dark-muted)]">
-            This session stays in {zone === "new" ? "New Words" : "Review"}. You can change the mode before starting.
+            Choose a mode for this session.
           </p>
           <Link
             href="/study"

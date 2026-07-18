@@ -11,10 +11,7 @@ export default async function ReviewPage({
   const zone: StudyZone = params.zone === "new" ? "new" : "review";
 
   return (
-    <AppShell
-      title={zone === "new" ? "New Words" : "Review"}
-      subtitle={zone === "new" ? "Meet new entries, one card at a time." : "Return to familiar entries at a calm pace."}
-    >
+    <AppShell title={zone === "new" ? "New Words" : "Review"}>
       <ReviewSession zone={zone} />
     </AppShell>
   );

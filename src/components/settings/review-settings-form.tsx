@@ -112,7 +112,7 @@ export function ReviewSettingsForm() {
   return (
     <form key={formKey} className="grid gap-5 md:max-w-2xl" onSubmit={handleSubmit}>
       <p className="text-sm leading-6 text-[var(--mimi-text-soft)]">
-        These values begin the next study day. You can still change today from Study.
+        Applies from the next study day. Change today in Study.
       </p>
 
       <fieldset className="grid gap-3 rounded-md border border-[var(--mimi-border)] p-3 sm:p-4">
