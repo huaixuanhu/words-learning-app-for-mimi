@@ -1,7 +1,7 @@
 # Words Learning App For Mimi V2 Master Plan
 
 Created: 2026-07-13 00:16 AEST
-Last updated: 2026-07-18 AEST
+Last updated: 2026-07-19 AEST
 
 Source plan:
 - `plan_docs/PLAN_V1_MASTER.md`
@@ -36,11 +36,12 @@ Consumer / next stage:
 - `plan_docs/PLAN_V2_STAGE8_1_DASHBOARD_INSIGHTS.md`
 - `plan_docs/PLAN_V2_STAGE8_1_1_LEARNER_COPY_AUDIT.md`
 - `plan_docs/PLAN_V2_STAGE8_2_STAGING_PREVIEW_RELEASE_REHEARSAL.md`
+- `plan_docs/PLAN_V2_STAGE8_2_1_PERFORMANCE_STABILISATION.md`
 - Future derived V2 child plans created in the order defined by this document.
 - `plan_docs/PLAN_VERSION_HOLD_MULTI_USER_CONFIDENTIAL_ISOLATION.md`
 
 Document nature:
-This is the canonical V2 product and engineering master plan. It is derived from the completed V1 plan and current Production architecture. V2-1 has an isolated executable contract; V2-2 / 2-B have bounded local AI quality evidence; V2-3 has implemented the local/application Schema Version 6 and backup parity; V2-3.1 and V2-4 have implemented the bounded local Review-interaction and mobile/copy layers; V2-5 / 5.1 have connected daily plans and repaired cross-day scheduling; V2-6 has implemented the independent Active practice engine. V2-7A completed the browser-local fixture product flow and dormant safety layer, V2-7B-1 completed provider-closed formal orchestration, and V2-7B-2 completed one disposable non-Production provider/accounting proof. V2-8-1 completed the source-backed local Dashboard Insights and responsive acceptance slice, and V2-8-1.1 completed the learner-facing copy audit. V2-8-2 then migrated long-lived `staging` to Schema 6 and deployed the complete V2 with real Gemini behind protected Preview-only access. The live Production V1 program, Neon `main`, Production credentials, and Production Schema 5 data remain unchanged.
+This is the canonical V2 product and engineering master plan. It is derived from the completed V1 plan and current Production architecture. V2-1 has an isolated executable contract; V2-2 / 2-B have bounded local AI quality evidence; V2-3 has implemented the local/application Schema Version 6 and backup parity; V2-3.1 and V2-4 have implemented the bounded local Review-interaction and mobile/copy layers; V2-5 / 5.1 have connected daily plans and repaired cross-day scheduling; V2-6 has implemented the independent Active practice engine. V2-7A completed the browser-local fixture product flow and dormant safety layer, V2-7B-1 completed provider-closed formal orchestration, and V2-7B-2 completed one disposable non-Production provider/accounting proof. V2-8-1 completed the source-backed local Dashboard Insights and responsive acceptance slice, and V2-8-1.1 completed the learner-facing copy audit. V2-8-2 then migrated long-lived `staging` to Schema 6 and deployed the complete V2 with real Gemini behind protected Preview-only access. V2-8-2.1 is the V2-only runtime performance stabilisation inserted before Production cutover; V1 remains historical and unchanged. The live Production V1 program, Neon `main`, Production credentials, and Production Schema 5 data remain unchanged.
 
 Current operational tier: Tier 3.
 
@@ -48,7 +49,7 @@ Target capability tier: Tier 3. V2 adds a bounded paid AI API（人工智能接�
 
 Working tier: Tier 3.
 
-Status: V2-0 through V2-8-2 are complete within their approved scopes. The accepted names are `V2-7B-1` and `V2-7B-2`. Branch `V2`, local/application snapshots, and long-lived non-Production `staging` now use Schema Version 6 / backup version 3. A retained `staging` Schema 5 recovery checkpoint remains available for the next cutover stage. The protected `V2` Preview has its own study-token secret, Gemini Auth Key, `postgres-preview` target, full UI writes, Vercel Authentication, global cost controls, and Kill Switch. Its final accepted Gemini ledger is 3 successful synthetic attempts, 1,467 tokens, and `US$0.000777`. Production AI remains closed; the live V1 database stays Schema Version 5. `V2-8-3` is the next stage and separately owns Production backup, migration, secrets, deployment, verification, and rollback readiness.
+Status: V2-0 through V2-8-2 are complete within their approved scopes, and V2-8-2.1 is complete locally with full validation and isolated browser evidence. The accepted names are `V2-7B-1` and `V2-7B-2`. Branch `V2`, local/application snapshots, and long-lived non-Production `staging` now use Schema Version 6 / backup version 3. A retained `staging` Schema 5 recovery checkpoint remains available for the next cutover stage. The protected `V2` Preview has its own study-token secret, Gemini Auth Key, `postgres-preview` target, full UI writes, Vercel Authentication, global cost controls, and Kill Switch. Its final accepted Gemini ledger is 3 successful synthetic attempts, 1,467 tokens, and `US$0.000777`. Production AI remains closed; the live V1 database stays Schema Version 5. V2-8-2.1 changed only branch-V2 code and did not redeploy Preview. `V2-8-3` remains the next remote stage and separately owns Production backup, migration, secrets, deployment, verification, and rollback readiness.
 
 ## Scope
 
@@ -631,6 +632,8 @@ Status: V2-7A completed locally on 2026-07-16. Canonical child plan and outcome:
 - `V2-8-2` completed on 2026-07-19. Its canonical child plan is `plan_docs/PLAN_V2_STAGE8_2_STAGING_PREVIEW_RELEASE_REHEARSAL.md`; long-lived `staging` is Schema 6, a named Schema 5 recovery checkpoint is retained, and the protected Preview runs complete Daily Learning, Active, Dashboard and real Gemini AI with branch-specific non-Production secrets, exact access checks and global cost controls.
 - Final V2-8-2 evidence is 1 synthetic person, 5 vocabulary entries, 4 independent Review states, 5 review events, 3 successful Gemini provider attempts, 1,467 tokens, `US$0.000777`, no submitted/in-flight call, no runtime error-level log, and a passing 320–1280 px responsive matrix. Production remained untouched.
 - After V2-8-2 acceptance, the protected Preview remains fully AI-enabled for the user and Mimi. Its Preview Gemini key is revoked only after V2-8-3 Production is stable; the existing global 300-attempt, token, US$0.50/day, US$2/month, concurrency, Cache, Idempotency and Kill Switch controls remain active during this acceptance window.
+- `V2-8-2.1` completed locally on 2026-07-19. Its canonical child plan is `plan_docs/PLAN_V2_STAGE8_2_1_PERFORMANCE_STABILISATION.md`. It adds one persistent browser data Provider, coalesced reads, authoritative mutation/delta updates, server-clock-owned Today resolution, selected-person Postgres Daily fast path, concurrency/order guards, cross-tab mutation sync, privacy-safe `Server-Timing`, and code-owned Vercel `syd1` placement. It did not patch or redeploy V1 and did not modify Motion, FSRS, Schema, backup, AI, credentials or Production.
+- V2-8-2.1 local acceptance is behavioral: after first data readiness, ordinary route changes reuse the loaded workspace; ordinary writes do not trigger a second full GET; existing-plan queue start uses one `/api/study` request; rating does not wait for a workspace refresh. Actual protected Preview region/latency evidence requires a later approved deployment and cannot be claimed from the local config alone.
 - `V2-8-3` will own separately approved Production backup, migration, deployment, authenticated smoke, schema, data, log, and budget acceptance.
 - V2-8-3 replaces the deployed V1 program and upgrades Neon `main` from Schema 5 to Schema 6 without deleting existing vocabulary, review history, settings or user data. It must retain an independent Production backup, a Schema 5 recovery point, and the previous V1 Vercel Deployment until V2 stability is accepted.
 - Approval of one V2-8 slice does not authorize the later remote slice.

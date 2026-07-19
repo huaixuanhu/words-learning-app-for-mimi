@@ -1,5 +1,28 @@
 # AI Agent Log
 
+## 2026-07-19 13:20 AEST
+
+- Task: diagnose and implement the user-confirmed V2-only performance repair before V2 replaces V1. The user explicitly declined a V1 patch/backport and asked for a fluid V2 result rather than a fixed percentage target.
+- Plan agreed: yes. Documentation-first `V2-8-2.1` was approved for local branch-V2 code, tests, build and isolated browser evidence. V1, protected Preview redeployment, remote database, credentials, provider use and Production remained outside this execution.
+- Working tier: Tier 3. This slice changed local application data flow and deployment configuration but exercised no remote mutation or paid authority.
+- Changed files:
+  - added the V2-8-2.1 child plan and synchronized the master plan, V2-8-2 handoff, Architecture, README, AGENTS, Changelog and this record;
+  - added one root `VocabularyDataProvider`, in-flight GET coalescing, accepted-snapshot-only learner persistence, last-known-good retention, stable mutation queue ordering, active-mutation delta replay and non-looping cross-tab synchronization;
+  - changed Daily Study to reuse persisted Today plans from a server-clock anchor, derive visible Today after version/person merge, apply rating/rollback deltas without a full refresh, and retain authoritative server checks for queue/prompt/rating operations;
+  - changed the Postgres Daily resolver to a selected-person existing-plan fast path while preserving transactional first-day creation and canonical conflict reread;
+  - added fixed-name `Server-Timing`, study/storage `serverNow`, the single-region `syd1` Vercel contract, and focused concurrency/clock/response/resolver/route/region tests.
+- Diagnosis: earlier browser evidence showed route changes repeatedly remounted page-local data hooks and fetched the whole workspace; a successful write then self-triggered another GET; queue entry repeated Today resolution; Vercel Functions and Neon were in distant regions. The fix keeps navigation prefetch and all accepted UI motion while removing redundant application data work.
+- Concurrency review: independent read-only review found stale learner preference writes, patch-journal erasure during a slower mutation, raw delayed Today response replacement, missing cross-tab signals and truncated-JSON handling. Each was repaired and covered; the final re-review reported no remaining blocker or regression.
+- Validation:
+  - focused performance/route/resolver checks passed 11 files / 63 tests;
+  - full Vitest passed 71 files / 403 tests, with the existing Postgres integration file/test skipped;
+  - `npm run lint`, `npm run typecheck`, all three backup dry-runs, Next.js Production build and `git diff --check` passed;
+  - React review confirmed the persistent Provider boundary, stable callbacks/effects, no route-local refetch ownership and unchanged Motion/reduced-motion implementation;
+  - local Production-build browser verification at 390px and 1280px used the repository Schema 6 fixture plus a browser-only storage-response stub. It observed one bootstrap `/api/storage/data` request, no transition GET, no `/api/study` request in local mode, no repeated Loading text, overflow, framework overlay, warning or error. Eight settled Home/Library transitions had a local median of about 64.5ms; this is local interaction evidence, not a claim about the undeployed Preview.
+- Safety notes: the build reported the presence of ignored `.env.local`, but no environment value was inspected, copied or changed. The browser server was forced to local storage with database/provider variables empty and its storage response was intercepted, so no database or AI provider was contacted. No V1 file was changed, no current Preview/Production deployment or region was changed, and no remote database, credential, provider request, charge, commit, push, pull request or merge occurred. Schema Version 6, backup version 3, FSRS/Daily Episode semantics, Track isolation, keyboard behavior, phone layout, AI gates, Motion and reduced-motion remain unchanged.
+- Residual boundary: `vercel.json` affects only a future approved deployment. Actual protected Preview `syd1` placement and 10-run median/p95 remain pending; current Preview continues to run V2-8-2 until redeployed.
+- Reason: make V2 navigation and study continuation feel immediate without hiding network failures, weakening server authority or widening the release scope into V1/Production work.
+
 ## 2026-07-19 00:45 AEST
 
 - Task: execute the user-approved documentation-first `V2-8-2` Staging / protected Preview release rehearsal, including Schema 6, complete Daily Learning / Active / Dashboard behavior, real Gemini AI, private Preview access, cost evidence and Production separation.

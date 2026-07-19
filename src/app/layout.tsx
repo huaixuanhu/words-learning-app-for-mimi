@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { SoundProvider } from "@/components/sound-provider";
 import { ThemeProvider } from "@/components/theme-provider";
+import { VocabularyDataProvider } from "@/components/vocabulary/use-vocabulary-data";
 import "./globals.css";
 
 const themeInitScript = `
@@ -40,7 +41,9 @@ export default function RootLayout({
       <body className="min-h-full font-sans antialiased">
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
         <ThemeProvider>
-          <SoundProvider>{children}</SoundProvider>
+          <SoundProvider>
+            <VocabularyDataProvider>{children}</VocabularyDataProvider>
+          </SoundProvider>
         </ThemeProvider>
       </body>
     </html>

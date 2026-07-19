@@ -868,19 +868,28 @@ export async function resolvePostgresDailyStudyToday(
   now = new Date().toISOString(),
 ) {
   assertDatabaseUuid(personId, "personId");
-  const before = await getPostgresVocabularyDataSnapshot(personId, now);
-
-  if (!before.people.some((person) => person.id === personId && person.isActive)) {
-    throw new Error(`Person not found: ${personId}`);
-  }
+  const queryable = getPostgresPool();
+  const before = await buildVocabularyDataSnapshot(
+    queryable,
+    { personId },
+    now,
+  );
 
   const provisional = resolveDailyStudyToday(before, now, { makePlanId: randomUUID });
+
+  if (provisional.data === before) {
+    return provisional;
+  }
 
   await withPostgresTransaction((client) =>
     insertResolvedDailyStudyRows(client, before, provisional.data, personId),
   );
 
-  const persisted = await getPostgresVocabularyDataSnapshot(personId, now);
+  const persisted = await buildVocabularyDataSnapshot(
+    queryable,
+    { personId },
+    now,
+  );
   return resolveDailyStudyToday(persisted, now, { makePlanId: randomUUID });
 }
 

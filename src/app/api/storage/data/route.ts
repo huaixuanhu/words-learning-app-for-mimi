@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { addServerTiming } from "@/lib/observability/server-timing";
 import { requireProductionBasicAuth } from "@/lib/security/production-basic-auth";
 import type { ReviewRating } from "@/lib/review/types";
 import {
@@ -282,6 +283,7 @@ function storageDataRuntimeDisabledResponse() {
 }
 
 export async function GET(request: NextRequest) {
+  const startedAt = Date.now();
   const authResponse = requireProductionBasicAuth(request);
 
   if (authResponse) {
@@ -297,28 +299,40 @@ export async function GET(request: NextRequest) {
   try {
     assertPostgresRuntime();
     const selectedPersonId = request.nextUrl.searchParams.get("selectedPersonId");
-    const data = await getPostgresVocabularyDataSnapshot(selectedPersonId);
+    const snapshotNow = new Date().toISOString();
+    const data = await getPostgresVocabularyDataSnapshot(selectedPersonId, snapshotNow);
+    const serverNow = new Date().toISOString();
 
-    return NextResponse.json({
-      ok: true,
-      status: "ready",
-      runtime: runtimePayload(),
-      data,
-    });
-  } catch (error) {
-    return NextResponse.json(
-      {
-        ok: false,
-        status: "error",
+    return addServerTiming(
+      NextResponse.json({
+        ok: true,
+        status: "ready",
         runtime: runtimePayload(),
-        error: error instanceof Error ? error.message : "Unknown storage data error",
-      },
-      { status: 500 },
+        serverNow,
+        data,
+      }),
+      "mimi_storage",
+      startedAt,
+    );
+  } catch (error) {
+    return addServerTiming(
+      NextResponse.json(
+        {
+          ok: false,
+          status: "error",
+          runtime: runtimePayload(),
+          error: error instanceof Error ? error.message : "Unknown storage data error",
+        },
+        { status: 500 },
+      ),
+      "mimi_storage",
+      startedAt,
     );
   }
 }
 
 export async function POST(request: NextRequest) {
+  const startedAt = Date.now();
   const authResponse = requireProductionBasicAuth(request);
 
   if (authResponse) {
@@ -542,23 +556,37 @@ export async function POST(request: NextRequest) {
         break;
     }
 
-    const data = await getPostgresVocabularyDataSnapshot(nextSelectedPersonId);
+    const snapshotNow = new Date().toISOString();
+    const data = await getPostgresVocabularyDataSnapshot(
+      nextSelectedPersonId,
+      snapshotNow,
+    );
+    const serverNow = new Date().toISOString();
 
-    return NextResponse.json({
-      ok: true,
-      status: "ready",
-      runtime: runtimePayload(),
-      data,
-    });
-  } catch (error) {
-    return NextResponse.json(
-      {
-        ok: false,
-        status: "error",
+    return addServerTiming(
+      NextResponse.json({
+        ok: true,
+        status: "ready",
         runtime: runtimePayload(),
-        error: error instanceof Error ? error.message : "Unknown storage mutation error",
-      },
-      { status: 400 },
+        serverNow,
+        data,
+      }),
+      "mimi_storage",
+      startedAt,
+    );
+  } catch (error) {
+    return addServerTiming(
+      NextResponse.json(
+        {
+          ok: false,
+          status: "error",
+          runtime: runtimePayload(),
+          error: error instanceof Error ? error.message : "Unknown storage mutation error",
+        },
+        { status: 400 },
+      ),
+      "mimi_storage",
+      startedAt,
     );
   }
 }

@@ -205,6 +205,9 @@ describe("/api/storage/data runtime contract", () => {
     const payload = await response.json();
 
     expect(response.status).toBe(200);
+    expect(response.headers.get("server-timing")).toMatch(
+      /^mimi_storage;dur=\d+$/,
+    );
     expect(payload).toMatchObject({
       ok: true,
       status: "ready",
@@ -213,7 +216,10 @@ describe("/api/storage/data runtime contract", () => {
       },
       data: fakeData,
     });
-    expect(repositoryMocks.getPostgresVocabularyDataSnapshot).toHaveBeenCalledWith(personId);
+    expect(repositoryMocks.getPostgresVocabularyDataSnapshot).toHaveBeenCalledWith(
+      personId,
+      expect.stringMatching(/^\d{4}-\d{2}-\d{2}T/),
+    );
   });
 
   it("routes an explicit start-fresh Track change", async () => {
@@ -292,6 +298,9 @@ describe("/api/storage/data runtime contract", () => {
     const payload = await response.json();
 
     expect(response.status).toBe(200);
+    expect(response.headers.get("server-timing")).toMatch(
+      /^mimi_storage;dur=\d+$/,
+    );
     expect(payload).toMatchObject({
       ok: true,
       status: "ready",

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { addServerTiming } from "@/lib/observability/server-timing";
 import { requireProductionBasicAuth } from "@/lib/security/production-basic-auth";
 import {
   readPostgresDailyStudyQueue,
@@ -348,6 +349,7 @@ function commandPersonId(command: unknown) {
 }
 
 export async function POST(request: NextRequest) {
+  const startedAt = Date.now();
   const authResponse = requireProductionBasicAuth(request);
 
   if (authResponse) {
@@ -414,24 +416,33 @@ export async function POST(request: NextRequest) {
         break;
     }
 
-    return NextResponse.json({
-      ok: true,
-      status: "ready",
-      runtime: runtimePayload(),
-      result,
-    });
+    return addServerTiming(
+      NextResponse.json({
+        ok: true,
+        status: "ready",
+        runtime: runtimePayload(),
+        serverNow: new Date().toISOString(),
+        result,
+      }),
+      "mimi_study",
+      startedAt,
+    );
   } catch (error) {
     const errorCode = getStudyPromptErrorCode(error);
 
-    return NextResponse.json(
-      {
-        ok: false,
-        status: "error",
-        runtime: runtimePayload(),
-        error: error instanceof Error ? error.message : "Unknown study command error",
-        ...(errorCode ? { errorCode } : {}),
-      },
-      { status: 400 },
+    return addServerTiming(
+      NextResponse.json(
+        {
+          ok: false,
+          status: "error",
+          runtime: runtimePayload(),
+          error: error instanceof Error ? error.message : "Unknown study command error",
+          ...(errorCode ? { errorCode } : {}),
+        },
+        { status: 400 },
+      ),
+      "mimi_study",
+      startedAt,
     );
   }
 }

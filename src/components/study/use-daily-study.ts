@@ -47,10 +47,16 @@ import {
 } from "@/lib/review/repository";
 import type { ReviewEvent, ReviewState } from "@/lib/review/types";
 import type { VocabularyData } from "@/lib/vocabulary/types";
+import {
+  applyRecordedReviewToClientSnapshot,
+  applyResolvedTodayToClientSnapshot,
+  applyRolledBackReviewToClientSnapshot,
+} from "@/lib/vocabulary/client-snapshot-updates";
 
 type StudyApiResponse<T> = Readonly<{
   ok: boolean;
   status: string;
+  serverNow?: string;
   result?: T;
   error?: string;
   errorCode?: StudyPromptErrorCode;
@@ -96,7 +102,11 @@ function id(prefix: string) {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
 }
 
-async function postStudy<T>(selectedPersonId: string, operation: unknown) {
+async function postStudy<T>(
+  selectedPersonId: string,
+  operation: unknown,
+  updateServerClock: (serverNow: string) => void,
+) {
   const response = await fetch("/api/study", {
     method: "POST",
     headers: {
@@ -115,6 +125,10 @@ async function postStudy<T>(selectedPersonId: string, operation: unknown) {
     }
 
     throw new Error(message);
+  }
+
+  if (payload.serverNow) {
+    updateServerClock(payload.serverNow);
   }
 
   return payload.result;
@@ -153,20 +167,62 @@ export function useDailyStudy() {
   const vocabulary = useVocabularyData();
   const [today, setToday] = useState<DailyStudyTodayResponse | null>(null);
   const [isTodayLoading, setIsTodayLoading] = useState(false);
-  const { data, storageRuntime, commit, refresh } = vocabulary;
+  const {
+    data,
+    storageRuntime,
+    commit,
+    revalidateAfterMutation,
+    getRuntimeNow,
+    updateServerClock,
+    updateClientSnapshot,
+  } = vocabulary;
 
   const resolveCurrent = useCallback(async () => {
     setIsTodayLoading(true);
 
     try {
       if (isPostgresClientStorageRuntime(storageRuntime)) {
-        const result = await postStudy<DailyStudyTodayResponse>(
-          data.selectedPersonId,
-          { type: "resolveToday" },
-        );
+        const runtimeNow = getRuntimeNow();
+        const localResolution = runtimeNow
+          ? resolveDailyStudyToday(data, runtimeNow)
+          : null;
 
-        setToday(result);
-        return { today: result, data };
+        if (localResolution?.data === data) {
+          setToday(localResolution.today);
+          return localResolution;
+        }
+
+        let requestedPersonId = data.selectedPersonId;
+
+        for (let attempt = 0; attempt < 3; attempt += 1) {
+          const result = await postStudy<DailyStudyTodayResponse>(
+            requestedPersonId,
+            { type: "resolveToday" },
+            updateServerClock,
+          );
+
+          if (result.personId !== requestedPersonId) {
+            throw new Error("The resolved study plan belongs to another learner");
+          }
+
+          const resolvedData = updateClientSnapshot(
+            (current) => applyResolvedTodayToClientSnapshot(current, result),
+            { broadcast: true },
+          );
+          const currentResolution = resolveDailyStudyToday(
+            resolvedData,
+            getRuntimeNow() ?? result.dayStartsAt,
+          );
+
+          if (currentResolution.data === resolvedData) {
+            setToday(currentResolution.today);
+            return currentResolution;
+          }
+
+          requestedPersonId = resolvedData.selectedPersonId;
+        }
+
+        throw new Error("The selected learner changed while preparing Study");
       }
 
       const resolved = resolveDailyStudyToday(data);
@@ -180,7 +236,14 @@ export function useDailyStudy() {
     } finally {
       setIsTodayLoading(false);
     }
-  }, [commit, data, storageRuntime]);
+  }, [
+    commit,
+    data,
+    getRuntimeNow,
+    storageRuntime,
+    updateClientSnapshot,
+    updateServerClock,
+  ]);
 
   const resolveToday = useCallback(async () => {
     const resolved = await resolveCurrent();
@@ -219,10 +282,14 @@ export function useDailyStudy() {
       };
 
       if (isPostgresClientStorageRuntime(storageRuntime)) {
-        const page = await postStudy<Omit<DailyStudyQueueResult, "plan">>(data.selectedPersonId, {
-          type: "readQueue",
-          request,
-        });
+        const page = await postStudy<Omit<DailyStudyQueueResult, "plan">>(
+          data.selectedPersonId,
+          {
+            type: "readQueue",
+            request,
+          },
+          updateServerClock,
+        );
 
         return {
           ...page,
@@ -257,18 +324,22 @@ export function useDailyStudy() {
         },
       };
     },
-    [data.selectedPersonId, resolveCurrent, storageRuntime],
+    [data.selectedPersonId, resolveCurrent, storageRuntime, updateServerClock],
   );
 
   const updateTodayGoals = useCallback(
     async (command: UpdateTodayGoalsCommand) => {
       if (isPostgresClientStorageRuntime(storageRuntime)) {
-        const result = await postStudy<DailyStudyTodayResponse>(data.selectedPersonId, {
-          type: "updateTodayGoals",
-          command,
-        });
+        const result = await postStudy<DailyStudyTodayResponse>(
+          data.selectedPersonId,
+          {
+            type: "updateTodayGoals",
+            command,
+          },
+          updateServerClock,
+        );
         setToday(result);
-        await refresh();
+        await revalidateAfterMutation({ broadcast: true });
         return result;
       }
 
@@ -278,7 +349,7 @@ export function useDailyStudy() {
       setToday(resolved.today);
       return resolved.today;
     },
-    [commit, data, refresh, storageRuntime],
+    [commit, data, revalidateAfterMutation, storageRuntime, updateServerClock],
   );
 
   const updateDefaults = useCallback(
@@ -288,12 +359,16 @@ export function useDailyStudy() {
       goals: readonly UpdateDefaultGoalsCommand[];
     }) => {
       if (isPostgresClientStorageRuntime(storageRuntime)) {
-        const result = await postStudy<DailyStudyTodayResponse>(data.selectedPersonId, {
-          type: "updateDefaults",
-          input,
-        });
+        const result = await postStudy<DailyStudyTodayResponse>(
+          data.selectedPersonId,
+          {
+            type: "updateDefaults",
+            input,
+          },
+          updateServerClock,
+        );
         setToday(result);
-        await refresh();
+        await revalidateAfterMutation({ broadcast: true });
         return result;
       }
 
@@ -303,16 +378,20 @@ export function useDailyStudy() {
       setToday(resolved.today);
       return resolved.today;
     },
-    [commit, data, refresh, storageRuntime],
+    [commit, data, revalidateAfterMutation, storageRuntime, updateServerClock],
   );
 
   const refreshPrompt = useCallback(
     async (command: RefreshStudyPromptCommand): Promise<RefreshedStudyPrompt> => {
       if (isPostgresClientStorageRuntime(storageRuntime)) {
-        return postStudy<RefreshedStudyPrompt>(data.selectedPersonId, {
-          type: "refreshPrompt",
-          command,
-        });
+        return postStudy<RefreshedStudyPrompt>(
+          data.selectedPersonId,
+          {
+            type: "refreshPrompt",
+            command,
+          },
+          updateServerClock,
+        );
       }
 
       const now = new Date().toISOString();
@@ -362,18 +441,35 @@ export function useDailyStudy() {
 
       return refreshLocalPromptToken(command, now);
     },
-    [data, storageRuntime],
+    [data, storageRuntime, updateServerClock],
   );
 
   const recordRating = useCallback(
     async (command: RecordStudyRatingCommand) => {
       if (isPostgresClientStorageRuntime(storageRuntime)) {
-        const result = await postStudy<DailyStudyRatingResult>(data.selectedPersonId, {
-          type: "recordRating",
-          command,
-        });
-        await refresh();
-        return parseDailyStudyRatingResult(result);
+        const result = await postStudy<DailyStudyRatingResult>(
+          data.selectedPersonId,
+          {
+            type: "recordRating",
+            command,
+          },
+          updateServerClock,
+        );
+        const parsed = parseDailyStudyRatingResult(result);
+        const nextData = updateClientSnapshot(
+          (current) => applyRecordedReviewToClientSnapshot(current, parsed),
+          { broadcast: true },
+        );
+        const resolved = resolveDailyStudyToday(
+          nextData,
+          getRuntimeNow() ?? parsed.event.reviewedAt,
+        );
+
+        if (resolved.data === nextData) {
+          setToday(resolved.today);
+        }
+
+        return parsed;
       }
 
       const replay = readLocalCommandReplay(
@@ -495,7 +591,14 @@ export function useDailyStudy() {
       );
       return result;
     },
-    [commit, data, refresh, storageRuntime],
+    [
+      commit,
+      data,
+      getRuntimeNow,
+      storageRuntime,
+      updateClientSnapshot,
+      updateServerClock,
+    ],
   );
 
   const rollbackRating = useCallback(
@@ -504,8 +607,21 @@ export function useDailyStudy() {
         const result = await postStudy<Omit<DailyStudyRollbackResult, "data">>(
           data.selectedPersonId,
           { type: "rollbackRating", command },
+          updateServerClock,
         );
-        await refresh();
+        const nextData = updateClientSnapshot(
+          (current) => applyRolledBackReviewToClientSnapshot(current, result),
+          { broadcast: true },
+        );
+        const resolved = resolveDailyStudyToday(
+          nextData,
+          getRuntimeNow() ?? result.event.reviewedAt,
+        );
+
+        if (resolved.data === nextData) {
+          setToday(resolved.today);
+        }
+
         return result;
       }
 
@@ -586,7 +702,14 @@ export function useDailyStudy() {
         data: rollback.data,
       };
     },
-    [commit, data, refresh, storageRuntime],
+    [
+      commit,
+      data,
+      getRuntimeNow,
+      storageRuntime,
+      updateClientSnapshot,
+      updateServerClock,
+    ],
   );
 
   const resetToday = useCallback(
@@ -596,9 +719,13 @@ export function useDailyStudy() {
           resetEventsCount: number;
           resetItemsCount: number;
           today: DailyStudyTodayResponse;
-        }>(data.selectedPersonId, { type: "resetToday", command });
+        }>(
+          data.selectedPersonId,
+          { type: "resetToday", command },
+          updateServerClock,
+        );
         setToday(result.today);
-        await refresh();
+        await revalidateAfterMutation({ broadcast: true });
         return result;
       }
 
@@ -641,7 +768,7 @@ export function useDailyStudy() {
       setToday(resolved.today);
       return { ...result, today: resolved.today };
     },
-    [commit, data, refresh, storageRuntime],
+    [commit, data, revalidateAfterMutation, storageRuntime, updateServerClock],
   );
 
   return {

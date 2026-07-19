@@ -268,6 +268,10 @@ Stop the affected remote slice and preserve the last safe state if:
 - The exact guarded Staging inspector reconfirmed Schema 6, 12 expected tables, 8 expected constraints, 0 invalid profile state/event, 0 submitted AI run, and 0 active provider call. The older `db:inspect:dev` / `db:inspect:schema5:dev` scripts remain valid only for their former Schema 3 / 5 targets and are not used as Schema 6 gates.
 - Tier 3 governance preflight, tracked-diff secret-shape checks, `git diff --check`, protected Preview access, runtime-log inspection, and the full responsive browser matrix passed.
 
+## Post-completion Derived Follow-up
+
+V2-8-2 的远程证据与完成状态保持不变。2026-07-19 的真实使用反馈随后派生出 `plan_docs/PLAN_V2_STAGE8_2_1_PERFORMANCE_STABILISATION.md`，在 V2-8-3 前只优化 branch-V2 的 runtime data flow（运行数据流）与未来 Vercel Sydney 区域配置。该子阶段不回移或重新部署 V1，不修改本文件已完成的 Staging / Preview 数据、凭证、AI、Motion 或验收证据；受保护 Preview 只有在另行批准 redeployment 后才会获得新性能代码与 `syd1` placement。
+
 ## V2-8-3 Handoff
 
 V2-8-2 is complete only when the protected Preview runs the full V2 product with AI and can remain available for human acceptance. V2-8-3 then owns this sequence:

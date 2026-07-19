@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## 2026-07-19 13:20 AEST
+
+- Completed the documentation-first `V2-8-2.1` V2-only runtime performance stabilisation. V1 remains unchanged and was not rebuilt, backported or redeployed.
+- Moved browser workspace ownership into one persistent root Provider, coalesced concurrent reads, retained the last accepted Postgres snapshot on transient/truncated reads, filtered cross-tab events, and removed the same-tab full-GET loop after writes.
+- Serialized ordinary storage writes, applied rating/rollback deltas immediately, protected those deltas with an active-mutation patch journal, and made revalidation wait for a stable mutation queue. Only accepted snapshots may update the selected learner.
+- Reused existing Daily Plans locally with a server-owned clock anchor; sleep/device-clock drift returns to the server. Delayed older-plan or old-learner responses are merged before visible Today is derived, while the Postgres resolver skips empty transactions and second snapshots for an existing day.
+- Added one non-looping cross-tab signal for broad Study and formal AI mutations, privacy-safe `Server-Timing` headers, and a root Vercel `syd1` contract for the next approved V2 deployment.
+- Added focused Provider, concurrency, delayed-response, clock, resolver, timing, route and region tests. Full Vitest passes 71 files / 403 tests with the existing Postgres integration file/test skipped; lint, typecheck, all three backup dry-runs, Production build and diff checks pass.
+- Isolated 390px/1280px Production-build browser verification used a repository Schema 6 fixture and browser-only local response stub. Ten Home/Library transitions produced one bootstrap data GET, no transition GET or repeated Loading state, no overflow/overlay/console issue, and an eight-transition warm median of about 64.5ms.
+- The current protected Preview still runs the accepted V2-8-2 deployment. `syd1` placement and real Preview latency require a later approved deployment; Production, Neon `main`, credentials, AI/provider use, Schema, backup, Motion and reduced-motion were untouched.
+- Reason: remove the repeated network waits reported by the user and Mimi before V2 replaces V1, while keeping data and release boundaries intact.
+
 ## 2026-07-19 00:45 AEST
 
 - Completed `V2-8-2` Staging / protected Preview rehearsal under its approved non-Production scope. Added the code-owned `v2-8-2-preview` provider gate and guarded Staging migration/inspection/seed tooling; Production and ordinary Preview branches remain fail closed.

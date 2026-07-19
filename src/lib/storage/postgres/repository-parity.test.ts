@@ -92,4 +92,18 @@ describe("Postgres repository parity source", () => {
       ratingSource.indexOf("for update"),
     );
   });
+
+  it("uses the selected-person Daily Study snapshot and skips empty persistence work", () => {
+    const resolverSource = repositorySource.slice(
+      repositorySource.indexOf("export async function resolvePostgresDailyStudyToday"),
+      repositorySource.indexOf("function assertCursorBinding"),
+    );
+
+    expect(resolverSource).toContain("buildVocabularyDataSnapshot(");
+    expect(resolverSource).toContain("if (provisional.data === before)");
+    expect(resolverSource.indexOf("if (provisional.data === before)")).toBeLessThan(
+      resolverSource.indexOf("withPostgresTransaction"),
+    );
+    expect(resolverSource).not.toContain("getPostgresVocabularyDataSnapshot");
+  });
 });

@@ -87,6 +87,7 @@ describe("daily study runtime engine", () => {
 
     expect(first.data.dailyStudyPlans).toHaveLength(2);
     expect(second.data.dailyStudyPlans).toEqual(first.data.dailyStudyPlans);
+    expect(second.data).toBe(first.data);
     expect(first.today.tracks.recognition).toMatchObject({
       status: "available",
       metrics: {

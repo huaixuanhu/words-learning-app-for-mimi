@@ -326,5 +326,4 @@ export function writeVocabularyData(data: VocabularyData) {
   }
 
   window.localStorage.setItem(VOCABULARY_STORAGE_KEY, JSON.stringify(data));
-  window.dispatchEvent(new CustomEvent("mimi-vocabulary-data-changed"));
 }

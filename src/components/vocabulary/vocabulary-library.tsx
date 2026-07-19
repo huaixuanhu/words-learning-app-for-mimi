@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Archive, ArrowRightLeft, Download, RotateCcw, Save, Search, Sparkles, Trash2, Upload } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import type {
   ImportBatch,
@@ -145,7 +145,17 @@ function getBatchLabel(batch: ImportBatch) {
 }
 
 export function VocabularyLibrary() {
-  const { data, isLoaded, storageRuntime, commit, refresh } = useVocabularyData();
+  const {
+    data,
+    isLoaded,
+    storageRuntime,
+    commit,
+    revalidateAfterMutation,
+  } = useVocabularyData();
+  const refreshAfterFormalMutation = useCallback(
+    () => revalidateAfterMutation({ broadcast: true }),
+    [revalidateAfterMutation],
+  );
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<LibraryFilter>("all");
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -841,7 +851,7 @@ export function VocabularyLibrary() {
           !isPostgresClientStorageRuntime(storageRuntime)
         }
         formalRouteEnabled={isPostgresClientStorageRuntime(storageRuntime)}
-        refresh={refresh}
+        refresh={refreshAfterFormalMutation}
         commit={commit}
       />
 

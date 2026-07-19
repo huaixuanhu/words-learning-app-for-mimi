@@ -96,9 +96,13 @@ describe("/api/study", () => {
     const payload = await response.json();
 
     expect(response.status).toBe(200);
+    expect(response.headers.get("server-timing")).toMatch(
+      /^mimi_study;dur=\d+$/,
+    );
     expect(payload).toMatchObject({
       ok: true,
       status: "ready",
+      serverNow: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T/),
       result: { personId, localDate: "2026-07-14" },
     });
     expect(serviceMocks.resolvePostgresDailyStudyToday).toHaveBeenCalledWith(
