@@ -7,9 +7,19 @@ import type { AiGenerationAvailability } from "./types";
 
 type AiRuntimeEnvironment = Readonly<Record<string, string | undefined>>;
 
-export const AI_PROVIDER_ACTIVATION_STATE = "v2-7b-2-local-smoke" as const;
 export const AI_STAGE7B2_EXECUTION_SCOPE = "v2-7b-2-local-smoke" as const;
 export const AI_STAGE7B2_MAX_PROVIDER_ATTEMPTS = 2 as const;
+export const AI_STAGE8_2_EXECUTION_SCOPE = "v2-8-2-preview" as const;
+export const AI_STAGE8_2_ROLLOUT_MAX_PROVIDER_ATTEMPTS = 4 as const;
+export const AI_STAGE8_2_ROLLOUT_MAX_PROVIDER_ATTEMPTS_ENV_VAR =
+  "MIMI_AI_PREVIEW_ROLLOUT_MAX_PROVIDER_ATTEMPTS" as const;
+
+export type AiProviderAttemptBoundary = Readonly<{
+  maximumProviderAttempts: number;
+  reason:
+    | "stage7b2_smoke_attempt_limit"
+    | "stage8_2_preview_rollout_attempt_limit";
+}>;
 
 export type AiRuntimeHealth = Readonly<{
   enabled: boolean;
@@ -18,6 +28,15 @@ export type AiRuntimeHealth = Readonly<{
 
 function clean(value: string | undefined) {
   return value?.trim() ?? "";
+}
+
+function hasServerStudyTokenSecret(env: AiRuntimeEnvironment) {
+  return new TextEncoder().encode(clean(env.MIMI_STUDY_TOKEN_SECRET)).byteLength >= 32;
+}
+
+function hasValidPreviewRolloutCeiling(env: AiRuntimeEnvironment) {
+  const value = clean(env[AI_STAGE8_2_ROLLOUT_MAX_PROVIDER_ATTEMPTS_ENV_VAR]);
+  return value === "" || value === String(AI_STAGE8_2_ROLLOUT_MAX_PROVIDER_ATTEMPTS);
 }
 
 export function isStage7b2LocalSmokeConfigured(env: AiRuntimeEnvironment) {
@@ -45,6 +64,35 @@ export function isStage7b2LocalSmokeRuntime(env: AiRuntimeEnvironment) {
   );
 }
 
+export function isStage8_2ProtectedPreviewConfigured(env: AiRuntimeEnvironment) {
+  return (
+    clean(env.MIMI_AI_EXECUTION_SCOPE) === AI_STAGE8_2_EXECUTION_SCOPE &&
+    env.MIMI_AI_RUNTIME_ENABLED === "true" &&
+    env.MIMI_AI_ACCOUNTING_READY === "true" &&
+    env.MIMI_AI_SCHEMA6_READY === "true" &&
+    env.MIMI_STORAGE_RUNTIME === "postgres-preview" &&
+    env.STAGE5F_DATABASE_TARGET === "preview" &&
+    env.MIMI_V2_8_2_STAGING_TARGET_CONFIRMED === "true" &&
+    env.MIMI_V2_8_2_PREVIEW_PROTECTED_CONFIRMED === "true" &&
+    env.MIMI_AI_AUTH_KEY_TYPE_CONFIRMED === "auth-key" &&
+    env.MIMI_AI_PROJECT_LOGGING_DISABLED_CONFIRMED === "true" &&
+    Boolean(clean(env.GEMINI_API_KEY)) &&
+    hasServerStudyTokenSecret(env) &&
+    hasValidPreviewRolloutCeiling(env) &&
+    clean(env.VERCEL) === "1" &&
+    clean(env.VERCEL_ENV) === "preview" &&
+    clean(env.VERCEL_GIT_COMMIT_REF) === "V2" &&
+    env.NODE_ENV !== "test"
+  );
+}
+
+export function isStage8_2ProtectedPreviewRuntime(env: AiRuntimeEnvironment) {
+  return (
+    isStage8_2ProtectedPreviewConfigured(env) &&
+    env.MIMI_AI_KILL_SWITCH !== "true"
+  );
+}
+
 export function isStage7b2LoopbackRequest(request: Request) {
   try {
     const hostname = new URL(request.url).hostname.toLocaleLowerCase("en-US");
@@ -59,6 +107,52 @@ export function canRunStage7b2FormalRoute(
   env: AiRuntimeEnvironment = process.env,
 ) {
   return isStage7b2LocalSmokeConfigured(env) && isStage7b2LoopbackRequest(request);
+}
+
+export function canRunStage8_2ProtectedPreviewRoute(
+  request: Request,
+  env: AiRuntimeEnvironment = process.env,
+) {
+  try {
+    return (
+      isStage8_2ProtectedPreviewConfigured(env) &&
+      new URL(request.url).protocol === "https:"
+    );
+  } catch {
+    return false;
+  }
+}
+
+export function canRunFormalAiRoute(
+  request: Request,
+  env: AiRuntimeEnvironment = process.env,
+) {
+  return (
+    canRunStage7b2FormalRoute(request, env) ||
+    canRunStage8_2ProtectedPreviewRoute(request, env)
+  );
+}
+
+export function resolveAiProviderAttemptBoundary(
+  env: AiRuntimeEnvironment = process.env,
+): AiProviderAttemptBoundary | undefined {
+  if (isStage7b2LocalSmokeConfigured(env)) {
+    return {
+      maximumProviderAttempts: AI_STAGE7B2_MAX_PROVIDER_ATTEMPTS,
+      reason: "stage7b2_smoke_attempt_limit",
+    };
+  }
+  if (
+    isStage8_2ProtectedPreviewConfigured(env) &&
+    clean(env[AI_STAGE8_2_ROLLOUT_MAX_PROVIDER_ATTEMPTS_ENV_VAR]) ===
+      String(AI_STAGE8_2_ROLLOUT_MAX_PROVIDER_ATTEMPTS)
+  ) {
+    return {
+      maximumProviderAttempts: AI_STAGE8_2_ROLLOUT_MAX_PROVIDER_ATTEMPTS,
+      reason: "stage8_2_preview_rollout_attempt_limit",
+    };
+  }
+  return undefined;
 }
 
 export function resolveAiRuntimeHealth(
@@ -76,7 +170,11 @@ export function resolveAiRuntimeHealth(
     quotaAvailable: env.MIMI_AI_QUOTA_AVAILABLE !== "false",
   });
 
-  if (availability.status === "available" && !isStage7b2LocalSmokeRuntime(env)) {
+  if (
+    availability.status === "available" &&
+    !isStage7b2LocalSmokeRuntime(env) &&
+    !isStage8_2ProtectedPreviewRuntime(env)
+  ) {
     return {
       enabled,
       availability: {

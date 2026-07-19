@@ -35,6 +35,11 @@
     "v2:7b2:provider:proof": "dotenv -e .env.v2-7b-2.local -- node scripts/v2-stage7b2-provider-smoke.mjs proof --i-confirm-two-provider-attempts",
     "v2:7b2:provider:kill-switch": "dotenv -e .env.v2-7b-2.local -- node scripts/v2-stage7b2-provider-smoke.mjs kill-switch --i-confirm-kill-switch-probe",
     "v2:7b2:start": "dotenv -e .env.v2-7b-2.local -- next start -H 127.0.0.1 -p 3001",
+    "v2:8-2:db:inventory": "node scripts/v2-stage8-2-db.mjs inventory",
+    "v2:8-2:db:migrate": "node scripts/v2-stage8-2-db.mjs migrate --i-confirm-v2-8-2-migration",
+    "v2:8-2:db:inspect": "node scripts/v2-stage8-2-db.mjs inspect-schema6",
+    "v2:8-2:db:ai-evidence": "node scripts/v2-stage8-2-db.mjs ai-evidence",
+    "v2:8-2:db:seed-preview": "node scripts/v2-stage8-2-db.mjs seed-preview --i-confirm-v2-8-2-synthetic-seed",
     "db:inspect:schema5:prod": "STAGE6B_DATABASE_TARGET=production MIMI_PRODUCTION_DATABASE_ACTION=inspect VERCEL_ENV=production node scripts/inspect-database-schema5-production.mjs --i-confirm-production-read",
     "governance:preflight": "python3 governance/preflight.py --tier 3 --strict-side-effects --require-skill-marker"
   },

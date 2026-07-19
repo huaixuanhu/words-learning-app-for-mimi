@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## 2026-07-19 00:45 AEST
+
+- Completed `V2-8-2` Staging / protected Preview rehearsal under its approved non-Production scope. Added the code-owned `v2-8-2-preview` provider gate and guarded Staging migration/inspection/seed tooling; Production and ordinary Preview branches remain fail closed.
+- Proved Schema 5 → 6, Reset → 5, and a second forward migration on a temporary child of `staging`, deleted the child, retained the named no-compute Schema 5 recovery checkpoint, and migrated long-lived non-Production `staging` to Schema 6 with 12 expected tables and 8 expected constraints.
+- Deployed complete V2 as Preview deployment `dpl_FH1TAyEwkcad4qXbhAbDQdujhHkP`, protected it with Vercel Authentication, bound the fixed acceptance alias, and enabled full UI writes only for branch `V2`. Preview uses separate database, study-token and restricted Gemini credentials; no bearer link or secret is stored in the repository.
+- Exercised free Daily Plan goals, Recognition failed-anchor recovery, Space/Arrow/Enter controls, Active `Say it` / `Spell it` / `Dictation`, independent Dashboard Actual/FSRS views, both reset gates, editable/accepted Gemini enrichment, AI candidate addition, exact-span context explanation, duplicate protection and Backup counts against named synthetic data.
+- Final Staging state is 1 synthetic person, 5 entries, 4 Review states, 5 Review events, 1 accepted AI draft and 2 context Cache rows. Final AI ledger is 3 successful `gemini-3.1-flash-lite` attempts, 1,138 input + 329 output + 0 thinking = 1,467 tokens, `US$0.000777`, 0 submitted runs and 0 active calls.
+- Passed protected health/access checks, Kill Switch and Cache proof, zero error-level runtime logs, and true device-emulation checks at 320, 375, 390, 768, 820, 1023, 1024 and 1280 px. Mobile navigation ends and desktop navigation begins exactly at 1024 px; accepted Motion/reduced-motion code was not changed.
+- Final local validation passed ESLint, TypeScript, 64 test files / 381 tests with the existing Postgres integration file/test skipped, all three backup dry-runs, Next.js Production build, the guarded Schema 6 Staging inspection, Tier 3 governance preflight, secret-shape checks and `git diff --check`.
+- Production V1, Neon `main`, Production data/secrets/domain and Schema 5 remain unchanged. Protected Preview stays fully AI-enabled for user/Mimi acceptance; V2-8-3 separately owns Production backup, migration, deployment, verification and eventual Preview-key revocation.
+- Reason: run the complete V2 with real provider and persistent synthetic data in a protected non-Production environment before any Production cutover.
+
 ## 2026-07-18 21:58 AEST
 
 - Completed the documentation-first `V2-8-1.1` Learner-facing Copy Audit before any remote rehearsal. Added a derived child plan and synchronized the V2 master plan, Architecture, README, AGENTS, and governance record.

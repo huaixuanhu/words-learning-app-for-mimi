@@ -35,11 +35,12 @@ Consumer / next stage:
 - `plan_docs/PLAN_V2_STAGE7B_2_NONPRODUCTION_PROVIDER_PROOF.md`
 - `plan_docs/PLAN_V2_STAGE8_1_DASHBOARD_INSIGHTS.md`
 - `plan_docs/PLAN_V2_STAGE8_1_1_LEARNER_COPY_AUDIT.md`
+- `plan_docs/PLAN_V2_STAGE8_2_STAGING_PREVIEW_RELEASE_REHEARSAL.md`
 - Future derived V2 child plans created in the order defined by this document.
 - `plan_docs/PLAN_VERSION_HOLD_MULTI_USER_CONFIDENTIAL_ISOLATION.md`
 
 Document nature:
-This is the canonical V2 product and engineering master plan. It is derived from the completed V1 plan and current Production architecture. V2-1 has an isolated executable contract; V2-2 / 2-B have bounded local AI quality evidence; V2-3 has implemented the local/application Schema Version 6 and backup parity; V2-3.1 and V2-4 have implemented the bounded local Review-interaction and mobile/copy layers; V2-5 / 5.1 have connected daily plans and repaired cross-day scheduling; V2-6 has implemented the independent Active practice engine. V2-7A completed the browser-local fixture product flow and dormant safety layer, V2-7B-1 completed provider-closed formal orchestration, and V2-7B-2 completed one disposable non-Production provider/accounting proof. V2-8-1 completed the source-backed local Dashboard Insights and responsive acceptance slice. V2-8-1.1 completed the local learner-facing copy audit before any remote rehearsal. The first unused V2-7B-2 temporary key appeared once in browser-structure output and was revoked before any call; the replacement key completed the proof. The temporary target and both Auth Keys were deleted; no Production provider route or V2 deployment has been performed.
+This is the canonical V2 product and engineering master plan. It is derived from the completed V1 plan and current Production architecture. V2-1 has an isolated executable contract; V2-2 / 2-B have bounded local AI quality evidence; V2-3 has implemented the local/application Schema Version 6 and backup parity; V2-3.1 and V2-4 have implemented the bounded local Review-interaction and mobile/copy layers; V2-5 / 5.1 have connected daily plans and repaired cross-day scheduling; V2-6 has implemented the independent Active practice engine. V2-7A completed the browser-local fixture product flow and dormant safety layer, V2-7B-1 completed provider-closed formal orchestration, and V2-7B-2 completed one disposable non-Production provider/accounting proof. V2-8-1 completed the source-backed local Dashboard Insights and responsive acceptance slice, and V2-8-1.1 completed the learner-facing copy audit. V2-8-2 then migrated long-lived `staging` to Schema 6 and deployed the complete V2 with real Gemini behind protected Preview-only access. The live Production V1 program, Neon `main`, Production credentials, and Production Schema 5 data remain unchanged.
 
 Current operational tier: Tier 3.
 
@@ -47,7 +48,7 @@ Target capability tier: Tier 3. V2 adds a bounded paid AI API（人工智能接�
 
 Working tier: Tier 3.
 
-Status: V2-0 through V2-8-1.1 are complete under their approved local/disposable scopes. The accepted names are `V2-7B-1` and `V2-7B-2`. Schema Version 6 and backup version 3 are implemented on branch `V2`; `0003_v2_schema6_data_model.sql` was executed once on the deleted schema-only proof branch and remains unexecuted on long-term `staging` and Production. The dedicated server study-token secret is intentionally unconfigured. The live V1 database remains Schema Version 5. `V2-8-1` Dashboard Insights passed its local responsive and accessibility boundary under `plan_docs/PLAN_V2_STAGE8_1_DASHBOARD_INSIGHTS.md`; `V2-8-1.1` then passed its learner-facing copy contract and 320–1280 px local browser matrix under `plan_docs/PLAN_V2_STAGE8_1_1_LEARNER_COPY_AUDIT.md`. `V2-8-2` remains unstarted. No Production migration, Production external-service route, Vercel credential change, or deployment action has been performed.
+Status: V2-0 through V2-8-2 are complete within their approved scopes. The accepted names are `V2-7B-1` and `V2-7B-2`. Branch `V2`, local/application snapshots, and long-lived non-Production `staging` now use Schema Version 6 / backup version 3. A retained `staging` Schema 5 recovery checkpoint remains available for the next cutover stage. The protected `V2` Preview has its own study-token secret, Gemini Auth Key, `postgres-preview` target, full UI writes, Vercel Authentication, global cost controls, and Kill Switch. Its final accepted Gemini ledger is 3 successful synthetic attempts, 1,467 tokens, and `US$0.000777`. Production AI remains closed; the live V1 database stays Schema Version 5. `V2-8-3` is the next stage and separately owns Production backup, migration, secrets, deployment, verification, and rollback readiness.
 
 ## Scope
 
@@ -85,7 +86,7 @@ Status: V2-0 through V2-8-1.1 are complete under their approved local/disposable
 - The current private trusted group remains behind Production Basic Auth（基础认证）.
 - `person_id` remains a convenience and data-separation field, not an authorization identity. V2-7A has no per-person AI ceiling; the shared global request, token, cost, concurrency, Cache, and Kill Switch controls are the security and cost boundary.
 - Any paid provider, credential, environment variable, external API, remote migration, or Production action requires a new bounded child plan and explicit human approval.
-- Preview must not receive the Production AI credential. AI must be disabled or use a non-billable local fixture until a separately approved non-production test route exists.
+- Preview must never receive the Production AI credential. The approved V2-8-2 route uses a separate Preview-only Auth Key behind Vercel Authentication, exact branch/runtime checks, global accounting, Cache, Idempotency, and Kill Switch.
 - Only the minimum lexical context may be sent externally: word / phrase, selected meanings, selected examples, and lexical candidates. Names, `person_id`, full study history, private notes, credentials, and unrelated vocabulary must not be sent.
 - Paid Gemini terms must be stated accurately. When the API call is made through a Cloud Project linked to an active billing account, paid prompts and responses are not used to improve Google products; Google may record prompts and responses for a limited, unspecified period for prohibited-use detection, abuse prevention, and required legal / regulatory disclosure. Usage and technical metadata are handled separately. This limited retention is accepted when disclosed; the product must not claim Zero Retention（零保留）.
 - Before any schema migration or destructive Production change, create and verify the backup required by the accepted V1 lifecycle policy.
@@ -461,7 +462,7 @@ Checks include no horizontal scroll, reachable primary actions, readable charts,
 
 ## V2 Data Model
 
-V2-3 locks Schema Version 6 as the current local/application snapshot version and JSON backup version 3 as the current wrapper. Versions 1–5 migrate forward locally. Existing executed migrations remain immutable; `db/migrations/0003_v2_schema6_data_model.sql` is the new forward-only draft and has not been applied to any remote environment.
+V2-3 locks Schema Version 6 as the current local/application snapshot version and JSON backup version 3 as the current wrapper. Versions 1–5 migrate forward locally. Existing executed migrations remain immutable; `db/migrations/0003_v2_schema6_data_model.sql` is the forward-only migration now applied to deleted non-Production proof/rehearsal children and long-lived `staging`, while Production `main` remains Schema Version 5.
 
 Candidate domains:
 
@@ -627,8 +628,11 @@ Status: V2-7A completed locally on 2026-07-16. Canonical child plan and outcome:
 
 - `V2-8-1` has finished compact symmetric Track cards, source-backed Actual and FSRS-estimated visualizations, and the local mobile / accessibility matrix. Its canonical completed child plan is `plan_docs/PLAN_V2_STAGE8_1_DASHBOARD_INSIGHTS.md`.
 - `V2-8-1.1` has finished the local learner-facing copy audit. It removes redundant, atmospheric, and developer-facing visible text while preserving safety, AI disclosure, Actual / estimate, metric, destructive-action, error, keyboard, and accessibility meaning. Its canonical completed child plan is `plan_docs/PLAN_V2_STAGE8_1_1_LEARNER_COPY_AUDIT.md`.
-- `V2-8-2` will own separately approved Staging migration / rollback rehearsal plus Preview runtime, AI route, cost-limit, and no-data-crossover acceptance.
+- `V2-8-2` completed on 2026-07-19. Its canonical child plan is `plan_docs/PLAN_V2_STAGE8_2_STAGING_PREVIEW_RELEASE_REHEARSAL.md`; long-lived `staging` is Schema 6, a named Schema 5 recovery checkpoint is retained, and the protected Preview runs complete Daily Learning, Active, Dashboard and real Gemini AI with branch-specific non-Production secrets, exact access checks and global cost controls.
+- Final V2-8-2 evidence is 1 synthetic person, 5 vocabulary entries, 4 independent Review states, 5 review events, 3 successful Gemini provider attempts, 1,467 tokens, `US$0.000777`, no submitted/in-flight call, no runtime error-level log, and a passing 320–1280 px responsive matrix. Production remained untouched.
+- After V2-8-2 acceptance, the protected Preview remains fully AI-enabled for the user and Mimi. Its Preview Gemini key is revoked only after V2-8-3 Production is stable; the existing global 300-attempt, token, US$0.50/day, US$2/month, concurrency, Cache, Idempotency and Kill Switch controls remain active during this acceptance window.
 - `V2-8-3` will own separately approved Production backup, migration, deployment, authenticated smoke, schema, data, log, and budget acceptance.
+- V2-8-3 replaces the deployed V1 program and upgrades Neon `main` from Schema 5 to Schema 6 without deleting existing vocabulary, review history, settings or user data. It must retain an independent Production backup, a Schema 5 recovery point, and the previous V1 Vercel Deployment until V2 stability is accepted.
 - Approval of one V2-8 slice does not authorize the later remote slice.
 
 ## Validation Plan
@@ -695,7 +699,7 @@ Stop the relevant child stage if:
 
 - current code or provider evidence differs from this plan's assumed baseline;
 - a model, price, lifecycle, term, retention statement, or provider limit cannot be verified from current official documentation;
-- an AI credential would be exposed to the browser or Preview;
+- an AI credential would be exposed to the browser bundle, an unprotected Preview, or an environment outside its exact server-only scope;
 - global quota reservation can be bypassed by person switching, replay, concurrency, or direct provider access;
 - a migration would reinterpret Active data as Recognition history or reuse Recognition parameters;
 - a backup cannot represent the new state before a destructive or Production change;

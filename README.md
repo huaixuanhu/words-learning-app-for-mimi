@@ -19,13 +19,13 @@
 - **ADHD-friendly 学习体验**：把任务拆小、保持明确反馈，并允许保守地回退和重新开始。
 - **长期数据可控**：正式学习数据保存在云端数据库，同时保留导出和备份能力。
 
-当前 V1 已作为受保护的私人应用上线。V2 的文档基线已在 `V2` 分支确认，主线包括每日学习分区、独立 Active 练习、手机端改造、学习情况可视化和第一代付费 AI enrichment（AI 词汇补充）。Stage 1–4 已完成指标契约、AI 质量证据、Schema Version 6（数据结构第 6 版）、Review 交互和手机基础界面。Stage 5/5.1 已在本地接通每日计划并修复同日过关与跨日调度不匹配：每个词条当天只由第一次作答决定跨日 FSRS，后续尝试保留为学习记录；首次失败或新词直接选择“模糊记得”会在下一本地日再次检查。Stage 6 已在本地实现独立 Active `Review` / `New Words`、`Say it`、`Spell it`、`Dictation`、浏览器读音、同场重练和 Track 从头开始操作，并沿用同一首次作答调度规则。Stage 7A 已接通明确标为 `Local preview · No AI request was made.` 的本地固定 AI suggestions 与例句词汇解释，可编辑、拒绝、接受并手动加入学习。`V2-7B-1` 已完成正式服务器编排、Disclosure、Cache、Idempotency、费用边界和正式保存操作；`V2-7B-2` 已在一次性非生产环境中完成两次合成 Gemini 请求、Replay/Cache、第三次硬上限和 Kill Switch 证明。V2-8-1 已在本地加入紧凑的四项 Track 卡片、Actual 今日进度、7/14 天 Learning rhythm 和独立 Recognition / Active FSRS Memory outlook；V2-8-1.1 随后完成全站学习者文案精简和内部测试名称清理。临时密钥、数据库分支和本地 secret 文件均已删除，正式线上仍未启用 AI。线上数据库继续使用 Schema Version 5。
+当前 V1 已作为受保护的私人应用上线。V2 主线已经完成每日学习分区、首次作答调度修复、独立 Active 三种练习、手机端改造、学习/记忆可视化、精简学习者文案和第一代付费 AI enrichment（AI 词汇补充）。V2-8-2 已把长期非生产 `staging` 迁移到 Schema Version 6，并在受 Vercel Authentication（Vercel 部署认证）保护的 Preview 中运行完整 V2：Daily Plan、Recognition、Active、Dashboard、真实 Gemini 草稿/例句解释、人工接受、加入学习和备份界面均已实际验收。当前 Production 仍是 V1 / Schema Version 5；下一阶段 V2-8-3 才负责正式备份、迁移和替换上线。
 
 ## 正式版本
 
 - 访问地址：[words-learning-app-for-mimi.vercel.app](https://words-learning-app-for-mimi.vercel.app)
 - 当前线上版本：cloud-backed V1（云端持久化 V1）
-- 当前开发分支：`V2`；Stage 1–V2-8-1.1 已完成各自获批的本地/一次性验证；下一项拟议工作为需单独批准的 V2-8-2，Production AI 和部署仍关闭
+- 当前开发分支：`V2`；Stage 1–V2-8-2 已完成各自获批范围，完整 V2 现运行于受保护 Preview；下一项为需单独批准的 V2-8-3 Production backup / migration / cutover（正式备份、迁移与切换）
 - 访问方式：私人 Basic Auth（基础认证）；账号信息不会存放在仓库中
 - 正式数据：Neon Postgres（关系型数据库）
 
@@ -54,13 +54,15 @@
 - Recognition 与 Active 使用同一 FSRS-6 算法家族，但参数、状态、事件和测试完全独立。
 - Active 提供 `Say it`、`Spell it` 和 `Dictation`；Recognition 卡片增加浏览器读音按钮。
 - Stage 7A 的 Library 已可打开本地固定 AI suggestions，编辑、拒绝或接受后再选择 Track 加入学习；例句中的单词也可打开本地解释并带入原有 `Add to learning` 表单。固定结果保存真实 `local-fixture` 来源并且不会冒充 Gemini。
-- 未来付费 Gemini 路线继续提供补充释义、例句、相似词和混淆词草稿；正式外发前必须再次确认当前 disclosure（数据披露），所有结果仍需使用者审核。
+- 受保护的 V2 Preview 已使用付费 Gemini 提供补充释义、例句、相似词和混淆词草稿；每次正式外发都要求当前 disclosure（数据披露）确认，所有结果仍需使用者审核。Production 路线继续保持关闭，直到 V2-8-3 单独批准并配置独立凭证。
 - V2-8-1 Dashboard 已加入真实今日进度、Learning rhythm（学习节奏）和 Memory outlook（记忆展望），并通过 320–1280 px 本地响应式检查。Actual 与 FSRS estimate 使用独立文案、数值和视觉样式。
 - V2-8-1.1 已移除普通界面的重复副标题、氛围口号、鼓励卡和 `V2 Stage ... Fixture` 内部显示名；安全提示、AI 来源、统计口径、错误恢复与快捷键说明继续保留。
+- V2-8-2 已完成 Staging Schema 5 → 6、Reset / 再迁移演练、Schema 5 recovery checkpoint（恢复检查点）、受保护 Preview 和真实 Gemini 验收。最终合成数据包含 5 个词条、4 个独立 Review states、5 次学习事件；Gemini 共 3 次成功调用、1,467 tokens、估算 `US$0.000777`，没有未完成调用。
+- Preview 使用独立 study-token secret、独立 Gemini Auth Key、全局 300 次/日与 `US$0.50/日` / `US$2/月` 边界、Cache、Idempotency 和 Kill Switch。私有 Shareable Link 不写入仓库；Preview AI 会保留到 V2-8-3 Production 稳定后再撤销。
 - 普通界面继续使用简短自然的英文；不可逆操作和重要隐私提示保留中文或双语。
 
 完整范围和阶段顺序见 [V2 Master Plan](./plan_docs/PLAN_V2_MASTER.md)。
-Stage 1 的冻结口径、图示和可执行边界见 [V2 Stage 1 Contract](./plan_docs/PLAN_V2_STAGE1_PRODUCT_METRIC_DATA_CONTRACT.md)。Stage 2 的安全边界、首次测试和第二轮结论见 [V2 Stage 2 Gate](./plan_docs/PLAN_V2_STAGE2_AI_QUALITY_SECURITY_GATE.md)、[V2 Stage 2 Evidence](./plan_docs/PLAN_V2_STAGE2_AI_QUALITY_EVIDENCE.md)、[V2 Stage 2-B Refinement](./plan_docs/PLAN_V2_STAGE2_B_AI_QUALITY_REFINEMENT.md) 和 [V2 Stage 2-B Evidence](./plan_docs/PLAN_V2_STAGE2_B_AI_QUALITY_EVIDENCE.md)。Stage 3 的数据、迁移草案、备份范围和远程执行边界见 [V2 Stage 3 Data Model](./plan_docs/PLAN_V2_STAGE3_DATA_MODEL_BACKUP_PARITY.md)；Review 交互与例句词汇操作见 [V2 Stage 3.1](./plan_docs/PLAN_V2_STAGE3_1_REVIEW_INTERACTION_CONTEXT_WORD_ACTIONS.md)；手机基础界面与精简文案见 [V2 Stage 4](./plan_docs/PLAN_V2_STAGE4_MOBILE_FOUNDATION_COPY.md)；每日学习运行规则和验收见 [V2 Stage 5](./plan_docs/PLAN_V2_STAGE5_DAILY_LEARNING_ENGINE.md)，调度修复见 [V2 Stage 5.1](./plan_docs/PLAN_V2_STAGE5_1_DAILY_EPISODE_SCHEDULING_REPAIR.md)，独立 Active 练习见 [V2 Stage 6](./plan_docs/PLAN_V2_STAGE6_ACTIVE_PRACTICE_ENGINE.md)，本地 AI enrichment 与费用保护见 [V2 Stage 7A](./plan_docs/PLAN_V2_STAGE7A_LOCAL_AI_ENRICHMENT_COST_GUARD.md)，正式本地服务器闭环见 [V2 Stage 7B-1](./plan_docs/PLAN_V2_STAGE7B_1_FORMAL_AI_LOCAL_ORCHESTRATION.md)，一次性真实供应商证明见 [V2 Stage 7B-2](./plan_docs/PLAN_V2_STAGE7B_2_NONPRODUCTION_PROVIDER_PROOF.md)，本地 Dashboard 指标、图表与手机验收见 [V2 Stage 8-1](./plan_docs/PLAN_V2_STAGE8_1_DASHBOARD_INSIGHTS.md)，全站学习者文案审查见 [V2 Stage 8-1.1](./plan_docs/PLAN_V2_STAGE8_1_1_LEARNER_COPY_AUDIT.md)。
+Stage 1 的冻结口径、图示和可执行边界见 [V2 Stage 1 Contract](./plan_docs/PLAN_V2_STAGE1_PRODUCT_METRIC_DATA_CONTRACT.md)。Stage 2 的安全边界、首次测试和第二轮结论见 [V2 Stage 2 Gate](./plan_docs/PLAN_V2_STAGE2_AI_QUALITY_SECURITY_GATE.md)、[V2 Stage 2 Evidence](./plan_docs/PLAN_V2_STAGE2_AI_QUALITY_EVIDENCE.md)、[V2 Stage 2-B Refinement](./plan_docs/PLAN_V2_STAGE2_B_AI_QUALITY_REFINEMENT.md) 和 [V2 Stage 2-B Evidence](./plan_docs/PLAN_V2_STAGE2_B_AI_QUALITY_EVIDENCE.md)。Stage 3 的数据、迁移草案、备份范围和远程执行边界见 [V2 Stage 3 Data Model](./plan_docs/PLAN_V2_STAGE3_DATA_MODEL_BACKUP_PARITY.md)；Review 交互与例句词汇操作见 [V2 Stage 3.1](./plan_docs/PLAN_V2_STAGE3_1_REVIEW_INTERACTION_CONTEXT_WORD_ACTIONS.md)；手机基础界面与精简文案见 [V2 Stage 4](./plan_docs/PLAN_V2_STAGE4_MOBILE_FOUNDATION_COPY.md)；每日学习运行规则和验收见 [V2 Stage 5](./plan_docs/PLAN_V2_STAGE5_DAILY_LEARNING_ENGINE.md)，调度修复见 [V2 Stage 5.1](./plan_docs/PLAN_V2_STAGE5_1_DAILY_EPISODE_SCHEDULING_REPAIR.md)，独立 Active 练习见 [V2 Stage 6](./plan_docs/PLAN_V2_STAGE6_ACTIVE_PRACTICE_ENGINE.md)，本地 AI enrichment 与费用保护见 [V2 Stage 7A](./plan_docs/PLAN_V2_STAGE7A_LOCAL_AI_ENRICHMENT_COST_GUARD.md)，正式本地服务器闭环见 [V2 Stage 7B-1](./plan_docs/PLAN_V2_STAGE7B_1_FORMAL_AI_LOCAL_ORCHESTRATION.md)，一次性真实供应商证明见 [V2 Stage 7B-2](./plan_docs/PLAN_V2_STAGE7B_2_NONPRODUCTION_PROVIDER_PROOF.md)，本地 Dashboard 指标、图表与手机验收见 [V2 Stage 8-1](./plan_docs/PLAN_V2_STAGE8_1_DASHBOARD_INSIGHTS.md)，全站学习者文案审查见 [V2 Stage 8-1.1](./plan_docs/PLAN_V2_STAGE8_1_1_LEARNER_COPY_AUDIT.md)，Staging / protected Preview 完整发布演练见 [V2 Stage 8-2](./plan_docs/PLAN_V2_STAGE8_2_STAGING_PREVIEW_RELEASE_REHEARSAL.md)。
 
 ## 两条学习轨道
 
@@ -86,7 +88,7 @@ V2 的 `Say it` 仅用于单词或词组回忆并由使用者自评；V2 不录�
 | 环境 | 数据位置 | 用途 |
 | --- | --- | --- |
 | Local（本地） | 浏览器 `localStorage` fallback（后备存储） | 日常开发和无数据库调试 |
-| Preview（预览环境） | Neon `staging` | 合并前验证；默认不开放写入 |
+| Preview（预览环境） | Neon `staging` Schema 6 | 受保护的完整 V2 验收；只有 `V2` 分支拥有写入和独立 Preview AI 凭证 |
 | Production（生产环境） | Neon `main` | Mimi 和 Anoria 的正式学习数据 |
 
 `person_id` 用于区分人物数据，目前不等同于完整的账户权限隔离。Production 入口由 Basic Auth 保护；真正的多人身份与权限系统留给未来 SSO 阶段。
@@ -127,13 +129,13 @@ npm run build
 
 - 当前产品面向私人熟人小组，不是公开注册服务。
 - Production 不接收 Development / Preview 的测试数据。
-- Active Vocabulary 在当前线上 V1 中没有调度行为；其独立练习已在 `V2` 分支本地实现，尚未部署。
-- `V2` 分支已把本地快照和 JSON backup 升级到 Schema Version 6 / backup version 3；`db/migrations/0003_v2_schema6_data_model.sql` 只在已删除的一次性 Schema-only 分支执行过，长期 `staging` 与线上 V1 均未迁移，Production 继续使用 Schema Version 5。
-- Stage 5 的服务器 prompt/cursor（提示/分页证据）需要未来专用 `MIMI_STUDY_TOKEN_SECRET`；当前未配置，因此 Postgres `/api/study` 中需要签发或验证这些证据的队列与评分操作会安全停止。浏览器本地模式仍可用于本地验证。
-- V2 计划使用受硬额度保护的付费 Gemini API；当前 Stage 2 固定测试 `gemini-3.1-flash-lite`，使用 120 条非个人测试词条，并已从路线中移除 Datamuse、Free Dictionary、Groq 对比和会热切换的 `gemini-flash-latest`。当前线上 V1 尚未调用任何 AI 服务。
+- Active Vocabulary 在当前线上 V1 中没有调度行为；其独立练习已在受保护 V2 Preview 中实际运行，Production 尚未切换。
+- `V2` 分支、本地快照、JSON backup 和长期非生产 `staging` 已升级到 Schema Version 6 / backup version 3。`db/migrations/0003_v2_schema6_data_model.sql` 仍未在 Production `main` 执行，线上 V1 继续使用 Schema Version 5。
+- 受保护 `V2` Preview 已配置独立 `MIMI_STUDY_TOKEN_SECRET`，Postgres `/api/study` 可签发和刷新 Daily Study 证据。Local fixture 与 Production 不继承该 secret，缺少时继续安全停止。
+- 受保护的 V2 Preview 已使用带硬额度保护的付费 Gemini API；Stage 2 以 120 条非个人测试词条固定验证 `gemini-3.1-flash-lite`，并已从路线中移除 Datamuse、Free Dictionary、Groq 对比和会热切换的 `gemini-flash-latest`。当前线上 V1 / Production 尚未调用任何 AI 服务。
 - 当前 V2-7B-1 没有个人 AI 次数上限；全应用按 `Australia/Melbourne` 预算日限制为 300 次、600,000 input tokens、210,000 output/thinking tokens、US$0.50 估算费用，并另设 US$2/月与并发 2。`person_id` 不能拆分或重置这些全局边界。
 - V2-7B-2 已把新确认升级为 `ai-disclosure-v3`：界面分别说明可选 Project logging 与付费服务有限期安全/滥用/法律处理，不再写固定 55 天，也不宣称 Zero Retention（零保留）。一次性证明产生 2 次成功请求、1,185 tokens 和 US$0.000677 估算费用；Replay、Cache、第三次上限和 Kill Switch 均未增加调用。临时环境已完整删除，Production 路线仍关闭。
-- Stage 2 的本地测试密钥只放在被 Git 忽略的专用环境文件中，不进入 Vercel、Preview、Production 或浏览器。正式 V2 接入仍需新的 Production-only（仅生产环境）密钥与审批。
+- Stage 2 的本地测试密钥只放在被 Git 忽略的专用环境文件中。V2-8-2 Preview 使用另一把独立受限 Auth Key；正式 V2 上线仍需新的 Production-only（仅生产环境）密钥与审批。
 - Stage 2-B 的相同 120 条第二轮测试得到 120 个本地结构有效草稿、0 个供应商失败。Runner（测试执行器）当时用 Batch/Flex 费率记录为 US$0.027943；按同步 Standard `generateContent` 官方费率修正为 US$0.055886。已知释义、例句、顺序和关系分类误差被接受为可编辑 AI 草稿的限制；未来结果会显示 `Generated by Gemini 3.1 Flash-Lite · AI content may be inaccurate. Please review carefully before saving.`，线上 V1 仍不调用 AI 服务。
 - Automated Speech Recognition（自动语音识别）、麦克风上传和 AI 发音评分暂缓，不属于已确认 V2 基线。
 - PTE / IELTS 持久化考试模式、PWA 和考试题型仍是后续方向。
@@ -163,6 +165,7 @@ README 面向第一次看到仓库的人。详细架构、历史决策、执行�
 - [V2 Stage 7B-2 Provider Proof](./plan_docs/PLAN_V2_STAGE7B_2_NONPRODUCTION_PROVIDER_PROOF.md)：一次性 Schema 6、两次供应商调用、硬上限、Kill Switch、证据与清理
 - [V2 Stage 8-1 Dashboard Insights](./plan_docs/PLAN_V2_STAGE8_1_DASHBOARD_INSIGHTS.md)：四项 Track 卡片、Actual 今日进度、7/14 天学习节奏、FSRS outlook 和响应式证据
 - [V2 Stage 8-1.1 Learner Copy Audit](./plan_docs/PLAN_V2_STAGE8_1_1_LEARNER_COPY_AUDIT.md)：全站学习者文案精简、内部名称清理、保留契约和手机截图
+- [V2 Stage 8-2 Staging And Protected Preview](./plan_docs/PLAN_V2_STAGE8_2_STAGING_PREVIEW_RELEASE_REHEARSAL.md)：Staging Schema 6 演练、恢复点、完整受保护 Preview、真实 Gemini、成本与手机验收
 - [Version-hold Multi-User Isolation](./plan_docs/PLAN_VERSION_HOLD_MULTI_USER_CONFIDENTIAL_ISOLATION.md)：暂缓的 SSO 与多人机密隔离边界
 - [Stage 8 Review Memory Algorithm](./plan_docs/PLAN_V1_STAGE8_REVIEW_MEMORY_ALGORITHM.md)：Recognition FSRS 与 Active 隔离设计
 - [Stage 8.5 Data Lifecycle](./plan_docs/PLAN_V1_STAGE8_5_DATA_LIFECYCLE_ENVIRONMENT_STRATEGY.md)：环境、备份和数据生命周期策略

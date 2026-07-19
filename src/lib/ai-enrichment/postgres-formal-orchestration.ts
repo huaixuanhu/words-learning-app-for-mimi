@@ -43,8 +43,10 @@ import type {
   TrustedAiLexicalPayload,
 } from "./types";
 import { withPostgresTransaction } from "@/lib/storage/postgres/client";
-import { resolveAiRuntimeHealth } from "./runtime-config";
-import { AI_STAGE7B2_MAX_PROVIDER_ATTEMPTS } from "./runtime-config";
+import {
+  resolveAiProviderAttemptBoundary,
+  resolveAiRuntimeHealth,
+} from "./runtime-config";
 
 function getGeminiAdapter() {
   return createGeminiProviderAdapter(process.env.GEMINI_API_KEY ?? "");
@@ -121,9 +123,15 @@ function commonDependencies<
       return resolveAiRuntimeHealth(process.env, new Date()).availability;
     },
     async reserveProviderAttempt(identity) {
+      const attemptBoundary = resolveAiProviderAttemptBoundary(process.env);
       const reservation = await reservePostgresAiProviderAttempt(
         runSubmission(identity, input.promptVersion, input.outputSchemaVersion),
-        { maximumProviderAttempts: AI_STAGE7B2_MAX_PROVIDER_ATTEMPTS },
+        attemptBoundary
+          ? {
+              maximumProviderAttempts: attemptBoundary.maximumProviderAttempts,
+              maximumProviderAttemptsReason: attemptBoundary.reason,
+            }
+          : {},
       );
       if (reservation.status === "reserved") {
         return { status: "reserved", handle: reservation.handle };

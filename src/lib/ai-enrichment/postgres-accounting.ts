@@ -319,6 +319,9 @@ export async function reservePostgresAiProviderAttempt(
   dependencies: Readonly<{
     transaction?: TransactionRunner;
     maximumProviderAttempts?: number;
+    maximumProviderAttemptsReason?:
+      | "stage7b2_smoke_attempt_limit"
+      | "stage8_2_preview_rollout_attempt_limit";
   }> = {},
 ): Promise<PostgresAiReservationResult> {
   validateSubmission(input);
@@ -328,6 +331,14 @@ export async function reservePostgresAiProviderAttempt(
       dependencies.maximumProviderAttempts < 1)
   ) {
     throw new Error("maximumProviderAttempts must be a positive safe whole number");
+  }
+  if (
+    dependencies.maximumProviderAttemptsReason !== undefined &&
+    dependencies.maximumProviderAttempts === undefined
+  ) {
+    throw new Error(
+      "maximumProviderAttemptsReason requires maximumProviderAttempts",
+    );
   }
   const keys = buildBudgetKeys(input.createdAt);
   const reservation = buildDefaultAttemptReservation();
@@ -378,7 +389,10 @@ export async function reservePostgresAiProviderAttempt(
       if (attemptCount >= dependencies.maximumProviderAttempts) {
         return {
           status: "blocked",
-          reasons: ["stage7b2_smoke_attempt_limit"],
+          reasons: [
+            dependencies.maximumProviderAttemptsReason ??
+              "stage7b2_smoke_attempt_limit",
+          ],
         };
       }
     }

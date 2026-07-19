@@ -530,6 +530,43 @@ describe("Postgres AI quota accounting", () => {
     ).toBe(false);
   });
 
+  it("uses the V2-8-2 rollout reason for a bounded Preview proof", async () => {
+    const fake = new AccountingFake({
+      runs: Array.from({ length: 4 }, (_, index) => {
+        const suffix = String(index + 1).padStart(2, "0");
+        const input = submission({
+          id: `00000000-0000-4000-8000-000000007b${suffix}`,
+          idempotencyKeyHash: `preview-key-${suffix}`,
+          cacheKeyHash: `preview-cache-${suffix}`,
+        });
+        return runFromSubmission(input, { status: "succeeded", completedAt: NOW });
+      }),
+    });
+
+    const result = await reservePostgresAiProviderAttempt(submission(), {
+      transaction: fake.transaction,
+      maximumProviderAttempts: 4,
+      maximumProviderAttemptsReason: "stage8_2_preview_rollout_attempt_limit",
+    });
+
+    expect(result).toEqual({
+      status: "blocked",
+      reasons: ["stage8_2_preview_rollout_attempt_limit"],
+    });
+    expect(fake.runs).toHaveLength(4);
+  });
+
+  it("rejects an attempt-ceiling reason without a matching ceiling", async () => {
+    await expect(
+      reservePostgresAiProviderAttempt(submission(), {
+        transaction: new AccountingFake().transaction,
+        maximumProviderAttemptsReason: "stage8_2_preview_rollout_attempt_limit",
+      }),
+    ).rejects.toThrow(
+      "maximumProviderAttemptsReason requires maximumProviderAttempts",
+    );
+  });
+
   it("expires stale submitted leases without refunding their consumed budget", async () => {
     const reservation = buildDefaultAttemptReservation();
     const staleCreatedAt = new Date(

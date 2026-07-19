@@ -1,5 +1,35 @@
 # AI Agent Log
 
+## 2026-07-19 00:45 AEST
+
+- Task: execute the user-approved documentation-first `V2-8-2` Staging / protected Preview release rehearsal, including Schema 6, complete Daily Learning / Active / Dashboard behavior, real Gemini AI, private Preview access, cost evidence and Production separation.
+- Plan agreed: yes. The user corrected the release sequence to keep the fully AI-enabled protected Preview available after V2-8-2 and to revoke its Preview key only after separately approved V2-8-3 Production stability. The approval covered Staging rehearsal/migration/recovery, branch-specific Preview secrets and writes, a dedicated restricted Gemini Auth Key, protected Preview deployment, paid synthetic calls and bounded acceptance. Production remained outside authority.
+- Working tier: Tier 3. Remote mutations were limited to non-Production `staging`, temporary children/checkpoints, branch `V2` Preview variables/protection/deployments, one dedicated Gemini Preview key, synthetic Staging learning data and three bounded provider calls. No Production database, secret, deployment, alias, domain or real learner row was read, migrated or changed.
+- Changed files:
+  - added the exact `v2-8-2-preview` activation state to the AI routes while retaining the loopback-only historical V2-7B-2 proof scope;
+  - added guarded V2-8-2 database inventory/migration/Schema 6/AI-evidence/synthetic-seed commands and Preview-only runtime flags;
+  - synchronized the V2-8-2 child plan, master plan, Architecture, README, AGENTS, Changelog and this record with the actual environment topology and evidence.
+- Database result:
+  - temporary rehearsal child `br-royal-grass-a7pumxxz` proved Schema 5 → 6, Reset → 5 and a second forward migration, then was deleted;
+  - retained no-compute checkpoint `v2-8-2-staging-schema5-recovery-20260718` (`br-patient-mud-a7cnc81r`), initially expiring `2026-08-17T12:00:00Z`;
+  - migrated long-lived `staging` (`br-ancient-dawn-a7heegpm`) to Schema 6 and finished with 1 synthetic person, 5 vocabulary entries, 4 Review states, 5 Review events, 2 Daily defaults, 4 Daily Plans, 1 accepted AI draft and 2 context Cache rows;
+  - final inspection found all 12 expected tables, 8 constraints, 0 cross-profile invariant violation, 0 submitted AI run and 0 active provider call.
+- Preview result:
+  - final deployment `dpl_FH1TAyEwkcad4qXbhAbDQdujhHkP` is target `preview`, source ref `V2`, bound to private alias `mimi-v2-preview-anoria.vercel.app`, and protected by Vercel Authentication;
+  - branch-specific `V2` Preview owns `postgres-preview`, full UI writes, its own study-token secret, a restricted Gemini key, Project-logging/auth-key/protection confirmations, Schema/accounting readiness and the existing global accounting/Kill Switch controls;
+  - anonymous access remains redirected by protection; a 30-day bearer Shareable Link is managed out of band and not recorded in repository documents.
+- Product acceptance:
+  - persisted Recognition goal `0` and restored `20`; completed two Recognition entries with 3 attempts, including failed-anchor same-session recovery and Space/Arrow/Enter controls;
+  - completed two Active entries with 2 attempts and exercised `Spell it`, `Dictation` and `Say it`; no raw typed answer or microphone audio was persisted;
+  - verified independent Recognition/Active Dashboard Actual, attempt, schedule and Memory outlook values; inspected both reset gates and cancelled before clearing history;
+  - opened a real Gemini enrichment, edited and accepted it, added one AI-derived Recognition entry, generated an exact-span context explanation, and proved duplicate addition protection;
+  - verified Backup counts and 390 px Home/Study screens. True device emulation passed 320, 375, 390, 768, 820, 1023, 1024 and 1280 px with no horizontal overflow; all eight primary routes passed at 390 px. Motion and reduced-motion code was not edited.
+- AI evidence: 3 submitted/succeeded `gemini-3.1-flash-lite` attempts, 1,138 input tokens, 329 output tokens, 0 thinking tokens, 1,467 total tokens and `US$0.000777` estimated cost. Replay, Cache and Kill Switch checks added no provider call; final runtime had 0 submitted/in-flight run and 0 active call. Final deployment error-level runtime-log count was 0.
+- Credential/access incident: an old Preview Shareable Link token appeared in a local process diagnostic, and the first regenerated token then appeared as a response-map key during shape inspection. Both were immediately regenerated and invalidated. The final 30-day link was retrieved through the Vercel Share panel, verified with HTTP 200, kept only in private handoff state, and the clipboard was cleared. No Gemini, database, study-token, Vercel access token or final share token was printed or committed. One older V2-7B-2-named Gemini key appeared active during inventory despite the earlier cleanup record; it was not used or changed and remains a separate credential-audit item.
+- Validation: ESLint and TypeScript passed; Vitest passed 64 files / 381 tests with the existing Postgres integration file/test skipped; all three backup dry-runs and the Next.js Production build passed. The exact guarded Staging inspector confirmed Schema 6, 12 tables, 8 constraints, 0 invalid profile state/event, 0 submitted AI run and 0 active provider call. Protected-browser acceptance, 320–1280 px device emulation, runtime log inspection, Tier 3 governance preflight, secret-shape checks and `git diff --check` completed successfully.
+- Safety notes: Production V1, Neon `main`, Production Schema 5, Production data/credentials/domain and the current Production deployment were not connected, mutated, promoted or replaced. The protected Preview key remains active by accepted product decision until V2-8-3 Production stability. No commit, push, pull request or merge occurred.
+- Reason: prove the complete V2 product and its paid-provider safeguards on persistent synthetic Staging data behind protected Preview access before authorizing Production backup, migration and cutover.
+
 ## 2026-07-18 21:58 AEST
 
 - Task: execute the user-confirmed documentation-first `V2-8-1.1` Learner-facing Copy Audit inserted before `V2-8-2`.
