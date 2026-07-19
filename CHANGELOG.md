@@ -1,5 +1,28 @@
 # CHANGELOG
 
+## 2026-07-19 21:18 AEST
+
+- Completed the separately approved V2-8-3 Gate 0B protected Preview verification against exact commit `2e6145386d018968f61a1bee1b6f897feebff627`. Git Integration had already produced READY Preview deployment `dpl_3DeE8BrKcZ9cBdCkPA4jE1UTeHXf` from source ref `V2`; the dirty Gate 1 working tree was not deployed, the fixed historical Preview alias was not changed, and no Production deployment was created.
+- Confirmed Vercel Authentication and `SYD1` placement for all observed application/API Functions. Anonymous access redirected to Vercel sign-in; observed Vercel Warning/Error/Fatal and browser warning/error counts were all zero.
+- Ten warm Home → Library runs measured navigation median/p95 `44.5/53ms` and data-ready median/p95 `52/62ms`. Warm transitions added zero full-data GET; first Active queue opening added exactly one `/api/study` `POST 200`; rating and rollback added no workspace refresh.
+- Passed a bounded Recognition/Active learning smoke: Space/Arrow/Enter rating, `回退1词`, Listen, and all three Active modes remained available. The synthetic rating was rolled back. AI disclosure was inspected without creating a draft, and no AI generation route/provider attempt occurred.
+- Reconfirmed through Neon Console that retained checkpoint `br-patient-mud-a7cnc81r` exists under `staging`, has no compute, and still expires at `2026-08-17T12:00:00Z`. No branch or expiry mutation occurred.
+- The remote desktop layout had no overflow. Chrome's requested 390px override did not alter the actual CSS viewport, so this record deliberately relies on the same exact commit's prior local 390/1280px acceptance and does not claim a new remote-phone screenshot.
+- Synchronized V2-8-2, V2-8-2.1, V2-8-3, master/architecture/readme/agents and governance records. Production V1, Neon `main`, credentials, aliases, environment values, Shareable Link, Gemini usage and accepted Motion/reduced-motion behavior remained unchanged. Gate 2 is the next separately approved step.
+- Reason: verify that the committed V2 performance repair is genuinely fluid in the protected Sydney Preview while preserving exact-source, access, cost, recovery and Production stop boundaries.
+
+## 2026-07-19 19:14 AEST
+
+- Completed the documentation-first `V2-8-3` local Gate 1 protection tranche. Added the canonical Production backup/migration/cutover child plan with Gate 0–7, explicit stop points, paired application/database rollback, post-write reconciliation, AI rollout, stability and cleanup boundaries.
+- Added exact Production `maintenance` / `schema6-readiness` / `live` modes. Missing or unknown mode fails closed after Basic Auth; `schema6-readiness` is read-only; only `live` accepts mutations carrying the code-owned `v2-schema6` client marker. Storage, Daily Study and formal AI senders now carry that marker.
+- Added dormant non-empty Schema 5/6 inventory, clone/main migration, inspection and parity tooling. Before any Postgres connection it requires exact action/target/database/role evidence, authenticated live Neon endpoint/branch topology, a code-owned approved Production-project hash, a pinned `0003` SHA-256, UTC repeatable-read snapshots and non-empty learning data. The project hash intentionally remains unpinned in Gate 1, so real commands stay mechanically closed until Gate 2; `main` migration additionally requires backup/recovery/clone rehearsal, write-free, old-V1-runtime blocking evidence and zero in-flight writes.
+- Added strict Schema 6 table/column/constraint/index/trigger checks, Recognition-only legacy-history and creation/default backfill checks, full core-row digests, and a secret-free cutover manifest with encrypted-backup/recovery evidence, paired V1/Schema 5 rollback and mandatory post-write reconciliation decisions. Exact learner-activity timestamps stay out of inventory output, and readiness/verified manifests reject a zero-row core inventory.
+- Added independent Production AI scope `v2-8-3-production`. It requires HTTPS, Vercel Production `main`, `NODE_ENV=production`, `postgres-production`, Schema 6/accounting, exact Production confirmations, `live`, explicit Kill Switch state and either the initial four-attempt ceiling or a separately accepted steady-state marker. A blocked fifth attempt cannot call the provider.
+- Independent read-only audits found and drove closure of the original self-attested target binding, activity-timestamp output, incomplete AI/reconciliation evidence, loose identity booleans, incomplete write chronology, unpinned Production project and zero-row readiness weaknesses. The final audit found no remaining P0/P1/P2.
+- Focused validation passed 13 files / 138 tests. Full Vitest passed 77 files / 484 tests with the existing Postgres integration file/test skipped; lint, typecheck, all three backup dry-runs, the secret-free manifest template, Production build, Tier 3 governance and diff checks passed.
+- No `npm run v2:8-3:db:*` command or successful remote-capable DB path was run; isolated child-process tests only proved fail-closed behavior without credentials. No remote account/database or `.env` value was inspected, no backup/credential/deployment/migration/Production write/Gemini call occurred, and V1 / Neon `main` remain live on Schema Version 5. Gate 0B and Gate 2 require fresh approval.
+- Reason: make the later V2 Production cutover mechanically stoppable and evidence-backed before touching real learner data or external infrastructure.
+
 ## 2026-07-19 13:20 AEST
 
 - Completed the documentation-first `V2-8-2.1` V2-only runtime performance stabilisation. V1 remains unchanged and was not rebuilt, backported or redeployed.

@@ -52,6 +52,7 @@ import {
   applyResolvedTodayToClientSnapshot,
   applyRolledBackReviewToClientSnapshot,
 } from "@/lib/vocabulary/client-snapshot-updates";
+import { v2ClientContractHeaders } from "@/lib/security/v2-client-contract";
 
 type StudyApiResponse<T> = Readonly<{
   ok: boolean;
@@ -112,6 +113,7 @@ async function postStudy<T>(
     headers: {
       "content-type": "application/json",
       [UI_WRITE_CONFIRMATION_HEADER]: UI_WRITE_CONFIRMATION_VALUE,
+      ...v2ClientContractHeaders(),
     },
     body: JSON.stringify({ selectedPersonId, operation }),
   });

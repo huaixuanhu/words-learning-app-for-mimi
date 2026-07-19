@@ -26,7 +26,7 @@ Scope:
 Non-Scope:
 
 - V1 application patch、V1 backport（回移）、V1 redeployment 或 V1 database change。
-- Production deployment、Production database migration、Production data write、Production secret、Preview redeployment 或远程环境修改。
+- 本计划原始本地实现范围不含 Production deployment、Production database migration、Production data write、Production secret、Preview redeployment 或远程环境修改。后续 V2-8-3 Gate 0B 以独立批准完成了 exact-commit protected Preview 验证；它没有扩大本计划的实现范围。
 - Schema Version 6、JSON backup version 3、AI provider、AI quota、authentication、Motion、transition timing 或 reduced-motion 行为修改。
 
 Exit criteria:
@@ -35,7 +35,7 @@ Exit criteria:
 - 普通 V2 写入与评分完成后直接使用 authoritative response / delta（正式返回值 / 变化集），不立即重复 GET 整份工作区。
 - 当日计划已存在时，进入 Recognition / Active queue 不先发送额外的 client `resolveToday`；服务端不打开空 transaction 或读取第二份相同快照。
 - focused/full validation、Production build、React review 与本地 browser flow 通过，且 FSRS、Daily Episode、Track isolation、Motion、phone layout、AI gate、Schema 与 backup 无回归。
-- 当前 protected Preview 未经另行批准不 redeploy；因此本地完成状态必须与未来 Preview `syd1` / latency verification 明确分开。
+- 原始本地阶段未经另行批准不 redeploy protected Preview；本地完成状态与后续 V2-8-3 Gate 0B 的 `syd1` / latency evidence 继续分开记录。
 
 Consumer / next stage:
 
@@ -51,7 +51,7 @@ Target capability tier: Tier 3
 
 Working tier: Tier 3
 
-Status: complete locally on 2026-07-19. Protected Preview region and latency measurement remain pending a separately approved deployment.
+Status: complete locally on 2026-07-19; the separately approved V2-8-3 Gate 0B exact-commit protected Preview verification also completed on 2026-07-19.
 
 ## 1. Confirmed Baseline And Root Causes
 
@@ -63,7 +63,7 @@ Status: complete locally on 2026-07-19. Protected Preview region and latency mea
 
 已确认的主要原因：
 
-1. 当前 Vercel Functions 默认运行在 `iad1`，长期 Neon `staging` 位于 AWS `ap-southeast-2`；每次 server request（服务端请求）需要跨区域访问 Sydney 数据库。
+1. 修复前的 V2-8-2 Preview Functions 运行在 `iad1`，长期 Neon `staging` 位于 AWS `ap-southeast-2`；每次 server request（服务端请求）需要跨区域访问 Sydney 数据库。后续 Gate 0B exact deployment 已确认改为 `SYD1`。
 2. 每个页面组件各自建立 `useVocabularyData()` 状态；App Router 页面切换后会重新 GET 整份 workspace snapshot（工作区快照）。
 3. Postgres 写入已经返回 authoritative snapshot（正式快照），客户端随后仍发送同页 change event 并再次 GET 全量数据。
 4. Daily Study 进入队列前，客户端先 `resolveToday`，服务端 `readQueue` 又重复 resolve；现有 resolver 即使计划已存在，也会打开空 transaction（事务）并读取第二份完整快照。
@@ -75,7 +75,7 @@ Status: complete locally on 2026-07-19. Protected Preview region and latency mea
 - 根目录 `vercel.json` 将全部 Vercel Functions 固定到单一 `syd1`。
 - `syd1` 与 Neon `ap-southeast-2` 同处 Sydney 区域；静态资源继续由 Vercel CDN 全球分发。
 - 不添加 Enterprise-only failover region，不修改 Fluid Compute（流式计算）设置，不在每个 Route Handler 重复声明 region。
-- 此代码变更不会改变已部署 Preview；只有未来经批准的 redeployment 才会生效。
+- 该代码变更在原始本地阶段不会改变已部署 Preview。后续获批 Gate 0B 已通过 Git Integration 的 exact deployment 使它在新 protected Preview artifact 生效；固定历史 alias 没有被重新指向。
 
 ## 3. Shared Browser Data Lifecycle
 
@@ -175,7 +175,7 @@ Application:
 
 ## 11. Completion And Handoff
 
-Local completion requires code, focused/full validation, documentation sync and browser evidence. Because this stage does not authorize a Vercel deployment, `syd1` runtime placement and protected Preview latency remain pending until a separately approved redeployment. V2-8-3 may begin only after the local contract is complete and the user decides whether to run the protected Preview performance verification first.
+Local completion requires code, focused/full validation, documentation sync and browser evidence. The original stage did not authorize a Vercel deployment; V2-8-3 Gate 0B later received separate approval and now owns the real `syd1`/latency evidence below. Gate 0B has stopped before the still-unapproved Gate 2.
 
 ## 12. Completion Evidence
 
@@ -186,4 +186,17 @@ Local completion requires code, focused/full validation, documentation sync and 
 - `npm run lint`、`npm run typecheck`、三个 backup dry-run、Next.js Production build 和 `git diff --check` 通过。Build 只报告 ignored `.env.local` 的存在，没有读取或复制其值。
 - 隔离的 local-mode Production-build browser flow 使用 repository-owned Schema 6 fixture 和 browser-only storage-response stub；没有 database/provider 请求。390px 与 1280px 无横向溢出、framework overlay 或 console warning/error。
 - 同一页面生命周期只观察到一次 `/api/storage/data` bootstrap；10 次 Home ↔ Library 连续切换没有新增 full-data GET 或 Loading workspace。去掉第一次 route-code / animation settle 后的 8 次温热切换中位数约 `64.5ms`；该本地数值只证明交互链路已经收口，不能替代未来 protected Preview 的 10-run median / p95。
-- 390px Today 与 1280px Library 证据保存在非仓库目录 `learningWordsformimi-v2-8-2-1/`。现有 Motion、reduced-motion、keyboard、FSRS、Schema、backup、AI gate 与 V1 均未修改。
+- 390px Today 与 1280px Library 图像在本地验收时写入非仓库目录 `learningWordsformimi-v2-8-2-1/`；该目录不是当前仓库中的持久 artifact，因此 durable evidence（持久证据）以本文件记录和测试契约为准。现有 Motion、reduced-motion、keyboard、FSRS、Schema、backup、AI gate 与 V1 均未修改。
+
+### Separately approved protected Preview evidence
+
+2026-07-19 V2-8-3 Gate 0B used exact commit `2e6145386d018968f61a1bee1b6f897feebff627` and deployment `dpl_3DeE8BrKcZ9cBdCkPA4jE1UTeHXf`:
+
+- Deployment is READY, target Preview, source ref `V2`, protected by Vercel Authentication, and exposes all observed application/API Functions from `SYD1`. Anonymous access redirects to Vercel sign-in. No Production alias, deployment, environment or credential changed.
+- One hard navigation measured shell-ready `445ms` and data-ready `1351ms`.
+- Ten warm Home → Library runs measured navigation `53, 42, 39, 47, 38, 51, 38, 45, 50, 44ms` and data-ready `62, 50, 46, 55, 46, 59, 46, 53, 58, 51ms`. Navigation median/p95 are `44.5/53ms`; data-ready median/p95 are `52/62ms`.
+- Warm route transitions added `0` full-data GET and showed no repeated Loading. Controlled Study entry added `0` `/api/study` calls when Today was already resolved; first Active `Say it` queue opening added exactly one `/api/study` `POST 200`. Recognition rating and rollback added no full-data GET.
+- Space/Arrow/Enter rating, `回退1词`, whole-entry Listen, the three independent Active modes, existing AI disclosure, Track metrics and accepted content all remained available. The synthetic rating was rolled back. No AI generation route or provider attempt was triggered.
+- Vercel Warning/Error/Fatal and browser warning/error were all zero in the observed run.
+- Desktop remote layout had no horizontal overflow. The connected Chrome viewport override did not actually switch the remote page to 390 CSS pixels, so no new remote-phone screenshot is claimed. Responsive acceptance remains based on the same exact commit's already completed 390/1280px Production-build evidence; a fresh real-phone screenshot is a separate optional evidence task, not hidden as a pass from a 1495px viewport.
+- The retained Staging Schema 5 checkpoint remains present with no compute and the same `2026-08-17T12:00:00Z` expiry. Production V1, Neon `main`, AI ledger and accepted Motion/reduced-motion behavior were not changed.

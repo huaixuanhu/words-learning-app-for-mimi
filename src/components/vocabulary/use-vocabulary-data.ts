@@ -33,6 +33,7 @@ import {
   VOCABULARY_STORAGE_KEY,
   writeVocabularyData,
 } from "@/lib/vocabulary/local-storage-repository";
+import { v2ClientContractHeaders } from "@/lib/security/v2-client-contract";
 
 export type ClientStorageRuntime = "loading" | StorageRuntimeMode;
 
@@ -247,6 +248,7 @@ async function writePostgresMutation(selectedPersonId: string, mutation: Vocabul
     headers: {
       "content-type": "application/json",
       [UI_WRITE_CONFIRMATION_HEADER]: UI_WRITE_CONFIRMATION_VALUE,
+      ...v2ClientContractHeaders(),
     },
     body: JSON.stringify({
       selectedPersonId,

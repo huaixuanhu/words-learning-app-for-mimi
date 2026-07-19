@@ -141,6 +141,32 @@ describe("V2-7B-1 formal AI orchestration", () => {
     }));
   });
 
+  it("never calls the provider after the bounded rollout reservation is blocked", async () => {
+    const deps = dependencies({
+      reserveProviderAttempt: vi.fn(async () => ({
+        status: "blocked" as const,
+        terminalCategory: "stage8_3_production_rollout_attempt_limit",
+      })),
+    });
+
+    const result = await runFormalAiOrchestration({
+      request,
+      sessionTokenHash: "session-hash",
+      dependencies: deps,
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      status: "resting",
+      reason: "stage8_3_production_rollout_attempt_limit",
+    });
+    expect(deps.callProvider).not.toHaveBeenCalled();
+    expect(deps.completeFailure).toHaveBeenCalledWith(expect.objectContaining({
+      handle: null,
+      terminalCategory: "stage8_3_production_rollout_attempt_limit",
+    }));
+  });
+
   it("persists a validated result only after source revalidation", async () => {
     const deps = dependencies();
     const result = await runFormalAiOrchestration({ request, sessionTokenHash: "session-hash", dependencies: deps });

@@ -1,4 +1,5 @@
 import { AI_DISCLOSURE_VERSION } from "./contract";
+import { v2ClientContractHeaders } from "@/lib/security/v2-client-contract";
 import type {
   PublicAiCandidateAdd,
   PublicAiDraftDecision,
@@ -26,7 +27,10 @@ async function postFormalAi<T>(url: string, body: unknown): Promise<T> {
   const response = await fetch(url, {
     method: "POST",
     credentials: "same-origin",
-    headers: { "content-type": "application/json" },
+    headers: {
+      "content-type": "application/json",
+      ...v2ClientContractHeaders(),
+    },
     body: JSON.stringify(body),
     cache: "no-store",
   });

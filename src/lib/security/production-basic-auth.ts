@@ -1,5 +1,6 @@
 import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
+import { resolveProductionCutoverMode } from "./production-cutover-mode";
 
 type RequestWithHeaders = Pick<Request, "headers">;
 
@@ -7,6 +8,7 @@ type BasicAuthEnvironment = {
   [key: string]: string | undefined;
   MIMI_BASIC_AUTH_PASSWORD?: string;
   MIMI_BASIC_AUTH_USER?: string;
+  MIMI_PRODUCTION_CUTOVER_MODE?: string;
   VERCEL_ENV?: string;
 };
 
@@ -61,6 +63,17 @@ function accessGateResponse(status: 401 | 503) {
   return new NextResponse(null, { status, headers });
 }
 
+function maintenanceResponse() {
+  return new NextResponse("A short update is in progress. Please try again soon.", {
+    status: 503,
+    headers: {
+      "cache-control": "no-store",
+      "content-type": "text/plain; charset=utf-8",
+      "retry-after": "60",
+    },
+  });
+}
+
 export function requireProductionBasicAuth(
   request: RequestWithHeaders,
   env: BasicAuthEnvironment = process.env,
@@ -84,6 +97,11 @@ export function requireProductionBasicAuth(
     !secureEqual(credentials.passphrase, expectedPassphrase)
   ) {
     return accessGateResponse(401);
+  }
+
+  const cutoverMode = resolveProductionCutoverMode(env);
+  if (cutoverMode === null || cutoverMode === "maintenance") {
+    return maintenanceResponse();
   }
 
   return null;

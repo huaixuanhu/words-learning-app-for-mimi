@@ -321,7 +321,8 @@ export async function reservePostgresAiProviderAttempt(
     maximumProviderAttempts?: number;
     maximumProviderAttemptsReason?:
       | "stage7b2_smoke_attempt_limit"
-      | "stage8_2_preview_rollout_attempt_limit";
+      | "stage8_2_preview_rollout_attempt_limit"
+      | "stage8_3_production_rollout_attempt_limit";
   }> = {},
 ): Promise<PostgresAiReservationResult> {
   validateSubmission(input);

@@ -14,6 +14,7 @@ const runtimeEnvKeys = [
   "MIMI_STORAGE_RUNTIME",
   "MIMI_BASIC_AUTH_USER",
   "MIMI_BASIC_AUTH_PASSWORD",
+  "MIMI_PRODUCTION_CUTOVER_MODE",
   "VERCEL_ENV",
   "NODE_ENV",
   "STAGE5F_DATABASE_TARGET",
@@ -43,6 +44,7 @@ function setRuntimeEnv(overrides: Record<string, string | undefined>) {
   if (mutableEnv.VERCEL_ENV === "production") {
     mutableEnv.MIMI_BASIC_AUTH_USER = basicAuthUser;
     Reflect.set(mutableEnv, "MIMI_BASIC_AUTH_PASSWORD", basicAuthPassphrase);
+    mutableEnv.MIMI_PRODUCTION_CUTOVER_MODE ??= "schema6-readiness";
   }
 }
 

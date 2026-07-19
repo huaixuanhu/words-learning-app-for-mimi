@@ -29,6 +29,7 @@ function setRuntime(overrides: Record<string, string | undefined>) {
     "MIMI_ENABLE_STORAGE_UI_WRITES",
     "MIMI_BASIC_AUTH_USER",
     "MIMI_BASIC_AUTH_PASSWORD",
+    "MIMI_PRODUCTION_CUTOVER_MODE",
     "VERCEL_ENV",
     "NODE_ENV",
   ]) {
@@ -41,6 +42,7 @@ function setRuntime(overrides: Record<string, string | undefined>) {
   if (env.VERCEL_ENV === "production") {
     env.MIMI_BASIC_AUTH_USER = basicUser;
     Reflect.set(env, "MIMI_BASIC_AUTH_PASSWORD", basicPassword);
+    env.MIMI_PRODUCTION_CUTOVER_MODE ??= "live";
   }
 }
 

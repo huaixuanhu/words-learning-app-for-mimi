@@ -23,6 +23,7 @@ const runtimeEnvKeys = [
   "MIMI_ENABLE_STORAGE_UI_WRITES",
   "MIMI_BASIC_AUTH_USER",
   "MIMI_BASIC_AUTH_PASSWORD",
+  "MIMI_PRODUCTION_CUTOVER_MODE",
   "VERCEL_ENV",
   "NODE_ENV",
   "STAGE5F_DATABASE_TARGET",
@@ -75,6 +76,7 @@ function setRuntimeEnv(
   if (mutableEnv.VERCEL_ENV === "production" && options.withProductionAuth !== false) {
     mutableEnv.MIMI_BASIC_AUTH_USER = basicAuthUser;
     Reflect.set(mutableEnv, "MIMI_BASIC_AUTH_PASSWORD", basicAuthPassphrase);
+    mutableEnv.MIMI_PRODUCTION_CUTOVER_MODE ??= "live";
   }
 }
 

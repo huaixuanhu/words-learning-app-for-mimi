@@ -229,7 +229,7 @@ Stop the affected remote slice and preserve the last safe state if:
 
 - Confirmed the long-lived target as Neon branch `staging` (`br-ancient-dawn-a7heegpm`), endpoint `ep-bitter-dew-a71lahle`, database `neondb`, and role `neondb_owner`. Every Stage 8-2 database command required these exact non-Production identifiers plus `postgres-preview` / Preview markers.
 - Created temporary child `br-royal-grass-a7pumxxz` from `staging`. It passed Schema 5 inventory, forward migration with the unchanged `0003_v2_schema6_data_model.sql`, Schema 6 inspection, Reset to its Schema 5 parent state, and a second forward migration. The rehearsal child was then deleted.
-- Before migrating long-lived `staging`, created the retained Schema 5 recovery checkpoint `v2-8-2-staging-schema5-recovery-20260718` (`br-patient-mud-a7cnc81r`). It has no compute and an initial expiry of `2026-08-17T12:00:00Z`; extend it if V2-8-3 has not reached stable Production by then.
+- Before migrating long-lived `staging`, created the retained Schema 5 recovery checkpoint `v2-8-2-staging-schema5-recovery-20260718` (`br-patient-mud-a7cnc81r`). V2-8-3 Gate 0B rechecked it on 2026-07-19: it still has no compute, its parent remains `staging`, and its expiry remains `2026-08-17T12:00:00Z`; extend it only through a separate approval if V2-8-3 has not reached stable Production by then.
 - Migrated long-lived `staging` to Schema 6 and seeded one named synthetic person with four fixed entries: two Recognition and two Active. Final human acceptance added one AI-derived Recognition entry, bringing the synthetic inventory to five.
 - Final inspection found Schema Version 6, all 12 expected new tables, all 8 expected constraints, 0 invalid Recognition / Active state or event rows, 0 submitted AI runs, and 0 active provider calls.
 
@@ -270,7 +270,7 @@ Stop the affected remote slice and preserve the last safe state if:
 
 ## Post-completion Derived Follow-up
 
-V2-8-2 的远程证据与完成状态保持不变。2026-07-19 的真实使用反馈随后派生出 `plan_docs/PLAN_V2_STAGE8_2_1_PERFORMANCE_STABILISATION.md`，在 V2-8-3 前只优化 branch-V2 的 runtime data flow（运行数据流）与未来 Vercel Sydney 区域配置。该子阶段不回移或重新部署 V1，不修改本文件已完成的 Staging / Preview 数据、凭证、AI、Motion 或验收证据；受保护 Preview 只有在另行批准 redeployment 后才会获得新性能代码与 `syd1` placement。
+V2-8-2 的远程证据与完成状态保持不变。2026-07-19 的真实使用反馈随后派生出 `plan_docs/PLAN_V2_STAGE8_2_1_PERFORMANCE_STABILISATION.md`，只优化 branch-V2 的 runtime data flow（运行数据流）与 Vercel Sydney 区域配置。该子阶段不回移或重新部署 V1，不修改本文件已完成的 Staging / Preview 数据、凭证、AI、Motion 或验收证据。后续 V2-8-3 Gate 0B 通过独立批准验证 exact commit `2e6145386d018968f61a1bee1b6f897feebff627` 的新 protected Preview deployment `dpl_3DeE8BrKcZ9cBdCkPA4jE1UTeHXf`：Functions 在 `SYD1`，warm data-ready median/p95 为 `52/62ms`，没有 route-transition full-data GET 或 AI provider call。固定 V2-8-2 alias 没有重新指向；Production 仍未改变。
 
 ## V2-8-3 Handoff
 
