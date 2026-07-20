@@ -14,6 +14,7 @@ export type PublicAiCandidateAdd = Readonly<{
   surfaceText: string;
   meaningZh: string;
   example: string;
+  exampleTranslationZh?: string;
   learningTrack: LearningTrack;
   timezone: string;
 }>;
@@ -83,6 +84,7 @@ export function validatePublicAiCandidateAdd(value: unknown): PublicAiCandidateA
     "surfaceText",
     "meaningZh",
     "example",
+    "exampleTranslationZh",
     "learningTrack",
     "timezone",
   ]);
@@ -95,6 +97,12 @@ export function validatePublicAiCandidateAdd(value: unknown): PublicAiCandidateA
     surfaceText: text(input.surfaceText, "surfaceText", 120),
     meaningZh: text(input.meaningZh, "meaningZh", 240, true),
     example: text(input.example, "example", 600, true),
+    exampleTranslationZh: text(
+      input.exampleTranslationZh,
+      "exampleTranslationZh",
+      600,
+      !String(input.example ?? "").trim(),
+    ),
     learningTrack: input.learningTrack,
     timezone: text(input.timezone, "timezone", 120),
   };

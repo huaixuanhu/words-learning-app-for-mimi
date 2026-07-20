@@ -4,6 +4,7 @@ import { PersonSettingsForm } from "@/components/settings/person-settings-form";
 import { ReviewSettingsForm } from "@/components/settings/review-settings-form";
 import { SoundSettingsForm } from "@/components/settings/sound-settings-form";
 import { ThemeSettingsForm } from "@/components/settings/theme-settings-form";
+import { VoiceSettingsForm } from "@/components/settings/voice-settings-form";
 
 export default function SettingsPage() {
   return (
@@ -14,6 +15,9 @@ export default function SettingsPage() {
         </SimplePanel>
         <SimplePanel title="Sound">
           <SoundSettingsForm />
+        </SimplePanel>
+        <SimplePanel title="Pronunciation">
+          <VoiceSettingsForm />
         </SimplePanel>
         <SimplePanel title="People">
           <PersonSettingsForm />

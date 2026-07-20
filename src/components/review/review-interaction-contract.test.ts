@@ -64,7 +64,10 @@ describe("V2 Stage 3.1 review interaction UI contract", () => {
     expect(reviewSource).toContain("isReviewRatingArrowKey");
     expect(reviewSource).toContain("getNextReviewRatingIndex");
     expect(reviewSource).toContain("shouldIgnoreReviewShortcut");
-    expect(reviewSource).toContain("REVIEW_SHORTCUT_IGNORE_SELECTOR");
+    expect(reviewSource).toContain("REVIEW_TEXT_ENTRY_SELECTOR");
+    expect(reviewSource).toContain("REVIEW_NATIVE_ACTION_SELECTOR");
+    expect(reviewSource).toContain("data-review-rating-index");
+    expect(reviewSource).toContain("ratingGroupRef.current");
     expect(reviewSource).toContain("event.isComposing");
     expect(reviewSource).toContain("event.altKey");
     expect(reviewSource).toContain("event.ctrlKey");

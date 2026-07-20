@@ -22,6 +22,12 @@ import {
   isReviewRatingArrowKey,
 } from "@/lib/review/keyboard-controls";
 import {
+  elementMatchesReviewSelector,
+  REVIEW_NATIVE_ACTION_SELECTOR,
+  REVIEW_TEXT_ENTRY_SELECTOR,
+  shouldIgnoreReviewShortcutInput,
+} from "@/lib/review/keyboard-shortcuts";
+import {
   PROMPT_REFRESHED_COPY,
   submitWithExpiredPromptRecovery,
 } from "@/lib/daily-study/prompt-recovery";
@@ -32,6 +38,7 @@ import {
 import { reviewRatings } from "@/lib/stage-two-data";
 import { playReviewCompleteSound } from "@/lib/ui/sound-player";
 import { speakEnglishText } from "@/lib/ui/speech-synthesis";
+import { buildVocabularyExamplePairs } from "@/lib/vocabulary/example-pairs";
 import { getRecognitionVocabularyItems } from "@/lib/vocabulary/repository";
 
 function getItemById(
@@ -69,9 +76,6 @@ type RatingSelection = Readonly<{
 
 const CARD_TOGGLE_IGNORE_SELECTOR =
   "button, a, input, textarea, select, label, [contenteditable='true'], [data-card-toggle-ignore='true']";
-const REVIEW_SHORTCUT_IGNORE_SELECTOR =
-  "button, a, input, textarea, select, option, summary, [contenteditable='true'], [role='button'], [role='textbox'], [role='combobox'], [role='menuitem'], [data-review-shortcuts-ignore='true']";
-
 function shouldIgnoreCardToggle(target: EventTarget | null) {
   if (target instanceof Element && target.closest(CARD_TOGGLE_IGNORE_SELECTOR)) {
     return true;
@@ -82,25 +86,33 @@ function shouldIgnoreCardToggle(target: EventTarget | null) {
 }
 
 function shouldIgnoreReviewShortcut(event: KeyboardEvent) {
-  if (
-    event.defaultPrevented ||
-    event.isComposing ||
-    event.altKey ||
-    event.ctrlKey ||
-    event.metaKey ||
-    event.shiftKey ||
-    document.querySelector('[role="dialog"][aria-modal="true"]')
-  ) {
-    return true;
-  }
-
   const target = event.target instanceof Element ? event.target : null;
-  const activeElement = document.activeElement;
+  const activeElement = document.activeElement instanceof Element
+    ? document.activeElement
+    : null;
 
-  return Boolean(
-    target?.closest(REVIEW_SHORTCUT_IGNORE_SELECTOR) ||
-      activeElement?.closest(REVIEW_SHORTCUT_IGNORE_SELECTOR),
-  );
+  return shouldIgnoreReviewShortcutInput({
+    defaultPrevented: event.defaultPrevented,
+    isComposing: event.isComposing,
+    altKey: event.altKey,
+    ctrlKey: event.ctrlKey,
+    metaKey: event.metaKey,
+    shiftKey: event.shiftKey,
+    modalOpen: Boolean(
+      document.querySelector('[role="dialog"][aria-modal="true"]'),
+    ),
+    textEntryFocused:
+      elementMatchesReviewSelector(target, REVIEW_TEXT_ENTRY_SELECTOR) ||
+      elementMatchesReviewSelector(activeElement, REVIEW_TEXT_ENTRY_SELECTOR) ||
+      elementMatchesReviewSelector(
+        target,
+        "[data-review-shortcuts-ignore='true']",
+      ) ||
+      elementMatchesReviewSelector(
+        activeElement,
+        "[data-review-shortcuts-ignore='true']",
+      ),
+  });
 }
 
 export function ReviewSession({ zone }: ReviewSessionProps) {
@@ -134,6 +146,7 @@ export function ReviewSession({ zone }: ReviewSessionProps) {
   const requestedSessionKeyRef = useRef("");
   const promptActivationKeyRef = useRef("");
   const promptRefreshingItemIdRef = useRef<string | null>(null);
+  const ratingGroupRef = useRef<HTMLDivElement | null>(null);
   const readQueueRef = useRef(readQueue);
   const refreshPromptRef = useRef(refreshPrompt);
   const cardPointerStartRef = useRef<{
@@ -225,6 +238,9 @@ export function ReviewSession({ zone }: ReviewSessionProps) {
     : [];
   const currentExamples = currentItem
     ? getDisplayList(currentItem.examples, currentItem.example)
+    : [];
+  const currentExamplePairs = currentItem
+    ? buildVocabularyExamplePairs(currentItem)
     : [];
   const selectedRatingIndex =
     currentItem && ratingSelection?.vocabularyItemId === currentItem.id
@@ -533,6 +549,11 @@ export function ReviewSession({ zone }: ReviewSessionProps) {
           return;
         }
 
+        const target = event.target instanceof Element ? event.target : null;
+        if (elementMatchesReviewSelector(target, REVIEW_NATIVE_ACTION_SELECTOR)) {
+          return;
+        }
+
         event.preventDefault();
         toggleAnswerRef.current(event.timeStamp);
         return;
@@ -544,9 +565,20 @@ export function ReviewSession({ zone }: ReviewSessionProps) {
         }
 
         event.preventDefault();
+        const nextIndex = getNextReviewRatingIndex(
+          selectedRatingIndex,
+          event.key,
+        );
         setRatingSelection({
           vocabularyItemId: currentItem.id,
-          index: getNextReviewRatingIndex(selectedRatingIndex, event.key),
+          index: nextIndex,
+        });
+        queueMicrotask(() => {
+          ratingGroupRef.current
+            ?.querySelector<HTMLButtonElement>(
+              `[data-review-rating-index="${nextIndex}"]`,
+            )
+            ?.focus();
         });
         return;
       }
@@ -558,6 +590,11 @@ export function ReviewSession({ zone }: ReviewSessionProps) {
         !ratingDisabled &&
         selectedRatingIndex !== null
       ) {
+        const target = event.target instanceof Element ? event.target : null;
+        if (elementMatchesReviewSelector(target, REVIEW_NATIVE_ACTION_SELECTOR)) {
+          return;
+        }
+
         event.preventDefault();
         void submitRatingRef.current(
           reviewRatings[selectedRatingIndex].value,
@@ -703,31 +740,36 @@ export function ReviewSession({ zone }: ReviewSessionProps) {
                             <p className="mt-1 text-lg font-semibold text-[var(--mimi-text)]">No meaning yet</p>
                           )}
                         </div>
-                        {currentExamples.length ? (
+                        {currentExamplePairs.length ? (
                           <div>
                             <p className="text-xs font-semibold uppercase text-[var(--mimi-text-muted)]">Example</p>
                             <div className="mt-1 grid gap-1 text-sm leading-6 text-[var(--mimi-text-soft)]">
-                              {currentExamples.map((example, index) => (
-                                <ExampleWordActions
-                                  key={`${currentItem.id}-example-${index}`}
-                                  example={example}
-                                  exampleIndex={index}
-                                  sourceVocabularyItemId={currentItem.id}
-                                  sourceSurfaceText={currentItem.surfaceText}
-                                  sourceMeaningsZh={currentMeanings}
-                                  sourceExamples={currentExamples}
-                                  localPreviewEnabled={
-                                    storageRuntime !== "loading" &&
-                                    storageRuntime !== "postgres-preview" &&
-                                    storageRuntime !== "postgres-production"
-                                  }
-                                  formalRouteEnabled={
-                                    storageRuntime === "postgres-preview" ||
-                                    storageRuntime === "postgres-production"
-                                  }
-                                  data={data}
-                                  commit={commit}
-                                />
+                              {currentExamplePairs.map((pair, index) => (
+                                <div key={`${currentItem.id}-example-${index}`} className="grid gap-0.5">
+                                  <ExampleWordActions
+                                    example={pair.en}
+                                    exampleTranslationZh={pair.zh}
+                                    exampleIndex={index}
+                                    sourceVocabularyItemId={currentItem.id}
+                                    sourceSurfaceText={currentItem.surfaceText}
+                                    sourceMeaningsZh={currentMeanings}
+                                    sourceExamples={currentExamples}
+                                    localPreviewEnabled={
+                                      storageRuntime !== "loading" &&
+                                      storageRuntime !== "postgres-preview" &&
+                                      storageRuntime !== "postgres-production"
+                                    }
+                                    formalRouteEnabled={
+                                      storageRuntime === "postgres-preview" ||
+                                      storageRuntime === "postgres-production"
+                                    }
+                                    data={data}
+                                    commit={commit}
+                                  />
+                                  <p className="text-sm text-[var(--mimi-text-muted)]">
+                                    {pair.zh || "Chinese translation needed"}
+                                  </p>
+                                </div>
                               ))}
                             </div>
                           </div>
@@ -786,6 +828,7 @@ export function ReviewSession({ zone }: ReviewSessionProps) {
                 Space flip · Arrow keys choose · Enter confirm
               </p>
               <div
+                ref={ratingGroupRef}
                 role="group"
                 aria-label="Memory rating"
                 aria-describedby="review-keyboard-hint"
@@ -799,6 +842,7 @@ export function ReviewSession({ zone }: ReviewSessionProps) {
                     data-selected={
                       selectedRatingIndex === index ? "true" : undefined
                     }
+                    data-review-rating-index={index}
                     onMouseEnter={() => {
                       if (!ratingDisabled && currentItem) {
                         setRatingSelection({

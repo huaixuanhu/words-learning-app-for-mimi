@@ -13,6 +13,10 @@ import {
 import { addVocabularyItem } from "@/lib/vocabulary/repository";
 import type { LearningTrack, NewVocabularyInput, VocabularyTag } from "@/lib/vocabulary/types";
 import { PressableButton } from "@/components/ui/motion-primitives";
+import {
+  assertCompleteVocabularyExamplePairs,
+  buildVocabularyExamplePairs,
+} from "@/lib/vocabulary/example-pairs";
 
 function toDateTimeLocalValue(date: Date) {
   const offsetMs = date.getTimezoneOffset() * 60_000;
@@ -46,12 +50,22 @@ export function AddWordForm() {
     const now = new Date().toISOString();
 
     try {
+      const example = String(formData.get("example") ?? "");
+      const exampleTranslationsZh = normalizeTextList(
+        String(formData.get("example_translation_zh") ?? ""),
+      );
+      const examplePairs = buildVocabularyExamplePairs({
+        example,
+        exampleTranslationsZh,
+      });
+      assertCompleteVocabularyExamplePairs(examplePairs);
       const input: NewVocabularyInput = {
         surfaceText: String(formData.get("word_or_phrase") ?? ""),
         meaningZh: String(formData.get("meaning_zh") ?? ""),
         meaningsZh: normalizeTextList(String(formData.get("meaning_zh") ?? "")),
-        example: String(formData.get("example") ?? ""),
-        examples: normalizeTextList(String(formData.get("example") ?? "")),
+        example,
+        examples: examplePairs.map((pair) => pair.en),
+        exampleTranslationsZh: examplePairs.map((pair) => pair.zh),
         notes: String(formData.get("notes") ?? ""),
         rarityScore: normalizeRarityScore(rarityScore),
         learningTrack,
@@ -107,6 +121,16 @@ export function AddWordForm() {
           rows={3}
           placeholder="The tutor allocated extra practice time."
           className="mimi-input min-h-24 resize-y px-3 py-2 text-base"
+        />
+      </label>
+
+      <label className="grid gap-2">
+        <span className="text-sm font-semibold text-[#203229]">例句中文翻译</span>
+        <textarea
+          name="example_translation_zh"
+          rows={2}
+          placeholder="新政策可能会降低风险。"
+          className="mimi-input min-h-20 resize-y px-3 py-2 text-base"
         />
       </label>
 

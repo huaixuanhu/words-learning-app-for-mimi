@@ -10,8 +10,8 @@ describe("text import parser", () => {
   it("parses dash, tab, comma, empty, and sentence-like lines", () => {
     const candidates = parseTextImport(
       [
-        "allocate - 分配 - The tutor allocated extra practice time.",
-        "coherent\t连贯的\tA coherent answer scores better.",
+        "allocate - 分配 - The tutor used a risk - return example.",
+        "coherent\t连贯的\tA coherent answer scores better.\t连贯的答案得分更高。",
         "ambiguous, concise",
         "",
         "this is a complete sentence with too many words.",
@@ -23,8 +23,9 @@ describe("text import parser", () => {
       surfaceText: "allocate",
       meaningZh: "分配",
       meaningsZh: ["分配"],
-      example: "The tutor allocated extra practice time.",
-      examples: ["The tutor allocated extra practice time."],
+      example: "The tutor used a risk - return example.",
+      examples: ["The tutor used a risk - return example."],
+      exampleTranslationsZh: [""],
       status: "new",
     });
     expect(candidates[1]).toMatchObject({
@@ -33,6 +34,7 @@ describe("text import parser", () => {
       meaningsZh: ["连贯的"],
       example: "A coherent answer scores better.",
       examples: ["A coherent answer scores better."],
+      exampleTranslationsZh: ["连贯的答案得分更高。"],
       status: "new",
     });
     expect(candidates[2]).toMatchObject({ surfaceText: "ambiguous", status: "new" });
@@ -86,6 +88,10 @@ describe("text import parser", () => {
               "The tutor allocated extra practice time.",
               "The budget allocates more money to language support.",
             ],
+            exampleTranslationsZh: [
+              "老师安排了额外的练习时间。",
+              "这份预算为语言支持分配了更多资金。",
+            ],
             tags: ["PTE"],
             rarityScore: 3,
           },
@@ -94,6 +100,7 @@ describe("text import parser", () => {
             track: "active",
             meaningZh: "连贯的",
             example: "Write a coherent paragraph using this word.",
+            exampleTranslationZh: "请用这个词写一个连贯的段落。",
             tags: null,
             rarityScore: null,
           },
@@ -111,6 +118,10 @@ describe("text import parser", () => {
         "The tutor allocated extra practice time.",
         "The budget allocates more money to language support.",
       ],
+      exampleTranslationsZh: [
+        "老师安排了额外的练习时间。",
+        "这份预算为语言支持分配了更多资金。",
+      ],
       rarityScore: 3,
       tags: ["PTE"],
     });
@@ -119,12 +130,13 @@ describe("text import parser", () => {
       learningTrack: "active",
       meaningsZh: ["连贯的"],
       examples: ["Write a coherent paragraph using this word."],
+      exampleTranslationsZh: ["请用这个词写一个连贯的段落。"],
       rarityScore: null,
       tags: null,
     });
   });
 
-  it("requires at least one meaning and one example for batch JSON items", () => {
+  it("requires a meaning, an example, and a Chinese translation for batch JSON items", () => {
     const candidates = parseJsonImport(
       JSON.stringify({
         items: [
@@ -133,19 +145,28 @@ describe("text import parser", () => {
             track: "recognition",
             meaningsZh: [],
             examples: ["The tutor allocated extra practice time."],
+            exampleTranslationsZh: ["老师安排了额外的练习时间。"],
           },
           {
             word: "coherent",
             track: "active",
             meaningsZh: ["连贯的"],
             examples: [],
+            exampleTranslationsZh: [],
+          },
+          {
+            word: "concise",
+            track: "active",
+            meaningsZh: ["简洁的"],
+            examples: ["Keep the summary concise."],
           },
         ],
       }),
     );
 
-    expect(candidates.map((candidate) => candidate.status)).toEqual(["invalid", "invalid"]);
+    expect(candidates.map((candidate) => candidate.status)).toEqual(["invalid", "invalid", "invalid"]);
     expect(candidates[0].errors).toContain("missing_meaning");
     expect(candidates[1].errors).toContain("missing_example");
+    expect(candidates[2].errors).toContain("missing_example_translation");
   });
 });

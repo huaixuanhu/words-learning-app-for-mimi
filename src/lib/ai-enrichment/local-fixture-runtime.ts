@@ -51,6 +51,7 @@ const FIXTURE_DRAFTS: Readonly<Record<string, AiEnrichmentDraft>> = Object.freez
   adapt: {
     additionalMeaningsZh: [],
     examples: ["People adapt more quickly when the reason for change is clear."],
+    exampleTranslationsZh: ["当改变的原因很明确时，人们能更快地适应。"],
     similarWords: [],
     confusableWords: [
       {
@@ -58,12 +59,14 @@ const FIXTURE_DRAFTS: Readonly<Record<string, AiEnrichmentDraft>> = Object.freez
         type: "spelling",
         differenceZh: "adapt 表示适应；adopt 常表示采纳或收养。",
         examplePair: ["We adapt to change.", "We adopt a new policy."],
+        examplePairTranslationsZh: ["我们适应变化。", "我们采纳一项新政策。"],
       },
     ],
   },
   affect: {
     additionalMeaningsZh: [],
     examples: ["The weather can affect how people travel."],
+    exampleTranslationsZh: ["天气会影响人们的出行方式。"],
     similarWords: [],
     confusableWords: [
       {
@@ -74,12 +77,14 @@ const FIXTURE_DRAFTS: Readonly<Record<string, AiEnrichmentDraft>> = Object.freez
           "The change affected demand.",
           "The change had an immediate effect.",
         ],
+        examplePairTranslationsZh: ["这项变化影响了需求。", "这项变化产生了即时影响。"],
       },
     ],
   },
   effect: {
     additionalMeaningsZh: [],
     examples: ["The new rule had little effect on attendance."],
+    exampleTranslationsZh: ["这项新规定对出勤率影响不大。"],
     similarWords: [{ word: "outcome", differenceZh: "outcome 更强调最终产生的结果。" }],
     confusableWords: [
       {
@@ -90,12 +95,14 @@ const FIXTURE_DRAFTS: Readonly<Record<string, AiEnrichmentDraft>> = Object.freez
           "The change had an immediate effect.",
           "The change affected demand.",
         ],
+        examplePairTranslationsZh: ["这项变化产生了即时影响。", "这项变化影响了需求。"],
       },
     ],
   },
   allocate: {
     additionalMeaningsZh: [],
     examples: ["The team allocated more time to the final review."],
+    exampleTranslationsZh: ["团队为最终复习分配了更多时间。"],
     similarWords: [
       { word: "assign", differenceZh: "assign 更常用于分派任务、角色或责任。" },
     ],
@@ -104,6 +111,7 @@ const FIXTURE_DRAFTS: Readonly<Record<string, AiEnrichmentDraft>> = Object.freez
   coherent: {
     additionalMeaningsZh: [],
     examples: ["Her explanation was clear and coherent."],
+    exampleTranslationsZh: ["她的解释清晰而连贯。"],
     similarWords: [
       { word: "consistent", differenceZh: "consistent 更强调前后一致或长期稳定。" },
     ],
@@ -112,6 +120,7 @@ const FIXTURE_DRAFTS: Readonly<Record<string, AiEnrichmentDraft>> = Object.freez
   ambiguous: {
     additionalMeaningsZh: [],
     examples: ["The wording was ambiguous and caused several questions."],
+    exampleTranslationsZh: ["这段措辞含糊不清，引发了几个问题。"],
     similarWords: [
       { word: "unclear", differenceZh: "unclear 是更通用的表达，强调不清楚。" },
     ],
@@ -120,6 +129,7 @@ const FIXTURE_DRAFTS: Readonly<Record<string, AiEnrichmentDraft>> = Object.freez
   concise: {
     additionalMeaningsZh: [],
     examples: ["Keep the summary concise and easy to follow."],
+    exampleTranslationsZh: ["让摘要保持简洁易懂。"],
     similarWords: [
       { word: "brief", differenceZh: "brief 强调篇幅或时间短；concise 也强调没有赘述。" },
     ],
@@ -128,6 +138,7 @@ const FIXTURE_DRAFTS: Readonly<Record<string, AiEnrichmentDraft>> = Object.freez
   course: {
     additionalMeaningsZh: [],
     examples: ["The course introduces the main ideas gradually."],
+    exampleTranslationsZh: ["这门课程逐步介绍主要概念。"],
     similarWords: [],
     confusableWords: [
       {
@@ -135,12 +146,14 @@ const FIXTURE_DRAFTS: Readonly<Record<string, AiEnrichmentDraft>> = Object.freez
         type: "sound",
         differenceZh: "course 可指课程或路线；coarse 表示粗糙的。",
         examplePair: ["She joined the course.", "The fabric feels coarse."],
+        examplePairTranslationsZh: ["她参加了这门课程。", "这种布料摸起来很粗糙。"],
       },
     ],
   },
   big: {
     additionalMeaningsZh: [],
     examples: ["They faced a big decision at the end of the week."],
+    exampleTranslationsZh: ["周末时，他们面临一个重大决定。"],
     similarWords: [
       { word: "large", differenceZh: "large 更常用于尺寸、数量或规模。" },
     ],
@@ -171,6 +184,15 @@ const CONTEXT_FIXTURES: Readonly<
     grammarRoleZh: "副词",
     contextExplanationZh: "这里修饰动作发生的速度。",
   },
+});
+
+const SOURCE_EXAMPLE_TRANSLATIONS: Readonly<Record<string, string>> = Object.freeze({
+  "It takes time to adapt to a new routine.": "适应新的日常安排需要时间。",
+  "We adapt to change.": "我们适应变化。",
+  "She adapted quickly to the new environment.": "她很快适应了新环境。",
+  "The new policy may mitigate the risk.": "这项新政策可能会降低风险。",
+  "She articulated her position with confidence.": "她自信地表达了自己的立场。",
+  "Resilience helps learners recover from setbacks.": "韧性有助于学习者从挫折中恢复。",
 });
 
 function normalizedTerm(value: string) {
@@ -234,10 +256,19 @@ export function runLocalFixtureEnrichment(
   const fixture = FIXTURE_DRAFTS[normalizedTerm(source.term)] ?? {
     additionalMeaningsZh: [],
     examples: [],
+    exampleTranslationsZh: [],
     similarWords: [],
     confusableWords: [],
   };
-  const value = validateAiEnrichmentDraft(fixture, source);
+  const value = validateAiEnrichmentDraft(
+    {
+      ...fixture,
+      sourceExampleTranslationsZh: source.examples.map(
+        (example) => SOURCE_EXAMPLE_TRANSLATIONS[example] ?? "",
+      ),
+    },
+    source,
+  );
   removeOldestEntries(state.enrichmentCache, LOCAL_FIXTURE_CACHE_MAX_ENTRIES);
   state.enrichmentCache.set(requestKey, value);
 

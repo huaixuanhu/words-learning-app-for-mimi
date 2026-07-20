@@ -11,6 +11,7 @@ import {
   normalizeTextList,
   normalizeVocabularyTags,
 } from "./normalize";
+import { alignExampleTranslationsZh } from "./example-pairs";
 import {
   DEFAULT_PERSON_ID,
   createDefaultPerson,
@@ -69,6 +70,10 @@ function migrateItem(value: unknown, personId: string) {
         meaningsZh,
         example: examples[0] ?? legacyExample,
         examples,
+        exampleTranslationsZh: alignExampleTranslationsZh(
+          examples,
+          value.exampleTranslationsZh,
+        ),
         learningTrack: normalizeLearningTrack(value.learningTrack),
         tags: normalizeVocabularyTags(value.tags),
       }

@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## 2026-07-20 00:22 AEST
+
+- Completed the local-only V2-8-2.2 interaction/audio/example slice. Recognition and Active now share one guarded 2×2 keyboard selector: the first valid Arrow chooses the first rating, subsequent arrows move without wrapping, Enter confirms, Space flips, and real text entry/dialog/IME contexts retain priority. Existing rating colors, Motion and reduced-motion behavior were not changed.
+- Added a Settings English voice selector over browser SpeechSynthesis. `Best available` ranks only voices actually reported by the device; the learner can preview and save a browser-local choice, and every word/dictation/example-word playback uses the same safe fallback. No Cloud TTS, network audio, microphone, AI speech scoring or study-state write was added.
+- Added aligned `exampleTranslationsZh` across single add, Batch import, Library edit/search/filter, Review, context-word addition, AI enrichment, local/Postgres repositories and CSV. Every newly written English example requires a non-empty Chinese translation; legacy gaps remain visible through `Needs translation` and are never labelled complete.
+- Upgraded new JSON backups to Version 4 while continuing to read Versions 1–3. Added forward-only `0004_v2_bilingual_examples.sql` with JSON-array/equal-length constraints; kept `0003` unchanged and pinned both migration hashes in V2-8-3 database and cutover-manifest contracts.
+- Upgraded AI enrichment to prompt/output V3 with editable Chinese translations for source examples, generated examples and confusable example pairs. Existing accepted drafts remain readable. Accept writes a reviewed source translation; rejection/failure does not overwrite English examples, and this local tranche made no Gemini call.
+- Synchronized the V2-8-2.2 child plan, Master Plan, V2-8-3 cutover sequence, Architecture, README, AGENTS, backup mapping and governance record. Long-lived `staging`, protected Preview and Production were not changed; `0004` remains unexecuted remotely.
+- Validation passed 11 focused files / 104 tests, then the full suite at 80 files / 506 tests with the existing Postgres integration file/test skipped. ESLint, TypeScript, all three backup dry-runs, V2-8-3 manifest template, Production build, script syntax and HTTP 200 checks for Home/Settings/Review passed. The optional `agent-browser` CLI was unavailable, so no automated browser screenshot or claim about subjective voice quality is made.
+- Reason: close the three Preview findings without changing learning scheduling, preserve honest legacy-data gaps, and keep Cloud TTS as a separate evidence-driven upgrade if real-device browser voices are still unsatisfactory.
+
 ## 2026-07-19 21:18 AEST
 
 - Completed the separately approved V2-8-3 Gate 0B protected Preview verification against exact commit `2e6145386d018968f61a1bee1b6f897feebff627`. Git Integration had already produced READY Preview deployment `dpl_3DeE8BrKcZ9cBdCkPA4jE1UTeHXf` from source ref `V2`; the dirty Gate 1 working tree was not deployed, the fixed historical Preview alias was not changed, and no Production deployment was created.

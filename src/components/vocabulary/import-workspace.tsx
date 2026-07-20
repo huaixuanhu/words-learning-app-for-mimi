@@ -18,6 +18,11 @@ import {
 } from "@/lib/vocabulary/normalize";
 import { useVocabularyData } from "./use-vocabulary-data";
 import { PressableButton } from "@/components/ui/motion-primitives";
+import {
+  alignExampleTranslationsZh,
+  assertCompleteVocabularyExamplePairs,
+  buildVocabularyExamplePairs,
+} from "@/lib/vocabulary/example-pairs";
 
 const JSON_IMPORT_SAMPLE = `{
   "items": [
@@ -25,7 +30,8 @@ const JSON_IMPORT_SAMPLE = `{
       "word": "allocate",
       "track": "recognition",
       "meaningsZh": ["分配"],
-      "examples": ["The tutor allocated extra practice time."]
+      "examples": ["The tutor allocated extra practice time."],
+      "exampleTranslationsZh": ["老师安排了额外的练习时间。"]
     }
   ]
 }`;
@@ -44,6 +50,7 @@ const IMPORT_ISSUE_LABELS: Record<string, string> = {
   missing_items: "Add at least one item",
   missing_meaning: "Add a Chinese meaning",
   missing_example: "Add an example",
+  missing_example_translation: "Add a Chinese translation for every example",
 };
 
 function subscribeToDesktopPreview(callback: () => void) {
@@ -175,12 +182,21 @@ export function ImportWorkspace() {
     const timezone = detectTimezone();
 
     try {
+      const example = String(formData.get("example") ?? "");
+      const examplePairs = buildVocabularyExamplePairs({
+        example,
+        exampleTranslationsZh: normalizeTextList(
+          String(formData.get("example_translation_zh") ?? ""),
+        ),
+      });
+      assertCompleteVocabularyExamplePairs(examplePairs);
       const input = {
         surfaceText: String(formData.get("word_or_phrase") ?? ""),
         meaningZh: String(formData.get("meaning_zh") ?? ""),
         meaningsZh: normalizeTextList(String(formData.get("meaning_zh") ?? "")),
-        example: String(formData.get("example") ?? ""),
-        examples: normalizeTextList(String(formData.get("example") ?? "")),
+        example,
+        examples: examplePairs.map((pair) => pair.en),
+        exampleTranslationsZh: examplePairs.map((pair) => pair.zh),
         notes: String(formData.get("notes") ?? ""),
         rarityScore: normalizeRarityScore(singleRarityScore),
         learningTrack: singleTrack,
@@ -325,6 +341,14 @@ export function ImportWorkspace() {
             <label className="grid gap-2">
               <span className="text-sm font-semibold text-[#203229]">Example</span>
               <textarea name="example" rows={3} className="mimi-input min-h-24 resize-y px-3 py-2 text-base" />
+            </label>
+            <label className="grid gap-2">
+              <span className="text-sm font-semibold text-[#203229]">Chinese translation</span>
+              <textarea
+                name="example_translation_zh"
+                rows={2}
+                className="mimi-input min-h-20 resize-y px-3 py-2 text-base"
+              />
             </label>
             <label className="grid gap-2">
               <span className="text-sm font-semibold text-[#203229]">Notes</span>
@@ -528,8 +552,29 @@ export function ImportWorkspace() {
                             updateCandidate(candidate.tempId, {
                               example: examples[0] ?? "",
                               examples,
+                              exampleTranslationsZh: alignExampleTranslationsZh(
+                                examples,
+                                candidate.exampleTranslationsZh,
+                              ),
                             });
                           }}
+                          rows={3}
+                          className="mimi-input min-h-24 resize-y px-3 py-2 text-base"
+                        />
+                      </label>
+
+                      <label className="grid gap-1.5">
+                        <span className="text-sm font-semibold text-[var(--mimi-text)]">Chinese translations</span>
+                        <textarea
+                          value={toMultilineText(candidate.exampleTranslationsZh ?? [])}
+                          onChange={(event) =>
+                            updateCandidate(candidate.tempId, {
+                              exampleTranslationsZh: alignExampleTranslationsZh(
+                                candidate.examples,
+                                event.target.value.split(/\r?\n/),
+                              ),
+                            })
+                          }
                           rows={3}
                           className="mimi-input min-h-24 resize-y px-3 py-2 text-base"
                         />
@@ -568,7 +613,7 @@ export function ImportWorkspace() {
                 </div> : null}
 
                 {desktopPreview ? <div className="overflow-x-auto">
-                <table className="w-full min-w-[1180px] border-collapse text-left text-sm">
+                <table className="w-full min-w-[1380px] border-collapse text-left text-sm">
                   <thead>
                     <tr className="border-b border-[#d8d1c2] text-[#5f6d62]">
                       <th className="py-2 pr-3 font-medium">Save</th>
@@ -576,6 +621,7 @@ export function ImportWorkspace() {
                       <th className="py-2 pr-3 font-medium">Word</th>
                       <th className="py-2 pr-3 font-medium">Meaning</th>
                       <th className="py-2 pr-3 font-medium">Example</th>
+                      <th className="py-2 pr-3 font-medium">Chinese translation</th>
                       <th className="py-2 pr-3 font-medium">Tags</th>
                       <th className="py-2 pr-3 font-medium">Rarity</th>
                       <th className="py-2 pr-3 font-medium">Status</th>
@@ -639,8 +685,27 @@ export function ImportWorkspace() {
                               updateCandidate(candidate.tempId, {
                                 example: examples[0] ?? "",
                                 examples,
+                                exampleTranslationsZh: alignExampleTranslationsZh(
+                                  examples,
+                                  candidate.exampleTranslationsZh,
+                                ),
                               });
                             }}
+                            rows={3}
+                            className="mimi-input min-h-24 w-full resize-y px-2 py-2"
+                          />
+                        </td>
+                        <td className="py-2 pr-3">
+                          <textarea
+                            value={toMultilineText(candidate.exampleTranslationsZh ?? [])}
+                            onChange={(event) =>
+                              updateCandidate(candidate.tempId, {
+                                exampleTranslationsZh: alignExampleTranslationsZh(
+                                  candidate.examples,
+                                  event.target.value.split(/\r?\n/),
+                                ),
+                              })
+                            }
                             rows={3}
                             className="mimi-input min-h-24 w-full resize-y px-2 py-2"
                           />

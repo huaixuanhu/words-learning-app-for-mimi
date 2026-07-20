@@ -1,7 +1,7 @@
 # Words Learning App For Mimi V2-8-3：Production Backup, Migration And V2 Cutover
 
 Created: 2026-07-19 AEST
-Last updated: 2026-07-19 AEST
+Last updated: 2026-07-20 AEST
 
 Source plan:
 
@@ -12,6 +12,7 @@ Derived from:
 - `plan_docs/PLAN_V2_MASTER.md`
 - `plan_docs/PLAN_V2_STAGE8_2_STAGING_PREVIEW_RELEASE_REHEARSAL.md`
 - `plan_docs/PLAN_V2_STAGE8_2_1_PERFORMANCE_STABILISATION.md`
+- `plan_docs/PLAN_V2_STAGE8_2_2_REVIEW_AUDIO_BILINGUAL_EXAMPLES.md`
 - `plan_docs/PLAN_V2_STAGE7B_1_FORMAL_AI_LOCAL_ORCHESTRATION.md`
 - `plan_docs/PLAN_V2_STAGE7B_2_NONPRODUCTION_PROVIDER_PROOF.md`
 - `plan_docs/PLAN_V2_STAGE3_DATA_MODEL_BACKUP_PARITY.md`
@@ -29,6 +30,7 @@ Input evidence:
 - 当前 Production Schema 5 inspector（检查器）仍调用 `assertEmptySchema5Counts()`；它不能作为已有真实数据的 V2-8-3 基线工具。
 - 当前正式 AI activation（启用）只接受历史 localhost proof 与 `v2-8-2-preview`，Vercel Production 继续 fail closed（默认关闭）。
 - `db/migrations/0003_v2_schema6_data_model.sql` 已在非 Production 目标通过演练，尚未在 Production `main` 执行。
+- V2-8-2.2 已在本地增加 `0004_v2_bilingual_examples.sql`、JSON backup Version 4、双语例句和新版 AI draft contract；`0004` 尚未在长期 `staging`、protected Preview 或 Production 执行。
 - repository 现有三套 JSON backup dry-run（备份模拟）证明应用资料形状可迁移，但它们不等同于 Production 独立加密 logical backup（逻辑备份）与真实 restore（恢复）证明。
 
 Consumer / next stage:
@@ -48,7 +50,7 @@ Target capability tier: Tier 3
 
 Working tier: Tier 3
 
-Status: Gate 0B protected Preview performance verification and Gate 1 documentation/local guard implementation are complete. Gate 2–7 的远程 Production inventory、备份、credential、Neon/Vercel/Gemini 变更、Production migration（正式迁移）、正式部署和正式数据写入仍未批准。
+Status: Gate 0B protected Preview performance verification and Gate 1 documentation/local guard implementation are complete. V2-8-2.2 has updated the local candidate and migration sequence, but has not changed remote Preview/Staging. Gate 2–7 的远程 Production inventory、备份、credential、Neon/Vercel/Gemini 变更、Production migration（正式迁移）、正式部署和正式数据写入仍未批准。
 
 ## Scope
 
@@ -64,11 +66,11 @@ Status: Gate 0B protected Preview performance verification and Gate 1 documentat
 ## Non-Scope
 
 - Gate 0B 只批准 exact-commit protected Preview 验证与 Vercel/Neon 的只读状态核验。它不包含 `.env` / secret value 读取、Preview environment variable 或 alias 变更、Shareable Link 操作、Neon branch/expiry 变更、Gemini 调用、Production backup、Production migration、Production write、Production deployment、promote（提升为正式部署）、rollback 或 credential revoke（撤销凭证）。
-- 不修改现有 migration `0001`、`0002` 或 `0003` 的历史内容；若发现 migration 缺陷，立即停止并以新的前向 migration 和新批准处理。
+- 不修改现有 migration `0001`、`0002`、`0003` 或 `0004` 的历史内容；若发现 migration 缺陷，立即停止并以新的前向 migration 和新批准处理。
 - 不把 Preview / Staging 的 synthetic data（合成资料）、AI draft 或 accounting 行复制进 Production。
 - 不把 Production 真实学习资料放入普通 Staging、公开 Preview、本地 fixture、测试日志或仓库文件。
 - 不引入 SSO（Single Sign-On，单点登录）、OAuth、public registration、per-person authorization 或 confidential tenant isolation。
-- 不改变 FSRS-6、Daily Episode first-attempt anchor、Recognition / Active 独立 Profile、Dashboard 定义、Motion、reduced-motion、keyboard 或 mobile navigation 产品契约。
+- 不改变 FSRS-6、Daily Episode first-attempt anchor、Recognition / Active 独立 Profile、Dashboard 定义、Motion、reduced-motion 或 mobile navigation 产品契约。Keyboard 以已经完成的 V2-8-2.2 共用 2×2 规则为正式候选基线，本阶段不再改变。
 - 不增加 personal AI attempt limit（个人调用上限）。V2 继续依赖全局请求、token、cost、concurrency、Cache、Idempotency 与 Kill Switch。
 - 不设计自动 Schema 6 → Schema 5 down migration（向下迁移）。当前没有经演练的安全 down-conversion（向下转换）路径。
 - 不把 Neon point-in-time recovery（时间点恢复）或 branch checkpoint 单独当成独立 logical backup。
@@ -89,7 +91,7 @@ Status: Gate 0B protected Preview performance verification and Gate 1 documentat
 - rollback unit（回退单元）始终是 application artifact + database state（应用版本与数据库状态）这一对。
 - V1 deployment 只能与已确认的 Schema 5 recovery state 一起恢复；V2 deployment 只能与已确认的 Schema 6 state 一起运行。若切换期间旧 V1 database credential 已旋转或撤销，rollback 需要从 retained V1 artifact/commit 以新批准的 Schema 5 credential 重建，不能把旧 deployment URL 直接重新指向 alias 后假定可写。
 - 迁移失败或 V2 写入开放前发现 blocker 时：保持 maintenance，确认数据库已回到 Schema 5，再恢复指定 V1 deployment。顺序与证据必须在 clone 演练中先通过。
-- `0003` 在 transaction（事务）内执行可以降低部分迁移风险，但仍须以迁移后 inspector 的实际结果判断成功，不能只依赖 command exit code（命令退出码）。
+- `0003` 与 `0004` 必须按固定顺序在同一 transaction（事务）内执行；仍须以迁移后 inspector 的实际结果判断成功，不能只依赖 command exit code（命令退出码）。
 
 ### 3. Post-cutover V2 write reconciliation
 
@@ -297,22 +299,22 @@ Gate 2 需要单独批准远程账户与 Production 元资料的只读访问。�
 
 - 从当时的 Production `main` Schema 5 创建 exact child/clone；记录 parent、created-at 和 expiry，不连接普通 Preview，不开放给无关使用者。
 - clone 含真实学习资料，继续按 Production confidential-data controls（机密资料控制）处理。
-- migration 工具必须同时确认 clone identity、parent=`main`、`target=production-rehearsal`、Schema 5 和 canonical `0003` hash；任何一项不符立即停止。
+- migration 工具必须同时确认 clone identity、parent=`main`、`target=production-rehearsal`、Schema 5 以及 canonical `0003` / `0004` hashes；任何一项不符立即停止。
 
 ### Forward migration and parity
 
 1. 在迁移前运行 non-empty Schema 5 manifest。
-2. 应用未改写的 `0003_v2_schema6_data_model.sql` 一次。
+2. 在同一 transaction 内依次应用未改写的 `0003_v2_schema6_data_model.sql` 与 `0004_v2_bilingual_examples.sql` 一次。
 3. 验证 Schema 6 expected tables、constraints、indexes、triggers 和 invalid-row queries。
 4. 验证所有 people、settings、imports、vocabulary、Recognition review state/event 的 count 与 stable digest 保持一致。
 5. 验证旧 review history 只迁移为 Recognition；不凭空产生 Active history。`first_rated_at` 来自 retained earliest event，缺少事件的历史使用 `legacy_unknown`。
-6. 验证每个既有词条的 legacy creation fact、两套 Daily defaults、Track 归属和 Schema 6 backup v3 export；不生成虚假的今日计划、review event 或 AI content。
+6. 验证每个既有词条的 legacy creation fact、两套 Daily defaults、Track 归属、等长 `example_translations_zh` 与 Schema 6 backup Version 4 export；旧 English-only 例句只产生明确空翻译位置，不生成或猜测中文，不生成虚假的今日计划、review event 或 AI content。
 7. 用 V2 repository 执行 authenticated read-only flow；AI Kill Switch 保持开启，不发送外部请求。
 
 ### Recovery rehearsal
 
 - 在 clone 上证明 Schema 6 → pre-migration Schema 5 recovery 的受支持 provider reset/restore 路径；运行 Schema 5 manifest 并证明 V1 read compatibility。
-- 再从恢复后的 clone 重新执行一次 `0003`，证明相同输入得到相同 Schema 6 parity manifest。
+- 再从恢复后的 clone 重新执行一次固定的 `0003` + `0004` sequence，证明相同输入得到相同 Schema 6 parity manifest。
 - 独立从 Gate 3 encrypted logical backup 恢复一次 Schema 5 target，证明 branch recovery 与 logical restore 是两条不同的恢复路径。
 - 记录 paired application/database rollback 顺序；不需要、也不得在 clone 上产生真实学习写入或 Gemini 调用。
 
@@ -341,7 +343,7 @@ Gate 5 至少分成两个独立批准点：Preparation（准备）与 Live cutov
 4. 按已经演练的 credential/permission 路径关闭旧 V1 runtime 的数据库写入能力；用 retained old deployment URL 发出一条无资料变化的 authenticated rejection probe，证明它不能到达写事务。只验证 canonical alias 不足以通过本步骤。
 5. 在 write-free 状态下生成 final independent encrypted logical backup，并创建/确认 Production Schema 5 recovery point；比较 final manifest 与 Gate 2 baseline，解释全部合法差异。
 6. 再次确认 exact `main`、Schema 5、canonical migration hash、backup checksum、0 in-flight write、old-runtime-blocked evidence 与 paired rollback packet。
-7. 只对 Production `main` 执行 `0003` 一次；立即运行 Schema 6 inspector 和 full parity manifest。
+7. 只对 Production `main` 在同一 transaction 内执行 `0003` + `0004` 一次；立即运行 Schema 6 inspector 和 full parity manifest。
 8. 若 migration/parity 不通过，保持 maintenance，按 Gate 4 已证明路径恢复 Schema 5；确认 Schema 5 与可用的新 credential 后，重建/恢复 V1 artifact。
 9. migration/parity 通过后 promote exact V2 candidate；验证 Basic Auth、`postgres-production`、Schema 6 和 client contract version。
 10. 先完成只读 acceptance，再允许 V2 mutation。write-free end time 与第一笔 V2 write time 分别记录。
@@ -412,7 +414,7 @@ Gate 5 至少分成两个独立批准点：Preparation（准备）与 Live cutov
 - V1 在 Schema 6 上仍可写，V2 在 Schema 5 上仍可运行，或旧 V1 tab 能绕过 client contract guard。
 - maintenance artifact 不能阻止全部 mutation，或 write-free window 中出现新 Production write。
 - retained V1 deployment URL 仍能使用旧 database credential 到达写事务，或 main migration 只依赖 canonical-alias maintenance / browser client marker 来宣称 write-free。
-- migration canonical hash 变化、migration 已执行过、transaction 状态不明或 `main` 存在未知 operation。
+- 任一 canonical migration hash 变化、migration sequence 被部分执行、transaction 状态不明或 `main` 存在未知 operation。
 - paired rollback 缺少 V1 artifact、Schema 5 recovery、logical backup 或 post-cutover reconciliation decision。
 - V2 新写入后有人要求直接 Reset 到 Schema 5，但没有保存 incident backup 和明确的数据损失/对账决定。
 - Production AI gate 可由 Preview/browser/person_id 绕过，pricing 已在 2026-08-14 后 stale，旧 V2-7B-2 key 状态未解决，或 global quotas/Kill Switch/Cache/Idempotency 可绕过。
@@ -424,12 +426,12 @@ Gate 5 至少分成两个独立批准点：Preparation（准备）与 Live cutov
 
 Gate 1 实际文件与职责：
 
-- `scripts/v2-stage8-3-contract.mjs`、`scripts/v2-stage8-3-db-core.mjs` 与 `scripts/v2-stage8-3-db.mjs`：non-empty inventory、clone/main exact guards、migration、Schema 6 inspect 与 parity artifact。
+- `scripts/v2-stage8-3-contract.mjs`、`scripts/v2-stage8-3-db-core.mjs` 与 `scripts/v2-stage8-3-db.mjs`：non-empty inventory、clone/main exact guards、分别固定的 `0003` / `0004` migration sequence、Schema 6 inspect 与 parity artifact。
 - `scripts/v2-stage8-3-cutover-manifest.mjs`：secret-free cutover/rollback evidence。
 - `src/lib/ai-enrichment/runtime-config.ts` 与 tests：独立 Production AI scope、fresh pricing 和 `4` 次 rollout ceiling。
 - `src/lib/security/production-cutover-mode.ts`、Production proxy/security guards 与 tests：三段 cutover mode、Basic Auth 优先、client contract version 与 fail-closed mutation boundary。
 - `package.json`：只添加明确命名、不会被 test/build 误触的 dormant V2-8-3 remote-capable commands；Gate 1 的 Production project hash 尚未 pin，故当前命令即使获得环境变量也保持机械关闭。local fixture 测试直接使用依赖替换，不伪装成真实 DB dry-run evidence。
-- focused tests：non-empty Schema 5、安全 count/digest、Schema 6 table/column/constraint/index/trigger contract、migration hash/target drift、control-plane endpoint/branch binding、old-client refusal、AI ledger、paired rollback 与 secret-free output。
+- focused tests：non-empty Schema 5、安全 count/digest、Schema 6 table/column/constraint/index/trigger contract、两份 migration hash/target drift、control-plane endpoint/branch binding、old-client refusal、AI ledger、paired rollback 与 secret-free output。
 
 当前 tranche 不选择或安装 backup/encryption package；Gate 3 选择完成后再记录工具与命令。
 
@@ -448,7 +450,7 @@ Gate 1 实际文件与职责：
 - Protected Preview 已运行 V2-8-2.1 exact commit，`syd1` 与真实 network performance 已验证。
 - Production official facts 与 non-empty Schema 5 inventory 已刷新并脱敏记录。
 - 独立 encrypted logical backup 方法已选择，真实 restore rehearsal 和 final pre-cutover backup 均通过。
-- Non-empty Production clone 的 Schema 5 → 6、parity、recovery、logical restore 与再次迁移完整通过。
+- Non-empty Production clone 的 Schema 5 → fixed `0003` + `0004` Schema 6、parity、recovery、logical restore 与再次迁移完整通过。
 - write-free window、old-client guard、maintenance artifact、old V1 runtime database-write revocation、Production-only secrets、`main` migration 与 exact V2 promotion 按批准顺序完成。
 - 既有单词、Track、settings、imports、Recognition history 和 person-separated data 全部保留；Schema 6 没有虚构 Active history 或丢失事件。
 - Production AI 在最多 4 次初始调用内通过 Disclosure、generation、Replay、Cache、Kill Switch、accounting 与 cost 对账；随后才切换到无个人上限的全局 `300 / US$0.50 day / US$2 month` 边界。

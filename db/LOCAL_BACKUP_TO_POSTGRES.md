@@ -1,7 +1,7 @@
 # Local Backup To Postgres Migration Mapping
 
 Created: 2026-07-05 01:08 AEST
-Last updated: 2026-07-18 14:27 AEST
+Last updated: 2026-07-20 00:22 AEST
 
 Source plan:
 
@@ -19,10 +19,11 @@ Derived from:
 - `plan_docs/PLAN_V2_STAGE7B_1_FORMAL_AI_LOCAL_ORCHESTRATION.md`
 - `plan_docs/PLAN_V2_STAGE7B_2_NONPRODUCTION_PROVIDER_PROOF.md`
 - `plan_docs/PLAN_V2_STAGE8_3_PRODUCTION_BACKUP_MIGRATION_CUTOVER.md`
+- `plan_docs/PLAN_V2_STAGE8_2_2_REVIEW_AUDIO_BILINGUAL_EXAMPLES.md`
 
 Scope:
 
-- Map schema version 3 through 6 JSON backup（JSON 备份）data into the current V2 Postgres（关系型数据库）draft.
+- Map schema version 3 through 6 JSON backup（JSON 备份）data, including wrapper Versions 1–4, into the current V2 Postgres（关系型数据库）draft.
 - Preserve person separation through `person_id`.
 - Define validation and rollback expectations before a remote migration（迁移）is executed.
 - Document the Stage 5L dry-run and rollback-trial harness.
@@ -68,13 +69,15 @@ V2 Stage 3 extends the local harness to Schema Version 6 and backup wrapper vers
 - Quota buckets, study/AI idempotency rows, Cache, temporary/rejected drafts, and unreferenced AI audit rows are operational data and are not imported from a user backup.
 - `db/migrations/0003_v2_schema6_data_model.sql` and the Schema 6 fixture have passed local/static validation only. No Development, Staging, Preview, or Production migration/import has been executed for Stage 3.
 
+V2-8-2.2 advances new JSON backup wrappers to Version 4 while keeping Versions 1–3 readable. Each vocabulary item now maps aligned `examples` and `exampleTranslationsZh`; legacy wrappers normalize missing Chinese text to same-length empty positions, which remain visible as incomplete. `db/migrations/0004_v2_bilingual_examples.sql` adds `vocabulary_items.example_translations_zh` plus JSON-array and equal-length constraints. It is an additive Schema Version 6 migration and has not been executed on any remote target. The V2-8-3 forward path pins and executes `0003` then `0004`; it cannot treat a database containing only `0003` as current V2-8-2.2 readiness.
+
 V2 Stage 3.1 later reserves `context_explain_v1` in that same unexecuted `0003` draft and adds `ai_context_explanation_cache`. This table is expiring operational data tied to one exact stored example-token span and a matching successful context run. It has no JSON backup collection or `backup_import_mappings` entity type, and the backup selector excludes context runs plus any formal draft/relation carrying feature-mismatched lineage. Enrichment drafts and vocabulary relations continue requiring a matching succeeded/valid `enrichment_v1` run. Stage 3.1 did not execute SQL remotely.
 
 V2-7B-1 extends the same draft with `ai_disclosure_confirmations`, `ai_request_idempotency`, a bounded processing lease, same-Cache in-flight ownership, and `ai_runs.terminal_category`. These are operational safety/diagnostic records and remain excluded from JSON backup and `backup_import_mappings`. Accepted enrichment content, its successful source run, and referenced learning relations continue using the existing backup version 3 collections. V2-7B-2 later permits historical `ai-disclosure-v1` / `ai-disclosure-v2` lineage while requiring `ai-disclosure-v3` for new formal confirmation. Restore never creates a current Disclosure confirmation, request replay record, Cache owner, quota reservation, or browser session.
 
 V2-7B-2 executed `0003_v2_schema6_data_model.sql` once on an approved schema-only child of `staging`. Migration preflight found every core table empty; the disposable target then received one synthetic person and two fixed vocabulary entries. Schema 6 inspection, two provider attempts, Replay/Cache, the database attempt cap, and Kill Switch passed. The child branch/role and local environment file were deleted after evidence capture. Long-term `staging`, Production, and formal user backup import remain untouched and still require separate approval.
 
-V2-8-3 Gate 1 adds a separate non-empty Production migration contract without changing the historical empty-target tools. `scripts/v2-stage8-3-db.mjs` can inventory Schema 5, migrate a confirmed Production clone or `main`, inspect Schema 6, and compare a supplied pre-migration artifact. Every path requires an exact command flag and, before a Postgres connection, authenticated read-only GETs to Neon's fixed official control-plane API for the target/main endpoints and branches. The live response must bind project, endpoint, branch, parent, branch state, clone source type and target mode; a local JSON/hash or operator label cannot substitute. A second code-owned pin binds the verified Production project itself: it intentionally remains `null` in Gate 1, so every real command stays dormant until Gate 2 independently confirms the project and a reviewed code change records its SHA-256. Database/role/URL checks, the pinned `0003` SHA-256, and a non-empty learning inventory remain separate guards. The `main` migration additionally requires verified encrypted-backup evidence, a distinct Schema 5 recovery point, a completed non-empty clone rehearsal, an active write-free window, independent proof that the old V1 runtime write path is blocked, and a no-in-flight-write confirmation. Output is allowlisted to counts, invariants, and digests; it omits API response bodies, project id, learning text, person labels/ids and connection details.
+V2-8-3 Gate 1 adds a separate non-empty Production migration contract without changing the historical empty-target tools. `scripts/v2-stage8-3-db.mjs` can inventory Schema 5, migrate a confirmed Production clone or `main`, inspect Schema 6, and compare a supplied pre-migration artifact. Every path requires an exact command flag and, before a Postgres connection, authenticated read-only GETs to Neon's fixed official control-plane API for the target/main endpoints and branches. The live response must bind project, endpoint, branch, parent, branch state, clone source type and target mode; a local JSON/hash or operator label cannot substitute. A second code-owned pin binds the verified Production project itself: it intentionally remains `null` in Gate 1, so every real command stays dormant until Gate 2 independently confirms the project and a reviewed code change records its SHA-256. Database/role/URL checks, the independently pinned `0003` and `0004` SHA-256 values, and a non-empty learning inventory remain separate guards. The `main` migration additionally requires verified encrypted-backup evidence, a distinct Schema 5 recovery point, a completed non-empty clone rehearsal, an active write-free window, independent proof that the old V1 runtime write path is blocked, and a no-in-flight-write confirmation. Output is allowlisted to counts, invariants, and digests; it omits API response bodies, project id, learning text, person labels/ids and connection details.
 
 `scripts/v2-stage8-3-cutover-manifest.mjs` creates and validates a separate secret-free cutover record. It binds the exact app artifacts, Schema 5/6 inventory hashes, encrypted logical-backup and recovery evidence, complete write-window chronology, the initial four-attempt AI ledger boundary, and a paired V1/Schema 5 rollback packet. After the first V2 write, rollback validation requires window id/start/end, an explicit reconciliation choice and its evidence; approved loss requires an additional acceptance hash. These scripts are dormant local tooling in the present tranche: they have not read Production, run `0003` on `main`, selected a backup/encryption tool, or created a real backup/recovery resource.
 
@@ -82,7 +85,7 @@ V2-8-3 Gate 1 adds a separate non-empty Production migration contract without ch
 
 The browser-local schema uses prefixed string ids such as `person_mimi`, `vocab_*`, `batch_*`, and `review_event_*`. The Postgres draft uses UUID primary keys. A real import must therefore create a deterministic in-memory mapping from each source id to a target UUID during one transaction.
 
-Current JSON backup wrapper version 3 contains a Schema Version 6 workspace and can contain multiple people. The reader also accepts older supported wrappers/data versions and normalizes them before planning. A future import can either restore the whole workspace or restore one selected person after explicit user choice. For a workspace restore, create one `backup_imports` row per target person so person-scoped import history and `backup_import_mappings` stay aligned.
+Current JSON backup wrapper Version 4 contains a Schema Version 6 workspace and can contain multiple people. The reader also accepts older supported wrappers/data versions and normalizes them before planning. A future import can either restore the whole workspace or restore one selected person after explicit user choice. For a workspace restore, create one `backup_imports` row per target person so person-scoped import history and `backup_import_mappings` stay aligned.
 
 ## Required Preflight
 
@@ -134,6 +137,7 @@ Current JSON backup wrapper version 3 contains a Schema Version 6 workspace and 
   - `tags` -> `tags` JSONB（JSON 二进制存储）array or null
   - `meaningsZh` -> `meanings_zh`; schema version 3 falls back from `meaningZh`
   - `examples` -> `examples`; schema version 3 falls back from `example`
+  - `exampleTranslationsZh` -> `example_translations_zh`; legacy backup versions create one explicit empty position per English example
   - `rarityScore` must be null or between 1 and 5
   - `archivedAt` must agree with `status`
 

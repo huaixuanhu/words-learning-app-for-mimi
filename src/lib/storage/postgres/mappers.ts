@@ -6,6 +6,7 @@ import {
   normalizeVocabularyTags,
 } from "@/lib/vocabulary/normalize";
 import type { ImportBatch, Person, VocabularyItem } from "@/lib/vocabulary/types";
+import { alignExampleTranslationsZh } from "@/lib/vocabulary/example-pairs";
 import type {
   AiEnrichmentDraftRecord,
   AiRunRecord,
@@ -36,6 +37,7 @@ export type VocabularyItemRow = {
   meanings_zh?: unknown;
   example: string;
   examples?: unknown;
+  example_translations_zh?: unknown;
   notes: string;
   rarity_score: number | null;
   learning_track?: unknown;
@@ -260,6 +262,10 @@ export function mapVocabularyItemRow(row: VocabularyItemRow): VocabularyItem {
     meaningsZh: meaningsZh.length ? meaningsZh : legacyMeaningsZh,
     example: row.example,
     examples: examples.length ? examples : legacyExamples,
+    exampleTranslationsZh: alignExampleTranslationsZh(
+      examples.length ? examples : legacyExamples,
+      row.example_translations_zh,
+    ),
     notes: row.notes,
     rarityScore: row.rarity_score,
     learningTrack: normalizeLearningTrack(row.learning_track),

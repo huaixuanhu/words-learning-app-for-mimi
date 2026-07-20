@@ -42,7 +42,9 @@ describe("V2-7B-1 Gemini provider adapter", () => {
       return Response.json(
         providerResponse({
           additionalMeaningsZh: [],
+          sourceExampleTranslationsZh: ["我们适应变化。"],
           examples: ["People adapt gradually."],
+          exampleTranslationsZh: ["人们逐渐适应。"],
           similarWords: [],
           confusableWords: [],
         }),

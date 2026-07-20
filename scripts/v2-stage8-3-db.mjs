@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import { createPool } from "./db-connection.mjs";
 import {
   assertCommandContract,
+  assertPinnedAdditiveMigration,
   assertExpectedInventoryDigest,
   assertMainMigrationGates,
   assertPinnedMigration,
@@ -24,6 +25,10 @@ import {
 const MIGRATION_FILE = resolve(
   process.cwd(),
   "db/migrations/0003_v2_schema6_data_model.sql",
+);
+const ADDITIVE_MIGRATION_FILE = resolve(
+  process.cwd(),
+  "db/migrations/0004_v2_bilingual_examples.sql",
 );
 
 function beforeArtifactPath(argv) {
@@ -91,6 +96,11 @@ async function run() {
     });
     const migrationSql = await readFile(MIGRATION_FILE, "utf8");
     const migrationSha256 = assertPinnedMigration(migrationSql);
+    const additiveMigrationSql = await readFile(ADDITIVE_MIGRATION_FILE, "utf8");
+    const additiveMigrationSha256 = assertPinnedAdditiveMigration(
+      additiveMigrationSql,
+    );
+    const completeMigrationSql = `${migrationSql}\n${additiveMigrationSql}`;
     const beforeArtifact =
       command === "parity-schema6"
         ? await readBeforeArtifact(process.argv.slice(3))
@@ -147,7 +157,7 @@ async function run() {
         env: process.env,
         expectedBeforeDigest,
         identity,
-        migrationSql,
+        migrationSql: completeMigrationSql,
       });
       result = {
         ...result,
@@ -159,6 +169,7 @@ async function run() {
       JSON.stringify(
         {
           ok: true,
+          additiveMigrationSha256,
           migrationSha256,
           result,
           targetMode: contract.target,

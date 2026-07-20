@@ -6,12 +6,32 @@ const migrationSql = readFileSync(
   join(process.cwd(), "db", "migrations", "0003_v2_schema6_data_model.sql"),
   "utf8",
 );
+const bilingualMigrationSql = readFileSync(
+  join(process.cwd(), "db", "migrations", "0004_v2_bilingual_examples.sql"),
+  "utf8",
+);
 const backupSource = readFileSync(
   join(process.cwd(), "src", "lib", "backup", "json-backup.ts"),
   "utf8",
 );
 
 describe("V2 Schema Version 6 data model", () => {
+  it("adds bilingual example slots without rewriting the Schema 6 migration", () => {
+    expect(bilingualMigrationSql).toContain(
+      "Apply only after db/migrations/0003_v2_schema6_data_model.sql",
+    );
+    expect(bilingualMigrationSql).toContain(
+      "add column example_translations_zh jsonb not null",
+    );
+    expect(bilingualMigrationSql).toContain(
+      "vocabulary_items_example_translation_count_matches",
+    );
+    expect(bilingualMigrationSql).toContain("jsonb_array_length(examples)");
+    expect(bilingualMigrationSql.trimEnd()).toMatch(/commit;$/u);
+    expect(bilingualMigrationSql).not.toMatch(
+      /database_url\s*=|postgres_url\s*=|AIza|AQ\.|password\s*=|secret\s*=/iu,
+    );
+  });
   it("is forward-only, transaction-wrapped, and credential-free", () => {
     expect(migrationSql.trimStart()).toMatch(/^-- V2 Stage 3/);
     expect(migrationSql).toContain("begin;");

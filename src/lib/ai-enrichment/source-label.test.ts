@@ -19,7 +19,9 @@ import {
 const NOW = "2026-07-16T00:00:00.000Z";
 const PREVIEW = {
   additionalMeaningsZh: [],
+  sourceExampleTranslationsZh: ["我们适应变化。"],
   examples: ["People adapt gradually."],
+  exampleTranslationsZh: ["人们逐渐适应。"],
   similarWords: [],
   confusableWords: [
     {
@@ -27,6 +29,7 @@ const PREVIEW = {
       type: "spelling" as const,
       differenceZh: "adapt 表示适应；adopt 常表示采纳或收养。",
       examplePair: ["We adapt to change.", "We adopt a new policy."],
+      examplePairTranslationsZh: ["我们适应变化。", "我们采纳一项新政策。"],
     },
   ],
 };
@@ -59,6 +62,7 @@ function localPreviewAddition() {
       surfaceText: "adopt",
       meaningZh: "采纳；收养",
       example: "We adopt a new policy.",
+      exampleTranslationZh: "我们采纳一项新政策。",
       learningTrack: "active",
       timezone: "Australia/Melbourne",
     },

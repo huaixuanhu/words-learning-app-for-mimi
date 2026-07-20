@@ -14,7 +14,9 @@ import type { AiEnrichmentDraft } from "./types";
 const now = "2026-07-15T00:00:00.000Z";
 const draft = {
   additionalMeaningsZh: [],
+  sourceExampleTranslationsZh: ["适应新的日常安排需要时间。"],
   examples: ["People adapt gradually."],
+  exampleTranslationsZh: ["人们逐渐适应。"],
   similarWords: [],
   confusableWords: [
     {
@@ -22,6 +24,7 @@ const draft = {
       type: "spelling" as const,
       differenceZh: "adapt 表示适应；adopt 常表示采纳或收养。",
       examplePair: ["We adapt to change.", "We adopt a new policy."],
+      examplePairTranslationsZh: ["我们适应变化。", "我们采纳一项新政策。"],
     },
   ],
 };
@@ -102,6 +105,7 @@ describe("V2 Stage 7A accepted enrichment lifecycle", () => {
         surfaceText: "adopt",
         meaningZh: "采纳；收养",
         example: "We adopt a new policy.",
+        exampleTranslationZh: "我们采纳一项新政策。",
         learningTrack: "active",
         timezone: "Australia/Melbourne",
       },
@@ -115,6 +119,7 @@ describe("V2 Stage 7A accepted enrichment lifecycle", () => {
         surfaceText: "adopt",
         meaningZh: "采纳；收养",
         example: "We adopt a new policy.",
+        exampleTranslationZh: "我们采纳一项新政策。",
         learningTrack: "recognition",
         timezone: "Australia/Melbourne",
       },
@@ -165,6 +170,7 @@ describe("V2 Stage 7A accepted enrichment lifecycle", () => {
           surfaceText: "adopt",
           meaningZh: "采纳；收养",
           example: "We adopt a new policy.",
+          exampleTranslationZh: "我们采纳一项新政策。",
           learningTrack: "active",
           timezone: "Australia/Melbourne",
         },
@@ -194,6 +200,7 @@ describe("V2 Stage 7A accepted enrichment lifecycle", () => {
           surfaceText: "unrelated",
           meaningZh: "不相关",
           example: "This target is unrelated.",
+          exampleTranslationZh: "这个目标并不相关。",
           learningTrack: "recognition",
           timezone: "Australia/Melbourne",
         },
@@ -224,6 +231,7 @@ describe("V2 Stage 7A accepted enrichment lifecycle", () => {
         surfaceText: "adopt",
         meaningZh: "采纳",
         example: "We adopt a policy.",
+        exampleTranslationZh: "我们采纳一项政策。",
         learningTrack: "recognition",
         timezone: "Australia/Melbourne",
       },
@@ -233,14 +241,28 @@ describe("V2 Stage 7A accepted enrichment lifecycle", () => {
       ...linked.data,
       items: linked.data.items.map((item) =>
         item.id === source.item.id
-          ? { ...item, examples: [...item.examples, "People adapt over time."] }
+          ? {
+              ...item,
+              examples: [...item.examples, "People adapt over time."],
+              exampleTranslationsZh: [
+                ...(item.exampleTranslationsZh ?? []),
+                "人们会逐渐适应。",
+              ],
+            }
           : item,
       ),
     };
     const second = createLocalFixtureDraft(
       changedSource,
       source.item.id,
-      { ...draft, examples: ["People can adapt gradually."] },
+      {
+        ...draft,
+        sourceExampleTranslationsZh: [
+          "适应新的日常安排需要时间。",
+          "人们会逐渐适应。",
+        ],
+        examples: ["People can adapt gradually."],
+      },
       "2026-07-16T00:00:00.000Z",
     );
     const acceptedSecond = decideAiEnrichmentDraft(
@@ -258,6 +280,7 @@ describe("V2 Stage 7A accepted enrichment lifecycle", () => {
         surfaceText: "adopt",
         meaningZh: "采纳",
         example: "We adopt a policy.",
+        exampleTranslationZh: "我们采纳一项政策。",
         learningTrack: "recognition",
         timezone: "Australia/Melbourne",
       },
@@ -283,12 +306,26 @@ describe("V2 Stage 7A accepted enrichment lifecycle", () => {
         ...accepted.data,
         items: accepted.data.items.map((item) =>
           item.id === source.item.id
-            ? { ...item, examples: [...item.examples, draft.examples[0]] }
+            ? {
+                ...item,
+                examples: [...item.examples, draft.examples[0]],
+                exampleTranslationsZh: [
+                  ...(item.exampleTranslationsZh ?? []),
+                  "人们逐渐适应。",
+                ],
+              }
             : item,
         ),
       },
       source.item.id,
-      { ...draft, examples: ["A second local preview stays temporary."] },
+      {
+        ...draft,
+        sourceExampleTranslationsZh: [
+          "适应新的日常安排需要时间。",
+          "人们逐渐适应。",
+        ],
+        examples: ["A second local preview stays temporary."],
+      },
       "2026-07-15T00:02:00.000Z",
     );
     const serialized = serializeVocabularyBackup(secondDraft.data, {

@@ -68,6 +68,10 @@ import {
   normalizeVocabularyTags,
   normalizeSurfaceText,
 } from "@/lib/vocabulary/normalize";
+import {
+  buildVocabularyExamplePairs,
+  splitVocabularyExamplePairs,
+} from "@/lib/vocabulary/example-pairs";
 import { buildPerson, type NewPersonInput } from "@/lib/people/repository";
 import {
   buildVocabularyCreationRecord,
@@ -203,6 +207,7 @@ async function listVocabularyItems(
         meanings_zh,
         example,
         examples,
+        example_translations_zh,
         notes,
         rarity_score,
         learning_track,
@@ -246,6 +251,7 @@ async function selectVocabularyItem(
         meanings_zh,
         example,
         examples,
+        example_translations_zh,
         notes,
         rarity_score,
         learning_track,
@@ -2047,6 +2053,7 @@ async function insertVocabularyItem(
         meanings_zh,
         example,
         examples,
+        example_translations_zh,
         notes,
         rarity_score,
         learning_track,
@@ -2061,8 +2068,8 @@ async function insertVocabularyItem(
         archived_at
       )
       values (
-        $1, $2, $3, $4, $5, $6::jsonb, $7, $8::jsonb,
-        $9, $10, $11, $12::jsonb, $13, $14, $15, $16, $17, $18, $19, $20
+        $1, $2, $3, $4, $5, $6::jsonb, $7, $8::jsonb, $9::jsonb,
+        $10, $11, $12, $13::jsonb, $14, $15, $16, $17, $18, $19, $20, $21
       )
       returning
         id,
@@ -2073,6 +2080,7 @@ async function insertVocabularyItem(
         meanings_zh,
         example,
         examples,
+        example_translations_zh,
         notes,
         rarity_score,
         learning_track,
@@ -2095,6 +2103,7 @@ async function insertVocabularyItem(
       JSON.stringify(item.meaningsZh),
       item.example,
       JSON.stringify(item.examples),
+      JSON.stringify(item.exampleTranslationsZh ?? item.examples.map(() => "")),
       item.notes,
       item.rarityScore,
       item.learningTrack,
@@ -2189,12 +2198,24 @@ function buildUpdatedVocabularyItem(
     input.meaningZh === undefined && input.meaningsZh === undefined
       ? currentItem.meaningsZh
       : normalizeTextList(input.meaningsZh?.length ? input.meaningsZh : legacyMeaning);
-  const legacyExample =
-    input.example === undefined ? currentItem.example : normalizeOptionalText(input.example);
-  const examples =
-    input.example === undefined && input.examples === undefined
-      ? currentItem.examples
-      : normalizeTextList(input.examples?.length ? input.examples : legacyExample);
+  const exampleFields =
+    input.example === undefined &&
+    input.examples === undefined &&
+    input.exampleTranslationsZh === undefined
+      ? {
+          example: currentItem.example,
+          examples: currentItem.examples,
+          exampleTranslationsZh:
+            currentItem.exampleTranslationsZh ??
+            currentItem.examples.map(() => ""),
+        }
+      : splitVocabularyExamplePairs(
+          buildVocabularyExamplePairs({
+            example: input.example,
+            examples: input.examples,
+            exampleTranslationsZh: input.exampleTranslationsZh,
+          }),
+        );
 
   return {
     ...currentItem,
@@ -2202,8 +2223,7 @@ function buildUpdatedVocabularyItem(
     normalizedText: normalizeSurfaceText(surfaceText),
     meaningZh: meaningsZh[0] ?? legacyMeaning,
     meaningsZh,
-    example: examples[0] ?? legacyExample,
-    examples,
+    ...exampleFields,
     notes: input.notes === undefined ? currentItem.notes : normalizeOptionalText(input.notes),
     rarityScore:
       input.rarityScore === undefined ? currentItem.rarityScore : normalizeRarityScore(input.rarityScore),
@@ -2235,13 +2255,14 @@ async function updateVocabularyItem(
         meanings_zh = $6::jsonb,
         example = $7,
         examples = $8::jsonb,
-        notes = $9,
-        rarity_score = $10,
-        learning_track = $11,
-        tags = $12::jsonb,
-        created_at = $13,
-        updated_at = $14,
-        timezone = $15
+        example_translations_zh = $9::jsonb,
+        notes = $10,
+        rarity_score = $11,
+        learning_track = $12,
+        tags = $13::jsonb,
+        created_at = $14,
+        updated_at = $15,
+        timezone = $16
       where person_id = $1 and id = $2
       returning
         id,
@@ -2252,6 +2273,7 @@ async function updateVocabularyItem(
         meanings_zh,
         example,
         examples,
+        example_translations_zh,
         notes,
         rarity_score,
         learning_track,
@@ -2274,6 +2296,7 @@ async function updateVocabularyItem(
       JSON.stringify(item.meaningsZh),
       item.example,
       JSON.stringify(item.examples),
+      JSON.stringify(item.exampleTranslationsZh ?? item.examples.map(() => "")),
       item.notes,
       item.rarityScore,
       item.learningTrack,
@@ -2374,6 +2397,7 @@ async function setVocabularyArchiveState(
         meanings_zh,
         example,
         examples,
+        example_translations_zh,
         notes,
         rarity_score,
         learning_track,
@@ -3273,6 +3297,7 @@ export function createPostgresRepository(): DurableRepositoryPort {
               meaningsZh: candidate.meaningsZh,
               example: candidate.example,
               examples: candidate.examples,
+              exampleTranslationsZh: candidate.exampleTranslationsZh,
               rarityScore: candidate.rarityScore,
               notes: candidate.notes,
               learningTrack: candidate.learningTrack,

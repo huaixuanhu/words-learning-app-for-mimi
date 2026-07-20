@@ -19,13 +19,13 @@
 - **ADHD-friendly 学习体验**：把任务拆小、保持明确反馈，并允许保守地回退和重新开始。
 - **长期数据可控**：正式学习数据保存在云端数据库，同时保留导出和备份能力。
 
-当前 V1 已作为受保护的私人应用上线。V2 主线已经完成每日学习分区、首次作答调度修复、独立 Active 三种练习、手机端改造、学习/记忆可视化、精简学习者文案和第一代付费 AI enrichment（AI 词汇补充）。V2-8-2 已把长期非生产 `staging` 迁移到 Schema Version 6，并在受 Vercel Authentication（Vercel 部署认证）保护的 Preview 中运行完整 V2。V2-8-2.1 已在本地 V2 分支收口页面切换、写入和评分后的重复读取；它没有修补或重新部署 V1。V2-8-3 已建立正式切换子计划，并在本地加入 fail-closed（条件不完整时安全停止）的 Production guard（正式环境保护）、目标证据绑定和演练工具。Production project（正式数据库项目）的代码内摘要目前刻意留空，因此真实命令仍被机械关闭，需在获批的 Gate 2 核验后才能写入固定摘要。当前 protected Preview 仍是 V2-8-2 deployment；Production 继续运行 V1 / Schema Version 5。
+当前 V1 已作为受保护的私人应用上线。V2 主线已经完成每日学习、独立 Active 三种练习、手机端与 Dashboard、第一代付费 AI enrichment（AI 词汇补充）及 V2-only 性能收口。V2-8-2.2 已在本地加入可靠的方向键评分、设备 English voice 选择，以及每条英文例句相邻的中文翻译资料链。当前 protected Preview 仍运行较早的 exact deployment；`staging` 尚未执行本批新增的 `0004`，Production 继续运行 V1 / Schema Version 5。V2-8-3 的真实命令仍由未设置的 Production project 固定摘要机械关闭，需在获批 Gate 2 后继续。
 
 ## 正式版本
 
 - 访问地址：[words-learning-app-for-mimi.vercel.app](https://words-learning-app-for-mimi.vercel.app)
 - 当前线上版本：cloud-backed V1（云端持久化 V1）
-- 当前开发分支：`V2`；Stage 1–V2-8-2 已完成各自获批范围，V2-8-2.1、本地 V2-8-3 Gate 1 与 protected Preview Gate 0B 均已完成；下一项远程工作是需要重新批准的 Gate 2
+- 当前开发分支：`V2`；V2-8-2.2 已完成本地实现，本地 V2-8-3 Gate 1 与 protected Preview Gate 0B 已完成；下一项远程工作仍是需要重新批准的 Gate 2
 - 访问方式：私人 Basic Auth（基础认证）；账号信息不会存放在仓库中
 - 正式数据：Neon Postgres（关系型数据库）
 
@@ -59,6 +59,9 @@
 - V2-8-1.1 已移除普通界面的重复副标题、氛围口号、鼓励卡和 `V2 Stage ... Fixture` 内部显示名；安全提示、AI 来源、统计口径、错误恢复与快捷键说明继续保留。
 - V2-8-2 已完成 Staging Schema 5 → 6、Reset / 再迁移演练、Schema 5 recovery checkpoint（恢复检查点）、受保护 Preview 和真实 Gemini 验收。最终合成数据包含 5 个词条、4 个独立 Review states、5 次学习事件；Gemini 共 3 次成功调用、1,467 tokens、估算 `US$0.000777`，没有未完成调用。
 - V2-8-2.1 让页面切换复用已经加载的词库，合并同时发生的读取，直接使用写入返回值，并让评分/回退后立即继续而不等待整份词库重读。Daily Plan 已存在时不再重复准备同一天。V2-8-3 Gate 0B 已确认 exact commit 的 Vercel Functions 位于 Sydney `syd1`；10 次温热 Home → Library 的 data-ready median/p95 为 `52/62ms`，页面切换新增 full-data GET 为 `0`。V1 保持原样。
+- V2-8-2.2 修复了“Space / Enter 可用但 Arrow 无反应”的焦点边界：Recognition 和 Active 都可在 2×2 评分中用方向键移动，文字输入与弹窗不会被快捷键打断；现有卡片 Motion 与评分色阶保持不变。
+- Settings 可试听并保存当前设备提供的 English voice；全部浏览器朗读共享这一偏好并在音色不可用时回退。真实设备试听仍是质量判断；若用户与 Mimi 仍不满意，Cloud TTS 会作为独立后续计划处理。
+- 新建、编辑、导入和 AI 接受的英文例句都需要配对中文翻译。Library 可筛选 `Needs translation`，旧资料的缺口会明确显示并可通过人工审核的 AI suggestion 逐词补齐。JSON backup 已升到 Version 4；Version 1–3 仍可读取。
 - V2-8-3 的本地 Gate 1 使用 `maintenance`、`schema6-readiness`、`live` 三个明确模式；缺失或未知模式会安全停止。Basic Auth 仍先于维护状态执行，只有 `live` 接受带 `v2-schema6` 标记的 Production 写入，旧页面会被要求重新载入。
 - Schema 5 / Schema 6 的非空 clone/main 检查和迁移命令目前只是 dormant tooling（未启用工具），必须同时通过 exact target、environment、action 和人工确认。`0003` migration SHA-256 已固定，切换记录使用不含密钥的 manifest（清单）并要求 V1/Schema 5 与 V2/Schema 6 成对回退准备。
 - Production AI 的独立 `v2-8-3-production` scope 只有在 `live`、HTTPS、Vercel Production `main`、`NODE_ENV=production`、Schema 6、明确 Kill Switch 状态和其他正式确认全部满足时才可能打开；首轮最多 4 次供应商调用，进入 300 次/日长期边界还需单独确认。
@@ -66,7 +69,7 @@
 - Gate 0B 只读取了受保护 Preview / Neon checkpoint 状态并验证 Git Integration 自动建立的 exact-commit Preview；没有读取 `.env` 或 secret value，没有更改 alias、environment、credential、Shareable Link 或 checkpoint，也没有调用 AI。V1 与 Neon `main` 仍保持线上 Schema Version 5；Gate 2 必须获得新的明确批准。
 - 普通界面继续使用简短自然的英文；不可逆操作和重要隐私提示保留中文或双语。
 
-完整范围和阶段顺序见 [V2 Master Plan](./plan_docs/PLAN_V2_MASTER.md)。
+完整范围和阶段顺序见 [V2 Master Plan](./plan_docs/PLAN_V2_MASTER.md)。V2-8-2.2 的键盘、浏览器音色和双语例句契约见 [V2 Stage 8-2.2](./plan_docs/PLAN_V2_STAGE8_2_2_REVIEW_AUDIO_BILINGUAL_EXAMPLES.md)。
 Stage 1 的冻结口径、图示和可执行边界见 [V2 Stage 1 Contract](./plan_docs/PLAN_V2_STAGE1_PRODUCT_METRIC_DATA_CONTRACT.md)。Stage 2 的安全边界、首次测试和第二轮结论见 [V2 Stage 2 Gate](./plan_docs/PLAN_V2_STAGE2_AI_QUALITY_SECURITY_GATE.md)、[V2 Stage 2 Evidence](./plan_docs/PLAN_V2_STAGE2_AI_QUALITY_EVIDENCE.md)、[V2 Stage 2-B Refinement](./plan_docs/PLAN_V2_STAGE2_B_AI_QUALITY_REFINEMENT.md) 和 [V2 Stage 2-B Evidence](./plan_docs/PLAN_V2_STAGE2_B_AI_QUALITY_EVIDENCE.md)。Stage 3 的数据、迁移草案、备份范围和远程执行边界见 [V2 Stage 3 Data Model](./plan_docs/PLAN_V2_STAGE3_DATA_MODEL_BACKUP_PARITY.md)；Review 交互与例句词汇操作见 [V2 Stage 3.1](./plan_docs/PLAN_V2_STAGE3_1_REVIEW_INTERACTION_CONTEXT_WORD_ACTIONS.md)；手机基础界面与精简文案见 [V2 Stage 4](./plan_docs/PLAN_V2_STAGE4_MOBILE_FOUNDATION_COPY.md)；每日学习运行规则和验收见 [V2 Stage 5](./plan_docs/PLAN_V2_STAGE5_DAILY_LEARNING_ENGINE.md)，调度修复见 [V2 Stage 5.1](./plan_docs/PLAN_V2_STAGE5_1_DAILY_EPISODE_SCHEDULING_REPAIR.md)，独立 Active 练习见 [V2 Stage 6](./plan_docs/PLAN_V2_STAGE6_ACTIVE_PRACTICE_ENGINE.md)，本地 AI enrichment 与费用保护见 [V2 Stage 7A](./plan_docs/PLAN_V2_STAGE7A_LOCAL_AI_ENRICHMENT_COST_GUARD.md)，正式本地服务器闭环见 [V2 Stage 7B-1](./plan_docs/PLAN_V2_STAGE7B_1_FORMAL_AI_LOCAL_ORCHESTRATION.md)，一次性真实供应商证明见 [V2 Stage 7B-2](./plan_docs/PLAN_V2_STAGE7B_2_NONPRODUCTION_PROVIDER_PROOF.md)，本地 Dashboard 指标、图表与手机验收见 [V2 Stage 8-1](./plan_docs/PLAN_V2_STAGE8_1_DASHBOARD_INSIGHTS.md)，全站学习者文案审查见 [V2 Stage 8-1.1](./plan_docs/PLAN_V2_STAGE8_1_1_LEARNER_COPY_AUDIT.md)，Staging / protected Preview 完整发布演练见 [V2 Stage 8-2](./plan_docs/PLAN_V2_STAGE8_2_STAGING_PREVIEW_RELEASE_REHEARSAL.md)，V2-only 运行性能收口见 [V2 Stage 8-2.1](./plan_docs/PLAN_V2_STAGE8_2_1_PERFORMANCE_STABILISATION.md)，Production 备份、迁移和切换门禁见 [V2 Stage 8-3](./plan_docs/PLAN_V2_STAGE8_3_PRODUCTION_BACKUP_MIGRATION_CUTOVER.md)。
 
 ## 两条学习轨道
@@ -135,7 +138,7 @@ npm run build
 - 当前产品面向私人熟人小组，不是公开注册服务。
 - Production 不接收 Development / Preview 的测试数据。
 - Active Vocabulary 在当前线上 V1 中没有调度行为；其独立练习已在受保护 V2 Preview 中实际运行，Production 尚未切换。
-- `V2` 分支、本地快照、JSON backup 和长期非生产 `staging` 已升级到 Schema Version 6 / backup version 3。`db/migrations/0003_v2_schema6_data_model.sql` 仍未在 Production `main` 执行，线上 V1 继续使用 Schema Version 5。
+- `V2` 分支本地契约为 Schema Version 6 + additive `0004` / JSON backup Version 4。长期非生产 `staging` 与当前 protected Preview 尚未应用 V2-8-2.2；Production `main` 继续运行 V1 / Schema Version 5。
 - 受保护 `V2` Preview 已配置独立 `MIMI_STUDY_TOKEN_SECRET`，Postgres `/api/study` 可签发和刷新 Daily Study 证据。Local fixture 与 Production 不继承该 secret，缺少时继续安全停止。
 - 受保护的 V2 Preview 已使用带硬额度保护的付费 Gemini API；Stage 2 以 120 条非个人测试词条固定验证 `gemini-3.1-flash-lite`，并已从路线中移除 Datamuse、Free Dictionary、Groq 对比和会热切换的 `gemini-flash-latest`。当前线上 V1 / Production 尚未调用任何 AI 服务。
 - 当前 V2-7B-1 没有个人 AI 次数上限；全应用按 `Australia/Melbourne` 预算日限制为 300 次、600,000 input tokens、210,000 output/thinking tokens、US$0.50 估算费用，并另设 US$2/月与并发 2。`person_id` 不能拆分或重置这些全局边界。

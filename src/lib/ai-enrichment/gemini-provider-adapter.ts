@@ -1,6 +1,7 @@
 import {
   AI_PRODUCTION_LIMITS,
   GEMINI_STAGE2_MODEL,
+  assertCompleteAiExampleTranslations,
   validateAiEnrichmentDraft,
   validateGeminiUsage,
   validateTrustedAiLexicalPayload,
@@ -347,7 +348,11 @@ export function createGeminiProviderAdapter(input: Readonly<{
       return generate<AiEnrichmentDraft>(
         trustedPayload,
         materials,
-        (value) => validateAiEnrichmentDraft(value, trustedPayload),
+        (value) =>
+          assertCompleteAiExampleTranslations(
+            validateAiEnrichmentDraft(value, trustedPayload),
+            trustedPayload.examples,
+          ),
         signal,
       );
     },

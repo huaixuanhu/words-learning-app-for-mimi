@@ -26,6 +26,7 @@ import type {
   AiEnrichmentDraft,
 } from "@/lib/ai-enrichment/types";
 import { normalizeTextList } from "@/lib/vocabulary/normalize";
+import { alignExampleTranslationsZh } from "@/lib/vocabulary/example-pairs";
 import { makeId } from "@/lib/vocabulary/repository";
 import type {
   LearningTrack,
@@ -52,6 +53,7 @@ type CandidateToAdd = Readonly<{
   surfaceText: string;
   meaningZh: string;
   example: string;
+  exampleTranslationZh: string;
   comparisonZh: string;
 }>;
 
@@ -74,7 +76,9 @@ function detectTimezone() {
 function emptyDraft(): AiEnrichmentDraft {
   return {
     additionalMeaningsZh: [],
+    sourceExampleTranslationsZh: [],
     examples: [],
+    exampleTranslationsZh: [],
     similarWords: [],
     confusableWords: [],
   };
@@ -101,8 +105,11 @@ export function AiEnrichmentDialog({
   const [similarKeys, setSimilarKeys] = useState<string[]>([]);
   const [confusableKeys, setConfusableKeys] = useState<string[]>([]);
   const [additionalMeaningsText, setAdditionalMeaningsText] = useState("");
+  const [sourceExampleTranslationsZhText, setSourceExampleTranslationsZhText] = useState("");
   const [examplesText, setExamplesText] = useState("");
+  const [exampleTranslationsZhText, setExampleTranslationsZhText] = useState("");
   const [confusableExamplePairTexts, setConfusableExamplePairTexts] = useState<string[]>([]);
+  const [confusableExamplePairTranslationsZhTexts, setConfusableExamplePairTranslationsZhTexts] = useState<string[]>([]);
   const [formalDisclosureAccepted, setFormalDisclosureAccepted] = useState(false);
   const [modelNotice, setModelNotice] = useState<string>(LOCAL_FIXTURE_LINEAGE.notice);
 
@@ -156,11 +163,20 @@ export function AiEnrichmentDialog({
       setDraftId(nextDraftId);
       setDraft(visibleDraft);
       setAdditionalMeaningsText(visibleDraft.additionalMeaningsZh.join("\n"));
+      setSourceExampleTranslationsZhText(
+        (visibleDraft.sourceExampleTranslationsZh ?? []).join("\n"),
+      );
       setExamplesText(visibleDraft.examples.join("\n"));
+      setExampleTranslationsZhText((visibleDraft.exampleTranslationsZh ?? []).join("\n"));
       setSimilarKeys(visibleDraft.similarWords.map(() => makeId("similar_preview")));
       setConfusableKeys(visibleDraft.confusableWords.map(() => makeId("confusable_preview")));
       setConfusableExamplePairTexts(
         visibleDraft.confusableWords.map((candidate) => candidate.examplePair.join("\n")),
+      );
+      setConfusableExamplePairTranslationsZhTexts(
+        visibleDraft.confusableWords.map((candidate) =>
+          (candidate.examplePairTranslationsZh ?? []).join("\n"),
+        ),
       );
       setDecision(nextDecision);
       setMessage(
@@ -181,14 +197,30 @@ export function AiEnrichmentDialog({
     setMessage("");
 
     try {
+      const examples = normalizeMultilineText(examplesText);
       const normalizedDraft: AiEnrichmentDraft = {
         ...draft,
         additionalMeaningsZh: normalizeMultilineText(additionalMeaningsText),
-        examples: normalizeMultilineText(examplesText),
-        confusableWords: draft.confusableWords.map((candidate, index) => ({
-          ...candidate,
-          examplePair: normalizeMultilineText(confusableExamplePairTexts[index] ?? ""),
-        })),
+        sourceExampleTranslationsZh: alignExampleTranslationsZh(
+          item ? sourceExamples(item) : [],
+          sourceExampleTranslationsZhText.split(/\r?\n/),
+        ),
+        examples,
+        exampleTranslationsZh: alignExampleTranslationsZh(
+          examples,
+          exampleTranslationsZhText.split(/\r?\n/),
+        ),
+        confusableWords: draft.confusableWords.map((candidate, index) => {
+          const examplePair = normalizeMultilineText(confusableExamplePairTexts[index] ?? "");
+          return {
+            ...candidate,
+            examplePair,
+            examplePairTranslationsZh: alignExampleTranslationsZh(
+              examplePair,
+              (confusableExamplePairTranslationsZhTexts[index] ?? "").split(/\r?\n/),
+            ),
+          };
+        }),
       };
       if (formalRouteEnabled) {
         await decideFormalAiDraft({
@@ -226,6 +258,7 @@ export function AiEnrichmentDialog({
       word: string;
       differenceZh: string;
       examplePair?: readonly string[];
+      examplePairTranslationsZh?: readonly string[];
     }>,
   ) => {
     setCandidateToAdd({
@@ -233,6 +266,7 @@ export function AiEnrichmentDialog({
       surfaceText: candidate.word,
       meaningZh: "",
       example: candidate.examplePair?.[1] ?? "",
+      exampleTranslationZh: candidate.examplePairTranslationsZh?.[1] ?? "",
       comparisonZh: candidate.differenceZh,
     });
     setCandidateTrack(item?.learningTrack ?? "recognition");
@@ -253,6 +287,7 @@ export function AiEnrichmentDialog({
           surfaceText: candidateToAdd.surfaceText,
           meaningZh: candidateToAdd.meaningZh,
           example: candidateToAdd.example,
+          exampleTranslationZh: candidateToAdd.exampleTranslationZh,
           learningTrack: candidateTrack,
           timezone: detectTimezone(),
         });
@@ -269,6 +304,7 @@ export function AiEnrichmentDialog({
           surfaceText: candidateToAdd.surfaceText,
           meaningZh: candidateToAdd.meaningZh,
           example: candidateToAdd.example,
+          exampleTranslationZh: candidateToAdd.exampleTranslationZh,
           learningTrack: candidateTrack,
           timezone: detectTimezone(),
         },
@@ -298,8 +334,11 @@ export function AiEnrichmentDialog({
     setSimilarKeys([]);
     setConfusableKeys([]);
     setAdditionalMeaningsText("");
+    setSourceExampleTranslationsZhText("");
     setExamplesText("");
+    setExampleTranslationsZhText("");
     setConfusableExamplePairTexts([]);
+    setConfusableExamplePairTranslationsZhTexts([]);
     setFormalDisclosureAccepted(false);
     setModelNotice(LOCAL_FIXTURE_LINEAGE.notice);
     onClose();
@@ -402,6 +441,22 @@ export function AiEnrichmentDialog({
             />
           </label>
 
+          {item && sourceExamples(item).length ? (
+            <label className="grid gap-1.5">
+              <span className="text-sm font-semibold text-[var(--mimi-text)]">
+                Existing example translations
+              </span>
+              <textarea
+                rows={Math.min(6, Math.max(3, sourceExamples(item).length))}
+                disabled={decision !== "draft"}
+                value={sourceExampleTranslationsZhText}
+                onChange={(event) => setSourceExampleTranslationsZhText(event.target.value)}
+                placeholder="One translation per existing example, in the same order"
+                className="mimi-input resize-y px-3 py-2 text-base disabled:opacity-65"
+              />
+            </label>
+          ) : null}
+
           <label className="grid gap-1.5">
             <span className="text-sm font-semibold text-[var(--mimi-text)]">More examples</span>
             <textarea
@@ -410,6 +465,18 @@ export function AiEnrichmentDialog({
               value={examplesText}
               onChange={(event) => setExamplesText(event.target.value)}
               placeholder="One example per line"
+              className="mimi-input resize-y px-3 py-2 text-base disabled:opacity-65"
+            />
+          </label>
+
+          <label className="grid gap-1.5">
+            <span className="text-sm font-semibold text-[var(--mimi-text)]">Chinese translations</span>
+            <textarea
+              rows={4}
+              disabled={decision !== "draft"}
+              value={exampleTranslationsZhText}
+              onChange={(event) => setExampleTranslationsZhText(event.target.value)}
+              placeholder="One translation per example, in the same order"
               className="mimi-input resize-y px-3 py-2 text-base disabled:opacity-65"
             />
           </label>
@@ -499,11 +566,21 @@ export function AiEnrichmentDialog({
                         ...draft,
                         confusableWords: [
                           ...draft.confusableWords,
-                          { word: "", type: "usage", differenceZh: "", examplePair: [] },
+                          {
+                            word: "",
+                            type: "usage",
+                            differenceZh: "",
+                            examplePair: [],
+                            examplePairTranslationsZh: [],
+                          },
                         ],
                       });
                       setConfusableKeys([...confusableKeys, makeId("confusable_preview")]);
                       setConfusableExamplePairTexts([...confusableExamplePairTexts, ""]);
+                      setConfusableExamplePairTranslationsZhTexts([
+                        ...confusableExamplePairTranslationsZhTexts,
+                        "",
+                      ]);
                     }
                   }
                   className="mimi-button-secondary mimi-focus-ring inline-flex min-h-9 items-center gap-1.5 px-2.5 text-xs font-semibold"
@@ -551,6 +628,11 @@ export function AiEnrichmentDialog({
                         setConfusableExamplePairTexts(
                           confusableExamplePairTexts.filter((_, candidateIndex) => candidateIndex !== index),
                         );
+                        setConfusableExamplePairTranslationsZhTexts(
+                          confusableExamplePairTranslationsZhTexts.filter(
+                            (_, candidateIndex) => candidateIndex !== index,
+                          ),
+                        );
                       }}
                       className="mimi-button-secondary mimi-focus-ring grid size-11 place-items-center"
                     >
@@ -589,6 +671,19 @@ export function AiEnrichmentDialog({
                     setConfusableExamplePairTexts(nextTexts);
                   }}
                   placeholder="Leave blank, or add exactly two examples"
+                  className="mimi-input resize-y px-3 py-2 text-base disabled:opacity-65"
+                />
+                <textarea
+                  rows={2}
+                  disabled={decision !== "draft"}
+                  aria-label={`Confusable word Chinese example translations ${index + 1}`}
+                  value={confusableExamplePairTranslationsZhTexts[index] ?? ""}
+                  onChange={(event) => {
+                    const nextTexts = [...confusableExamplePairTranslationsZhTexts];
+                    nextTexts[index] = event.target.value;
+                    setConfusableExamplePairTranslationsZhTexts(nextTexts);
+                  }}
+                  placeholder="Chinese translations in the same order"
                   className="mimi-input resize-y px-3 py-2 text-base disabled:opacity-65"
                 />
               </div>
@@ -641,6 +736,16 @@ export function AiEnrichmentDialog({
               <label className="grid gap-1">
                 <span className="text-sm font-semibold text-[var(--mimi-text)]">Example</span>
                 <textarea rows={2} value={candidateToAdd.example} onChange={(event) => setCandidateToAdd({ ...candidateToAdd, example: event.target.value })} className="mimi-input resize-y px-3 py-2 text-base" />
+              </label>
+              <label className="grid gap-1">
+                <span className="text-sm font-semibold text-[var(--mimi-text)]">Chinese translation</span>
+                <textarea
+                  rows={2}
+                  required={Boolean(candidateToAdd.example.trim())}
+                  value={candidateToAdd.exampleTranslationZh}
+                  onChange={(event) => setCandidateToAdd({ ...candidateToAdd, exampleTranslationZh: event.target.value })}
+                  className="mimi-input resize-y px-3 py-2 text-base"
+                />
               </label>
               <fieldset>
                 <legend className="text-sm font-semibold text-[var(--mimi-text)]">Learning Track</legend>

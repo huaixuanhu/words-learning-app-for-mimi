@@ -13,13 +13,16 @@ const sourcePayload = {
 };
 const acceptedDraft = {
   additionalMeaningsZh: [],
+  sourceExampleTranslationsZh: ["我们适应变化。"],
   examples: ["People adapt gradually."],
+  exampleTranslationsZh: ["人们逐渐适应。"],
   similarWords: [],
   confusableWords: [{
     word: "adopt",
     type: "spelling" as const,
     differenceZh: "adapt 表示适应；adopt 表示采用。",
     examplePair: ["We adapt to change.", "They adopt a policy."],
+    examplePairTranslationsZh: ["我们适应变化。", "他们采纳一项政策。"],
   }],
 };
 
@@ -67,6 +70,9 @@ class ActionFake {
       }
       if (sql.startsWith("update ai_enrichment_drafts")) {
         this.status = sql.includes("status = 'accepted'") ? "accepted" : "rejected";
+        return queryResult([]) as never;
+      }
+      if (sql.startsWith("update vocabulary_items set example_translations_zh")) {
         return queryResult([]) as never;
       }
       if (sql.includes("from vocabulary_items") && sql.includes("normalized_text = $2")) {
@@ -118,6 +124,7 @@ describe("V2-7B-1 Postgres AI decisions", () => {
       surfaceText: "adopt",
       meaningZh: "采用",
       example: "They adopt a policy.",
+      exampleTranslationZh: "他们采纳一项政策。",
       learningTrack: "active",
       timezone: "Australia/Melbourne",
     }, { transaction: exact.transaction })).toMatchObject({
@@ -138,6 +145,7 @@ describe("V2-7B-1 Postgres AI decisions", () => {
       surfaceText: "adopted phrase",
       meaningZh: "改写",
       example: "An edited phrase.",
+      exampleTranslationZh: "一个经过修改的短语。",
       learningTrack: "recognition",
       timezone: "Australia/Melbourne",
     }, { transaction: edited.transaction })).toMatchObject({

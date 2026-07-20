@@ -10,6 +10,7 @@ import {
   assertExpectedInventoryDigest,
   assertMainMigrationGates,
   assertNonEmptyLearningInventory,
+  assertPinnedAdditiveMigration,
   assertPinnedMigration,
   assertTargetIdentity,
   buildSafeInventoryArtifact,
@@ -19,6 +20,7 @@ import {
   sha256,
   unwrapSafeInventoryArtifact,
   V2_STAGE8_3_APPROVED_PRODUCTION_PROJECT_ID_SHA256,
+  V2_STAGE8_3_ADDITIVE_MIGRATION_SHA256,
   V2_STAGE8_3_MIGRATION_SHA256,
 } from "./v2-stage8-3-contract.mjs";
 
@@ -199,6 +201,15 @@ describe("V2-8-3 migration integrity", () => {
       resolve(process.cwd(), "db/migrations/0003_v2_schema6_data_model.sql"),
     );
     expect(assertPinnedMigration(bytes)).toBe(V2_STAGE8_3_MIGRATION_SHA256);
+  });
+
+  it("pins the additive bilingual example migration independently", async () => {
+    const bytes = await readFile(
+      resolve(process.cwd(), "db/migrations/0004_v2_bilingual_examples.sql"),
+    );
+    expect(assertPinnedAdditiveMigration(bytes)).toBe(
+      V2_STAGE8_3_ADDITIVE_MIGRATION_SHA256,
+    );
   });
 
   it("rejects any migration drift", () => {

@@ -10,6 +10,7 @@ export const VOCABULARY_CSV_COLUMNS = [
   "meaningsZh",
   "example",
   "examples",
+  "exampleTranslationsZh",
   "notes",
   "rarityScore",
   "learningTrack",
@@ -45,8 +46,12 @@ function getVocabularyCsvValue(data: VocabularyData, item: VocabularyItem, colum
     return item.tags?.join("|") ?? "";
   }
 
-  if (column === "meaningsZh" || column === "examples") {
-    return JSON.stringify(item[column]);
+  if (
+    column === "meaningsZh" ||
+    column === "examples" ||
+    column === "exampleTranslationsZh"
+  ) {
+    return JSON.stringify(item[column] ?? []);
   }
 
   return item[column];

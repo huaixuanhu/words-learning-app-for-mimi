@@ -17,6 +17,7 @@ describe("vocabulary CSV export", () => {
         surfaceText: 'allocate, "time" card',
         meaningZh: "分配\n时间",
         example: "Allocate time wisely.",
+        exampleTranslationsZh: ["合理分配时间。"],
         notes: "",
         rarityScore: 3,
         learningTrack: "active",
@@ -29,7 +30,7 @@ describe("vocabulary CSV export", () => {
     const csv = exportVocabularyCsv(result.data);
 
     expect(csv.split("\n")[0]).toBe(
-      "personId,personDisplayName,id,surfaceText,normalizedText,meaningZh,meaningsZh,example,examples,notes,rarityScore,learningTrack,tags,source,importBatchId,status,createdAt,systemCreatedAt,updatedAt,timezone,archivedAt",
+      "personId,personDisplayName,id,surfaceText,normalizedText,meaningZh,meaningsZh,example,examples,exampleTranslationsZh,notes,rarityScore,learningTrack,tags,source,importBatchId,status,createdAt,systemCreatedAt,updatedAt,timezone,archivedAt",
     );
     expect(csv).toContain("person_mimi,Mimi");
     expect(csv).toContain('"allocate, ""time"" card"');
@@ -38,5 +39,6 @@ describe("vocabulary CSV export", () => {
     expect(csv).toContain("分配 时间");
     expect(csv).toContain('"[""分配 时间""]"');
     expect(csv).toContain('"[""Allocate time wisely.""]"');
+    expect(csv).toContain('"[""合理分配时间。""]"');
   });
 });

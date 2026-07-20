@@ -24,9 +24,14 @@ import {
 } from "@/lib/ai-enrichment/local-fixture-runtime";
 import type { AiContextExplanation } from "@/lib/ai-enrichment/types";
 import { makeId } from "@/lib/vocabulary/repository";
+import {
+  assertCompleteVocabularyExamplePairs,
+  buildVocabularyExamplePairs,
+} from "@/lib/vocabulary/example-pairs";
 
 type ExampleWordActionsProps = Readonly<{
   example: string;
+  exampleTranslationZh: string;
   exampleIndex: number;
   sourceVocabularyItemId: string;
   sourceSurfaceText: string;
@@ -53,6 +58,7 @@ function detectTimezone() {
 
 export function ExampleWordActions({
   example,
+  exampleTranslationZh,
   exampleIndex,
   sourceVocabularyItemId,
   sourceSurfaceText,
@@ -69,6 +75,9 @@ export function ExampleWordActions({
   const [draftWord, setDraftWord] = useState("");
   const [draftMeaning, setDraftMeaning] = useState("");
   const [draftExample, setDraftExample] = useState(example);
+  const [draftExampleTranslationZh, setDraftExampleTranslationZh] = useState(
+    exampleTranslationZh,
+  );
   const [draftTrack, setDraftTrack] = useState<LearningTrack>("recognition");
   const [message, setMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -143,6 +152,7 @@ export function ExampleWordActions({
     setDraftWord(word.text);
     setDraftMeaning("");
     setDraftExample(example);
+    setDraftExampleTranslationZh(exampleTranslationZh);
     setDraftTrack("recognition");
     setMessage("");
     setIsSaving(false);
@@ -244,6 +254,7 @@ export function ExampleWordActions({
       localPreviewEnabled ? "" : contextResult?.meaningInContextZh ?? "",
     );
     setDraftExample(example);
+    setDraftExampleTranslationZh(exampleTranslationZh);
     setMessage("");
   };
 
@@ -258,22 +269,29 @@ export function ExampleWordActions({
     setMessage("");
     const now = new Date().toISOString();
     const timezone = detectTimezone();
-    const input = {
-      surfaceText: draftWord,
-      meaningZh: draftMeaning,
-      meaningsZh: normalizeTextList(draftMeaning),
-      example: draftExample,
-      examples: normalizeTextList(draftExample),
-      notes: "",
-      rarityScore: null,
-      learningTrack: draftTrack,
-      tags: null,
-      source: "manual" as const,
-      createdAt: now,
-      timezone,
-    };
 
     try {
+      const examplePairs = assertCompleteVocabularyExamplePairs(
+        buildVocabularyExamplePairs({
+          example: draftExample,
+          exampleTranslationsZh: [draftExampleTranslationZh],
+        }),
+      );
+      const input = {
+        surfaceText: draftWord,
+        meaningZh: draftMeaning,
+        meaningsZh: normalizeTextList(draftMeaning),
+        example: draftExample,
+        examples: examplePairs.map((pair) => pair.en),
+        exampleTranslationsZh: examplePairs.map((pair) => pair.zh),
+        notes: "",
+        rarityScore: null,
+        learningTrack: draftTrack,
+        tags: null,
+        source: "manual" as const,
+        createdAt: now,
+        timezone,
+      };
       const result = addVocabularyItem(data, input, now);
       await commit(result.data, {
         type: "vocabulary.add",
@@ -336,6 +354,9 @@ export function ExampleWordActions({
 
               <p className="mt-4 rounded-md bg-[var(--mimi-surface-muted)] px-3 py-2 text-sm leading-6 text-[var(--mimi-text-soft)]">
                 {example}
+              </p>
+              <p className="mt-1 px-3 text-sm leading-6 text-[var(--mimi-text-muted)]">
+                {exampleTranslationZh || "Chinese translation needed"}
               </p>
 
               <div className="mt-4 grid gap-2 sm:grid-cols-3">
@@ -454,6 +475,16 @@ export function ExampleWordActions({
                       rows={3}
                       value={draftExample}
                       onChange={(event) => setDraftExample(event.target.value)}
+                      className="mimi-input min-h-24 resize-y px-3 py-2 text-base"
+                    />
+                  </label>
+                  <label className="grid gap-1.5">
+                    <span className="text-sm font-semibold text-[var(--mimi-text)]">Chinese translation</span>
+                    <textarea
+                      rows={3}
+                      required={Boolean(draftExample.trim())}
+                      value={draftExampleTranslationZh}
+                      onChange={(event) => setDraftExampleTranslationZh(event.target.value)}
                       className="mimi-input min-h-24 resize-y px-3 py-2 text-base"
                     />
                   </label>

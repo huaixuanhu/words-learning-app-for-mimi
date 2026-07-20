@@ -12,6 +12,7 @@ import {
   type BackupParseResult,
   type VocabularyBackupFile,
 } from "./types";
+import { alignExampleTranslationsZh } from "@/lib/vocabulary/example-pairs";
 
 const VOCABULARY_SOURCES = new Set([
   "manual",
@@ -155,6 +156,13 @@ export function selectFormalBackupData(data: VocabularyData): VocabularyData {
 
   return {
     ...data,
+    items: data.items.map((item) => ({
+      ...item,
+      exampleTranslationsZh: alignExampleTranslationsZh(
+        item.examples,
+        item.exampleTranslationsZh,
+      ),
+    })),
     aiRuns: data.aiRuns.filter(
       (run) => eligibleEnrichmentRunIds.has(run.id) && referencedRunIds.has(run.id),
     ),
@@ -213,6 +221,7 @@ function validateVocabularyItem(
   requiresPersonId: boolean,
   requiresTrackFields: boolean,
   requiresTextListFields: boolean,
+  requiresBilingualExamples: boolean,
 ) {
   if (!isRecord(value)) {
     errors.push(`items[${index}] must be an object`);
@@ -270,6 +279,21 @@ function validateVocabularyItem(
 
     if (!isStringArray(value.examples)) {
       errors.push(`items[${index}].examples must be an array`);
+    }
+
+    if (requiresBilingualExamples) {
+      if (!isStringArray(value.exampleTranslationsZh)) {
+        errors.push(
+          `items[${index}].exampleTranslationsZh must be an array`,
+        );
+      } else if (
+        Array.isArray(value.examples) &&
+        value.exampleTranslationsZh.length !== value.examples.length
+      ) {
+        errors.push(
+          `items[${index}].exampleTranslationsZh must align with examples`,
+        );
+      }
     }
   }
 
@@ -1166,7 +1190,11 @@ function validateSchema6References(
   }
 }
 
-function validateBackupData(value: unknown, errors: string[]) {
+function validateBackupData(
+  value: unknown,
+  errors: string[],
+  requiresBilingualExamples: boolean,
+) {
   if (!isRecord(value)) {
     errors.push("data must be an object");
     return;
@@ -1207,7 +1235,15 @@ function validateBackupData(value: unknown, errors: string[]) {
     errors.push("data.items must be an array");
   } else {
     value.items.forEach((item, index) =>
-      validateVocabularyItem(item, index, errors, requiresPersonId, requiresTrackFields, requiresTextListFields),
+      validateVocabularyItem(
+        item,
+        index,
+        errors,
+        requiresPersonId,
+        requiresTrackFields,
+        requiresTextListFields,
+        requiresBilingualExamples,
+      ),
     );
   }
 
@@ -1390,8 +1426,13 @@ export function parseVocabularyBackupValue(value: unknown, now = new Date().toIS
     errors.push(`format must be ${BACKUP_FORMAT}`);
   }
 
-  if (value.backupVersion !== 1 && value.backupVersion !== 2 && value.backupVersion !== BACKUP_VERSION) {
-    errors.push(`backupVersion must be 1, 2, or ${BACKUP_VERSION}`);
+  if (
+    value.backupVersion !== 1 &&
+    value.backupVersion !== 2 &&
+    value.backupVersion !== 3 &&
+    value.backupVersion !== BACKUP_VERSION
+  ) {
+    errors.push(`backupVersion must be 1, 2, 3, or ${BACKUP_VERSION}`);
   }
 
   if (!isRecord(value.metadata)) {
@@ -1422,7 +1463,7 @@ export function parseVocabularyBackupValue(value: unknown, now = new Date().toIS
     validateCounts(value.metadata.counts, errors, value.metadata.schemaVersion === 6);
   }
 
-  validateBackupData(value.data, errors);
+  validateBackupData(value.data, errors, value.backupVersion === BACKUP_VERSION);
 
   if (
     isRecord(value.metadata) &&

@@ -467,6 +467,7 @@ async function insertPlanRows(client, rows) {
           meanings_zh,
           example,
           examples,
+          example_translations_zh,
           notes,
           rarity_score,
           learning_track,
@@ -481,8 +482,8 @@ async function insertPlanRows(client, rows) {
           archived_at
         )
         values (
-          $1, $2, $3, $4, $5, $6::jsonb, $7, $8::jsonb,
-          $9, $10, $11, $12::jsonb, $13, $14, $15, $16, $17, $18, $19, $20
+          $1, $2, $3, $4, $5, $6::jsonb, $7, $8::jsonb, $9::jsonb,
+          $10, $11, $12, $13::jsonb, $14, $15, $16, $17, $18, $19, $20, $21
         )
       `,
       [
@@ -494,6 +495,7 @@ async function insertPlanRows(client, rows) {
         JSON.stringify(item.meaningsZh),
         item.example,
         JSON.stringify(item.examples),
+        JSON.stringify(item.exampleTranslationsZh),
         item.notes,
         item.rarityScore,
         item.learningTrack,

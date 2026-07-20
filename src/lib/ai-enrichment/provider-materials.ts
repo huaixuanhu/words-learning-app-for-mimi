@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import enrichmentResponseJsonSchema from "./gemini-response-schema-v2.json";
+import enrichmentResponseJsonSchema from "./gemini-response-schema-v3.json";
 import contextResponseJsonSchema from "./context-response-schema-v1.json";
 import type { GeminiProviderMaterials } from "./gemini-provider-adapter";
 
@@ -17,7 +17,7 @@ async function readMaterial(fileName: string) {
 
 export async function loadEnrichmentProviderMaterials(): Promise<GeminiProviderMaterials> {
   return {
-    systemPrompt: await readMaterial("prompt-v2.txt"),
+    systemPrompt: await readMaterial("prompt-v3.txt"),
     responseJsonSchema: enrichmentResponseJsonSchema,
   };
 }
@@ -28,4 +28,3 @@ export async function loadContextProviderMaterials(): Promise<GeminiProviderMate
     responseJsonSchema: contextResponseJsonSchema,
   };
 }
-

@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import {
+  assertCompleteAiExampleTranslations,
   normalizeAiCandidate,
   validateAiEnrichmentDraft,
   validateStoredAiEnrichmentDraft,
@@ -92,6 +93,7 @@ function acceptedCandidate(draft: AiEnrichmentDraft, candidateWord: string) {
       relationType: "similar" as const,
       differenceZh: similar.differenceZh,
       examplePair: [] as readonly string[],
+      examplePairTranslationsZh: [] as readonly string[],
     };
   }
   const confusable = draft.confusableWords.find(
@@ -103,6 +105,7 @@ function acceptedCandidate(draft: AiEnrichmentDraft, candidateWord: string) {
         relationType: confusable.type,
         differenceZh: confusable.differenceZh,
         examplePair: confusable.examplePair,
+        examplePairTranslationsZh: confusable.examplePairTranslationsZh ?? [],
       }
     : null;
 }
@@ -132,7 +135,10 @@ export async function decidePostgresAiDraft(
     if (buildAiSourceHash(source) !== row.source_hash) {
       throw new Error("This word changed after generation. Please create a fresh suggestion.");
     }
-    const accepted = validateAiEnrichmentDraft(input.draft, source);
+    const accepted = assertCompleteAiExampleTranslations(
+      validateAiEnrichmentDraft(input.draft, source),
+      source.examples,
+    );
     await queryable.query(
       `
         update ai_enrichment_drafts
@@ -145,6 +151,18 @@ export async function decidePostgresAiDraft(
         where id = $1 and status = 'draft'
       `,
       [row.id, JSON.stringify(accepted)],
+    );
+    await queryable.query(
+      `
+        update vocabulary_items
+        set example_translations_zh = $3::jsonb, updated_at = now()
+        where person_id = $1 and id = $2
+      `,
+      [
+        row.person_id,
+        row.source_vocabulary_item_id,
+        JSON.stringify(accepted.sourceExampleTranslationsZh ?? []),
+      ],
     );
     return { status: "accepted", draft: accepted } as const;
   });
@@ -169,6 +187,10 @@ export async function addPostgresAiCandidateToLearning(
     if (!candidate) throw new Error("This word is not part of the accepted suggestion");
     const normalizedText = normalizeSurfaceText(input.surfaceText);
     if (!normalizedText) throw new Error("The word or phrase is not valid");
+    const exampleTranslationZh = input.exampleTranslationZh?.trim() ?? "";
+    if (input.example.trim() && !exampleTranslationZh) {
+      throw new Error("Add a Chinese translation for the example");
+    }
     const exactCandidate = normalizedText === normalizeSurfaceText(candidate.word);
     const duplicate = await queryable.query<{ id: string; surface_text: string }>(
       `
@@ -191,12 +213,12 @@ export async function addPostgresAiCandidateToLearning(
         `
           insert into vocabulary_items (
             id, person_id, surface_text, normalized_text, meaning_zh, meanings_zh,
-            example, examples, notes, rarity_score, learning_track, tags,
+            example, examples, example_translations_zh, notes, rarity_score, learning_track, tags,
             source, import_batch_id, status, created_at, system_created_at,
             updated_at, timezone, archived_at
           ) values (
-            $1, $2, $3, $4, $5, $6::jsonb, $7, $8::jsonb, '', null, $9,
-            null, $10, null, 'new', $11, $11, $11, $12, null
+            $1, $2, $3, $4, $5, $6::jsonb, $7, $8::jsonb, $9::jsonb, '', null, $10,
+            null, $11, null, 'new', $12, $12, $12, $13, null
           )
         `,
         [
@@ -208,6 +230,7 @@ export async function addPostgresAiCandidateToLearning(
           JSON.stringify(input.meaningZh ? [input.meaningZh] : []),
           input.example,
           JSON.stringify(input.example ? [input.example] : []),
+          JSON.stringify(input.example ? [exampleTranslationZh] : []),
           input.learningTrack,
           exactCandidate ? "ai_generated" : "manual",
           createdAt,

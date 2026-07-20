@@ -1,5 +1,30 @@
 # AI Agent Log
 
+## 2026-07-20 00:22 AEST
+
+- Task: commit the previously completed V2-8-3 Gate 1/Gate 0B batch, then implement the user-confirmed V2-8-2.2 fixes for Arrow-key ratings, browser pronunciation quality controls and Chinese translations beside every English example. The user accepted browser voice selection first and reserved Cloud TTS for a later real-device quality decision.
+- Plan agreed: yes. The user approved the documentation-first local plan, including the additive data shape/migration and no remote execution. The canonical child plan is `plan_docs/PLAN_V2_STAGE8_2_2_REVIEW_AUDIO_BILINGUAL_EXAMPLES.md` with explicit Source plan, Derived from, Scope, Non-Scope and Exit criteria.
+- Working tier: Tier 3. This batch changed local application behavior, backup/schema contracts and dormant Production-cutover tooling. It did not inspect environment values, contact an AI/audio provider, connect to a remote database, deploy, or mutate real learner data.
+- Changed files:
+  - committed the previously reviewed Gate 1/Gate 0B work as `c0b609f feat: add V2 production cutover safeguards` before starting this slice; no push occurred;
+  - added shared keyboard shortcut helpers/tests and connected Recognition/Active rating focus without changing Motion, color scale, FSRS or Daily Episode behavior;
+  - added browser English voice ranking, delayed `voiceschanged` handling, local preference, Settings preview and tests; all existing browser pronunciation callers inherit the selected voice;
+  - added bilingual example helpers and carried `exampleTranslationsZh` through forms, import, Library, Review, context actions, AI preview/acceptance, local/Postgres repositories, CSV and JSON backups;
+  - added immutable `0004_v2_bilingual_examples.sql`, Backup Version 4 compatibility, V3 AI prompt/output schema, and independent `0003`/`0004` pins in the V2-8-2 and V2-8-3 migration/cutover tools;
+  - added the V2-8-2.2 child plan and synchronized Master, V2-8-3, Architecture, README, AGENTS, Changelog, backup mapping and this record.
+- Keyboard result: non-input buttons no longer disable global rating arrows. The first Arrow selects index 0; horizontal/vertical movement stays within the 2×2 grid; selected focus follows the visible rating; Enter and Space preserve native button handling. Text inputs, selects, contenteditable, open dialogs, IME composition and modifier shortcuts are excluded.
+- Voice result: Settings lists English `SpeechSynthesisVoice` entries reported by the device, offers `Best available` plus preview/manual selection, stores only a browser-local stable identifier and falls back if the voice disappears. The UI makes no unverified `HD`, `neural` or `premium` claim. Subjective quality still requires user/Mimi listening; Cloud TTS remains outside this implementation.
+- Bilingual/data result: new examples must contain non-empty aligned English/Chinese pairs. Existing English-only items migrate to equal-length blank Chinese slots, show `Chinese translation needed`, and can be found through `Needs translation`. The app never guesses the missing text. AI enrichment V3 produces editable pairs and updates the source item only after explicit acceptance; old accepted drafts remain readable.
+- Migration/backup result: JSON export is now wrapper Version 4; Versions 1–3 normalize forward. `0004` adds `example_translations_zh` and array/length constraints without rewriting `0003`. SHA-256 pins are `ef991928d299a7dfb78483c96fcd7e6fd673a009cd31ca0f0f91c606d2128fba` for `0003` and `9e00e1213366492db90a97709d605d68770a1b80f46caa8b748886bc8bd4e29c` for `0004`; the cutover path executes both in one transaction and rejects partial readiness.
+- Validation:
+  - focused keyboard/voice/example/import/backup/AI/schema/cutover checks passed 11 files / 104 tests;
+  - full Vitest passed 80 files / 506 tests; the existing Postgres integration file/test was skipped;
+  - `npm run lint`, `npm run typecheck`, all three backup dry-runs, `npm run v2:8-3:manifest:template`, script syntax checks and Next.js Production build passed;
+  - an isolated local Production server forced `MIMI_STORAGE_RUNTIME=local`; Home, Settings and Review returned HTTP 200. The `agent-browser` CLI required by the optional visual skill was unavailable and no repository browser driver existed, so no automated screenshot, real keypress browser proof or subjective voice-quality claim is recorded.
+- Safety notes: the build reported the existence of ignored `.env.local`, but no value was read, printed, copied or changed. The local server was forced to browser-local storage. No Gemini/Cloud TTS request, charge, Preview/Staging/Production database connection, migration, credential/environment change, deployment, GitHub push, pull request or merge occurred. `0004` remains unexecuted remotely; current protected Preview and long-lived `staging` remain on the earlier data contract, and Production stays V1 / Schema Version 5.
+- Residual boundary: before deploying this candidate, the target database must receive `0004` before the new application because its Postgres queries require `example_translations_zh`. Existing English-only real data still needs human-reviewed backfill; migration intentionally creates visible blanks. The user and Mimi must audition browser voices on actual devices. A later Cloud TTS slice requires provider, price, privacy, cache, cost and Kill Switch approval.
+- Reason: repair real learner interaction findings while preserving scheduling evidence, exact English example offsets, backward backup compatibility and a fail-closed Production path.
+
 ## 2026-07-19 21:18 AEST
 
 - Task: execute the user-confirmed V2-8-3 Gate 0B only—verify the committed V2-8-2.1 performance artifact on protected Preview, check region/performance/learning behavior and the retained Staging checkpoint, then stop before Gate 2 and every Production action.

@@ -35,6 +35,8 @@ export const V2_STAGE8_3_SCHEMA6_CONSTRAINTS = [
   "ai_runs_success_usage_present",
   "ai_disclosure_confirmations_current_version",
   "ai_usage_buckets_person_scope_consistent",
+  "vocabulary_items_example_translations_zh_array",
+  "vocabulary_items_example_translation_count_matches",
 ];
 
 export const V2_STAGE8_3_SCHEMA6_COLUMNS = [
@@ -49,6 +51,7 @@ export const V2_STAGE8_3_SCHEMA6_COLUMNS = [
   ["review_events", "answer_normalization_version", "text", "YES"],
   ["review_events", "target_revision", "text", "YES"],
   ["review_events", "parameter_set_id", "text", "NO"],
+  ["vocabulary_items", "example_translations_zh", "jsonb", "NO"],
 ];
 
 export const V2_STAGE8_3_SCHEMA6_INDEXES = [
@@ -126,6 +129,7 @@ const CORE_TABLES = Object.freeze({
   },
   vocabulary_items: {
     orderBy: "id",
+    schema6AddedColumns: ["example_translations_zh"],
   },
 });
 
@@ -663,7 +667,10 @@ export async function executePinnedMigration({
   return {
     after,
     before,
-    migrationApplied: "0003_v2_schema6_data_model.sql",
+    migrationApplied: [
+      "0003_v2_schema6_data_model.sql",
+      "0004_v2_bilingual_examples.sql",
+    ],
     parity,
   };
 }

@@ -7,6 +7,7 @@ import {
 const draft = {
   additionalMeaningsZh: [],
   examples: ["People adapt gradually."],
+  exampleTranslationsZh: ["人们逐渐适应。"],
   similarWords: [],
   confusableWords: [],
 };
@@ -37,6 +38,7 @@ describe("V2-7B-1 formal AI action contracts", () => {
       surfaceText: "adopt",
       meaningZh: "采用",
       example: "They adopt a policy.",
+      exampleTranslationZh: "他们采纳一项政策。",
       learningTrack: "active",
       timezone: "Australia/Melbourne",
     };

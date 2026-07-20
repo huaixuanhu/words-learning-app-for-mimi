@@ -3,9 +3,13 @@ import { resolve } from "node:path";
 
 import { createPool } from "./db-connection.mjs";
 
-const MIGRATION_FILE = resolve(
+const SCHEMA6_MIGRATION_FILE = resolve(
   process.cwd(),
   "db/migrations/0003_v2_schema6_data_model.sql",
+);
+const BILINGUAL_EXAMPLES_MIGRATION_FILE = resolve(
+  process.cwd(),
+  "db/migrations/0004_v2_bilingual_examples.sql",
 );
 const PREVIEW_PERSON_ID = "00000000-0000-4000-8000-000000008201";
 const PREVIEW_RECOGNITION_ADAPT_ID = "00000000-0000-4000-8000-000000008202";
@@ -39,6 +43,8 @@ const SCHEMA6_CONSTRAINTS = [
   "ai_runs_success_usage_present",
   "ai_disclosure_confirmations_current_version",
   "ai_usage_buckets_person_scope_consistent",
+  "vocabulary_items_example_translations_zh_array",
+  "vocabulary_items_example_translation_count_matches",
 ];
 
 function requiredEnv(name) {
@@ -184,6 +190,20 @@ async function coreCounts(queryable, version) {
 }
 
 async function schema6Inspection(queryable) {
+  const bilingualColumnResult = await queryable.query(
+    `
+      select count(*)::integer as count
+      from information_schema.columns
+      where table_schema = 'public'
+        and table_name = 'vocabulary_items'
+        and column_name = 'example_translations_zh'
+        and data_type = 'jsonb'
+        and is_nullable = 'NO'
+    `,
+  );
+  if (Number(bilingualColumnResult.rows[0]?.count ?? 0) !== 1) {
+    throw new Error("Missing bilingual example column");
+  }
   const tableResult = await queryable.query(
     `
       select table_name
@@ -272,17 +292,40 @@ async function migrate(client, identity) {
   if (!process.argv.includes("--i-confirm-v2-8-2-migration")) {
     throw new Error("Migration requires --i-confirm-v2-8-2-migration");
   }
-  const before = await inspect(client, identity);
-  if (before.schemaVersion !== 5) {
-    throw new Error("V2-8-2 migration requires an inspected Schema 5 target");
+  const beforeVersion = await schemaVersion(client);
+  const before = {
+    counts: await coreCounts(client, beforeVersion),
+    identity,
+    schemaVersion: beforeVersion,
+  };
+  const migrationsApplied = [];
+  if (beforeVersion === 5) {
+    await client.query(await readFile(SCHEMA6_MIGRATION_FILE, "utf8"));
+    migrationsApplied.push("0003_v2_schema6_data_model.sql");
   }
-  const migration = await readFile(MIGRATION_FILE, "utf8");
-  await client.query(migration);
+  const bilingualColumn = await client.query(
+    `
+      select count(*)::integer as count
+      from information_schema.columns
+      where table_schema = 'public'
+        and table_name = 'vocabulary_items'
+        and column_name = 'example_translations_zh'
+    `,
+  );
+  if (Number(bilingualColumn.rows[0]?.count ?? 0) === 0) {
+    await client.query(
+      await readFile(BILINGUAL_EXAMPLES_MIGRATION_FILE, "utf8"),
+    );
+    migrationsApplied.push("0004_v2_bilingual_examples.sql");
+  }
+  if (!migrationsApplied.length) {
+    throw new Error("V2-8-2 target already has every required migration");
+  }
   const after = await inspect(client, identity);
   if (after.schemaVersion !== 6) {
     throw new Error("V2-8-2 migration did not reach Schema 6");
   }
-  return { after, before, migrationApplied: "0003_v2_schema6_data_model.sql" };
+  return { after, before, migrationsApplied };
 }
 
 async function aiEvidence(client, identity) {
@@ -367,7 +410,7 @@ async function seedPreview(client, identity) {
       `
         insert into vocabulary_items (
           id, person_id, surface_text, normalized_text, meaning_zh, meanings_zh,
-          example, examples, notes, rarity_score, learning_track, tags, source,
+          example, examples, example_translations_zh, notes, rarity_score, learning_track, tags, source,
           import_batch_id, status, created_at, system_created_at, updated_at,
           timezone, archived_at
         ) values
@@ -375,24 +418,28 @@ async function seedPreview(client, identity) {
             $2, $1, 'adapt', 'adapt', '适应；调整', '["适应；调整"]'::jsonb,
             'She adapted quickly to the new environment.',
             '["She adapted quickly to the new environment."]'::jsonb,
+            '["她很快适应了新环境。"]'::jsonb,
             '', null, 'recognition', null, 'manual', null, 'new', $6, $6, $6, $7, null
           ),
           (
             $3, $1, 'mitigate', 'mitigate', '减轻；缓和', '["减轻；缓和"]'::jsonb,
             'The new policy may mitigate the risk.',
             '["The new policy may mitigate the risk."]'::jsonb,
+            '["这项新政策可能会降低风险。"]'::jsonb,
             '', null, 'recognition', null, 'manual', null, 'new', $6, $6, $6, $7, null
           ),
           (
             $4, $1, 'articulate', 'articulate', '清楚表达', '["清楚表达"]'::jsonb,
             'She articulated her position with confidence.',
             '["She articulated her position with confidence."]'::jsonb,
+            '["她自信地表达了自己的立场。"]'::jsonb,
             '', null, 'active', null, 'manual', null, 'new', $6, $6, $6, $7, null
           ),
           (
             $5, $1, 'resilience', 'resilience', '韧性；恢复力', '["韧性；恢复力"]'::jsonb,
             'Resilience helps learners recover from setbacks.',
             '["Resilience helps learners recover from setbacks."]'::jsonb,
+            '["韧性有助于学习者从挫折中恢复。"]'::jsonb,
             '', null, 'active', null, 'manual', null, 'new', $6, $6, $6, $7, null
           )
       `,

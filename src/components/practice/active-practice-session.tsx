@@ -32,6 +32,12 @@ import {
   isReviewRatingArrowKey,
 } from "@/lib/review/keyboard-controls";
 import {
+  elementMatchesReviewSelector,
+  REVIEW_NATIVE_ACTION_SELECTOR,
+  REVIEW_TEXT_ENTRY_SELECTOR,
+  shouldIgnoreReviewShortcutInput,
+} from "@/lib/review/keyboard-shortcuts";
+import {
   getNextSessionIdsAfterRating,
   moveReviewAttemptBackToFront,
 } from "@/lib/review/session-queue";
@@ -74,29 +80,26 @@ const MODE_DETAILS = {
   },
 } as const;
 
-const SHORTCUT_IGNORE_SELECTOR =
-  "button, a, input, textarea, select, option, summary, [contenteditable='true'], [role='button'], [role='textbox'], [role='dialog']";
-
 function shouldIgnoreShortcut(event: KeyboardEvent) {
-  if (
-    event.defaultPrevented ||
-    event.isComposing ||
-    event.altKey ||
-    event.ctrlKey ||
-    event.metaKey ||
-    event.shiftKey ||
-    document.querySelector('[role="dialog"][aria-modal="true"]')
-  ) {
-    return true;
-  }
-
   const target = event.target instanceof Element ? event.target : null;
-  const activeElement = document.activeElement;
+  const activeElement = document.activeElement instanceof Element
+    ? document.activeElement
+    : null;
 
-  return Boolean(
-    target?.closest(SHORTCUT_IGNORE_SELECTOR) ||
-      activeElement?.closest(SHORTCUT_IGNORE_SELECTOR),
-  );
+  return shouldIgnoreReviewShortcutInput({
+    defaultPrevented: event.defaultPrevented,
+    isComposing: event.isComposing,
+    altKey: event.altKey,
+    ctrlKey: event.ctrlKey,
+    metaKey: event.metaKey,
+    shiftKey: event.shiftKey,
+    modalOpen: Boolean(
+      document.querySelector('[role="dialog"][aria-modal="true"]'),
+    ),
+    textEntryFocused:
+      elementMatchesReviewSelector(target, REVIEW_TEXT_ENTRY_SELECTOR) ||
+      elementMatchesReviewSelector(activeElement, REVIEW_TEXT_ENTRY_SELECTOR),
+  });
 }
 
 function promptMap(entries: DailyStudyQueueResult["entries"]) {
@@ -158,6 +161,7 @@ export function ActivePracticeSession({ zone, mode }: Props) {
   const requestKeyRef = useRef("");
   const activationKeyRef = useRef("");
   const submittedItemIdRef = useRef<string | null>(null);
+  const ratingGroupRef = useRef<HTMLDivElement | null>(null);
   const readQueueRef = useRef(readQueue);
   const refreshPromptRef = useRef(refreshPrompt);
 
@@ -522,6 +526,11 @@ export function ActivePracticeSession({ zone, mode }: Props) {
       }
 
       if (mode === "say" && event.key === " " && !event.repeat) {
+        const target = event.target instanceof Element ? event.target : null;
+        if (elementMatchesReviewSelector(target, REVIEW_NATIVE_ACTION_SELECTOR)) {
+          return;
+        }
+
         event.preventDefault();
         revealSayRef.current();
         return;
@@ -530,9 +539,18 @@ export function ActivePracticeSession({ zone, mode }: Props) {
       if (isReviewRatingArrowKey(event.key) && !ratingDisabled) {
         const arrowKey = event.key;
         event.preventDefault();
-        setSelectedRatingIndex((current) =>
-          getNextReviewRatingIndex(current, arrowKey),
+        const nextIndex = getNextReviewRatingIndex(
+          selectedRatingIndex,
+          arrowKey,
         );
+        setSelectedRatingIndex(nextIndex);
+        queueMicrotask(() => {
+          ratingGroupRef.current
+            ?.querySelector<HTMLButtonElement>(
+              `[data-review-rating-index="${nextIndex}"]`,
+            )
+            ?.focus();
+        });
         return;
       }
 
@@ -542,6 +560,11 @@ export function ActivePracticeSession({ zone, mode }: Props) {
         !ratingDisabled &&
         selectedRatingIndex !== null
       ) {
+        const target = event.target instanceof Element ? event.target : null;
+        if (elementMatchesReviewSelector(target, REVIEW_NATIVE_ACTION_SELECTOR)) {
+          return;
+        }
+
         event.preventDefault();
         void submitRatingRef.current(
           reviewRatings[selectedRatingIndex].value,
@@ -748,13 +771,19 @@ export function ActivePracticeSession({ zone, mode }: Props) {
             <p className="mt-4 text-center text-xs text-[var(--mimi-text-muted)]">
               Arrow keys choose · Enter confirm{mode === "say" ? " · Space reveal or hide" : ""}
             </p>
-            <div role="group" aria-label="Memory rating" className="mt-3 grid grid-cols-2 gap-2">
+            <div
+              ref={ratingGroupRef}
+              role="group"
+              aria-label="Memory rating"
+              className="mt-3 grid grid-cols-2 gap-2"
+            >
               {reviewRatings.map((rating, index) => (
                 <PressableButton
                   key={rating.value}
                   type="button"
                   disabled={ratingDisabled}
                   data-selected={selectedRatingIndex === index ? "true" : undefined}
+                  data-review-rating-index={index}
                   onMouseEnter={() => {
                     if (!ratingDisabled) {
                       setSelectedRatingIndex(index);

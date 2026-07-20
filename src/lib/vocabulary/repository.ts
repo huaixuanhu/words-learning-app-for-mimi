@@ -26,6 +26,10 @@ import {
   normalizeVocabularyTags,
 } from "./normalize";
 import type { VocabularyCreationRecord } from "@/lib/storage/v2-data-model";
+import {
+  buildVocabularyExamplePairs,
+  splitVocabularyExamplePairs,
+} from "./example-pairs";
 
 export const VOCABULARY_SCHEMA_VERSION = 6;
 
@@ -161,14 +165,12 @@ function buildMeaningFields(input: { meaningZh?: string; meaningsZh?: string[] }
   };
 }
 
-function buildExampleFields(input: { example?: string; examples?: string[] }) {
-  const legacyExample = normalizeOptionalText(input.example);
-  const examples = normalizeTextList(input.examples?.length ? input.examples : legacyExample);
-
-  return {
-    example: examples[0] ?? legacyExample,
-    examples,
-  };
+function buildExampleFields(input: {
+  example?: string;
+  examples?: string[];
+  exampleTranslationsZh?: string[];
+}) {
+  return splitVocabularyExamplePairs(buildVocabularyExamplePairs(input));
 }
 
 export function buildVocabularyItem(input: NewVocabularyInput, now = new Date().toISOString()): VocabularyItem {
@@ -269,14 +271,19 @@ export function updateVocabularyItem(
           meaningsZh: input.meaningsZh,
         });
   const exampleFields =
-    input.example === undefined && input.examples === undefined
+    input.example === undefined &&
+    input.examples === undefined &&
+    input.exampleTranslationsZh === undefined
       ? {
           example: currentItem.example,
           examples: currentItem.examples,
+          exampleTranslationsZh: currentItem.exampleTranslationsZh ??
+            currentItem.examples.map(() => ""),
         }
       : buildExampleFields({
           example: input.example,
           examples: input.examples,
+          exampleTranslationsZh: input.exampleTranslationsZh,
         });
 
   if (!surfaceText) {
@@ -594,6 +601,7 @@ export function commitImportCandidates(
         meaningsZh: candidate.meaningsZh,
         example: candidate.example,
         examples: candidate.examples,
+        exampleTranslationsZh: candidate.exampleTranslationsZh,
         notes: candidate.notes,
         rarityScore: candidate.rarityScore,
         learningTrack: candidate.learningTrack,

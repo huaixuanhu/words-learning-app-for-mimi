@@ -36,6 +36,11 @@ import { getLearningStage } from "@/lib/daily-study/runtime-engine";
 import { AiEnrichmentDialog } from "@/components/ai/ai-enrichment-dialog";
 import { getVocabularySourceLabel } from "@/lib/ai-enrichment/source-label";
 import { isPostgresClientStorageRuntime } from "./use-vocabulary-data";
+import {
+  assertCompleteVocabularyExamplePairs,
+  buildVocabularyExamplePairs,
+  findIncompleteVocabularyExampleIndexes,
+} from "@/lib/vocabulary/example-pairs";
 
 type LibraryFilter =
   | "all"
@@ -43,6 +48,7 @@ type LibraryFilter =
   | "inReview"
   | "recognition"
   | "activeVocabulary"
+  | "needsTranslation"
   | "weak"
   | "archived";
 
@@ -72,6 +78,7 @@ type EditDraft = Pick<
 > & {
   meaningsZhText: string;
   examplesText: string;
+  exampleTranslationsZhText: string;
   rarityScore: string;
 };
 
@@ -108,6 +115,9 @@ function createDraft(item: VocabularyItem): EditDraft {
     surfaceText: item.surfaceText,
     meaningsZhText: toMultilineText(getItemMeanings(item)),
     examplesText: toMultilineText(getItemExamples(item)),
+    exampleTranslationsZhText: toMultilineText(
+      buildVocabularyExamplePairs(item).map((pair) => pair.zh),
+    ),
     notes: item.notes,
     learningTrack: item.learningTrack,
     tags: item.tags,
@@ -170,6 +180,16 @@ export function VocabularyLibrary() {
   const recognitionItems = getRecognitionVocabularyItems(data);
   const activeTrackItems = getActiveTrackVocabularyItems(data);
   const archivedItems = getArchivedVocabularyItems(data);
+  const itemsNeedingTranslation = useMemo(
+    () =>
+      activeItems.filter(
+        (item) =>
+          findIncompleteVocabularyExampleIndexes(
+            buildVocabularyExamplePairs(item),
+          ).length > 0,
+      ),
+    [activeItems],
+  );
   const weakWordIds = useMemo(
     () =>
       new Set(
@@ -224,6 +244,11 @@ export function VocabularyLibrary() {
     },
     { value: "recognition", label: "Recognition", count: recognitionItems.length },
     { value: "activeVocabulary", label: "Active", count: activeTrackItems.length },
+    {
+      value: "needsTranslation",
+      label: "Needs translation",
+      count: itemsNeedingTranslation.length,
+    },
     { value: "weak", label: "Needs care", count: activeItems.filter((item) => weakWordIds.has(item.id)).length },
     { value: "archived", label: "Archived", count: archivedItems.length },
   ] as const satisfies readonly { value: LibraryFilter; label: string; count: number }[];
@@ -253,6 +278,8 @@ export function VocabularyLibrary() {
         ? recognitionItems
         : filter === "activeVocabulary"
           ? activeTrackItems
+          : filter === "needsTranslation"
+            ? itemsNeedingTranslation
           : filter === "weak"
             ? activeItems.filter((item) => weakWordIds.has(item.id))
             : filter === "archived"
@@ -270,9 +297,10 @@ export function VocabularyLibrary() {
         getItemMeanings(item).some((meaning) => meaning.includes(query.trim())) ||
         getItemExamples(item).some((example) =>
           example.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()),
-        ),
+        ) ||
+        buildVocabularyExamplePairs(item).some((pair) => pair.zh.includes(query.trim())),
     );
-  }, [activeItems, activeTrackItems, allItems, archivedItems, filter, learningStageById, query, recognitionItems, weakWordIds]);
+  }, [activeItems, activeTrackItems, allItems, archivedItems, filter, itemsNeedingTranslation, learningStageById, query, recognitionItems, weakWordIds]);
   const aiPreviewItem = aiPreviewItemId
     ? data.items.find(
         (item) => item.id === aiPreviewItemId && item.personId === selectedPersonId,
@@ -293,13 +321,19 @@ export function VocabularyLibrary() {
     try {
       const now = new Date().toISOString();
       const meaningsZh = fromMultilineText(draft.meaningsZhText);
-      const examples = fromMultilineText(draft.examplesText);
+      const examplePairs = buildVocabularyExamplePairs({
+        examples: fromMultilineText(draft.examplesText),
+        exampleTranslationsZh: draft.exampleTranslationsZhText.split(/\r?\n/),
+      });
+      assertCompleteVocabularyExamplePairs(examplePairs);
+      const examples = examplePairs.map((pair) => pair.en);
       const input: UpdateVocabularyInput = {
         surfaceText: draft.surfaceText,
         meaningZh: meaningsZh[0] ?? "",
         meaningsZh,
         example: examples[0] ?? "",
         examples,
+        exampleTranslationsZh: examplePairs.map((pair) => pair.zh),
         notes: draft.notes,
         rarityScore: normalizeRarityScore(draft.rarityScore),
         learningTrack: draft.learningTrack,
@@ -550,7 +584,7 @@ export function VocabularyLibrary() {
             {visibleItems.map((item) => {
               const isEditing = editingId === item.id && draft;
               const itemMeanings = getItemMeanings(item);
-              const itemExamples = getItemExamples(item);
+              const itemExamplePairs = buildVocabularyExamplePairs(item);
               const historyProfiles = historyProfilesByItemId.get(item.id);
               const otherTrack = item.learningTrack === "active" ? "recognition" : "active";
               const canStartFresh =
@@ -586,6 +620,15 @@ export function VocabularyLibrary() {
                           rows={2}
                           value={draft.examplesText}
                           onChange={(event) => setDraft({ ...draft, examplesText: event.target.value })}
+                          className="mimi-input min-h-20 px-3 py-2"
+                        />
+                      </label>
+                      <label className="grid gap-1">
+                        <span className="text-sm font-semibold text-[#203229]">Chinese translations</span>
+                        <textarea
+                          rows={2}
+                          value={draft.exampleTranslationsZhText}
+                          onChange={(event) => setDraft({ ...draft, exampleTranslationsZhText: event.target.value })}
                           className="mimi-input min-h-20 px-3 py-2"
                         />
                       </label>
@@ -746,6 +789,11 @@ export function VocabularyLibrary() {
                               Needs care
                             </span>
                           ) : null}
+                          {findIncompleteVocabularyExampleIndexes(itemExamplePairs).length ? (
+                            <span className="rounded-md bg-[#f1e8c8] px-2 py-1 text-xs font-semibold text-[#735f21]">
+                              Translation needed
+                            </span>
+                          ) : null}
                           {item.archivedAt ? (
                             <span className="rounded-md bg-[#efe0d1] px-2 py-1 text-xs font-semibold text-[#8a4d21]">
                               Archived
@@ -761,10 +809,15 @@ export function VocabularyLibrary() {
                         ) : (
                           <p className="mt-1 text-sm text-[#5f6d62]">No meaning yet</p>
                         )}
-                        {itemExamples.length ? (
+                        {itemExamplePairs.length ? (
                           <div className="mt-2 grid gap-1 text-sm leading-6 text-[#203229]">
-                            {itemExamples.map((example, index) => (
-                              <p key={`${item.id}-example-${index}`}>{example}</p>
+                            {itemExamplePairs.map((pair, index) => (
+                              <div key={`${item.id}-example-${index}`} className="grid gap-0.5">
+                                <p>{pair.en}</p>
+                                <p className="text-[#6f796f]">
+                                  {pair.zh || "Chinese translation needed"}
+                                </p>
+                              </div>
                             ))}
                           </div>
                         ) : null}

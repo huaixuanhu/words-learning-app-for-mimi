@@ -8,6 +8,7 @@ import {
   validateSurfaceText,
   validateVocabularyTags,
 } from "./normalize";
+import { alignExampleTranslationsZh } from "./example-pairs";
 
 type ParseTextImportOptions = {
   existingNormalizedTexts?: Iterable<string>;
@@ -20,6 +21,7 @@ type RawCandidate = {
   surfaceText: string;
   meaningZh: string;
   example: string;
+  exampleTranslationZh: string;
   notes: string;
   learningTrack: unknown;
   tags: unknown;
@@ -46,6 +48,7 @@ function parseRawLine(line: string, lineNumber: number): RawCandidate[] {
         surfaceText: "",
         meaningZh: "",
         example: "",
+        exampleTranslationZh: "",
         notes: "",
         learningTrack: "recognition",
         tags: null,
@@ -55,7 +58,12 @@ function parseRawLine(line: string, lineNumber: number): RawCandidate[] {
   }
 
   if (trimmed.includes("\t")) {
-    const [surfaceText = "", meaningZh = "", ...exampleParts] = trimmed
+    const [
+      surfaceText = "",
+      meaningZh = "",
+      example = "",
+      ...exampleTranslationParts
+    ] = trimmed
       .split("\t")
       .map((part) => part.trim());
 
@@ -65,7 +73,8 @@ function parseRawLine(line: string, lineNumber: number): RawCandidate[] {
         rawLine,
         surfaceText,
         meaningZh,
-        example: exampleParts.join(" "),
+        example,
+        exampleTranslationZh: exampleTranslationParts.join(" "),
         notes: "",
         learningTrack: "recognition",
         tags: null,
@@ -85,6 +94,7 @@ function parseRawLine(line: string, lineNumber: number): RawCandidate[] {
         surfaceText,
         meaningZh,
         example: exampleParts.join(" - "),
+        exampleTranslationZh: "",
         notes: "",
         learningTrack: "recognition",
         tags: null,
@@ -100,6 +110,7 @@ function parseRawLine(line: string, lineNumber: number): RawCandidate[] {
       surfaceText: part.trim(),
       meaningZh: "",
       example: "",
+      exampleTranslationZh: "",
       notes: "",
       learningTrack: "recognition",
       tags: null,
@@ -114,6 +125,7 @@ function parseRawLine(line: string, lineNumber: number): RawCandidate[] {
       surfaceText: trimmed,
       meaningZh: "",
       example: "",
+      exampleTranslationZh: "",
       notes: "",
       learningTrack: "recognition",
       tags: null,
@@ -133,7 +145,8 @@ function getCandidateStatus(errors: string[], duplicate: boolean): ImportCandida
     errors.includes("invalid_json") ||
     errors.includes("missing_items") ||
     errors.includes("missing_meaning") ||
-    errors.includes("missing_example")
+    errors.includes("missing_example") ||
+    errors.includes("missing_example_translation")
   ) {
     return "invalid" as const;
   }
@@ -141,7 +154,14 @@ function getCandidateStatus(errors: string[], duplicate: boolean): ImportCandida
   return duplicate ? "duplicate" : "new";
 }
 
-function normalizeCandidateLists(candidate: Pick<ImportCandidate, "meaningZh" | "meaningsZh" | "example" | "examples">) {
+function normalizeCandidateLists(candidate: Pick<
+  ImportCandidate,
+  | "meaningZh"
+  | "meaningsZh"
+  | "example"
+  | "examples"
+  | "exampleTranslationsZh"
+>) {
   const meaningsZh = normalizeTextList(
     Array.isArray(candidate.meaningsZh) && candidate.meaningsZh.length
       ? candidate.meaningsZh
@@ -150,12 +170,17 @@ function normalizeCandidateLists(candidate: Pick<ImportCandidate, "meaningZh" | 
   const examples = normalizeTextList(
     Array.isArray(candidate.examples) && candidate.examples.length ? candidate.examples : candidate.example,
   );
+  const exampleTranslationsZh = alignExampleTranslationsZh(
+    examples,
+    candidate.exampleTranslationsZh,
+  );
 
   return {
     meaningsZh,
     meaningZh: meaningsZh[0] ?? normalizeOptionalText(candidate.meaningZh),
     examples,
     example: examples[0] ?? normalizeOptionalText(candidate.example),
+    exampleTranslationsZh,
   };
 }
 
@@ -177,6 +202,11 @@ export function recomputeImportCandidates(
     const listErrors = [
       ...(options.requireMeaningAndExample && !textLists.meaningsZh.length ? ["missing_meaning"] : []),
       ...(options.requireMeaningAndExample && !textLists.examples.length ? ["missing_example"] : []),
+      ...(options.requireMeaningAndExample && textLists.examples.some(
+        (_, index) => !textLists.exampleTranslationsZh[index],
+      )
+        ? ["missing_example_translation"]
+        : []),
     ];
     const errors = duplicate
       ? [...validation.errors, ...tagValidation.errors, ...listErrors, ...carriedErrors, "duplicate"]
@@ -235,6 +265,10 @@ export function parseTextImport(text: string, options: ParseTextImportOptions = 
         meaningsZh: normalizeTextList(rawCandidate.meaningZh),
         example: normalizeOptionalText(rawCandidate.example),
         examples: normalizeTextList(rawCandidate.example),
+        exampleTranslationsZh: alignExampleTranslationsZh(
+          normalizeTextList(rawCandidate.example),
+          [rawCandidate.exampleTranslationZh],
+        ),
         notes: normalizeOptionalText(rawCandidate.notes),
         rarityScore: normalizeRarityScore(rawCandidate.rarityScore),
         learningTrack: normalizeLearningTrack(rawCandidate.learningTrack),
@@ -285,6 +319,7 @@ export function parseJsonImport(text: string, options: ParseTextImportOptions = 
         meaningsZh: [],
         example: "",
         examples: [],
+        exampleTranslationsZh: [],
         notes: "",
         rarityScore: null,
         learningTrack: "recognition" as const,
@@ -309,6 +344,7 @@ export function parseJsonImport(text: string, options: ParseTextImportOptions = 
         meaningsZh: [],
         example: "",
         examples: [],
+        exampleTranslationsZh: [],
         notes: "",
         rarityScore: null,
         learningTrack: "recognition" as const,
@@ -326,6 +362,13 @@ export function parseJsonImport(text: string, options: ParseTextImportOptions = 
     const tagValidation = validateVocabularyTags(record.tags);
     const meaningsZh = normalizeTextList(record.meaningsZh ?? record.meaningZh);
     const examples = normalizeTextList(record.examples ?? record.example);
+    const exampleTranslationsZh = alignExampleTranslationsZh(
+      examples,
+      record.exampleTranslationsZh ??
+        (typeof record.exampleTranslationZh === "string"
+          ? [record.exampleTranslationZh]
+          : undefined),
+    );
     const errors = [...validation.errors, ...tagValidation.errors];
 
     if (!isLearningTrack(rawTrack)) {
@@ -340,6 +383,10 @@ export function parseJsonImport(text: string, options: ParseTextImportOptions = 
       errors.push("missing_example");
     }
 
+    if (examples.some((_, exampleIndex) => !exampleTranslationsZh[exampleIndex])) {
+      errors.push("missing_example_translation");
+    }
+
     return {
       tempId: makeTempId(index + 1, 1),
       lineNumber: index + 1,
@@ -350,6 +397,7 @@ export function parseJsonImport(text: string, options: ParseTextImportOptions = 
       meaningsZh,
       example: examples[0] ?? "",
       examples,
+      exampleTranslationsZh,
       notes: normalizeOptionalText(readString(record.notes)),
       rarityScore: normalizeRarityScore(record.rarityScore as number | string | null | undefined),
       learningTrack: normalizeLearningTrack(rawTrack),

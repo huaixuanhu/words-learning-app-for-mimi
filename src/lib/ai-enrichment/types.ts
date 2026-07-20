@@ -79,11 +79,14 @@ export type ConfusableWordSuggestion = Readonly<{
   type: AiConfusableType;
   differenceZh: string;
   examplePair: readonly string[];
+  examplePairTranslationsZh?: readonly string[];
 }>;
 
 export type AiEnrichmentDraft = Readonly<{
   additionalMeaningsZh: readonly string[];
+  sourceExampleTranslationsZh?: readonly string[];
   examples: readonly string[];
+  exampleTranslationsZh?: readonly string[];
   similarWords: readonly SimilarWordSuggestion[];
   confusableWords: readonly ConfusableWordSuggestion[];
 }>;

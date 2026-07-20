@@ -1,5 +1,6 @@
 import {
   AI_OUTPUT_SCHEMA_VERSION,
+  assertCompleteAiExampleTranslations,
   validateAiEnrichmentDraft,
   validateTrustedAiLexicalPayload,
 } from "./contract";
@@ -193,7 +194,10 @@ export function decideAiEnrichmentDraft(
   }
   const acceptedContent =
     decision === "accepted"
-      ? validateAiEnrichmentDraft(editedContent, payload)
+      ? assertCompleteAiExampleTranslations(
+          validateAiEnrichmentDraft(editedContent, payload),
+          payload.examples,
+        )
       : null;
   const nextDraft: AiEnrichmentDraftRecord = {
     ...current,
@@ -205,8 +209,22 @@ export function decideAiEnrichmentDraft(
   const aiEnrichmentDrafts = [...data.aiEnrichmentDrafts];
   aiEnrichmentDrafts[draftIndex] = nextDraft;
 
+  const items = acceptedContent
+    ? data.items.map((candidate) =>
+        candidate.id === item.id && candidate.personId === item.personId
+          ? {
+              ...candidate,
+              exampleTranslationsZh: [
+                ...(acceptedContent.sourceExampleTranslationsZh ?? []),
+              ],
+              updatedAt: now,
+            }
+          : candidate,
+      )
+    : data.items;
+
   return {
-    data: { ...data, aiEnrichmentDrafts, updatedAt: now },
+    data: { ...data, items, aiEnrichmentDrafts, updatedAt: now },
     draft: nextDraft,
   };
 }
@@ -216,6 +234,7 @@ type AcceptedCandidate = Readonly<{
   differenceZh: string;
   relationType: VocabularyRelationRecord["relationType"];
   examplePair: readonly string[];
+  examplePairTranslationsZh: readonly string[];
 }>;
 
 function acceptedCandidate(
@@ -232,6 +251,7 @@ function acceptedCandidate(
       differenceZh: similar.differenceZh,
       relationType: "similar",
       examplePair: [],
+      examplePairTranslationsZh: [],
     };
   }
   const confusable = draft.confusableWords.find(
@@ -243,6 +263,7 @@ function acceptedCandidate(
         differenceZh: confusable.differenceZh,
         relationType: confusable.type,
         examplePair: confusable.examplePair,
+        examplePairTranslationsZh: confusable.examplePairTranslationsZh ?? [],
       }
     : null;
 }
@@ -255,6 +276,7 @@ export function addAcceptedAiCandidateToLearning(
     surfaceText: string;
     meaningZh: string;
     example: string;
+    exampleTranslationZh?: string;
     learningTrack: LearningTrack;
     timezone: string;
   }>,
@@ -284,6 +306,10 @@ export function addAcceptedAiCandidateToLearning(
   if (!candidate) {
     throw new Error("This candidate is not part of the accepted preview.");
   }
+  const exampleTranslationZh = input.exampleTranslationZh?.trim() ?? "";
+  if (input.example.trim() && !exampleTranslationZh) {
+    throw new Error("Add a Chinese translation for the example.");
+  }
   const matchesAcceptedCandidate =
     normalizeSurfaceText(input.surfaceText) === normalizeSurfaceText(candidate.word);
 
@@ -299,6 +325,9 @@ export function addAcceptedAiCandidateToLearning(
         meaningsZh: normalizeTextList(input.meaningZh),
         example: input.example,
         examples: normalizeTextList(input.example),
+        exampleTranslationsZh: input.example.trim()
+          ? [exampleTranslationZh]
+          : [],
         notes: "",
         rarityScore: null,
         learningTrack: input.learningTrack,

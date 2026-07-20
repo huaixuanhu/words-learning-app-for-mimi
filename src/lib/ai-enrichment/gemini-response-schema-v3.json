@@ -1,0 +1,88 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "additionalMeaningsZh": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 3,
+      "items": { "type": "string" }
+    },
+    "sourceExampleTranslationsZh": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 8,
+      "items": { "type": "string" },
+      "description": "Chinese translations aligned by index with every existing English example supplied in the request. Every translation must be non-empty."
+    },
+    "examples": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 3,
+      "items": { "type": "string" }
+    },
+    "exampleTranslationsZh": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 3,
+      "items": { "type": "string" },
+      "description": "Chinese translations aligned by index with examples. Every translation must be non-empty."
+    },
+    "similarWords": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "word": { "type": "string" },
+          "differenceZh": { "type": "string" }
+        },
+        "required": ["word", "differenceZh"]
+      }
+    },
+    "confusableWords": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "word": { "type": "string" },
+          "type": { "type": "string", "enum": ["spelling", "sound", "usage"] },
+          "differenceZh": { "type": "string" },
+          "examplePair": {
+            "type": "array",
+            "minItems": 0,
+            "maxItems": 2,
+            "items": { "type": "string" }
+          },
+          "examplePairTranslationsZh": {
+            "type": "array",
+            "minItems": 0,
+            "maxItems": 2,
+            "items": { "type": "string" },
+            "description": "Chinese translations aligned by index with examplePair. Every translation must be non-empty."
+          }
+        },
+        "required": [
+          "word",
+          "type",
+          "differenceZh",
+          "examplePair",
+          "examplePairTranslationsZh"
+        ]
+      }
+    }
+  },
+  "required": [
+    "additionalMeaningsZh",
+    "sourceExampleTranslationsZh",
+    "examples",
+    "exampleTranslationsZh",
+    "similarWords",
+    "confusableWords"
+  ]
+}

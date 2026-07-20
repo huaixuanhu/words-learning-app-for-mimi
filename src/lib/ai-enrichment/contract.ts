@@ -18,8 +18,8 @@ import type {
 } from "./types";
 
 export const GEMINI_STAGE2_MODEL = "gemini-3.1-flash-lite" as const;
-export const AI_PROMPT_VERSION = "v2-ai-enrichment-prompt-v2" as const;
-export const AI_OUTPUT_SCHEMA_VERSION = "v2-ai-enrichment-draft-v2" as const;
+export const AI_PROMPT_VERSION = "v2-ai-enrichment-prompt-v3" as const;
+export const AI_OUTPUT_SCHEMA_VERSION = "v2-ai-enrichment-draft-v3" as const;
 export const AI_DISCLOSURE_VERSION = "ai-disclosure-v3" as const;
 export const AI_MAX_COMBINED_CANDIDATES = 3 as const;
 
@@ -101,7 +101,9 @@ const PUBLIC_DISCLOSURE_CONFIRMATION_KEYS = [
 const TRUSTED_LEXICAL_KEYS = ["term", "meaningsZh", "examples"] as const;
 const DRAFT_KEYS = [
   "additionalMeaningsZh",
+  "sourceExampleTranslationsZh",
   "examples",
+  "exampleTranslationsZh",
   "similarWords",
   "confusableWords",
 ] as const;
@@ -111,6 +113,7 @@ const CONFUSABLE_WORD_KEYS = [
   "type",
   "differenceZh",
   "examplePair",
+  "examplePairTranslationsZh",
 ] as const;
 
 export class AiEnrichmentContractError extends Error {
@@ -181,6 +184,22 @@ function boundedTextArray(
   return value.map((entry, index) =>
     boundedText(entry, `${label}[${index}]`, maximumCodePoints),
   );
+}
+
+function bilingualTranslations(
+  value: unknown,
+  examples: readonly string[],
+  label: string,
+  maximumItems = 3,
+) {
+  if (value === undefined) {
+    return examples.map(() => "");
+  }
+  const translations = boundedTextArray(value, label, 0, maximumItems, 320);
+  if (translations.length !== examples.length) {
+    throw new AiEnrichmentContractError(`${label} must align with its English examples`);
+  }
+  return translations;
 }
 
 const AI_CANDIDATE_SURFACE_PATTERN =
@@ -378,8 +397,18 @@ function validateAiEnrichmentDraftInternal(
   value: unknown,
   sourceContext: TrustedAiLexicalPayload | null,
 ): AiEnrichmentDraft {
-  const record = asRecord(value, "draft");
-  exactKeys(record, DRAFT_KEYS, "draft");
+  const record: Record<string, unknown> = asRecord(value, "draft");
+  const optionalLegacyKeys = new Set([
+    "sourceExampleTranslationsZh",
+    "exampleTranslationsZh",
+  ]);
+  exactKeys(
+    record,
+    DRAFT_KEYS.filter(
+      (key) => !optionalLegacyKeys.has(key) || record[key] !== undefined,
+    ),
+    "draft",
+  );
   const lexicalSource = sourceContext
     ? validateTrustedAiLexicalPayload(sourceContext)
     : null;
@@ -392,6 +421,22 @@ function validateAiEnrichmentDraftInternal(
     80,
     lexicalSource?.meaningsZh ?? [],
   );
+  const sourceExampleTranslationsZh = lexicalSource
+    ? bilingualTranslations(
+        record.sourceExampleTranslationsZh,
+        lexicalSource.examples,
+        "sourceExampleTranslationsZh",
+        8,
+      )
+    : record.sourceExampleTranslationsZh === undefined
+      ? []
+      : boundedTextArray(
+          record.sourceExampleTranslationsZh,
+          "sourceExampleTranslationsZh",
+          0,
+          8,
+          320,
+        );
   const examples = uniqueNovelGeneratedTextArray(
     record.examples,
     "examples",
@@ -400,6 +445,11 @@ function validateAiEnrichmentDraftInternal(
     240,
     lexicalSource?.examples ?? [],
     true,
+  );
+  const exampleTranslationsZh = bilingualTranslations(
+    record.exampleTranslationsZh,
+    examples,
+    "exampleTranslationsZh",
   );
 
   if (!Array.isArray(record.similarWords) || record.similarWords.length > 3) {
@@ -443,7 +493,15 @@ function validateAiEnrichmentDraftInternal(
 
   const confusableWords = record.confusableWords.map((entry, index) => {
     const item = asRecord(entry, `confusableWords[${index}]`);
-    exactKeys(item, CONFUSABLE_WORD_KEYS, `confusableWords[${index}]`);
+    if (item.examplePairTranslationsZh === undefined) {
+      exactKeys(
+        item,
+        CONFUSABLE_WORD_KEYS.filter((key) => key !== "examplePairTranslationsZh"),
+        `confusableWords[${index}]`,
+      );
+    } else {
+      exactKeys(item, CONFUSABLE_WORD_KEYS, `confusableWords[${index}]`);
+    }
     const word = validateLearnableCandidate(
       item.word,
       `confusableWords[${index}].word`,
@@ -470,6 +528,12 @@ function validateAiEnrichmentDraftInternal(
     if (examplePair.length === 1) {
       throw new AiEnrichmentContractError("examplePair must be empty or contain two examples");
     }
+    const examplePairTranslationsZh = bilingualTranslations(
+      item.examplePairTranslationsZh,
+      examplePair,
+      `confusableWords[${index}].examplePairTranslationsZh`,
+      2,
+    );
     return {
       word,
       type: item.type as (typeof AI_CONFUSABLE_TYPES)[number],
@@ -478,10 +542,54 @@ function validateAiEnrichmentDraftInternal(
         `confusableWords[${index}].differenceZh`,
       ),
       examplePair,
+      examplePairTranslationsZh,
     };
   });
 
-  return { additionalMeaningsZh, examples, similarWords, confusableWords };
+  return {
+    additionalMeaningsZh,
+    sourceExampleTranslationsZh,
+    examples,
+    exampleTranslationsZh,
+    similarWords,
+    confusableWords,
+  };
+}
+
+export function assertCompleteAiExampleTranslations(
+  draft: AiEnrichmentDraft,
+  sourceExamples: readonly string[] = [],
+) {
+  const sourceTranslations = draft.sourceExampleTranslationsZh ?? [];
+  if (
+    sourceTranslations.length !== sourceExamples.length ||
+    sourceTranslations.some((translation) => !translation.trim())
+  ) {
+    throw new AiEnrichmentContractError(
+      "Every existing English example needs a Chinese translation",
+    );
+  }
+  const translations = draft.exampleTranslationsZh ?? [];
+  if (
+    translations.length !== draft.examples.length ||
+    translations.some((translation) => !translation.trim())
+  ) {
+    throw new AiEnrichmentContractError(
+      "Every generated English example needs a Chinese translation",
+    );
+  }
+  for (const [index, candidate] of draft.confusableWords.entries()) {
+    const pairTranslations = candidate.examplePairTranslationsZh ?? [];
+    if (
+      pairTranslations.length !== candidate.examplePair.length ||
+      pairTranslations.some((translation) => !translation.trim())
+    ) {
+      throw new AiEnrichmentContractError(
+        `confusableWords[${index}] needs a Chinese translation for every example`,
+      );
+    }
+  }
+  return draft;
 }
 
 export function validateAiEnrichmentDraft(

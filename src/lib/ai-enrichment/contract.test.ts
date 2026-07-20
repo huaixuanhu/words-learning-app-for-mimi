@@ -189,7 +189,9 @@ describe("V2 Stage 2 AI enrichment contract", () => {
       ),
     ).toEqual({
       additionalMeaningsZh: [],
+      sourceExampleTranslationsZh: [],
       examples: [],
+      exampleTranslationsZh: [],
       similarWords: [],
       confusableWords: [],
     });

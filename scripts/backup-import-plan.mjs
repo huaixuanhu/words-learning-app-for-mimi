@@ -1,13 +1,13 @@
 import { randomUUID } from "node:crypto";
 
 export const BACKUP_FORMAT = "mimi-pte-vocabulary-backup";
-export const BACKUP_VERSION = 3;
+export const BACKUP_VERSION = 4;
 export const BACKUP_APP_NAME = "words-learning-app-for-mimi";
 export const STAGE5L_FIXTURE_FILE_NAME = "stage5l-fixture-backup.json";
 export const STAGE6B_P1E_SCHEMA5_FIXTURE_FILE_NAME = "stage6b-p1e-schema5-backup.json";
 export const V2_STAGE3_SCHEMA6_FIXTURE_FILE_NAME = "v2-stage3-schema6-backup.json";
 
-const SUPPORTED_BACKUP_VERSIONS = new Set([1, 2, 3]);
+const SUPPORTED_BACKUP_VERSIONS = new Set([1, 2, 3, 4]);
 const SUPPORTED_SCHEMA_VERSIONS = new Set([3, 4, 5, 6]);
 const SUPPORTED_SCHEMA_VERSION_LABEL = "3, 4, 5, or 6";
 const DEFAULT_ACTIVE_SESSION_LIMIT = 8;
@@ -211,7 +211,15 @@ function validateImportBatch(batch, index, people, errors) {
   }
 }
 
-function validateVocabularyItem(item, index, people, importBatches, schemaVersion, errors) {
+function validateVocabularyItem(
+  item,
+  index,
+  people,
+  importBatches,
+  schemaVersion,
+  requiresBilingualFields,
+  errors,
+) {
   const label = `items[${index}]`;
   if (!isRecord(item)) {
     errors.push(`${label} must be an object`);
@@ -271,6 +279,16 @@ function validateVocabularyItem(item, index, people, importBatches, schemaVersio
     }
     if (!isStringArray(item.examples)) {
       errors.push(`${label}.examples must be an array`);
+    }
+  }
+  if (requiresBilingualFields || item.exampleTranslationsZh !== undefined) {
+    if (!isStringArray(item.exampleTranslationsZh)) {
+      errors.push(`${label}.exampleTranslationsZh must be an array`);
+    } else if (
+      isStringArray(item.examples) &&
+      item.exampleTranslationsZh.length !== item.examples.length
+    ) {
+      errors.push(`${label}.exampleTranslationsZh must align with examples`);
     }
   }
   if (!isStringOrNull(item.importBatchId)) {
@@ -987,7 +1005,7 @@ function validateBackup(backup) {
     errors.push(`format must be ${BACKUP_FORMAT}`);
   }
   if (!SUPPORTED_BACKUP_VERSIONS.has(backup.backupVersion)) {
-    errors.push("backupVersion must be 1, 2, or 3");
+    errors.push("backupVersion must be 1, 2, 3, or 4");
   }
   if (!isRecord(backup.metadata)) {
     errors.push("metadata must be an object");
@@ -1088,7 +1106,15 @@ function validateBackup(backup) {
   requireUnique([...importBatches], "importBatches person/id pair", errors);
 
   data.items.forEach((item, index) =>
-    validateVocabularyItem(item, index, people, importBatches, data.schemaVersion, errors),
+    validateVocabularyItem(
+      item,
+      index,
+      people,
+      importBatches,
+      data.schemaVersion,
+      backup.backupVersion === BACKUP_VERSION,
+      errors,
+    ),
   );
   const vocabularyItems = new Set(
     data.items
@@ -1380,6 +1406,13 @@ function textListOrLegacy(value, legacyValue) {
   return list.length ? list : normalizeTextList(legacyValue);
 }
 
+function alignedExampleTranslations(examples, value) {
+  const translations = Array.isArray(value)
+    ? value.map((entry) => (isString(entry) ? entry.trim() : ""))
+    : [];
+  return examples.map((_, index) => translations[index] ?? "");
+}
+
 function normalizeLearningTrackForImport(item, sourceSchemaVersion) {
   if (sourceSchemaVersion >= 4 && item.learningTrack === "active") {
     return "active";
@@ -1580,6 +1613,7 @@ export function buildBackupImportPlan(backup, options = {}) {
       const importBatch = item.importBatchId
         ? lookup(importBatchMap, `${item.personId}:${item.importBatchId}`, "vocabulary item import batch")
         : null;
+      const examples = textListOrLegacy(item.examples, item.example);
 
       return {
         id: mapping.targetId,
@@ -1589,7 +1623,11 @@ export function buildBackupImportPlan(backup, options = {}) {
         meaningZh: item.meaningZh,
         meaningsZh: textListOrLegacy(item.meaningsZh, item.meaningZh),
         example: item.example,
-        examples: textListOrLegacy(item.examples, item.example),
+        examples,
+        exampleTranslationsZh: alignedExampleTranslations(
+          examples,
+          item.exampleTranslationsZh,
+        ),
         notes: item.notes,
         rarityScore: item.rarityScore,
         learningTrack: normalizeLearningTrackForImport(item, data.schemaVersion),
@@ -2176,7 +2214,7 @@ export function createStage5LFixtureBackup() {
 
   return {
     format: BACKUP_FORMAT,
-    backupVersion: BACKUP_VERSION,
+    backupVersion: 1,
     metadata: {
       appName: BACKUP_APP_NAME,
       exportedAt: reviewedAt,
@@ -2321,7 +2359,7 @@ export function createStage6BP1ESchema5FixtureBackup() {
 
   return {
     format: BACKUP_FORMAT,
-    backupVersion: BACKUP_VERSION,
+    backupVersion: 3,
     metadata: {
       appName: BACKUP_APP_NAME,
       exportedAt: reviewedAt,
@@ -2657,7 +2695,7 @@ export function createV2Stage3Schema6FixtureBackup() {
 
   return {
     format: BACKUP_FORMAT,
-    backupVersion: BACKUP_VERSION,
+    backupVersion: 3,
     metadata: {
       appName: BACKUP_APP_NAME,
       exportedAt: activeReviewedAt,

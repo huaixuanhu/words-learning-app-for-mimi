@@ -45,6 +45,7 @@ export type VocabularyItem = {
   meaningsZh: string[];
   example: string;
   examples: string[];
+  exampleTranslationsZh?: string[];
   notes: string;
   rarityScore: number | null;
   learningTrack: LearningTrack;
@@ -81,6 +82,7 @@ export type ImportCandidate = {
   meaningsZh: string[];
   example: string;
   examples: string[];
+  exampleTranslationsZh?: string[];
   notes: string;
   rarityScore: number | null;
   learningTrack: LearningTrack;
@@ -116,6 +118,7 @@ export type NewVocabularyInput = {
   meaningsZh?: string[];
   example?: string;
   examples?: string[];
+  exampleTranslationsZh?: string[];
   notes?: string;
   rarityScore?: number | null;
   learningTrack?: LearningTrack;
@@ -137,6 +140,7 @@ export type UpdateVocabularyInput = Partial<
     | "meaningsZh"
     | "example"
     | "examples"
+    | "exampleTranslationsZh"
     | "notes"
     | "rarityScore"
     | "learningTrack"

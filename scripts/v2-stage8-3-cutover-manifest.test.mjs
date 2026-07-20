@@ -4,6 +4,7 @@ import {
   createV2Stage83CutoverManifestTemplate,
   validateV2Stage83CutoverManifest,
 } from "./v2-stage8-3-cutover-manifest.mjs";
+import { V2_STAGE8_3_ADDITIVE_MIGRATION_SHA256 } from "./v2-stage8-3-contract.mjs";
 
 const SHA_A = "a".repeat(64);
 const SHA_B = "b".repeat(64);
@@ -74,8 +75,19 @@ describe("V2-8-3 cutover manifest", () => {
     const output = JSON.stringify(template);
 
     expect(validateV2Stage83CutoverManifest(template)).toEqual(template);
+    expect(template.database.additiveMigrationSha256).toBe(
+      V2_STAGE8_3_ADDITIVE_MIGRATION_SHA256,
+    );
     expect(output).not.toMatch(/postgres(?:ql)?:\/\//u);
     expect(output).not.toMatch(/password|apiKey|databaseUrl|secret/u);
+  });
+
+  it("rejects a cutover manifest with additive migration drift", () => {
+    const value = readyManifest();
+    value.database.additiveMigrationSha256 = SHA_A;
+    expect(() => validateV2Stage83CutoverManifest(value)).toThrow(
+      /fixed V2-8-3 contract is invalid/u,
+    );
   });
 
   it("accepts a complete paired pre-write rollback packet", () => {
