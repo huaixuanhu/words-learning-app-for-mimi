@@ -27,7 +27,7 @@ Scope:
 - 每次只向 Google Cloud 发送使用者明确点击或当前 Dictation 所需的英文单词、短语、固定搭配或例句选词，不附带中文释义、`person_id`、学习历史、评分、Track、AI draft、prompt token 或 credential。
 - 建立 Runtime Cache（运行缓存）、同请求合并、独立原子用量计数、费用估算、并发、timeout（超时）、Kill Switch（紧急关闭开关）和明确的设备音色备用选项。
 - 保留现有学习调度、评分、Motion、键盘、触控和 bilingual example（双语例句）行为；朗读成功、失败或重放都不写 Review event、Daily actual 或 FSRS state。
-- 本地代码、fixture（固定样例）、用户 ADC 供应商证明、exact voice 选择与本地真人语料验收已经完成。Gate E 已由用户单独批准；Preview WIF identity、`staging` 的 `0004` / `0005`、exact deployment、Kill Switch closed/open 与四条机器路径验证均已完成。用户/Mimi 真机复测仍在本 Gate 内继续。
+- 本地代码、fixture（固定样例）、用户 ADC 供应商证明、exact voice 选择、本地真人语料、Preview WIF identity、`staging` 的 `0004` / `0005`、exact deployment、Kill Switch、四条机器路径与 MacBook + Chrome 人工复测均已完成。
 
 Non-Scope:
 
@@ -68,7 +68,7 @@ Target capability tier: Tier 3
 
 Working tier: Tier 3
 
-Status: `High / Preview-ready`. Gate B 本地实现、Gate C 用户 ADC 供应商证明、exact voice 选择与 Gate D 本地真人语料验收已完成。使用者接受 Standard-C；两条重音体验问题和两条未记录评分均按下文保留为 accepted evidence limitation（已接受的证据限制）。Gate E 的独立 Preview WIF identity、`staging` `0004` / `0005`、exact deployment、Kill Switch closed/open 与机器路径验证已完成；用户/Mimi 真机 Preview 复测尚未完成。
+Status: complete on 2026-07-22; PF-001 is `High / Closed`. Gate B–E 的本地实现、供应商证明、Voice Contract、本地语料、Preview-only WIF、`staging` migration、exact deployment、Kill Switch 与机器路径均完成。使用者随后在 MacBook + Chrome 验收 Settings Preview、Recognition、Active 与例句词汇朗读，确认问题已解决且音效非常理想。两条重音体验问题、两条未记录评分、缺少独立 Mimi 复测和未直接验证 iPhone + Safari 均保留为明确限制。
 
 ## 1. Accepted Provider Decision
 
@@ -314,7 +314,7 @@ Schema Version 仍为 6，`0005` 是 additive contract。固定 SHA-256 为 `ce0
 - Cache：相同 Settings 试听的第二次播放没有新增 provider attempt；页面内/运行缓存重放保持成功。
 - Ledger：本次 Gate E 共记录 7 个 provider attempts、170 characters、公开完整标价折算 `US$0.000680`。其中 3 次诊断失败为 111 characters / `US$0.000444`，4 次成功为 59 characters / `US$0.000236`；成功延迟为 384–1,280 ms，结束后 `active_provider_calls=0`。
 - Final state：Preview TTS Kill Switch 为 `off`，供用户与 Mimi 继续真机验收；12 个变量仍只属于 `Preview + V2` 且保持 Sensitive。Production variables、Production deployment、Neon `main` 与正式学习资料均未改变。
-- Human boundary：机器验证证明路由、鉴权、Cache、费用记录和失败体验可运行，不能代替真机音质与完整学习体验判断。PF-001 保持 `High / Preview-ready`，直到用户或 Mimi 明确给出复测结论。
+- Human boundary at the Gate E checkpoint：机器验证当时只能证明路由、鉴权、Cache、费用记录和失败体验可运行，不能代替真机音质判断；因此状态曾保持 `High / Preview-ready`。下文 Gate F 人工结论随后关闭该项。
 - Final local validation：90 个 test files / 550 tests 通过，既有 Postgres integration file/test 保持 1 / 1 skipped；lint、typecheck、三套 backup dry-run、Production build、production dependency audit（0 vulnerabilities）、治理预检与 diff checks 均通过。
 
 ### Gate E — Separately approved protected Preview
@@ -330,6 +330,14 @@ Schema Version 仍为 6，`0005` 是 additive contract。固定 SHA-256 为 `ce0
 - 人工确认音质与交互满足预期后关闭 PF-001。
 - V2-8-2.3 完成时把 exact `0005`、identity/credential inventory requirement、Production Kill Switch、quota baseline 与 rollback 写入 V2-8-3。
 - Gate 2 仍需新的明确批准；本子计划关闭不授权 Production。
+
+### 6.4 Gate F human closure record — 2026-07-22
+
+- Device/browser：使用者在 MacBook + Chrome 完成 protected Preview 复测；这是 V2 的主要预期使用环境。
+- Passed routes：Settings Preview、Recognition vocabulary、Active vocabulary（包含已有 Active 朗读路径）与 example-word playback 均通过。
+- Human decision：使用者明确确认“朗读问题已经解决”，并评价“音效非常理想”。此结论满足 PF-001 的 `user or Mimi` 人工关闭条件。
+- Evidence limits：Mimi 没有提供独立复测结果，因此不写成双人验收；iPhone + Safari 是未来少量使用环境，当前没有直接验收证据。若之后出现该环境特有问题，应登记新的 PF，而不是把未测试状态写成通过。
+- Final status：Gate F 完成，PF-001 为 `High / Closed`，V2-8-2.3 同步完成。Production TTS identity、Production migration、Production deployment 与 V2-8-3 Gate 2 均未因此获批。
 
 ## 7. Validation Matrix
 

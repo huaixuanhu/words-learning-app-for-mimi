@@ -63,7 +63,7 @@ Target capability tier: Tier 3
 
 Working tier: Tier 3
 
-Status: active. PF-001 is `High / Preview-ready`: its child plan owns the exact `en-AU-Standard-C` Voice Contract, local code, additive `0005`, the user-approved ADC provider proof and accepted local human listening evidence. Gate E is separately approved; independent Preview WIF identity, `staging` `0004` / `0005`, exact deployment, Kill Switch closed/open and machine-route verification are complete. User/Mimi real-device retest remains incomplete.
+Status: complete on 2026-07-22. PF-001 is `High / Closed`: its exact `en-AU-Standard-C` Voice Contract, local and provider evidence, additive `0005`, Preview-only WIF, `staging` migration, exact deployment, Kill Switch checks and machine-route verification are complete. The user then passed Settings Preview, Recognition, Active and example-word playback on MacBook + Chrome and described the audio as “非常理想”. No other `PF` item is registered. Mimi did not provide a separate test result, and iPhone + Safari is a planned occasional-use environment rather than a claimed passing environment; both are explicit evidence limitations. V2-8-3 Gate 2 is now the next candidate stage but remains unapproved.
 
 ## 1. Stage Position And Release Effect
 
@@ -79,8 +79,8 @@ V2-8-2 protected Preview rehearsal
 ```
 
 - V2-8-3 Gate 0B 与 local Gate 1 保留为已完成历史，不撤销、不重新编号。
-- V2-8-3 Gate 2 在本阶段关闭前暂停。此前的“Gate 2 是下一步”被本文件更新为“V2-8-2.3 完成后，Gate 2 才是下一步”。
-- `staging` 已先完成 `0004` 与 `0005`；protected Preview 随后部署 exact commit `deab32f3ab96025116597881b7b69c9dde84b8f4` 并通过 Kill Switch closed/open 与四条机器路径验收。下一步只剩用户/Mimi 真机复测与人工关闭结论。
+- V2-8-3 Gate 2 曾在本阶段关闭前暂停。V2-8-2.3 现已完成，因此 Gate 2 恢复为下一候选工作，但仍须新的明确批准。
+- `staging` 已先完成 `0004` 与 `0005`；protected Preview 随后部署 exact commit `deab32f3ab96025116597881b7b69c9dde84b8f4`，并通过 Kill Switch closed/open、四条机器路径和 MacBook + Chrome 人工验收。
 - 本阶段允许多轮本地修复和 Preview 复测，但每一轮必须绑定问题编号、exact commit、验证结果和人工结论。
 
 ## 2. What Counts As A Preview Feedback Item
@@ -153,24 +153,24 @@ User or Mimi retest:
 Resolution or accepted limitation:
 ```
 
-### Open register
+### Issue register
 
 #### PF-001 — Browser voice quality is not acceptable
 
 ```text
 ID: PF-001
 Reported at / reporter: 2026-07-21 / user
-Area / route / device / browser: Recognition Listen, Active revealed answer, Active Dictation,
-  example-word Listen and Settings preview / exact device-browser inventory to be recorded at retest
+Area / route / device / browser: Recognition Listen, Active revealed answer / Dictation,
+  example-word Listen and Settings Preview / MacBook + Chrome at final retest
 Observed behavior: every current playback route uses browser SpeechSynthesis; real-device listening
   sounds poor and insufficiently human for learning and Dictation.
 Expected behavior: one consistent, natural-enough English voice across all playback routes, with
   reliable retry/cache behavior and no learning-state side effect.
 Reproduction steps and evidence: play representative words through current Preview/local voice
   selector and the four learning entry points; user listening is accepted as subjective quality
-  evidence. Code inspection confirms all routes share the browser speech helper. Exact device,
-  browser and installed voice list remain required in the final comparison record.
-Priority / status: High / Preview-ready
+  evidence. Code inspection confirmed the former routes shared browser speech. The final protected
+  Preview comparison used MacBook + Chrome.
+Priority / status: High / Closed
 Scope decision: replace the default route with Google Cloud Text-to-Speech Standard voices under
   plan_docs/PLAN_V2_STAGE8_2_3_1_GOOGLE_CLOUD_STANDARD_TTS.md. User auditioned the Standard family
   and accepted its quality. Current voices:list returned en-AU-Standard-A/B/C/D; the user selected
@@ -194,11 +194,24 @@ Preview deployment / exact commit: deployment dpl_9kJb31QgP7tj3RnfYL2oubprUzNA r
 User or Mimi retest: user selected C from four current en-AU Standard candidates. The local result
   records 48 of 50 entries: 46 Good, 2 Review, 0 Bad. The two Review entries are interdisciplinary
   and photosynthesis; the user accepts the minor stress weakness and explicitly approves this voice.
-  Whereas and adapt/adopt have no recorded rating. User/Mimi real-device protected Preview flow remains pending.
-Resolution or accepted limitation: local audio quality is accepted with two minor stress observations
-  and two unrecorded entries retained as an evidence limitation. PF-001 remains open at Preview-ready
-  until the protected Preview human retest satisfies the child plan.
+  Whereas and adapt/adopt have no recorded rating. On 2026-07-22 the user tested Settings Preview,
+  Recognition, Active vocabulary and example-word playback on MacBook + Chrome, confirmed the
+  original problem was resolved, and described the audio as “非常理想”.
+Resolution or accepted limitation: PF-001 closed on 2026-07-22. The two minor local-corpus stress
+  observations and two unrecorded corpus entries remain accepted limitations. Mimi did not provide
+  an independent retest, so this is not described as dual-user acceptance. iPhone + Safari is a
+  planned occasional-use environment and has not been claimed as tested; a future device-specific
+  problem should receive a new PF record rather than reopening this evidence silently.
 ```
+
+### Stage closeout — 2026-07-22
+
+- Register result：PF-001 是本阶段唯一登记项，现为 `High / Closed`；未剩余 `Blocker`、`High`、`Normal` 或 `Cosmetic` 项目。
+- Human result：使用者在 MacBook + Chrome 完成 Settings Preview、Recognition、Active vocabulary 与例句词汇朗读，确认朗读问题已经解决且音效非常理想。
+- Evidence limits：没有独立 Mimi 复测结果，不写成 user + Mimi 双人通过；iPhone + Safari 仅是未来少量使用环境，尚未写成兼容性通过。现有明确 device fallback 保留；未来若出现设备特定问题，进入新的 `PF` 记录。
+- Unaffected criteria：本修复不改变跨日调度、Daily Plan、Dashboard、FSRS、Motion、键盘或学习资料；相关既有验证继续有效。
+- Candidate：exact code commit `deab32f3ab96025116597881b7b69c9dde84b8f4`、deployment `dpl_9kJb31QgP7tj3RnfYL2oubprUzNA`、Schema 6 + `0004` + `0005`、JSON backup Version 4 和 90 files / 550 tests 构成本阶段冻结证据。
+- Decision：V2-8-2.3 标记 `complete`。Gate 2 只恢复为下一候选阶段；本结论不批准任何 Production、credential、database、provider 或 deployment 操作。
 
 ## 5. Bounded Fix Loop
 

@@ -1,5 +1,19 @@
 # AI Agent Log
 
+## 2026-07-22 00:27 AEST
+
+- Task: record the user's final PF-001 real-device acceptance, close the TTS finding and determine whether V2-8-2.3 can complete.
+- Plan agreed: yes. The assistant proposed a documentation-only closure, the user supplied the missing device/browser inventory, and no code, provider, account, environment, database or deployment action was requested.
+- Working tier: Tier 3. This tranche changes canonical planning/governance records only and preserves the existing Production and credential boundaries.
+- Human result: the user tested Settings Preview, Recognition vocabulary, Active vocabulary and example-word playback on MacBook + Chrome, confirmed the pronunciation problem was resolved and described the audio as “非常理想”. MacBook + Chrome is expected to be the primary environment for both users.
+- Evidence limits: no independent Mimi retest was reported, so the record does not claim dual-user acceptance. iPhone + Safari is expected to be used occasionally but was not directly tested or marked compatible in this closure. A later environment-specific problem must enter a new PF record.
+- Closure result: PF-001 changed from `High / Preview-ready` to `High / Closed`. It was the only registered V2-8-2.3 finding, so V2-8-2.3 is complete. V2-8-3 Gate 2 is now the next candidate stage and remains subject to fresh approval.
+- Changed files: synchronized the PF-001 child plan, V2-8-2.3 register, V2 Master, V2-8-3 handoff, Architecture, README, AGENTS, Changelog and this governance record.
+- Validation: targeted stale-status/register search, `git diff --check` and Tier 3 governance preflight pass. Runtime tests and build were intentionally not rerun because no program, schema or runtime contract changed.
+- Safety notes: no program, test, migration, schema, backup, credential, environment, provider, Preview/Production deployment, Production data, GitHub push/PR/merge or SSO action occurred.
+- Residual boundary: independent Mimi and iPhone + Safari compatibility remain unclaimed evidence limitations. Gate 2 and all Production work require a new explicit approval.
+- Reason: turn the user's final real-device quality judgment into auditable closure without overstating untested environments or expanding release authority.
+
 ## 2026-07-21 23:55 AEST
 
 - Task: continue the approved PF-001 Gate E from its WIF/`staging` checkpoint through exact protected Preview deployment, machine playback verification and documentation closeout.

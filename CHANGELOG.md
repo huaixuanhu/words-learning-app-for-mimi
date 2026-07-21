@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## 2026-07-22 00:27 AEST
+
+- Closed PF-001 as `High / Closed` after the user completed protected Preview playback on MacBook + Chrome across Settings Preview, Recognition vocabulary, Active vocabulary and example-word audio. The user confirmed the original problem was resolved and described the audio as “非常理想”.
+- Marked V2-8-2.3 complete because PF-001 was its only registered finding and no `Blocker`, `High`, `Normal` or `Cosmetic` item remains open.
+- Recorded evidence limits without widening the claim: Mimi did not provide an independent retest, and iPhone + Safari is a planned occasional-use environment that has not been directly accepted. A later device-specific issue will receive a new PF record.
+- Made V2-8-3 Gate 2 the next candidate stage. This documentation closeout does not approve remote inventory, Production credentials, database migration, provider activation, deployment or writes.
+- Validation: targeted status/register consistency search, `git diff --check` and Tier 3 governance preflight pass. Runtime tests and build were not rerun because this tranche changes documentation only.
+- Reason: preserve the user's final audio-quality decision while keeping untested devices and Production authority explicit.
+
 ## 2026-07-21 23:55 AEST
 
 - Completed the approved PF-001 Gate E infrastructure, migration, exact protected Preview deployment and machine-route proof. Deployment `dpl_9kJb31QgP7tj3RnfYL2oubprUzNA` runs exact code commit `deab32f3ab96025116597881b7b69c9dde84b8f4` on branch `V2` in `syd1`.
