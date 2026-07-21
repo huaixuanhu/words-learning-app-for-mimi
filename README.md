@@ -19,7 +19,7 @@
 - **ADHD-friendly 学习体验**：把任务拆小、保持明确反馈，并允许保守地回退和重新开始。
 - **长期数据可控**：正式学习数据保存在云端数据库，同时保留导出和备份能力。
 
-当前 V1 已作为受保护的私人应用上线。V2 主线已经完成每日学习、独立 Active 三种练习、手机端与 Dashboard、第一代付费 AI enrichment（AI 词汇补充）及 V2-only 性能收口。V2-8-2.2 已在本地加入可靠的方向键评分、设备 English voice 选择，以及每条英文例句相邻的中文翻译资料链。V2-8-2.3 现作为正式上线前的 Preview 反馈微调阶段，统一记录、复现、修复和复测用户与 Mimi 发现的问题。当前 protected Preview 仍运行较早的 exact deployment；`staging` 尚未执行本批新增的 `0004`，Production 继续运行 V1 / Schema Version 5。V2-8-3 Gate 2 在 V2-8-2.3 关闭前暂停，之后仍需新的明确批准。整个 V2 不包含 SSO（Single Sign-On，单点登录）或 confidential per-person authorization（个人机密授权隔离）。
+当前 V1 已作为受保护的私人应用上线。V2 主线已经完成每日学习、独立 Active 三种练习、手机端与 Dashboard、第一代付费 AI enrichment（AI 词汇补充）及 V2-only 性能收口。V2-8-2.2 已加入可靠的方向键评分、设备 English voice 备用选项，以及每条英文例句相邻的中文翻译资料链。V2-8-2.3 现作为正式上线前的 Preview 反馈微调阶段，统一记录、复现、修复和复测用户与 Mimi 发现的问题。`staging` 已安全补齐 `0004` 与 `0005`，Preview-only WIF 身份已建立；当前 protected Preview 仍运行较早的 exact deployment，等待本批程序部署。Production 继续运行 V1 / Schema Version 5。V2-8-3 Gate 2 在 V2-8-2.3 关闭前暂停，之后仍需新的明确批准。整个 V2 不包含 SSO（Single Sign-On，单点登录）或 confidential per-person authorization（个人机密授权隔离）。
 
 ## 正式版本
 
@@ -60,9 +60,9 @@
 - V2-8-2 已完成 Staging Schema 5 → 6、Reset / 再迁移演练、Schema 5 recovery checkpoint（恢复检查点）、受保护 Preview 和真实 Gemini 验收。最终合成数据包含 5 个词条、4 个独立 Review states、5 次学习事件；Gemini 共 3 次成功调用、1,467 tokens、估算 `US$0.000777`，没有未完成调用。
 - V2-8-2.1 让页面切换复用已经加载的词库，合并同时发生的读取，直接使用写入返回值，并让评分/回退后立即继续而不等待整份词库重读。Daily Plan 已存在时不再重复准备同一天。V2-8-3 Gate 0B 已确认 exact commit 的 Vercel Functions 位于 Sydney `syd1`；10 次温热 Home → Library 的 data-ready median/p95 为 `52/62ms`，页面切换新增 full-data GET 为 `0`。V1 保持原样。
 - V2-8-2.2 修复了“Space / Enter 可用但 Arrow 无反应”的焦点边界：Recognition 和 Active 都可在 2×2 评分中用方向键移动，文字输入与弹窗不会被快捷键打断；现有卡片 Motion 与评分色阶保持不变。
-- Settings 仍可明确选择设备 English voice 作为备用。PF-001 的本地默认路线已固定 Google Cloud `en-AU-Standard-C`（`0.9` 语速、原始音高、MP3），并接入 Recognition、Active revealed answer / Dictation、例句选词与 Settings preview；重复词优先使用无明文 key 的 Cache。protected Preview 尚未迁移或部署这条路线。
+- Settings 仍可明确选择设备 English voice 作为备用。PF-001 的默认路线固定 Google Cloud `en-AU-Standard-C`（`0.9` 语速、原始音高、MP3），并接入 Recognition、Active revealed answer / Dictation、例句选词与 Settings preview；重复词优先使用无明文 key 的 Cache。Preview-only WIF 和 `staging` `0004` / `0005` 已完成，exact application deployment 与真实设备复测仍待完成。
 - 新建、编辑、导入和 AI 接受的英文例句都需要配对中文翻译。Library 可筛选 `Needs translation`，旧资料的缺口会明确显示并可通过人工审核的 AI suggestion 逐词补齐。JSON backup 已升到 Version 4；Version 1–3 仍可读取。
-- V2-8-2.3 使用 `PF-001` 起的连续编号集中处理 Preview 反馈；每项都要记录复现证据、优先级、本地验证、exact-commit Preview 复测和人工关闭结论。PF-001 现为 `High / Preview-ready`，使用独立 TTS Cache、Kill Switch、全局额度和 additive `0005`，不复用 Gemini ledger。本地真人结果为 46 `Good`、2 `Review`、0 `Bad`、2 条未记录；使用者接受个别重音不明显的限制并采用 Standard-C。protected Preview 复测完成前仍不关闭，也不进入 Production Gate 2。该阶段不会把 SSO 带入 V2。
+- V2-8-2.3 使用 `PF-001` 起的连续编号集中处理 Preview 反馈；每项都要记录复现证据、优先级、本地验证、exact-commit Preview 复测和人工关闭结论。PF-001 现为 `High / Preview-ready`，使用独立 TTS Cache、Kill Switch、全局额度和 additive `0005`，不复用 Gemini ledger。本地真人结果为 46 `Good`、2 `Review`、0 `Bad`、2 条未记录；使用者接受个别重音不明显的限制并采用 Standard-C。独立 Preview WIF 不含长期 service-account key，且 TTS variables 只属于 `Preview + V2`。protected Preview 人工复测完成前仍不关闭，也不进入 Production Gate 2。该阶段不会把 SSO 带入 V2。
 - V2-8-3 的本地 Gate 1 使用 `maintenance`、`schema6-readiness`、`live` 三个明确模式；缺失或未知模式会安全停止。Basic Auth 仍先于维护状态执行，只有 `live` 接受带 `v2-schema6` 标记的 Production 写入，旧页面会被要求重新载入。
 - Schema 5 / Schema 6 的非空 clone/main 检查和迁移命令目前只是 dormant tooling（未启用工具），必须同时通过 exact target、environment、action 和人工确认。`0003`、`0004`、`0005` migration SHA-256 已分别固定，迁移顺序为 `0003 -> 0004 -> 0005`；切换记录使用不含密钥的 manifest（清单）并要求 V1/Schema 5 与 V2/Schema 6 成对回退准备。
 - Production AI 的独立 `v2-8-3-production` scope 只有在 `live`、HTTPS、Vercel Production `main`、`NODE_ENV=production`、Schema 6、明确 Kill Switch 状态和其他正式确认全部满足时才可能打开；首轮最多 4 次供应商调用，进入 300 次/日长期边界还需单独确认。
@@ -139,7 +139,7 @@ npm run build
 - 当前产品面向私人熟人小组，不是公开注册服务。
 - Production 不接收 Development / Preview 的测试数据。
 - Active Vocabulary 在当前线上 V1 中没有调度行为；其独立练习已在受保护 V2 Preview 中实际运行，Production 尚未切换。
-- `V2` 分支本地契约为 Schema Version 6 + additive `0004` / JSON backup Version 4。长期非生产 `staging` 与当前 protected Preview 尚未应用 V2-8-2.2；Production `main` 继续运行 V1 / Schema Version 5。
+- `V2` 分支契约为 Schema Version 6 + additive `0004` / `0005` / JSON backup Version 4。长期非生产 `staging` 已应用 `0004` 与 `0005`；当前 protected Preview 尚未部署对应程序。Production `main` 继续运行 V1 / Schema Version 5。
 - 受保护 `V2` Preview 已配置独立 `MIMI_STUDY_TOKEN_SECRET`，Postgres `/api/study` 可签发和刷新 Daily Study 证据。Local fixture 与 Production 不继承该 secret，缺少时继续安全停止。
 - 受保护的 V2 Preview 已使用带硬额度保护的付费 Gemini API；Stage 2 以 120 条非个人测试词条固定验证 `gemini-3.1-flash-lite`，并已从路线中移除 Datamuse、Free Dictionary、Groq 对比和会热切换的 `gemini-flash-latest`。当前线上 V1 / Production 尚未调用任何 AI 服务。
 - 当前 V2-7B-1 没有个人 AI 次数上限；全应用按 `Australia/Melbourne` 预算日限制为 300 次、600,000 input tokens、210,000 output/thinking tokens、US$0.50 估算费用，并另设 US$2/月与并发 2。`person_id` 不能拆分或重置这些全局边界。

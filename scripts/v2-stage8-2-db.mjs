@@ -7,6 +7,7 @@ import {
   assertPinnedMigration,
   assertPinnedTtsMigration,
 } from "./v2-stage8-3-contract.mjs";
+import { migrationBody } from "./sql-migration-body.mjs";
 
 const SCHEMA6_MIGRATION_FILE = resolve(
   process.cwd(),
@@ -59,14 +60,6 @@ const SCHEMA6_CONSTRAINTS = [
   "tts_runs_completion_consistent",
   "tts_usage_buckets_counters_non_negative",
 ];
-
-function migrationBody(sql, filename) {
-  const normalized = sql.trim();
-  if (!/^begin;\s/iu.test(normalized) || !/\scommit;$/iu.test(normalized)) {
-    throw new Error(`${filename} is not transaction wrapped`);
-  }
-  return normalized.replace(/^begin;\s*/iu, "").replace(/\s*commit;$/iu, "");
-}
 
 function requiredEnv(name) {
   const value = process.env[name]?.trim();

@@ -63,7 +63,7 @@ Target capability tier: Tier 3
 
 Working tier: Tier 3
 
-Status: active. PF-001 is `High / Preview-ready`: its child plan owns the exact `en-AU-Standard-C` Voice Contract, local code, additive `0005`, the user-approved ADC provider proof and accepted local human listening evidence. Staging/Preview migration, Preview identity, deployment and remote retest remain unapproved and incomplete.
+Status: active. PF-001 is `High / Preview-ready`: its child plan owns the exact `en-AU-Standard-C` Voice Contract, local code, additive `0005`, the user-approved ADC provider proof and accepted local human listening evidence. Gate E is separately approved; independent Preview WIF identity and `staging` `0004` / `0005` are complete. Exact deployment and remote human retest remain incomplete.
 
 ## 1. Stage Position And Release Effect
 
@@ -80,7 +80,7 @@ V2-8-2 protected Preview rehearsal
 
 - V2-8-3 Gate 0B 与 local Gate 1 保留为已完成历史，不撤销、不重新编号。
 - V2-8-3 Gate 2 在本阶段关闭前暂停。此前的“Gate 2 是下一步”被本文件更新为“V2-8-2.3 完成后，Gate 2 才是下一步”。
-- 当前 protected Preview 尚未包含 V2-8-2.2 的 `0004` 与应用变更。首次 Preview refresh（预览更新）必须遵守 `migration first, application second`，并获得独立远端执行批准。
+- `staging` 已先完成 `0004` 与 `0005`；当前 protected Preview 仍运行旧 application commit。Gate E 继续遵守 `migration first, application second`，下一步是 exact candidate deployment 与 Kill Switch closed/open 验收。
 - 本阶段允许多轮本地修复和 Preview 复测，但每一轮必须绑定问题编号、exact commit、验证结果和人工结论。
 
 ## 2. What Counts As A Preview Feedback Item
@@ -185,14 +185,15 @@ Local validation: strict route, fixture/provider adapters, explicit device fallb
   50 valid MP3 files through the real route (858 characters, US$0.003432 list-price equivalent);
   five replay probes were Cache hits. Full repository closeout passes 89 files / 538 tests plus
   all three backup dry-runs after the corpus tranche.
-Preview deployment / exact commit: none; separately approved after local completion.
+Preview deployment / exact commit: Gate E approved; WIF identity and staging 0004/0005 complete.
+  Exact application deployment is pending.
 User or Mimi retest: user selected C from four current en-AU Standard candidates. The local result
   records 48 of 50 entries: 46 Good, 2 Review, 0 Bad. The two Review entries are interdisciplinary
   and photosynthesis; the user accepts the minor stress weakness and explicitly approves this voice.
   Whereas and adapt/adopt have no recorded rating. Real-device protected Preview flow remains pending.
 Resolution or accepted limitation: local audio quality is accepted with two minor stress observations
   and two unrecorded entries retained as an evidence limitation. PF-001 remains open at Preview-ready
-  until the separately approved protected Preview deployment and human retest satisfy the child plan.
+  until the protected Preview exact deployment and human retest satisfy the child plan.
 ```
 
 ## 5. Bounded Fix Loop

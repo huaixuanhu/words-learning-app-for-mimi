@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## 2026-07-21 23:05 AEST
+
+- Began the separately approved PF-001 Gate E for protected `V2` Preview only. Added a Preview runtime contract that requires HTTPS, Vercel Preview, Git ref `V2`, `postgres-preview`, Schema/accounting confirmations, exact project identity and short-lived Vercel OIDC through Google Workload Identity Federation.
+- Created the dedicated keyless Google Cloud identity boundary in `for-tts-502913`: service account `mimi-tts-preview`, pool `mimi-vercel-preview` and provider `mimi-v2-preview`. The provider condition binds the exact Vercel team id, project id and `preview` environment; the exact Preview subject alone has `roles/iam.workloadIdentityUser`, and the service account has only `roles/serviceusage.serviceUsageConsumer`.
+- Added 12 Sensitive Vercel variables scoped to `Preview + V2`, with `MIMI_TTS_KILL_SWITCH=on` for the first deployment. No Production variable, credential, deployment or Neon `main` state changed.
+- Migrated long-lived non-Production `staging` only after exact branch/endpoint/database/role/recovery checks. `0004_v2_bilingual_examples.sql` and `0005_v2_standard_tts_accounting.sql` were applied in one transaction; core counts were unchanged, and post-inspection reports Schema 6, 14 required tables, 12 required constraints and zero invalid or in-flight AI/TTS state.
+- Fixed a migration-runner defect exposed before SQL execution: versioned migrations may contain pure comments outside their `BEGIN/COMMIT` wrapper. A shared tested parser now accepts those comments while rejecting executable SQL outside the exact transaction, and is used by both Preview and dormant Production tooling.
+- Local validation so far passes lint, typecheck, focused WIF/route/accounting and migration-wrapper tests, 547 full-suite tests with the existing Postgres integration file/test skipped, three backup dry-runs, Production build and diff checks. Exact Preview application deployment, Kill Switch closed/open evidence and human real-device retest remain open, so PF-001 stays `High / Preview-ready`.
+- Reason: prepare a keyless, bounded Standard-C Preview deployment after database readiness without crossing into Production or declaring the user-facing issue closed early.
+
 ## 2026-07-21 19:03 AEST
 
 - Validated the local Standard-C listening export against the versioned 50-entry corpus and Voice Contract. The export records 48 ratings: 46 `Good`, 2 `Review`, 0 `Bad`; `interdisciplinary` and `photosynthesis` are the two Review entries.

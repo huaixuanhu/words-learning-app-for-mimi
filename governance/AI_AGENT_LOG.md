@@ -1,5 +1,21 @@
 # AI Agent Log
 
+## 2026-07-21 23:05 AEST
+
+- Task: execute the user-confirmed PF-001 Gate E through protected Preview identity and Staging readiness, then prepare an exact deployment while keeping human closure and all Production work separate.
+- Plan agreed: yes. The user explicitly confirmed the next stage after accepting Standard-C. Scope is Preview WIF, V2-only environment configuration, non-Production `staging` `0004` / `0005`, exact candidate deployment and Preview machine checks. Production, Neon `main`, V2-8-3 Gate 2 and SSO remain excluded.
+- Working tier: Tier 3. External account, environment and database actions used exact project/branch/endpoint/role conditions, application Kill Switch protection and non-Production-only credentials.
+- Identity result: Vercel Security confirms Team issuer `https://oidc.vercel.com/anorias-projects`. Google Cloud project `for-tts-502913` now has service account `mimi-tts-preview`, pool `mimi-vercel-preview` and provider `mimi-v2-preview`; the provider condition binds immutable Vercel team id, project id and `preview`, while the application separately requires Git ref `V2`. The service account has only Service Usage Consumer and the exact Preview subject has Workload Identity User on that service account. No long-lived key exists.
+- Environment result: 12 TTS variables were added as Sensitive and scoped to `Preview + V2`; the initial Kill Switch value is `on`. Existing Team issuer mode, Production variables/deployment and fixed Preview alias were not changed.
+- Migration result: Neon Console and the code guard confirmed `staging` branch `br-ancient-dawn-a7heegpm`, endpoint `ep-bitter-dew-a71lahle`, database `neondb`, role `neondb_owner` and retained recovery branch `br-patient-mud-a7cnc81r`. Exact `0004` and `0005` ran in one transaction. Core counts before/after were identical; post-inspection has Schema 6, 14 required tables, 12 constraints, and zero invalid profiles/events, submitted provider runs or active provider calls.
+- Safe failures: a Vercel Sensitive-variable pull returned blank protected values, so the database guard refused before connecting. A later exact connection passed its target checks but the local parser rejected leading migration comments before sending SQL. The parser was repaired with focused tests and reused by dormant V2-8-3 tooling before migration was retried successfully.
+- Secret handling: the staging connection string was never printed or written to the repository; it moved directly from the Neon masked connection dialog through the system clipboard into the guarded command, then the clipboard was cleared. A temporary ignored env pull file was mode `600` and deleted after confirming Sensitive variables are non-readable.
+- Safety notes: no Production account/database read or write, Neon `main` connection, Production credential/environment/deployment, GitHub push/PR/merge, SSO work or learner-data import occurred. Both pre-migration failures stopped before remote SQL, and Production remains V1 / Schema Version 5.
+- Changed files: added Preview WIF runtime gating/provider wiring/tests, shared migration-wrapper parsing/tests, and synchronized PF-001, the feedback register, V2 Master, Architecture, README, AGENTS, Changelog and this record.
+- Validation: local lint, typecheck, focused WIF/route/accounting tests, migration-wrapper plus V2-8-3 contract tests, 547 full-suite tests with the existing Postgres integration file/test skipped, three backup dry-runs, Production build, governance preflight and diff checks pass.
+- Residual boundary: exact Preview deployment, first closed-Kill-Switch check, bounded open-provider proof, human Recognition/Active Dictation/example-word/Cache listening and PF closure remain pending. No GitHub push, Production database/account, Production deployment or V2-8-3 Gate 2 action occurred.
+- Reason: establish an auditable keyless Preview identity and schema-ready target while failing closed at every unproven credential or migration boundary.
+
 ## 2026-07-21 19:03 AEST
 
 - Task: validate the completed Standard-C listening export, record the user's quality decision, and advance PF-001 without starting any remote action.

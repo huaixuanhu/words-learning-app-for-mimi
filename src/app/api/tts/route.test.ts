@@ -1,9 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
 import { InMemoryTtsAccounting } from "@/lib/tts/accounting";
 import { MemoryTtsCache } from "@/lib/tts/cache";
-import { LOCAL_FIXTURE_VOICE_CONTRACT, TTS_REQUEST_VERSION } from "@/lib/tts/contract";
+import {
+  GOOGLE_STANDARD_VOICE_CONTRACT,
+  LOCAL_FIXTURE_VOICE_CONTRACT,
+  TTS_REQUEST_VERSION,
+} from "@/lib/tts/contract";
 import { handleTtsPost } from "@/lib/tts/route-handler";
 import { TtsService } from "@/lib/tts/service";
+import { createTtsServiceResolver } from "./route";
 
 function request(body: unknown, headers: Record<string, string> = {}) {
   return new Request("http://localhost:3000/api/tts", {
@@ -71,5 +76,49 @@ describe("POST /api/tts", () => {
     const extra = await handleTtsPost(request({ ...body, voice: "free-choice" }));
     expect(extra.status).toBe(400);
   });
-});
 
+  it("wires protected Preview to WIF, Runtime Cache and Postgres accounting", () => {
+    const provider = {
+      source: "google-cloud-standard" as const,
+      voice: GOOGLE_STANDARD_VOICE_CONTRACT,
+      synthesize: vi.fn(),
+    };
+    const cache = new MemoryTtsCache();
+    const accounting = new InMemoryTtsAccounting();
+    const createPreviewGoogleProvider = vi.fn(() => provider);
+    const createRuntimeCache = vi.fn(() => cache);
+    const createPostgresAccounting = vi.fn(() => accounting);
+    const resolver = createTtsServiceResolver({
+      resolveConfig: () => ({
+        status: "available",
+        executionScope: "v2-8-2-3-preview",
+        provider: "google-cloud-standard",
+        projectId: "for-tts-502913",
+        credentialMode: "vercel-wif",
+        identity: {
+          audience:
+            "https://iam.googleapis.com/projects/123456789012/locations/global/" +
+            "workloadIdentityPools/mimi-vercel-preview/providers/mimi-v2-preview",
+          projectNumber: "123456789012",
+          serviceAccountEmail:
+            "mimi-tts-preview@for-tts-502913.iam.gserviceaccount.com",
+          workloadIdentityPoolId: "mimi-vercel-preview",
+          workloadIdentityProviderId: "mimi-v2-preview",
+        },
+      }),
+      createLocalFixtureProvider: () => provider,
+      createLocalGoogleProvider: () => provider,
+      createPreviewGoogleProvider,
+      createMemoryCache: () => cache,
+      createRuntimeCache,
+      createMemoryAccounting: () => accounting,
+      createPostgresAccounting,
+    });
+
+    expect(resolver(request(body))).toBeInstanceOf(TtsService);
+    expect(resolver(request(body))).toBeInstanceOf(TtsService);
+    expect(createPreviewGoogleProvider).toHaveBeenCalledOnce();
+    expect(createRuntimeCache).toHaveBeenCalledOnce();
+    expect(createPostgresAccounting).toHaveBeenCalledOnce();
+  });
+});

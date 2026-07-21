@@ -27,7 +27,7 @@ Scope:
 - 每次只向 Google Cloud 发送使用者明确点击或当前 Dictation 所需的英文单词、短语、固定搭配或例句选词，不附带中文释义、`person_id`、学习历史、评分、Track、AI draft、prompt token 或 credential。
 - 建立 Runtime Cache（运行缓存）、同请求合并、独立原子用量计数、费用估算、并发、timeout（超时）、Kill Switch（紧急关闭开关）和明确的设备音色备用选项。
 - 保留现有学习调度、评分、Motion、键盘、触控和 bilingual example（双语例句）行为；朗读成功、失败或重放都不写 Review event、Daily actual 或 FSRS state。
-- 本地代码、fixture（固定样例）、用户 ADC 供应商证明、exact voice 选择与本地真人语料验收已经完成；Preview identity、远程迁移、部署和 Preview 真人复测仍按后续批准执行。
+- 本地代码、fixture（固定样例）、用户 ADC 供应商证明、exact voice 选择与本地真人语料验收已经完成。Gate E 已由用户单独批准；Preview WIF identity 与 `staging` 的 `0004` / `0005` 已完成，exact deployment 与 Preview 真人复测仍在本 Gate 内继续。
 
 Non-Scope:
 
@@ -36,7 +36,7 @@ Non-Scope:
 - 不把整句例句、中文释义或学习记录自动发送给 TTS；例句操作只朗读使用者明确选中的英文词汇。
 - 不增加 SSO、OAuth、public registration、per-person authorization 或 confidential tenant isolation；整个 V2 继续排除这些能力。
 - 不改变 FSRS-6、Daily Episode first-attempt anchor、Recognition/Active Profile isolation、rating color scale、Motion 或 reduced-motion。
-- 当前批准不建立 Workload Identity Federation（工作负载身份联合）或长期 service-account key，不连接远程数据库，不远程执行 `0005`，也不部署 Preview/Production。专用项目的 API/Billing、用户 ADC 与有界本地供应商证明已按用户明确批准完成。
+- Gate E 当前批准只建立独立 Preview Workload Identity Federation（工作负载身份联合）、迁移确认过的非 Production `staging`、配置受保护 `V2` Preview 并部署 exact application commit。不得建立长期 service-account key，不得接触 Neon `main`、Production credential、Production deployment 或 Production 学习资料。
 - 不以 Google Cloud free tier（免费额度）、Billing budget（账单预算提醒）或浏览器 Basic Auth 单独代替应用内部的请求、字符、费用、并发、Cache 与 Kill Switch 保护。
 
 Exit criteria:
@@ -68,7 +68,7 @@ Target capability tier: Tier 3
 
 Working tier: Tier 3
 
-Status: `High / Preview-ready`. Gate B 本地实现、Gate C 用户 ADC 供应商证明、exact voice 选择与 Gate D 本地真人语料验收已完成。使用者接受 Standard-C；两条重音体验问题和两条未记录评分均按下文保留为 accepted evidence limitation（已接受的证据限制）。Protected Preview identity/`0005` 迁移、部署和 Preview 复测仍未完成。
+Status: `High / Preview-ready`. Gate B 本地实现、Gate C 用户 ADC 供应商证明、exact voice 选择与 Gate D 本地真人语料验收已完成。使用者接受 Standard-C；两条重音体验问题和两条未记录评分均按下文保留为 accepted evidence limitation（已接受的证据限制）。Gate E 的独立 Preview WIF identity 与 `staging` `0004` / `0005` 已完成；exact deployment 与用户/Mimi Preview 复测仍未完成。
 
 ## 1. Accepted Provider Decision
 
@@ -235,7 +235,7 @@ db/migrations/0005_v2_standard_tts_accounting.sql
 - reservation、concurrency、completion/failure reconciliation 使用单一数据库 transaction（事务），拒绝先调用供应商再补计数；
 - 过期 in-flight reservation 通过有界 reconciliation（对账）释放并保留 attempt/character/cost，不假设未收费。
 
-Schema Version 仍为 6，`0005` 是 additive contract。固定 SHA-256 为 `ce0890a59dcf262c38894f865cb249339e95727764c6a98a58b43eba2a4c5367`；V2-8-3 已按 `0003 -> 0004 -> 0005` 同步本地门禁。`0005` 尚未在任何远程数据库执行。
+Schema Version 仍为 6，`0005` 是 additive contract。固定 SHA-256 为 `ce0890a59dcf262c38894f865cb249339e95727764c6a98a58b43eba2a4c5367`；V2-8-3 已按 `0003 -> 0004 -> 0005` 同步本地门禁。Gate E 已在长期非 Production `staging` 上按 `0004 -> 0005` 补齐；Production `main` 仍为 Schema Version 5，未执行这些迁移。
 
 ## 5. Data Lifecycle And Privacy
 
@@ -290,7 +290,20 @@ Schema Version 仍为 6，`0005` 是 additive contract。固定 SHA-256 为 `ce0
 - Human evidence：2026-07-21 收到 `v2-8-2-3-tts-human-result-v1` 导出，Voice Contract 为 `google-en-au-standard-c-v1`，导出时间为 `2026-07-21T09:01:35.195Z`，文件 SHA-256 为 `e1b7a7e1de1978c2815070f1fea9b11b59203ba44684d2eca241d423be851e08`。50 条语料中有 48 条记录：46 `Good`、2 `Review`、0 `Bad`。两条 `Review` 为 `interdisciplinary` 与 `photosynthesis`；导出未包含逐条备注，使用者的整体反馈是“个别单词的重音不太明显，不过这不是什么大问题，可以使用这一版本语音”。
 - Accepted evidence limitation：`whereas` 与 `adapt. adopt.` 没有记录评分。使用者已经在知悉整体试听表现后明确采用 Standard-C，因此不要求为这两条重做本地试听，也不把结果描述为“50/50 全部通过”。Gate D 以 `48 recorded / 46 Good / 2 Review / 0 Bad / 2 unrecorded` 的真实结果通过。
 - Data handling：原始导出继续位于使用者本机 Downloads，不复制进仓库、Postgres、学习记录或 backup；版本文档只保留契约、汇总、限制与文件 hash。
-- Remaining：Gate E 的 Preview WIF identity、远程 `0004`/`0005`、exact deployment 与用户/Mimi 真实设备 Preview 复测仍未批准和未完成；PF-001 不能仅凭本地验收关闭。
+- Remaining：Gate E 的 exact deployment、Kill Switch closed/open 机器证据，以及用户/Mimi 真实设备 Preview 复测仍未完成；PF-001 不能仅凭本地验收、WIF 或数据库迁移关闭。
+
+### 6.2 Gate E infrastructure and migration record — 2026-07-21
+
+- Approval：用户明确批准执行下一阶段；权限只覆盖 protected `V2` Preview，Production 和 V2-8-3 Gate 2 保持关闭。
+- Identity：专用 Google Cloud project `for-tts-502913` 建立 `mimi-tts-preview` service account、`mimi-vercel-preview` pool 与 `mimi-v2-preview` OIDC provider。没有创建或下载 service-account key。
+- Federation：issuer 为 Vercel Team issuer `https://oidc.vercel.com/anorias-projects`；attribute condition 同时锁定 team id `team_aZlkgVfGEa9rGrdjpshW2KN5`、project id `prj_qGmq7IZXGB2Bx9X2DuZaaYubg6eD` 与 `preview` environment。只有 exact subject `owner:anorias-projects:project:words-learning-app-for-mimi:environment:preview` 可模拟该 service account；应用运行门另行要求 Git ref `V2`。
+- Least privilege：service account 只获得 `roles/serviceusage.serviceUsageConsumer`；Preview subject 只在该 service account 上获得 `roles/iam.workloadIdentityUser`。WIF 所需 IAM、STS 与 Service Account Credentials API 已在专用项目启用。
+- Vercel：12 个 TTS configuration variables 均标为 Sensitive，并限定 `Preview + V2`；首次状态为 `MIMI_TTS_KILL_SWITCH=on`。现有 OIDC issuer mode、Production variables、Production deployment 和固定 Preview alias 未改动。
+- Staging target：Neon Console 与代码守卫共同确认 `staging` branch `br-ancient-dawn-a7heegpm`、endpoint `ep-bitter-dew-a71lahle`、database `neondb`、role `neondb_owner`，并保留无 compute 的 Schema 5 recovery branch `br-patient-mud-a7cnc81r`。
+- Migration：首次执行在连接前因 Vercel Sensitive variables 不可回读而安全停止；第二次执行在发送 SQL 前暴露迁移包装器不能接受文件头注释，也安全停止。修复后以固定 SHA-256、exact target 与 recovery confirmations 在一个 transaction 中只应用 `0004_v2_bilingual_examples.sql` 和 `0005_v2_standard_tts_accounting.sql`。
+- Post-migration：Schema Version 6，14 张受检表、12 个约束；`people=1`、`vocabulary_items=5`、`review_states=3`、`review_events=9`、`daily_study_plans=8`、`ai_runs=4` 等核心计数前后完全一致。invalid profile/event、submitted AI/TTS run 与 active provider call 均为 `0`。
+- Secret handling：临时连接串只经系统 clipboard 直接传入 guarded command，未显示、未写入仓库或 `.env`；执行后 clipboard 已清空。Vercel pull 的临时 ignored 文件设为 mode `600`，确认 Sensitive 值不可回读后立即删除。
+- Local candidate：新增 Preview-only WIF runtime gate、Runtime Cache + Postgres accounting wiring，以及允许事务外纯注释但拒绝事务外 SQL 的共享 migration-body parser；exact deployment 尚未执行，本记录不把 Gate E 描述为通过。
 
 ### Gate E — Separately approved protected Preview
 

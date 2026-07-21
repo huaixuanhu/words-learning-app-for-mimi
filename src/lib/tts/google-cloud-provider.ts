@@ -1,7 +1,11 @@
-import { GoogleAuth } from "google-auth-library";
+import { getVercelOidcToken } from "@vercel/functions/oidc";
+import { ExternalAccountClient, GoogleAuth } from "google-auth-library";
 import { GOOGLE_STANDARD_VOICE_CONTRACT } from "./contract";
 import { TtsProviderError, type TtsProvider } from "./provider";
-import { TTS_GOOGLE_PROJECT_ID } from "./runtime-config";
+import {
+  TTS_GOOGLE_PROJECT_ID,
+  type TtsPreviewWifIdentity,
+} from "./runtime-config";
 
 const GOOGLE_TTS_SYNTHESIZE_URL =
   "https://texttospeech.googleapis.com/v1/text:synthesize";
@@ -29,6 +33,49 @@ function createAdcAccessTokenResolver() {
     const token = await auth.getAccessToken();
     if (!token) throw new TtsProviderError("credentials_unavailable");
     return token;
+  };
+}
+
+type ExternalAccessTokenClient = Readonly<{
+  getAccessToken: () => Promise<Readonly<{ token?: string | null }>>;
+}>;
+
+type ExternalAccountOptions = Parameters<typeof ExternalAccountClient.fromJSON>[0];
+
+export function createVercelWifAccessTokenResolver(
+  identity: TtsPreviewWifIdentity,
+  dependencies: Readonly<{
+    getOidcToken?: (options: { audience: string }) => Promise<string>;
+    createExternalClient?: (
+      options: ExternalAccountOptions,
+    ) => ExternalAccessTokenClient | null;
+  }> = {},
+) {
+  const getOidcToken = dependencies.getOidcToken ?? getVercelOidcToken;
+  const createExternalClient =
+    dependencies.createExternalClient ??
+    ((options: ExternalAccountOptions) => ExternalAccountClient.fromJSON(options));
+  let client: ExternalAccessTokenClient | null | undefined;
+  return async () => {
+    if (client === undefined) {
+      client = createExternalClient({
+        type: "external_account",
+        audience: identity.audience,
+        subject_token_type: "urn:ietf:params:oauth:token-type:jwt",
+        token_url: "https://sts.googleapis.com/v1/token",
+        service_account_impersonation_url:
+          "https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/" +
+          `${encodeURIComponent(identity.serviceAccountEmail)}:generateAccessToken`,
+        scopes: [CLOUD_PLATFORM_SCOPE],
+        subject_token_supplier: {
+          getSubjectToken: () => getOidcToken({ audience: identity.audience }),
+        },
+      });
+    }
+    if (!client) throw new TtsProviderError("credentials_unavailable");
+    const response = await client.getAccessToken();
+    if (!response.token) throw new TtsProviderError("credentials_unavailable");
+    return response.token;
   };
 }
 

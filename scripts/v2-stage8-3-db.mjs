@@ -22,6 +22,7 @@ import {
   inventorySchema6,
   withReadOnlySnapshot,
 } from "./v2-stage8-3-db-core.mjs";
+import { migrationBody as unwrapMigrationBody } from "./sql-migration-body.mjs";
 
 const MIGRATION_FILE = resolve(
   process.cwd(),
@@ -37,14 +38,14 @@ const TTS_MIGRATION_FILE = resolve(
 );
 
 function migrationBody(sql, filename) {
-  const normalized = sql.trim();
-  if (!/^begin;\s/iu.test(normalized) || !/\scommit;$/iu.test(normalized)) {
-    throw Object.assign(new Error(`${filename} is not transaction wrapped`), {
+  try {
+    return unwrapMigrationBody(sql, filename);
+  } catch (error) {
+    throw Object.assign(error, {
       code: "V2_8_3_MIGRATION_WRAPPER_INVALID",
       safeToReport: true,
     });
   }
-  return normalized.replace(/^begin;\s*/iu, "").replace(/\s*commit;$/iu, "");
 }
 
 function beforeArtifactPath(argv) {

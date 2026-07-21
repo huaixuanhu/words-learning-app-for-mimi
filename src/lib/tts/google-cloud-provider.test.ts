@@ -1,6 +1,9 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { GOOGLE_STANDARD_VOICE_CONTRACT } from "./contract";
-import { createGoogleCloudTtsProvider } from "./google-cloud-provider";
+import {
+  createGoogleCloudTtsProvider,
+  createVercelWifAccessTokenResolver,
+} from "./google-cloud-provider";
 import { TTS_GOOGLE_PROJECT_ID } from "./runtime-config";
 
 describe("Google Cloud Standard TTS provider", () => {
@@ -58,5 +61,47 @@ describe("Google Cloud Standard TTS provider", () => {
       category: "provider_http_403",
       message: "Voice unavailable · Try again",
     });
+  });
+
+  it("exchanges the exact Vercel Preview audience for a short-lived service-account token", async () => {
+    const identity = {
+      audience:
+        "https://iam.googleapis.com/projects/123456789012/locations/global/" +
+        "workloadIdentityPools/mimi-vercel-preview/providers/mimi-v2-preview",
+      projectNumber: "123456789012",
+      serviceAccountEmail:
+        "mimi-tts-preview@for-tts-502913.iam.gserviceaccount.com",
+      workloadIdentityPoolId: "mimi-vercel-preview",
+      workloadIdentityProviderId: "mimi-v2-preview",
+    };
+    const getOidcToken = vi.fn(async () => "short-lived-vercel-oidc");
+    let externalOptions: Record<string, unknown> | undefined;
+    const getAccessToken = vi.fn(async () => ({ token: "short-lived-google-token" }));
+    const resolver = createVercelWifAccessTokenResolver(identity, {
+      getOidcToken,
+      createExternalClient: (options) => {
+        externalOptions = options as unknown as Record<string, unknown>;
+        return { getAccessToken };
+      },
+    });
+
+    await expect(resolver()).resolves.toBe("short-lived-google-token");
+    expect(getAccessToken).toHaveBeenCalledOnce();
+    expect(externalOptions).toMatchObject({
+      type: "external_account",
+      audience: identity.audience,
+      subject_token_type: "urn:ietf:params:oauth:token-type:jwt",
+      token_url: "https://sts.googleapis.com/v1/token",
+      scopes: ["https://www.googleapis.com/auth/cloud-platform"],
+    });
+    expect(externalOptions?.service_account_impersonation_url).toBe(
+      "https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/" +
+        "mimi-tts-preview%40for-tts-502913.iam.gserviceaccount.com:generateAccessToken",
+    );
+    const supplier = externalOptions?.subject_token_supplier as {
+      getSubjectToken: () => Promise<string>;
+    };
+    await expect(supplier.getSubjectToken()).resolves.toBe("short-lived-vercel-oidc");
+    expect(getOidcToken).toHaveBeenCalledWith({ audience: identity.audience });
   });
 });
