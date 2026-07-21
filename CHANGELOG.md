@@ -1,5 +1,27 @@
 # CHANGELOG
 
+## 2026-07-21 17:53 AEST
+
+- Implemented the local PF-001 Google Cloud Standard TTS candidate across Recognition, Active revealed answers / Dictation, selected example words and Settings preview. Cloud is the client default; browser SpeechSynthesis is available only when the learner explicitly chooses `Use device voice`. Playback never writes review or scheduling state.
+- Pinned the human-selected Voice Contract `google-en-au-standard-c-v1`: `en-AU-Standard-C`, `en-AU`, speaking rate `0.9`, pitch `0`, MP3. Client requests cannot select a voice, provider, encoding or SSML.
+- Added strict same-origin `/api/tts`, normalized English-only input, local fixture and Google adapters, 8-second provider timeout, 512 KiB response ceiling, cache-before-accounting, equal-miss coalescing, page-memory replay, visible retry/error states and stale-playback cancellation. Corrected Host/origin handling so `127.0.0.1` is not rejected when Next internally represents the request as `localhost`.
+- Added independent TTS accounting with 2,000 attempts/day, 100,000 characters/day, 1,000,000 characters/month, list-price-equivalent `US$0.50/day` / `US$4/month`, concurrency 4 and no per-person limit. Added operational-only `0005_v2_standard_tts_accounting.sql`, pinned SHA-256 `ce0890a59dcf262c38894f865cb249339e95727764c6a98a58b43eba2a4c5367`, and synchronized `0003 -> 0004 -> 0005` readiness/migration guards.
+- User-approved Gate C used dedicated project `for-tts-502913` and local user ADC without a service-account JSON key. Four current `en-AU Standard` candidates plus two route calls used 6 provider attempts / 340 characters / list-price equivalent `US$0.00136`; a subsequent identical route request was a Cache hit. The exact C route returned a valid 24 kHz mono, 64 kbps MP3.
+- Added `@vercel/functions` for the future environment-isolated Runtime Cache adapter and `google-auth-library` for short-lived local ADC. Protected Preview still requires separately approved WIF identity, `0004` / `0005` migration and exact deployment; Production remains unchanged.
+- Validation passes: 10 focused files / 35 tests; 88 full-suite files / 536 tests with the existing Postgres integration file/test skipped; lint; typecheck; all three backup dry-runs; Production build; script syntax; cutover manifest template; production dependency audit with 0 vulnerabilities; governance preflight; secret/diff checks.
+- Reason: use the exact voice the user preferred while keeping paid playback bounded, cached, reversible and separate from learning evidence.
+
+## 2026-07-21 16:15 AEST
+
+- Registered `PF-001` as a `High / Planned` V2-8-2.3 finding after real-device listening confirmed that the current browser SpeechSynthesis voices are not acceptable across Recognition, Active revealed answers, Active Dictation, example-word playback and Settings preview.
+- Added the derived documentation-first `V2-8-2.3-1 Google Cloud Standard TTS` plan. The user selected Google Cloud Text-to-Speech Standard after auditioning it; exact voice name remains deliberately unfrozen until a current `voices:list` result and user/Mimi listening select the allowlist.
+- Defined one shared Cloud playback route, minimal English-only outbound text, explicit device fallback, no study-state write, server-only adapter, Runtime Cache, request coalescing, atomic TTS accounting, timeout and Kill Switch behavior. Preferred future authentication is short-lived Vercel OIDC through Google Workload Identity Federation, without a long-lived service-account JSON key.
+- Accepted a relaxed global TTS boundary of 2,000 provider attempts/day, 100,000 characters/day, 1,000,000 characters/month, list-price-equivalent `US$0.50/day` / `US$4/month`, concurrency 4 and no per-person limit. Cache hits do not consume provider attempts; limits use full public list price rather than relying on the current free tier.
+- Reserved `0005_v2_standard_tts_accounting.sql` as a future additive Schema 6 implementation migration. It does not exist yet, so no digest was invented; implementation must synchronize its exact SHA-256 and migration order into V2-8-3 before Gate 2.
+- Synchronized the V2-8-2.2 trigger, V2-8-2.3 register, Master, Architecture, README, AGENTS and V2-8-3 cutover boundary. The current application still uses browser speech; no code, schema, backup shape, API/Billing, identity, credential, external call, database, deployment or Production state changed.
+- Documentation consistency, diff and Tier 3 governance checks form this tranche's closeout. Runtime tests/build are intentionally out of scope because no runtime file changed.
+- Reason: replace inconsistent device-dependent audio with a user-approved, low-cost Standard voice route while keeping normal learning fluid and paid-service activation separately controlled.
+
 ## 2026-07-20 22:57 AEST
 
 - Added the documentation-only `V2-8-2.3 Preview Feedback Stabilisation` stage before Production cutover. It is the canonical register for user/Mimi findings discovered through protected Preview and uses sequential `PF` identifiers, evidence-backed reproduction, priority/status rules, bounded fixes, exact-commit Preview retest and explicit human closure.

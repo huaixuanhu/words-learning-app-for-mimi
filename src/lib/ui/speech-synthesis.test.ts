@@ -5,6 +5,7 @@ import {
   parseSpeechVoicePreference,
   selectSpeechVoice,
   speakEnglishText,
+  speakWithDeviceVoice,
   type SpeechUtteranceAdapter,
   type SpeechVoiceAdapter,
 } from "./speech-synthesis";
@@ -35,7 +36,7 @@ const voices: SpeechVoiceAdapter[] = [
 
 describe("browser English speech", () => {
   it("returns a calm unsupported state outside a browser", () => {
-    expect(speakEnglishText("adapt")).toEqual({
+    expect(speakWithDeviceVoice("adapt")).toEqual({
       status: "unsupported",
       spokenText: "adapt",
     });
@@ -53,7 +54,7 @@ describe("browser English speech", () => {
     };
 
     expect(
-      speakEnglishText("  adapt  ", {
+      speakWithDeviceVoice("  adapt  ", {
         synthesis: { cancel, speak, getVoices: () => voices },
         createUtterance: (text) => ({ ...utterance, text }),
         voicePreference: DEFAULT_SPEECH_VOICE_PREFERENCE,
@@ -61,6 +62,7 @@ describe("browser English speech", () => {
     ).toEqual({
       status: "spoken",
       spokenText: "adapt",
+      source: "device",
       voiceName: "Natural English",
       voiceLanguage: "en-AU",
     });
@@ -72,6 +74,38 @@ describe("browser English speech", () => {
       rate: 0.9,
       pitch: 1,
     });
+  });
+
+  it("uses the strict Cloud route by default without a silent device fallback", async () => {
+    const fetchImpl = vi.fn(async () =>
+      new Response(Uint8Array.from([0xff, 0xfb, 0x90, 0x64]), {
+        status: 200,
+        headers: {
+          "content-type": "audio/mpeg",
+          "x-mimi-tts-cache": "miss",
+          "x-mimi-tts-source": "local-fixture",
+          "x-mimi-tts-voice-contract": "fixture-v1",
+        },
+      }),
+    );
+    const playAudioBlob = vi.fn(async () => undefined);
+    const result = await speakEnglishText("adapt", "recognition", {
+      fetchImpl,
+      createRequestId: () => "00000000-0000-4000-8000-000000000001",
+      playAudioBlob,
+      sourcePreference: "cloud",
+    });
+
+    expect(result).toMatchObject({
+      status: "spoken",
+      source: "local-fixture",
+      cacheStatus: "miss",
+    });
+    expect(playAudioBlob).toHaveBeenCalledOnce();
+    expect(fetchImpl).toHaveBeenCalledWith(
+      "/api/tts",
+      expect.objectContaining({ method: "POST", credentials: "same-origin" }),
+    );
   });
 
   it("lists only English voices and gives natural-labelled voices first", () => {

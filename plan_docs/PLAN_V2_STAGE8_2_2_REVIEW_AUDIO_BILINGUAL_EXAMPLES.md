@@ -92,6 +92,7 @@ Status: local implementation complete on 2026-07-19. Protected Preview / Staging
 - Cloud route 必须在开始前选择供应商/模型并重新核验 official pricing、model lifecycle、retention、region 与 API support。
 - 实现必须包含 server-only credential、normalized text + voice + model cache key、重复播放 Cache、字符/请求/成本上限、concurrency、timeout、Kill Switch 和 browser fallback。
 - Cloud TTS 的单独批准可以复用本阶段的 `Voice` 设置界面，但不能复用普通 Gemini text quota ledger 冒充音频成本控制。
+- 2026-07-21 真人试听确认现有浏览器音色仍不合格，本 Gate 已触发并由 `plan_docs/PLAN_V2_STAGE8_2_3_1_GOOGLE_CLOUD_STANDARD_TTS.md` 接管。用户已选择 `en-AU-Standard-C`（speaking rate `0.9`、pitch `0`、MP3）作为本地候选；本文的 browser SpeechSynthesis 实现保留为使用者明确选择的备用路径，不再是 V2 目标默认音源。
 
 ## 2. Bilingual Example Contract
 

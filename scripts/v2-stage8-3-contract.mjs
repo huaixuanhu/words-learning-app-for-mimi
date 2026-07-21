@@ -4,6 +4,8 @@ export const V2_STAGE8_3_MIGRATION_SHA256 =
   "ef991928d299a7dfb78483c96fcd7e6fd673a009cd31ca0f0f91c606d2128fba";
 export const V2_STAGE8_3_ADDITIVE_MIGRATION_SHA256 =
   "9e00e1213366492db90a97709d605d68770a1b80f46caa8b748886bc8bd4e29c";
+export const V2_STAGE8_3_TTS_MIGRATION_SHA256 =
+  "ce0890a59dcf262c38894f865cb249339e95727764c6a98a58b43eba2a4c5367";
 
 export const V2_STAGE8_3_ARTIFACT_KIND = "v2-8-3-safe-inventory-v1";
 export const V2_STAGE8_3_NEON_API_BASE_URL =
@@ -108,6 +110,17 @@ export function assertPinnedAdditiveMigration(migrationBytes) {
     reject(
       "The bilingual examples migration does not match the pinned V2-8-3 digest",
       "V2_8_3_ADDITIVE_MIGRATION_DIGEST_MISMATCH",
+    );
+  }
+  return actual;
+}
+
+export function assertPinnedTtsMigration(migrationBytes) {
+  const actual = sha256(migrationBytes);
+  if (actual !== V2_STAGE8_3_TTS_MIGRATION_SHA256) {
+    reject(
+      "The TTS accounting migration does not match the pinned V2-8-3 digest",
+      "V2_8_3_TTS_MIGRATION_DIGEST_MISMATCH",
     );
   }
   return actual;
@@ -763,6 +776,7 @@ export function buildSafeInventoryArtifact({
     invariants: safeInvariants,
     additiveMigrationSha256: V2_STAGE8_3_ADDITIVE_MIGRATION_SHA256,
     migrationSha256: V2_STAGE8_3_MIGRATION_SHA256,
+    ttsMigrationSha256: V2_STAGE8_3_TTS_MIGRATION_SHA256,
     parity: {
       combinedSha256: combineTableDigests(safeTableDigests),
       tableDigests: safeTableDigests,
@@ -821,6 +835,7 @@ function assertSafeArtifact(value) {
     value.parity.totalCoreRows !== totalCoreRows ||
     value.migrationSha256 !== V2_STAGE8_3_MIGRATION_SHA256 ||
     value.additiveMigrationSha256 !== V2_STAGE8_3_ADDITIVE_MIGRATION_SHA256 ||
+    value.ttsMigrationSha256 !== V2_STAGE8_3_TTS_MIGRATION_SHA256 ||
     !Object.values(V2_STAGE8_3_TARGETS).includes(value.identity?.target) ||
     !SHA256_PATTERN.test(value.identity?.identityDigest || "") ||
     value.identity?.connectedDatabaseMatched !== true ||
@@ -854,6 +869,7 @@ function assertSafeArtifact(value) {
     invariants: safeIntegerRecord(value.invariants || {}),
     additiveMigrationSha256: V2_STAGE8_3_ADDITIVE_MIGRATION_SHA256,
     migrationSha256: V2_STAGE8_3_MIGRATION_SHA256,
+    ttsMigrationSha256: V2_STAGE8_3_TTS_MIGRATION_SHA256,
     parity: { combinedSha256, tableDigests, totalCoreRows },
     schema: safeIntegerRecord(value.schema || {}),
     schemaVersion: value.schemaVersion,

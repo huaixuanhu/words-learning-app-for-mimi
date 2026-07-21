@@ -24,6 +24,8 @@ export const V2_STAGE8_3_SCHEMA6_TABLES = [
   "vocabulary_relations",
   "ai_usage_buckets",
   "study_command_idempotency",
+  "tts_runs",
+  "tts_usage_buckets",
 ];
 
 export const V2_STAGE8_3_SCHEMA6_CONSTRAINTS = [
@@ -37,6 +39,8 @@ export const V2_STAGE8_3_SCHEMA6_CONSTRAINTS = [
   "ai_usage_buckets_person_scope_consistent",
   "vocabulary_items_example_translations_zh_array",
   "vocabulary_items_example_translation_count_matches",
+  "tts_runs_completion_consistent",
+  "tts_usage_buckets_counters_non_negative",
 ];
 
 export const V2_STAGE8_3_SCHEMA6_COLUMNS = [
@@ -52,6 +56,9 @@ export const V2_STAGE8_3_SCHEMA6_COLUMNS = [
   ["review_events", "target_revision", "text", "YES"],
   ["review_events", "parameter_set_id", "text", "NO"],
   ["vocabulary_items", "example_translations_zh", "jsonb", "NO"],
+  ["tts_runs", "request_id_hash", "character", "NO"],
+  ["tts_runs", "provider_request_id_hash", "character", "YES"],
+  ["tts_usage_buckets", "execution_scope", "text", "NO"],
 ];
 
 export const V2_STAGE8_3_SCHEMA6_INDEXES = [
@@ -73,6 +80,9 @@ export const V2_STAGE8_3_SCHEMA6_INDEXES = [
   "vocabulary_relations_person_source_idx",
   "ai_usage_buckets_scope_period_idx",
   "study_command_idempotency_expiry_idx",
+  "tts_usage_buckets_scope_period_idx",
+  "tts_runs_scope_status_created_idx",
+  "tts_runs_cache_key_idx",
 ];
 
 export const V2_STAGE8_3_SCHEMA6_TRIGGERS = [
@@ -294,6 +304,8 @@ async function schema6Counts(client) {
         (select count(*)::integer from vocabulary_relations) as vocabulary_relations,
         (select count(*)::integer from ai_usage_buckets) as ai_usage_buckets,
         (select count(*)::integer from study_command_idempotency) as study_command_idempotency,
+        (select count(*)::integer from tts_runs) as tts_runs,
+        (select count(*)::integer from tts_usage_buckets) as tts_usage_buckets,
         (select count(*)::integer from vocabulary_items where learning_track = 'recognition')
           as recognition_vocabulary_items,
         (select count(*)::integer from vocabulary_items where learning_track = 'active')
@@ -491,7 +503,14 @@ async function schema6Invariants(client) {
         (
           select coalesce(sum(active_provider_calls), 0)::integer
           from ai_usage_buckets
-        ) as active_provider_calls
+        ) as active_provider_calls,
+        (
+          select count(*)::integer from tts_runs where status = 'submitted'
+        ) as submitted_tts_runs,
+        (
+          select coalesce(sum(active_provider_calls), 0)::integer
+          from tts_usage_buckets
+        ) as active_tts_provider_calls
     `,
   );
   return { ...core, ...numericRecord(result.rows[0]) };
@@ -586,6 +605,8 @@ export function assertFreshSchema5To6MigrationShape(counts) {
     "vocabulary_relations",
     "ai_usage_buckets",
     "study_command_idempotency",
+    "tts_runs",
+    "tts_usage_buckets",
   ];
   const failures = [];
   if (Number(counts.recognition_review_states) !== Number(counts.review_states)) {
@@ -670,6 +691,7 @@ export async function executePinnedMigration({
     migrationApplied: [
       "0003_v2_schema6_data_model.sql",
       "0004_v2_bilingual_examples.sql",
+      "0005_v2_standard_tts_accounting.sql",
     ],
     parity,
   };

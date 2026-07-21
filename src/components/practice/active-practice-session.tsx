@@ -42,7 +42,7 @@ import {
   moveReviewAttemptBackToFront,
 } from "@/lib/review/session-queue";
 import { reviewRatings } from "@/lib/stage-two-data";
-import { speakEnglishText } from "@/lib/ui/speech-synthesis";
+import { cancelEnglishSpeech, speakEnglishText } from "@/lib/ui/speech-synthesis";
 import { getActiveTrackVocabularyItems } from "@/lib/vocabulary/repository";
 
 export type ActivePracticeMode = Extract<
@@ -157,6 +157,7 @@ export function ActivePracticeSession({ zone, mode }: Props) {
   const [submittedItemId, setSubmittedItemId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isListening, setIsListening] = useState(false);
   const [message, setMessage] = useState("");
   const requestKeyRef = useRef("");
   const activationKeyRef = useRef("");
@@ -228,6 +229,8 @@ export function ActivePracticeSession({ zone, mode }: Props) {
   const currentItem = sessionIds?.length
     ? activeItems.find((item) => item.id === sessionIds[0]) ?? null
     : null;
+
+  useEffect(() => () => cancelEnglishSpeech(), [currentItem?.id]);
   const currentMeanings = currentItem ? meaningsFor(currentItem) : [];
   const sessionTotal = completedCount + (sessionIds?.length ?? 0);
   const progressPercent = sessionTotal
@@ -303,15 +306,25 @@ export function ActivePracticeSession({ zone, mode }: Props) {
     };
   }, [completedAttempts.length, currentItem, promptTokens, sessionPlan]);
 
-  const listen = () => {
-    if (!currentItem) {
+  const listen = async () => {
+    if (!currentItem || isListening) {
       return;
     }
-
-    const result = speakEnglishText(currentItem.surfaceText);
-
-    if (result.status === "unsupported") {
-      setMessage("Speech is not available in this browser. You can reveal the answer and continue.");
+    setIsListening(true);
+    try {
+      const result = await speakEnglishText(
+        currentItem.surfaceText,
+        mode === "dictation" ? "active-dictation" : "active-answer",
+      );
+      if (result.status === "unsupported") {
+        setMessage("Speech is not available in this browser. You can reveal the answer and continue.");
+      } else if (result.status === "unavailable") {
+        setMessage(result.message);
+      } else if (result.status === "spoken" && result.source === "local-fixture") {
+        setMessage("Local preview audio played.");
+      }
+    } finally {
+      setIsListening(false);
     }
   };
 
@@ -632,7 +645,9 @@ export function ActivePracticeSession({ zone, mode }: Props) {
                 {mode === "dictation" ? (
                   <PressableButton
                     type="button"
-                    onClick={listen}
+                    onClick={() => void listen()}
+                    disabled={isListening}
+                    aria-busy={isListening}
                     className="mimi-button mimi-focus-ring mx-auto mt-3 inline-flex min-h-12 items-center justify-center gap-2 px-5 text-sm font-semibold"
                   >
                     <Volume2 aria-hidden="true" className="size-5" />
@@ -719,7 +734,9 @@ export function ActivePracticeSession({ zone, mode }: Props) {
                     </p>
                     <PressableButton
                       type="button"
-                      onClick={listen}
+                      onClick={() => void listen()}
+                      disabled={isListening}
+                      aria-busy={isListening}
                       aria-label={`Listen to ${currentItem.surfaceText}`}
                       className="mimi-button-secondary mimi-focus-ring grid size-11 shrink-0 place-items-center"
                     >

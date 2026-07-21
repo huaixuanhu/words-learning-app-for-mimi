@@ -4,7 +4,10 @@ import {
   createV2Stage83CutoverManifestTemplate,
   validateV2Stage83CutoverManifest,
 } from "./v2-stage8-3-cutover-manifest.mjs";
-import { V2_STAGE8_3_ADDITIVE_MIGRATION_SHA256 } from "./v2-stage8-3-contract.mjs";
+import {
+  V2_STAGE8_3_ADDITIVE_MIGRATION_SHA256,
+  V2_STAGE8_3_TTS_MIGRATION_SHA256,
+} from "./v2-stage8-3-contract.mjs";
 
 const SHA_A = "a".repeat(64);
 const SHA_B = "b".repeat(64);
@@ -78,8 +81,19 @@ describe("V2-8-3 cutover manifest", () => {
     expect(template.database.additiveMigrationSha256).toBe(
       V2_STAGE8_3_ADDITIVE_MIGRATION_SHA256,
     );
+    expect(template.database.ttsMigrationSha256).toBe(
+      V2_STAGE8_3_TTS_MIGRATION_SHA256,
+    );
     expect(output).not.toMatch(/postgres(?:ql)?:\/\//u);
     expect(output).not.toMatch(/password|apiKey|databaseUrl|secret/u);
+  });
+
+  it("rejects a cutover manifest with TTS migration drift", () => {
+    const value = readyManifest();
+    value.database.ttsMigrationSha256 = SHA_A;
+    expect(() => validateV2Stage83CutoverManifest(value)).toThrow(
+      /fixed V2-8-3 contract is invalid/u,
+    );
   });
 
   it("rejects a cutover manifest with additive migration drift", () => {

@@ -12,6 +12,7 @@ import {
   assertNonEmptyLearningInventory,
   assertPinnedAdditiveMigration,
   assertPinnedMigration,
+  assertPinnedTtsMigration,
   assertTargetIdentity,
   buildSafeInventoryArtifact,
   compareInventoryParity,
@@ -22,6 +23,7 @@ import {
   V2_STAGE8_3_APPROVED_PRODUCTION_PROJECT_ID_SHA256,
   V2_STAGE8_3_ADDITIVE_MIGRATION_SHA256,
   V2_STAGE8_3_MIGRATION_SHA256,
+  V2_STAGE8_3_TTS_MIGRATION_SHA256,
 } from "./v2-stage8-3-contract.mjs";
 
 const SHA_A = "a".repeat(64);
@@ -209,6 +211,15 @@ describe("V2-8-3 migration integrity", () => {
     );
     expect(assertPinnedAdditiveMigration(bytes)).toBe(
       V2_STAGE8_3_ADDITIVE_MIGRATION_SHA256,
+    );
+  });
+
+  it("pins the additive TTS accounting migration independently", async () => {
+    const bytes = await readFile(
+      resolve(process.cwd(), "db/migrations/0005_v2_standard_tts_accounting.sql"),
+    );
+    expect(assertPinnedTtsMigration(bytes)).toBe(
+      V2_STAGE8_3_TTS_MIGRATION_SHA256,
     );
   });
 

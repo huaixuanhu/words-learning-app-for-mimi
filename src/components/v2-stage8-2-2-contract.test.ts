@@ -21,15 +21,18 @@ describe("V2-8-2.2 learner interaction contract", () => {
     expect(guard).not.toContain("nativeActionFocused");
   });
 
-  it("offers device voice selection without adding a network audio route", () => {
+  it("keeps the Stage 8-2.2 device selector as an explicit fallback", () => {
     const settings = source("src/components/settings/voice-settings-form.tsx");
     const speech = source("src/lib/ui/speech-synthesis.ts");
 
     expect(settings).toContain("Best available");
     expect(settings).toContain("voiceschanged");
     expect(settings).toContain("Preview");
+    expect(settings).toContain("Cloud voice");
+    expect(settings).toContain("Use device voice");
     expect(speech).toContain("SPEECH_VOICE_STORAGE_KEY");
-    expect(speech).not.toContain("fetch(");
+    expect(speech).toContain('fetchImpl("/api/tts"');
+    expect(speech).toContain('DEFAULT_SPEECH_SOURCE_PREFERENCE: SpeechSourcePreference = "cloud"');
   });
 
   it("shows paired translations while preserving English example offsets", () => {

@@ -2,6 +2,11 @@ import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
 import { createPool } from "./db-connection.mjs";
+import {
+  assertPinnedAdditiveMigration,
+  assertPinnedMigration,
+  assertPinnedTtsMigration,
+} from "./v2-stage8-3-contract.mjs";
 
 const SCHEMA6_MIGRATION_FILE = resolve(
   process.cwd(),
@@ -10,6 +15,10 @@ const SCHEMA6_MIGRATION_FILE = resolve(
 const BILINGUAL_EXAMPLES_MIGRATION_FILE = resolve(
   process.cwd(),
   "db/migrations/0004_v2_bilingual_examples.sql",
+);
+const TTS_ACCOUNTING_MIGRATION_FILE = resolve(
+  process.cwd(),
+  "db/migrations/0005_v2_standard_tts_accounting.sql",
 );
 const PREVIEW_PERSON_ID = "00000000-0000-4000-8000-000000008201";
 const PREVIEW_RECOGNITION_ADAPT_ID = "00000000-0000-4000-8000-000000008202";
@@ -32,6 +41,8 @@ const SCHEMA6_TABLES = [
   "vocabulary_relations",
   "ai_usage_buckets",
   "study_command_idempotency",
+  "tts_runs",
+  "tts_usage_buckets",
 ];
 
 const SCHEMA6_CONSTRAINTS = [
@@ -45,7 +56,17 @@ const SCHEMA6_CONSTRAINTS = [
   "ai_usage_buckets_person_scope_consistent",
   "vocabulary_items_example_translations_zh_array",
   "vocabulary_items_example_translation_count_matches",
+  "tts_runs_completion_consistent",
+  "tts_usage_buckets_counters_non_negative",
 ];
+
+function migrationBody(sql, filename) {
+  const normalized = sql.trim();
+  if (!/^begin;\s/iu.test(normalized) || !/\scommit;$/iu.test(normalized)) {
+    throw new Error(`${filename} is not transaction wrapped`);
+  }
+  return normalized.replace(/^begin;\s*/iu, "").replace(/\s*commit;$/iu, "");
+}
 
 function requiredEnv(name) {
   const value = process.env[name]?.trim();
@@ -256,7 +277,14 @@ async function schema6Inspection(queryable) {
         (
           select coalesce(sum(active_provider_calls), 0)::integer
           from ai_usage_buckets
-        ) as active_provider_calls
+        ) as active_provider_calls,
+        (
+          select count(*)::integer from tts_runs where status = 'submitted'
+        ) as submitted_tts_runs,
+        (
+          select coalesce(sum(active_provider_calls), 0)::integer
+          from tts_usage_buckets
+        ) as active_tts_provider_calls
     `,
   );
   const invariants = invariantResult.rows[0];
@@ -270,7 +298,9 @@ async function schema6Inspection(queryable) {
     Number(invariants.invalid_review_states) !== 0 ||
     Number(invariants.invalid_review_events) !== 0 ||
     Number(invariants.submitted_ai_runs) !== 0 ||
-    Number(invariants.active_provider_calls) !== 0
+    Number(invariants.active_provider_calls) !== 0 ||
+    Number(invariants.submitted_tts_runs) !== 0 ||
+    Number(invariants.active_tts_provider_calls) !== 0
   ) {
     throw new Error("Schema 6 profile or provider-run invariants are not clean");
   }
@@ -299,8 +329,16 @@ async function migrate(client, identity) {
     schemaVersion: beforeVersion,
   };
   const migrationsApplied = [];
+  const migrationBodies = [];
   if (beforeVersion === 5) {
-    await client.query(await readFile(SCHEMA6_MIGRATION_FILE, "utf8"));
+    const schema6MigrationSql = await readFile(SCHEMA6_MIGRATION_FILE, "utf8");
+    assertPinnedMigration(schema6MigrationSql);
+    migrationBodies.push(
+      migrationBody(
+        schema6MigrationSql,
+        "0003_v2_schema6_data_model.sql",
+      ),
+    );
     migrationsApplied.push("0003_v2_schema6_data_model.sql");
   }
   const bilingualColumn = await client.query(
@@ -313,14 +351,47 @@ async function migrate(client, identity) {
     `,
   );
   if (Number(bilingualColumn.rows[0]?.count ?? 0) === 0) {
-    await client.query(
-      await readFile(BILINGUAL_EXAMPLES_MIGRATION_FILE, "utf8"),
+    const bilingualMigrationSql = await readFile(
+      BILINGUAL_EXAMPLES_MIGRATION_FILE,
+      "utf8",
+    );
+    assertPinnedAdditiveMigration(bilingualMigrationSql);
+    migrationBodies.push(
+      migrationBody(
+        bilingualMigrationSql,
+        "0004_v2_bilingual_examples.sql",
+      ),
     );
     migrationsApplied.push("0004_v2_bilingual_examples.sql");
+  }
+  const ttsTables = await client.query(
+    `
+      select count(*)::integer as count
+      from information_schema.tables
+      where table_schema = 'public'
+        and table_name in ('tts_runs', 'tts_usage_buckets')
+    `,
+  );
+  if (Number(ttsTables.rows[0]?.count ?? 0) === 0) {
+    const ttsMigrationSql = await readFile(
+      TTS_ACCOUNTING_MIGRATION_FILE,
+      "utf8",
+    );
+    assertPinnedTtsMigration(ttsMigrationSql);
+    migrationBodies.push(
+      migrationBody(
+        ttsMigrationSql,
+        "0005_v2_standard_tts_accounting.sql",
+      ),
+    );
+    migrationsApplied.push("0005_v2_standard_tts_accounting.sql");
+  } else if (Number(ttsTables.rows[0]?.count ?? 0) !== 2) {
+    throw new Error("V2-8-2 target has partial TTS accounting tables");
   }
   if (!migrationsApplied.length) {
     throw new Error("V2-8-2 target already has every required migration");
   }
+  await client.query(["begin;", ...migrationBodies, "commit;"].join("\n"));
   const after = await inspect(client, identity);
   if (after.schemaVersion !== 6) {
     throw new Error("V2-8-2 migration did not reach Schema 6");

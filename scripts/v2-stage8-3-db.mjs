@@ -5,6 +5,7 @@ import { createPool } from "./db-connection.mjs";
 import {
   assertCommandContract,
   assertPinnedAdditiveMigration,
+  assertPinnedTtsMigration,
   assertExpectedInventoryDigest,
   assertMainMigrationGates,
   assertPinnedMigration,
@@ -30,6 +31,21 @@ const ADDITIVE_MIGRATION_FILE = resolve(
   process.cwd(),
   "db/migrations/0004_v2_bilingual_examples.sql",
 );
+const TTS_MIGRATION_FILE = resolve(
+  process.cwd(),
+  "db/migrations/0005_v2_standard_tts_accounting.sql",
+);
+
+function migrationBody(sql, filename) {
+  const normalized = sql.trim();
+  if (!/^begin;\s/iu.test(normalized) || !/\scommit;$/iu.test(normalized)) {
+    throw Object.assign(new Error(`${filename} is not transaction wrapped`), {
+      code: "V2_8_3_MIGRATION_WRAPPER_INVALID",
+      safeToReport: true,
+    });
+  }
+  return normalized.replace(/^begin;\s*/iu, "").replace(/\s*commit;$/iu, "");
+}
 
 function beforeArtifactPath(argv) {
   const positions = argv
@@ -100,7 +116,15 @@ async function run() {
     const additiveMigrationSha256 = assertPinnedAdditiveMigration(
       additiveMigrationSql,
     );
-    const completeMigrationSql = `${migrationSql}\n${additiveMigrationSql}`;
+    const ttsMigrationSql = await readFile(TTS_MIGRATION_FILE, "utf8");
+    const ttsMigrationSha256 = assertPinnedTtsMigration(ttsMigrationSql);
+    const completeMigrationSql = [
+      "begin;",
+      migrationBody(migrationSql, "0003_v2_schema6_data_model.sql"),
+      migrationBody(additiveMigrationSql, "0004_v2_bilingual_examples.sql"),
+      migrationBody(ttsMigrationSql, "0005_v2_standard_tts_accounting.sql"),
+      "commit;",
+    ].join("\n");
     const beforeArtifact =
       command === "parity-schema6"
         ? await readBeforeArtifact(process.argv.slice(3))
@@ -171,6 +195,7 @@ async function run() {
           ok: true,
           additiveMigrationSha256,
           migrationSha256,
+          ttsMigrationSha256,
           result,
           targetMode: contract.target,
         },

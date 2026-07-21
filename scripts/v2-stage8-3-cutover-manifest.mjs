@@ -5,6 +5,7 @@ import { pathToFileURL } from "node:url";
 import {
   V2_STAGE8_3_ADDITIVE_MIGRATION_SHA256,
   V2_STAGE8_3_MIGRATION_SHA256,
+  V2_STAGE8_3_TTS_MIGRATION_SHA256,
 } from "./v2-stage8-3-contract.mjs";
 
 export const V2_STAGE8_3_CUTOVER_MANIFEST_KIND =
@@ -159,6 +160,7 @@ export function createV2Stage83CutoverManifestTemplate() {
       targetMode: "production-main",
       migrationSha256: V2_STAGE8_3_MIGRATION_SHA256,
       additiveMigrationSha256: V2_STAGE8_3_ADDITIVE_MIGRATION_SHA256,
+      ttsMigrationSha256: V2_STAGE8_3_TTS_MIGRATION_SHA256,
       before: {
         schemaVersion: 5,
         inventoryArtifactSha256: null,
@@ -246,6 +248,7 @@ function normalizeManifest(value) {
     database.migrationSha256 !== V2_STAGE8_3_MIGRATION_SHA256 ||
     database.additiveMigrationSha256 !==
       V2_STAGE8_3_ADDITIVE_MIGRATION_SHA256 ||
+    database.ttsMigrationSha256 !== V2_STAGE8_3_TTS_MIGRATION_SHA256 ||
     before.schemaVersion !== 5 ||
     after.schemaVersion !== 6 ||
     recovery.schemaVersion !== 5 ||
@@ -282,6 +285,7 @@ function normalizeManifest(value) {
       targetMode: "production-main",
       migrationSha256: V2_STAGE8_3_MIGRATION_SHA256,
       additiveMigrationSha256: V2_STAGE8_3_ADDITIVE_MIGRATION_SHA256,
+      ttsMigrationSha256: V2_STAGE8_3_TTS_MIGRATION_SHA256,
       before: {
         schemaVersion: 5,
         inventoryArtifactSha256: nullableHash(

@@ -37,7 +37,7 @@ import {
 } from "@/lib/review/session-queue";
 import { reviewRatings } from "@/lib/stage-two-data";
 import { playReviewCompleteSound } from "@/lib/ui/sound-player";
-import { speakEnglishText } from "@/lib/ui/speech-synthesis";
+import { cancelEnglishSpeech, speakEnglishText } from "@/lib/ui/speech-synthesis";
 import { buildVocabularyExamplePairs } from "@/lib/vocabulary/example-pairs";
 import { getRecognitionVocabularyItems } from "@/lib/vocabulary/repository";
 
@@ -140,6 +140,7 @@ export function ReviewSession({ zone }: ReviewSessionProps) {
   const [submittedItemId, setSubmittedItemId] = useState<string | null>(null);
   const [isSessionLoading, setIsSessionLoading] = useState(false);
   const [isPromptRefreshing, setIsPromptRefreshing] = useState(false);
+  const [isListening, setIsListening] = useState(false);
   const [ratingSelection, setRatingSelection] = useState<RatingSelection | null>(null);
   const [message, setMessage] = useState("");
   const submittedItemIdRef = useRef<string | null>(null);
@@ -247,6 +248,8 @@ export function ReviewSession({ zone }: ReviewSessionProps) {
       ? ratingSelection.index
       : null;
 
+  useEffect(() => () => cancelEnglishSpeech(), [currentItem?.id]);
+
   useEffect(() => {
     const promptToken = currentItem ? promptTokens[currentItem.id] : null;
 
@@ -344,15 +347,22 @@ export function ReviewSession({ zone }: ReviewSessionProps) {
     }
   };
 
-  const listenToCurrentItem = () => {
-    if (!currentItem) {
+  const listenToCurrentItem = async () => {
+    if (!currentItem || isListening) {
       return;
     }
-
-    const result = speakEnglishText(currentItem.surfaceText);
-
-    if (result.status === "unsupported") {
-      setMessage("Speech is not available in this browser.");
+    setIsListening(true);
+    try {
+      const result = await speakEnglishText(currentItem.surfaceText, "recognition");
+      if (result.status === "unsupported") {
+        setMessage("Speech is not available in this browser.");
+      } else if (result.status === "unavailable") {
+        setMessage(result.message);
+      } else if (result.status === "spoken" && result.source === "local-fixture") {
+        setMessage("Local preview audio played.");
+      }
+    } finally {
+      setIsListening(false);
     }
   };
 
@@ -704,7 +714,9 @@ export function ReviewSession({ zone }: ReviewSessionProps) {
                     </p>
                     <PressableButton
                       type="button"
-                      onClick={listenToCurrentItem}
+                      onClick={() => void listenToCurrentItem()}
+                      disabled={isListening}
+                      aria-busy={isListening}
                       aria-label={`Listen to ${currentItem.surfaceText}`}
                       className="mimi-button-secondary mimi-focus-ring grid size-11 shrink-0 place-items-center"
                     >

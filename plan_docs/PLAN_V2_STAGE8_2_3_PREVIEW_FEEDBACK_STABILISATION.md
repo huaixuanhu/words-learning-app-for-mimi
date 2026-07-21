@@ -1,7 +1,7 @@
 # Words Learning App For Mimi V2-8-2.3：Preview Feedback Stabilisation
 
 Created: 2026-07-20 AEST
-Last updated: 2026-07-20 AEST
+Last updated: 2026-07-21 AEST
 
 Source plan:
 
@@ -22,7 +22,7 @@ Derived from:
 Scope:
 
 - 集中记录、复现、修复和复测用户与 Mimi 在 protected Preview 中发现的 V2 问题。
-- 覆盖已经进入 V2 的学习逻辑、键盘/鼠标/触控交互、手机与桌面布局、可达性、普通文案、浏览器朗读、AI enrichment（AI 词汇补充）结果呈现、性能、Backup（备份）与环境一致性。
+- 覆盖已经进入 V2 的学习逻辑、键盘/鼠标/触控交互、手机与桌面布局、可达性、普通文案、朗读、AI enrichment（AI 词汇补充）结果呈现、性能、Backup（备份）与环境一致性。
 - 以小批次完成 `问题记录 → 本地复现 → 有界修复 → 本地验证 → protected Preview 复测 → 人工关闭`。
 - 在进入 V2-8-3 Gate 2 前冻结一个经过用户与 Mimi 验收的 exact release candidate（精确候选版本）。
 
@@ -30,7 +30,7 @@ Non-Scope:
 
 - 整个 V2 都不引入 SSO、OAuth、public registration、独立账户、角色权限、per-person authorization 或 confidential tenant isolation。相关内容继续由 `plan_docs/PLAN_VERSION_HOLD_MULTI_USER_CONFIDENTIAL_ISOLATION.md` 持有，Preview 反馈不能把它重新归入 V2。
 - 不把新的大型功能、考试题型、外部题库、Speech Recognition（语音识别）、发音评分或新的学习 Track 作为“小修复”加入。
-- Cloud TTS 不在默认范围；若真实设备试听仍不能接受浏览器音色，必须派生独立计划并重新确认供应商、费用、隐私、Cache（缓存）、额度与 Kill Switch（紧急关闭开关）。
+- 新外部服务不作为普通小修复直接加入。PF-001 已依此规则派生 `plan_docs/PLAN_V2_STAGE8_2_3_1_GOOGLE_CLOUD_STANDARD_TTS.md`，固定 Google Cloud Standard、费用、隐私、Cache（缓存）、额度、Kill Switch（紧急关闭开关）与分段批准边界；其他新供应商仍须另行计划和批准。
 - 不在本阶段文档批准 Production backup、Production database migration（正式数据库迁移）、Production credential、Production deployment（正式部署）、Production AI activation（正式 AI 启用）或真实 Production 写入。
 - 不自动把 Staging/Preview migration、Vercel deployment、environment variable、credential 或 paid provider call 视为普通修复步骤；每次外部动作仍需独立批准。
 - 不修改已接受的 FSRS-6、Daily Episode first-attempt anchor、Recognition/Active Profile isolation、Motion 或 reduced-motion 原则，除非 Preview 证据证明存在缺陷并先形成明确的修复范围。
@@ -42,6 +42,7 @@ Exit criteria:
 - 用户与 Mimi 各完成至少一段代表性学习流程；如果某位使用者无法参与，执行记录必须写明证据限制，不能把单人验收描述成双人通过。
 - 如果修复涉及跨日调度、Daily Plan 或 Dashboard 日期归属，至少跨过一个 `Australia/Melbourne` natural-day boundary（自然日边界）复测。
 - Recognition / Active、Review / New Words、键盘/鼠标/触控、手机/桌面、朗读、Library、Add Words、Backup 与 AI resting/degraded path（AI 关闭或不可用路径）均没有未解释的回归。
+- PF-001 的 Google Cloud Standard TTS 已通过派生计划的本地/Preview/真人试听退出条件；在此之前不得仅凭文档选择把它标为关闭。
 - 当前完整 validation（验证）、治理预检、diff 检查和 protected Preview runtime/log 检查通过；所有真实远端证据绑定 exact commit 与 exact environment。
 - 发布候选版本、已接受限制和剩余远期事项写回 V2 Master、Architecture、README、AGENTS、Changelog 与 AI Agent Log。
 - 只有本阶段明确标记 `complete` 后，V2-8-3 Gate 2 才重新成为下一项远程工作；完成本阶段不自动批准 Gate 2。
@@ -50,7 +51,7 @@ Consumer / next stage:
 
 - `plan_docs/PLAN_V2_STAGE8_3_PRODUCTION_BACKUP_MIGRATION_CUTOVER.md` Gate 2
 - `plan_docs/PLAN_VERSION_HOLD_MULTI_USER_CONFIDENTIAL_ISOLATION.md`
-- 若音色仍不合格：一个以后单独批准的 Cloud TTS child plan（子计划）
+- `plan_docs/PLAN_V2_STAGE8_2_3_1_GOOGLE_CLOUD_STANDARD_TTS.md`
 
 Document nature:
 
@@ -62,7 +63,7 @@ Target capability tier: Tier 3
 
 Working tier: Tier 3
 
-Status: documentation baseline approved and created on 2026-07-20. Issue intake may begin; no V2-8-2.3 code fix, Staging/Preview migration, deployment, credential change or provider call is authorized by this document-only tranche.
+Status: active. PF-001 is `High / Fixed locally`: its child plan now owns the exact `en-AU-Standard-C` Voice Contract, local code, additive `0005` and a user-approved ADC provider proof. Staging/Preview migration, Preview identity, deployment and remote retest remain unapproved and incomplete.
 
 ## 1. Stage Position And Release Effect
 
@@ -73,6 +74,7 @@ V2-8-2 protected Preview rehearsal
   -> V2-8-2.1 performance stabilisation
   -> V2-8-2.2 keyboard / voice / bilingual examples
   -> V2-8-2.3 Preview feedback stabilisation
+       -> V2-8-2.3-1 PF-001 Google Cloud Standard TTS
   -> V2-8-3 Gate 2–7 Production cutover work
 ```
 
@@ -94,7 +96,7 @@ V2-8-2 protected Preview rehearsal
 需要转出本阶段：
 
 - 新身份/权限系统，包括整个 V2 明确排除的 SSO；
-- 新供应商、新付费服务或新的外发资料类型；
+- 新供应商、新付费服务或新的外发资料类型，除非先建立像 PF-001 一样来源明确、边界完整并获人确认的派生计划；
 - 新题型、新 Track 或大幅改变学习方法的产品需求；
 - 无法保持现有 backup/migration/rollback 契约的结构性重建；
 - 只能依靠 Production 真实资料才能首次验证的高风险变更。
@@ -153,7 +155,40 @@ Resolution or accepted limitation:
 
 ### Open register
 
-当前没有已登记的 V2-8-2.3 issue。V2-8-2.2 的方向键、浏览器音色与双语例句属于本阶段建立前已经完成的 precursor feedback（前序反馈）；它们只有在更新后的 protected Preview 中重新出现时才创建新的 `PF` 编号。
+#### PF-001 — Browser voice quality is not acceptable
+
+```text
+ID: PF-001
+Reported at / reporter: 2026-07-21 / user
+Area / route / device / browser: Recognition Listen, Active revealed answer, Active Dictation,
+  example-word Listen and Settings preview / exact device-browser inventory to be recorded at retest
+Observed behavior: every current playback route uses browser SpeechSynthesis; real-device listening
+  sounds poor and insufficiently human for learning and Dictation.
+Expected behavior: one consistent, natural-enough English voice across all playback routes, with
+  reliable retry/cache behavior and no learning-state side effect.
+Reproduction steps and evidence: play representative words through current Preview/local voice
+  selector and the four learning entry points; user listening is accepted as subjective quality
+  evidence. Code inspection confirms all routes share the browser speech helper. Exact device,
+  browser and installed voice list remain required in the final comparison record.
+Priority / status: High / Fixed locally
+Scope decision: replace the default route with Google Cloud Text-to-Speech Standard voices under
+  plan_docs/PLAN_V2_STAGE8_2_3_1_GOOGLE_CLOUD_STANDARD_TTS.md. User auditioned the Standard family
+  and accepted its quality. Current voices:list returned en-AU-Standard-A/B/C/D; the user selected
+  en-AU-Standard-C with speaking rate 0.9, pitch 0 and MP3 as google-en-au-standard-c-v1.
+Files or contracts affected: shared speech facade, all playback callers, Settings, /api/tts,
+  provider adapter, Runtime Cache, independent TTS accounting, additive 0005, tests,
+  V2-8-3 migration/cutover contract and learner privacy copy.
+Local validation: strict route, fixture/provider adapters, explicit device fallback, Cache-before-ledger,
+  in-flight coalescing, independent local/Postgres accounting, migration hash/order and Google adapter
+  are implemented. User-ADC route proof returned a valid 24 kHz MP3 for en-AU-Standard-C and the
+  second identical word was a Cache hit. Focused tests, typecheck, lint and Production build passed;
+  50-entry listening and full repository closeout remain pending.
+Preview deployment / exact commit: none; separately approved after local completion.
+User or Mimi retest: user selected C from four current en-AU Standard candidates. The 50-entry
+  human corpus and real-device protected Preview flow remain pending.
+Resolution or accepted limitation: open. PF-001 blocks V2-8-2.3 closure until High issue criteria
+  and child-plan exit criteria pass.
+```
 
 ## 5. Bounded Fix Loop
 
@@ -176,7 +211,7 @@ Resolution or accepted limitation:
 - Interaction：卡片点击、Space/Arrow/Enter、鼠标、触控、输入框/弹窗/IME、focus、screen reader labels。
 - Responsive：320、375、390、768、820、1023、1024 与 desktop；Safe Area、dialog、bottom navigation、无 horizontal overflow。
 - Performance：cold/warm 区分、重复 GET/POST、重复 Loading、mutation 后继续学习、Server-Timing 与 runtime error。
-- Voice：设备 voice list、preview、selected-voice disappearance、fallback、Recognition/Dictation/example-word playback；音质由人试听。
+- Voice：Google Standard current voice list、exact allowlist、preview、Cloud/default 与 explicit device fallback、Recognition/Dictation/example-word playback、Cache/timeout/Kill Switch；音质由人试听。
 - Bilingual examples：Add/Import/Edit/Review/AI/CSV/JSON、legacy gap、`Needs translation`、English exact offsets。
 - AI：Disclosure、minimal outbound data、editable acceptance、lineage、Cache/Replay/Idempotency、Kill Switch、quota/cost ledger、AI unavailable 时学习功能继续可用。
 - Persistence：local/Postgres parity、Backup Version 1–4 compatibility、`0003` + `0004` order、no partial readiness、no synthetic-to-Production copy。
@@ -189,6 +224,7 @@ Resolution or accepted limitation:
 - 每次 Staging migration 或 Preview deployment 都必须先确认 exact target、exact commit、backup/recovery、Schema readiness 与 rollback direction。
 - 当前候选要求 `0004` 先于应用部署；只部署新程序到旧 Preview Schema 会导致数据库读取失败，属于 stop condition。
 - Preview Gemini 继续使用已有全局 300 attempts/day、token、`US$0.50/day`、`US$2/month`、concurrency 2、Cache、Idempotency 与 Kill Switch；一次问题复测不能扩大这些边界。
+- PF-001 TTS 使用完全独立的全局边界：2,000 provider attempts/day、100,000 characters/day、1,000,000 characters/month、按完整公开标价折算 `US$0.50/day` / `US$4/month`、concurrency 4、Cache 与 Kill Switch；Cache hit 不计 provider attempt。它不复用 Gemini AI ledger，也不设置个人上限。
 - `person_id` 仍是资料分离字段，不是身份。整个 V2 不用 SSO 修饰或掩盖这一限制。
 - 不在 issue 记录中保存 secret、Shareable Link、真实数据库连接、完整真实词汇清单或可识别的个人学习历史。
 
@@ -199,7 +235,7 @@ Resolution or accepted limitation:
 - 发现 data loss、cross-person leakage（跨人物资料混用）、credential exposure、cost guard bypass 或 Production crossover；
 - Staging/Preview Schema 与候选应用不匹配，或 `0004` 只能部分执行；
 - Preview 需要 Production credential、Production database 或真实 Production data 才能继续；
-- 修复实际属于 SSO、Cloud TTS、新题型、新外部服务或大型新功能；
+- 修复实际属于 SSO、新题型、未规划的新外部服务或大型新功能；PF-001 只能在其已确认的 Google Cloud Standard TTS 派生计划内继续；
 - 自动测试通过但用户/Mimi 的原始问题仍可复现；
 - 任一工具请求超出当次明确批准的远端或付费权限。
 

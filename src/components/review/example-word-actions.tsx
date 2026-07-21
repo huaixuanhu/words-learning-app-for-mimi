@@ -6,7 +6,7 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { PressableButton } from "@/components/ui/motion-primitives";
 import type { VocabularyStorageMutation } from "@/components/vocabulary/use-vocabulary-data";
-import { speakEnglishText } from "@/lib/ui/speech-synthesis";
+import { cancelEnglishSpeech, speakEnglishText } from "@/lib/ui/speech-synthesis";
 import { findSelectedPersonVocabularyDuplicate } from "@/lib/vocabulary/context-word-actions";
 import { segmentEnglishExample } from "@/lib/vocabulary/example-segmentation";
 import { normalizeTextList } from "@/lib/vocabulary/normalize";
@@ -82,6 +82,7 @@ export function ExampleWordActions({
   const [message, setMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isExplaining, setIsExplaining] = useState(false);
+  const [isListening, setIsListening] = useState(false);
   const [explanation, setExplanation] = useState<AiContextExplanation | null>(null);
   const [formalDisclosureAccepted, setFormalDisclosureAccepted] = useState(false);
   const [modelNotice, setModelNotice] = useState<string>(LOCAL_FIXTURE_LINEAGE.notice);
@@ -145,6 +146,8 @@ export function ExampleWordActions({
     };
   }, [selectedWord]);
 
+  useEffect(() => () => cancelEnglishSpeech(), [selectedWord?.text]);
+
   const openWordActions = (word: SelectedWord, trigger: HTMLButtonElement) => {
     triggerButtonRef.current = trigger;
     setSelectedWord(word);
@@ -169,19 +172,27 @@ export function ExampleWordActions({
     setExplanation(null);
   };
 
-  const listen = () => {
-    if (!selectedWord) {
+  const listen = async () => {
+    if (!selectedWord || isListening) {
       return;
     }
-
-    const result = speakEnglishText(selectedWord.text);
-    setMessage(
-      result.status === "unsupported"
-        ? "Speech is not available in this browser."
-        : result.status === "spoken"
-          ? `Playing “${result.spokenText}”.`
-          : "Choose a word to hear it.",
-    );
+    setIsListening(true);
+    try {
+      const result = await speakEnglishText(selectedWord.text, "example-word");
+      setMessage(
+        result.status === "unsupported"
+          ? "Speech is not available in this browser."
+          : result.status === "unavailable"
+            ? result.message
+          : result.status === "spoken"
+            ? result.source === "local-fixture"
+              ? "Local preview audio played."
+              : `Playing “${result.spokenText}”.`
+            : "Choose a word to hear it.",
+      );
+    } finally {
+      setIsListening(false);
+    }
   };
 
   const explainInContext = async () => {
@@ -362,7 +373,9 @@ export function ExampleWordActions({
               <div className="mt-4 grid gap-2 sm:grid-cols-3">
                 <PressableButton
                   type="button"
-                  onClick={listen}
+                  onClick={() => void listen()}
+                  disabled={isListening}
+                  aria-busy={isListening}
                   className="mimi-button-secondary mimi-focus-ring inline-flex items-center justify-center gap-2 px-3 text-sm font-semibold"
                 >
                   <Volume2 aria-hidden="true" className="size-4" />

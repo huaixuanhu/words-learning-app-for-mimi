@@ -1,5 +1,42 @@
 # AI Agent Log
 
+## 2026-07-21 17:53 AEST
+
+- Task: continue PF-001 after the user selected candidate C, make Google Cloud Standard the local V2 playback route, and retain device speech only as explicit fallback.
+- Plan agreed: yes. The user approved Google Cloud work on the local computer/project and then explicitly chose candidate C. Scope included local provider configuration/proof, application code, `0005`, tests and documentation; Preview/Production deployment, remote database migration and long-lived cloud identity remained outside this approval.
+- Working tier: Tier 3. The change sends only an explicitly played normalized English word/phrase to a bounded paid provider and therefore keeps independent quota, cost, Cache, Kill Switch, credential and environment guards.
+- Changed files:
+  - added `src/lib/tts/*`, `src/app/api/tts/*`, `db/migrations/0005_v2_standard_tts_accounting.sql` and `scripts/v2-stage8-2-3-tts-proof.mjs` for the bounded provider path;
+  - updated Review, Active, example-word and Settings components plus shared speech tests for Cloud default / explicit device fallback;
+  - synchronized Stage 8-2/8-3 database guards, package dependencies, PF-001 child/master/architecture/release documents, Changelog and this log.
+- Provider/account result: official Google Cloud CLI was checksum-verified and installed outside the repository; project `for-tts-502913` was confirmed active with Billing and Text-to-Speech API enabled. User ADC and its quota project were configured; the current user received `serviceusage.serviceUsageConsumer` in addition to an already-existing Owner binding. No token or credential value was written to project files or evidence.
+- Voice result: current `voices:list` returned four `en-AU Standard` candidates. The user chose `en-AU-Standard-C`; code pins `google-en-au-standard-c-v1`, locale `en-AU`, speaking rate `0.9`, pitch `0`, MP3. Six provider attempts used 340 characters (`US$0.00136` at full list price), and a later identical playback was served from Cache.
+- Code/data result: added strict `/api/tts`, fixture/Google adapters, Runtime Cache abstraction, page-memory cache, coalescing, visible failure/fallback states, local/Postgres accounting, and `0005_v2_standard_tts_accounting.sql`. The migration stores no raw text/audio/person/study data and is pinned to SHA-256 `ce0890a59dcf262c38894f865cb249339e95727764c6a98a58b43eba2a4c5367` after `0003` and `0004`.
+- Dependency result: added `@vercel/functions` and `google-auth-library`. Production dependency audit is rerun during closeout; no service-account JSON key, `.env` credential or WIF relationship was created.
+- Runtime proof: exact local production build served `/api/tts` at loopback; the response was `audio/mpeg`, 24 kHz mono, 64 kbps and used the C contract. A Host/origin regression discovered during proof was fixed and covered so public `127.0.0.1` remains same-origin even when Next internally uses `localhost`.
+- Validation: 10 focused TTS/interaction files / 35 tests and 88 full-suite files / 536 tests pass, with the existing Postgres integration file/test skipped. Typecheck, lint, all three backup dry-runs, Production build, script syntax, cutover manifest template, production dependency audit (0 vulnerabilities), governance preflight, secret scan and diff checks pass.
+- Safety notes: no remote database connection/migration, Vercel environment/credential/deployment, Production read/write, Git commit/push/PR or service-account key occurred. Google project/API/Billing/IAM inspection, the bounded IAM addition, ADC setup and local provider calls were within the user-approved Gate C scope.
+- Residual boundary: PF-001 remains `High / Fixed locally`. It cannot close until the 50-entry listening set and separately approved protected Preview migration/identity/deployment/retest pass. V2-8-3 Gate 2 remains paused.
+- Reason: replace device-dependent poor audio with the exact human-selected voice while preserving a fluid learning path and independent paid-provider limits.
+
+## 2026-07-21 16:15 AEST
+
+- Task: plan the replacement of all current browser speech playback with Google Cloud Text-to-Speech Standard after the user judged current audio quality unacceptable, then relax the internal TTS quota enough to avoid interrupting ordinary private learning.
+- Plan agreed: yes. The user selected Google Cloud Standard after listening and explicitly requested a wider internal allowance. The agreed current tranche is documentation-first; implementation and every external/provider action remain later gates.
+- Working tier: Tier 3. The planned paid speech route sends bounded vocabulary-derived text outside the app and therefore requires independent data minimization, credential, accounting, Cache, Kill Switch and deployment controls.
+- Changed files:
+  - added `plan_docs/PLAN_V2_STAGE8_2_3_1_GOOGLE_CLOUD_STANDARD_TTS.md` with explicit Source plan, Derived from, Scope, Non-Scope, Exit criteria, official-source baseline and Gate A–F;
+  - registered PF-001 as `High / Planned` in `plan_docs/PLAN_V2_STAGE8_2_3_PREVIEW_FEEDBACK_STABILISATION.md`;
+  - synchronized `plan_docs/PLAN_V2_STAGE8_2_2_REVIEW_AUDIO_BILINGUAL_EXAMPLES.md`, `plan_docs/PLAN_V2_MASTER.md`, `plan_docs/PLAN_V2_STAGE8_3_PRODUCTION_BACKUP_MIGRATION_CUTOVER.md`, `ARCHITECTURE.md`, `README.md`, `AGENTS.md`, `CHANGELOG.md` and this record.
+- Provider result: Google Cloud Text-to-Speech Standard is fixed as the target family. Exact voice name remains pending current `voices:list` plus user/Mimi audition; no Chirp 3 HD, WaveNet, Neural2, Gemini TTS or automatic provider failover is included.
+- Cost result: planned global hard boundaries are 2,000 submitted provider attempts/day, 100,000 characters/day, 1,000,000 characters/month, full-list-price-equivalent `US$0.50/day` / `US$4/month`, concurrency 4, Cache and Kill Switch, with no per-person limit. Cache hits do not consume provider attempts. Billing budgets remain alerts, not the application hard stop.
+- Privacy/auth result: outbound content is limited to the exact English word, phrase, fixed collocation or Dictation target being played. No meaning, person, rating, Track or history is sent. The preferred future runtime uses Vercel short-lived OIDC through Google Workload Identity Federation and rejects long-lived service-account JSON keys.
+- Data result: planned `0005_v2_standard_tts_accounting.sql` is additive operational accounting only and excludes raw text/audio and user backup. It has not been created, so no SHA-256 has been recorded.
+- Validation: `git diff --check` passed. Documentation consistency search passed after confirming PF-001, its selected provider, relaxed limits and planned-only `0005` state across the active V2 surfaces. Tier 3 governance preflight initially reported this missing `Validation:` field; the record was corrected and preflight was rerun. Runtime tests and build were intentionally not run because this tranche changes documentation only.
+- Safety notes: no application code, migration, API enablement, Billing setup, WIF/service account, credential, `.env`, provider call, remote database, Preview/Staging/Production deployment, Production write, commit, push, pull request or merge occurred. Current runtime continues to use browser SpeechSynthesis.
+- Residual boundary: implementation begins only after this documentation tranche is accepted. Real provider/identity proof, `0005` remote migration, protected Preview rollout and Production activation each remain separately approved; PF-001 stays open until user/Mimi Preview listening passes.
+- Reason: turn a subjective but release-blocking audio finding into a source-backed, testable and cost-bounded V2 change without allowing the paid provider route to bypass release gates.
+
 ## 2026-07-20 22:57 AEST
 
 - Task: add a documentation-only stage before V2 Production launch for issues discovered while the user and Mimi test protected Preview. The user confirmed the stage and clarified that SSO is excluded from the entire V2 release.

@@ -144,6 +144,8 @@ describe("V2-8-3 fresh migration shape", () => {
     vocabulary_relations: 0,
     ai_usage_buckets: 0,
     study_command_idempotency: 0,
+    tts_runs: 0,
+    tts_usage_buckets: 0,
   };
 
   it("accepts Recognition-only history, two defaults per person setting, and no invented V2 activity", () => {

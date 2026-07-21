@@ -1,7 +1,7 @@
 # Words Learning App For Mimi V2-8-3：Production Backup, Migration And V2 Cutover
 
 Created: 2026-07-19 AEST
-Last updated: 2026-07-20 AEST
+Last updated: 2026-07-21 AEST
 
 Source plan:
 
@@ -14,6 +14,7 @@ Derived from:
 - `plan_docs/PLAN_V2_STAGE8_2_1_PERFORMANCE_STABILISATION.md`
 - `plan_docs/PLAN_V2_STAGE8_2_2_REVIEW_AUDIO_BILINGUAL_EXAMPLES.md`
 - `plan_docs/PLAN_V2_STAGE8_2_3_PREVIEW_FEEDBACK_STABILISATION.md`
+- `plan_docs/PLAN_V2_STAGE8_2_3_1_GOOGLE_CLOUD_STANDARD_TTS.md`
 - `plan_docs/PLAN_V2_STAGE7B_1_FORMAL_AI_LOCAL_ORCHESTRATION.md`
 - `plan_docs/PLAN_V2_STAGE7B_2_NONPRODUCTION_PROVIDER_PROOF.md`
 - `plan_docs/PLAN_V2_STAGE3_DATA_MODEL_BACKUP_PARITY.md`
@@ -33,6 +34,7 @@ Input evidence:
 - `db/migrations/0003_v2_schema6_data_model.sql` 已在非 Production 目标通过演练，尚未在 Production `main` 执行。
 - V2-8-2.2 已在本地增加 `0004_v2_bilingual_examples.sql`、JSON backup Version 4、双语例句和新版 AI draft contract；`0004` 尚未在长期 `staging`、protected Preview 或 Production 执行。
 - 用户在 2026-07-20 把 V2-8-2.3 插入 Production cutover 前，专门收集并关闭 protected Preview 真实使用问题；整个 V2 明确不包含 SSO。
+- 2026-07-21 PF-001 记录 browser SpeechSynthesis 真人试听不合格；用户已选择 Google Cloud Text-to-Speech Standard，并从当前 `en-AU` Standard 候选中选定 C。本地 TTS code、固定 Voice Contract、`0005`、迁移门禁和用户 ADC provider proof 已完成；Preview/Production identity、远程迁移、部署与复测均不存在。
 - repository 现有三套 JSON backup dry-run（备份模拟）证明应用资料形状可迁移，但它们不等同于 Production 独立加密 logical backup（逻辑备份）与真实 restore（恢复）证明。
 
 Consumer / next stage:
@@ -52,7 +54,7 @@ Target capability tier: Tier 3
 
 Working tier: Tier 3
 
-Status: Gate 0B protected Preview performance verification and Gate 1 documentation/local guard implementation are complete. V2-8-2.2 has updated the local candidate and migration sequence, but has not changed remote Preview/Staging. V2-8-2.3 is active, so Gate 2 is paused until its Exit criteria are met. Gate 2–7 的远程 Production inventory、备份、credential、Neon/Vercel/Gemini 变更、Production migration（正式迁移）、正式部署和正式数据写入仍未批准。
+Status: Gate 0B protected Preview performance verification and Gate 1 documentation/local guard implementation are complete. V2-8-2.3 is active with PF-001 `High / Fixed locally`: the branch now contains Google Cloud Standard-C local runtime code and additive `0005`, but remote Preview/Staging are unchanged. Gate 2 remains paused until PF-001 finishes its corpus and protected Preview closure. Gate 2–7 的远程 Production inventory、备份、credential、Neon/Vercel/Gemini/Google Cloud TTS 变更、Production migration（正式迁移）、正式部署和正式数据写入仍未批准。
 
 ## Scope
 
@@ -63,12 +65,13 @@ Status: Gate 0B protected Preview performance verification and Gate 1 documentat
 - 建立 write-free cutover window（暂停写入窗口）、旧浏览器写入拒绝、成对 app/database 回退和切换后新写入的 reconciliation（对账处理）规则。
 - 在 separately approved（另行批准）的窗口内，将 Neon `main` 从 Schema 5 迁移到 Schema 6，并用 V2 替换 V1 application deployment（应用部署）。
 - 使用独立 Production study-token secret、独立 Production Gemini Auth Key、现有 Basic Auth 边界和全局 AI accounting（计数）完成有认证验收。
+- 在 PF-001 Preview 验收通过后，把独立 Production TTS identity、local-only `0005` operational accounting、Cache、quota、Kill Switch 和真人试听证据纳入正式切换；它不能复用 Gemini credential 或 ledger。
 - 保留 protected Preview 直至 Production 稳定；稳定后再清理 Preview AI key、Shareable Link 和不再需要的恢复资源。
 
 ## Non-Scope
 
 - Gate 0B 只批准 exact-commit protected Preview 验证与 Vercel/Neon 的只读状态核验。它不包含 `.env` / secret value 读取、Preview environment variable 或 alias 变更、Shareable Link 操作、Neon branch/expiry 变更、Gemini 调用、Production backup、Production migration、Production write、Production deployment、promote（提升为正式部署）、rollback 或 credential revoke（撤销凭证）。
-- 不修改现有 migration `0001`、`0002`、`0003` 或 `0004` 的历史内容；若发现 migration 缺陷，立即停止并以新的前向 migration 和新批准处理。
+- 不修改现有 migration `0001`、`0002`、`0003` 或 `0004` 的历史内容；PF-001 新建的 `0005_v2_standard_tts_accounting.sql` 是前向追加迁移，已把 migration order、SHA-256、readiness、clone/main rehearsal 与 rollback evidence 同步到本地门禁。远程迁移仍未批准。
 - 不把 Preview / Staging 的 synthetic data（合成资料）、AI draft 或 accounting 行复制进 Production。
 - 不把 Production 真实学习资料放入普通 Staging、公开 Preview、本地 fixture、测试日志或仓库文件。
 - 整个 V2 都不引入 SSO（Single Sign-On，单点登录）、OAuth、public registration、per-person authorization 或 confidential tenant isolation；V2-8-2.3 的 Preview 反馈也不能改变这一边界。

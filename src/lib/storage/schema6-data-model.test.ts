@@ -10,6 +10,10 @@ const bilingualMigrationSql = readFileSync(
   join(process.cwd(), "db", "migrations", "0004_v2_bilingual_examples.sql"),
   "utf8",
 );
+const ttsMigrationSql = readFileSync(
+  join(process.cwd(), "db", "migrations", "0005_v2_standard_tts_accounting.sql"),
+  "utf8",
+);
 const backupSource = readFileSync(
   join(process.cwd(), "src", "lib", "backup", "json-backup.ts"),
   "utf8",
@@ -31,6 +35,20 @@ describe("V2 Schema Version 6 data model", () => {
     expect(bilingualMigrationSql).not.toMatch(
       /database_url\s*=|postgres_url\s*=|AIza|AQ\.|password\s*=|secret\s*=/iu,
     );
+  });
+
+  it("adds a separate privacy-minimal TTS ledger after the bilingual migration", () => {
+    expect(ttsMigrationSql).toContain("0004_v2_bilingual_examples.sql");
+    expect(ttsMigrationSql).toContain("create table tts_usage_buckets");
+    expect(ttsMigrationSql).toContain("create table tts_runs");
+    expect(ttsMigrationSql).toContain("request_id_hash char(64)");
+    expect(ttsMigrationSql).toContain("cache_key_hash char(64)");
+    expect(ttsMigrationSql).not.toMatch(
+      /person_id|vocabulary_item_id|review_event_id|raw_text|audio_bytes|database_url|AIza|AQ\.|password\s*=|secret\s*=/iu,
+    );
+    expect(ttsMigrationSql.trimEnd()).toMatch(/commit;$/u);
+    expect(backupSource).not.toContain("ttsUsageBuckets:");
+    expect(backupSource).not.toContain("ttsRuns:");
   });
   it("is forward-only, transaction-wrapped, and credential-free", () => {
     expect(migrationSql.trimStart()).toMatch(/^-- V2 Stage 3/);
