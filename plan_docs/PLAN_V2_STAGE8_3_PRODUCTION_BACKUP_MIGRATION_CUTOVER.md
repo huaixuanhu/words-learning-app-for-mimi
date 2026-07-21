@@ -32,9 +32,9 @@ Input evidence:
 - 当前 Production Schema 5 inspector（检查器）仍调用 `assertEmptySchema5Counts()`；它不能作为已有真实数据的 V2-8-3 基线工具。
 - 当前正式 AI activation（启用）只接受历史 localhost proof 与 `v2-8-2-preview`，Vercel Production 继续 fail closed（默认关闭）。
 - `db/migrations/0003_v2_schema6_data_model.sql` 已在非 Production 目标通过演练，尚未在 Production `main` 执行。
-- V2-8-2.2 已在本地增加 `0004_v2_bilingual_examples.sql`、JSON backup Version 4、双语例句和新版 AI draft contract；`0004` 尚未在长期 `staging`、protected Preview 或 Production 执行。
+- V2-8-2.2 已增加 `0004_v2_bilingual_examples.sql`、JSON backup Version 4、双语例句和新版 AI draft contract；`0004` 已在长期非 Production `staging` 执行并随 PF-001 exact application 在 protected Preview 验证，Production 尚未执行。
 - 用户在 2026-07-20 把 V2-8-2.3 插入 Production cutover 前，专门收集并关闭 protected Preview 真实使用问题；整个 V2 明确不包含 SSO。
-- 2026-07-21 PF-001 记录 browser SpeechSynthesis 真人试听不合格；用户已选择 Google Cloud Text-to-Speech Standard，并从当前 `en-AU` Standard 候选中选定 C。本地 TTS code、固定 Voice Contract、`0005`、迁移门禁、用户 ADC provider proof 与本地真人语料验收已完成；两条轻微重音问题和两条未评分样本被如实保留为已接受限制。Preview/Production identity、远程迁移、部署与复测均不存在。
+- 2026-07-21 PF-001 记录 browser SpeechSynthesis 真人试听不合格；用户已选择 Google Cloud Text-to-Speech Standard，并从当前 `en-AU` Standard 候选中选定 C。本地 TTS code、固定 Voice Contract、`0005`、迁移门禁、用户 ADC provider proof 与本地真人语料验收已完成；两条轻微重音问题和两条未评分样本被如实保留为已接受限制。Preview-only WIF、`staging` `0004` / `0005`、exact application deployment 与机器路径验证已完成，用户/Mimi 真机复测仍待完成；Production identity、迁移与部署均不存在。
 - repository 现有三套 JSON backup dry-run（备份模拟）证明应用资料形状可迁移，但它们不等同于 Production 独立加密 logical backup（逻辑备份）与真实 restore（恢复）证明。
 
 Consumer / next stage:
@@ -54,7 +54,7 @@ Target capability tier: Tier 3
 
 Working tier: Tier 3
 
-Status: Gate 0B protected Preview performance verification and Gate 1 documentation/local guard implementation are complete. V2-8-2.3 is active with PF-001 `High / Preview-ready`: the branch contains Google Cloud Standard-C local runtime code and additive `0005`, and the local human corpus evidence is accepted with explicit minor limitations; remote Preview/Staging are unchanged. Gate 2 remains paused until the separately approved protected Preview deployment/retest closes PF-001 and V2-8-2.3. Gate 2–7 的远程 Production inventory、备份、credential、Neon/Vercel/Gemini/Google Cloud TTS 变更、Production migration（正式迁移）、正式部署和正式数据写入仍未批准。
+Status: Gate 0B protected Preview performance verification and Gate 1 documentation/local guard implementation are complete. V2-8-2.3 is active with PF-001 `High / Preview-ready`: Google Cloud Standard-C, additive `0005`, Preview-only WIF, `staging` migration, exact application deployment and machine playback evidence are complete; user/Mimi real-device closure remains. Gate 2 remains paused until PF-001 and V2-8-2.3 close. Gate 2–7 的远程 Production inventory、备份、credential、Neon/Vercel/Gemini/Google Cloud TTS 变更、Production migration（正式迁移）、正式部署和正式数据写入仍未批准。
 
 ## Scope
 

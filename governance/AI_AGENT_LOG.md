@@ -1,5 +1,21 @@
 # AI Agent Log
 
+## 2026-07-21 23:55 AEST
+
+- Task: continue the approved PF-001 Gate E from its WIF/`staging` checkpoint through exact protected Preview deployment, machine playback verification and documentation closeout.
+- Plan agreed: yes. The user explicitly confirmed the next stage. Scope remained protected `V2` Preview only; Production, Neon `main`, V2-8-3 Gate 2, SSO and human PF closure stayed excluded.
+- Deployment result: exact code commit `deab32f3ab96025116597881b7b69c9dde84b8f4` is Ready as Preview deployment `dpl_9kJb31QgP7tj3RnfYL2oubprUzNA` at `https://words-learning-app-for-mimi-dxcoldggf-anorias-projects.vercel.app`; Vercel confirms branch `V2` and Functions in `syd1`.
+- Kill Switch result: a closed deployment showed the exact resting failure state without login loss, false success or silent device fallback. The TTS Kill Switch was then changed to `off` only for `Preview + V2`, and the final exact candidate was deployed.
+- WIF diagnosis: three calls failed safely as `credentials_unavailable`, `wif_exchange_http_400` and `wif_audience_rejected`. Official contracts showed that the Vercel OIDC subject token requires the HTTPS provider audience while Google STS requires the `//iam.googleapis.com/...` full resource name in its `audience` field. The code separates them and retains all exact identity conditions; no IAM permission was widened and no long-lived key was created.
+- Route result: Settings Preview, Recognition `Listen`, example-word `Listen` and Active Dictation `Play word` returned playable Cloud MP3. A second identical Settings playback added no provider attempt. No rating was submitted and no review/scheduling state was intentionally mutated.
+- Accounting result: Gate E ended at 7 attempts / 170 characters / `US$0.000680` list-price equivalent, split into 3 failed / 111 characters / `US$0.000444` and 4 succeeded / 59 characters / `US$0.000236`. Successful latencies were 384, 484, 572 and 1,280 ms; `active_provider_calls=0` afterward.
+- Secret handling: no secret value or connection string was added to source, documentation or logs. The system clipboard was cleared after each guarded database use. Vercel TTS variables remain Sensitive and scoped only to `Preview + V2`.
+- Safety notes: no Production account/database read or write, Neon `main` connection, Production credential/environment/deployment, GitHub push/PR/merge, SSO work or learner-data import occurred. Production remains V1 / Schema Version 5.
+- Changed files: synchronized PF-001, its parent register, V2 Master, V2-8-3 handoff, Architecture, README, AGENTS, Changelog and this governance record. Application code was already committed in the exact deployed candidate.
+- Validation: 90 test files / 550 tests pass with the existing Postgres integration file/test skipped; lint, typecheck, all three backup dry-runs, Production build, production dependency audit with 0 vulnerabilities, governance preflight and diff checks pass.
+- Residual boundary: PF-001 remains `High / Preview-ready`. User/Mimi must still perform real-device listening across representative routes and explicitly accept or report a problem before PF-001 and V2-8-2.3 can close. V2-8-3 Gate 2 remains paused and needs fresh approval later.
+- Reason: complete objective Preview route evidence without converting machine success into an unsupported human audio-quality conclusion.
+
 ## 2026-07-21 23:05 AEST
 
 - Task: execute the user-confirmed PF-001 Gate E through protected Preview identity and Staging readiness, then prepare an exact deployment while keeping human closure and all Production work separate.

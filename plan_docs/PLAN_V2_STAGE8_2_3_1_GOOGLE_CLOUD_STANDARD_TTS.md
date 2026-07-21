@@ -27,7 +27,7 @@ Scope:
 - 每次只向 Google Cloud 发送使用者明确点击或当前 Dictation 所需的英文单词、短语、固定搭配或例句选词，不附带中文释义、`person_id`、学习历史、评分、Track、AI draft、prompt token 或 credential。
 - 建立 Runtime Cache（运行缓存）、同请求合并、独立原子用量计数、费用估算、并发、timeout（超时）、Kill Switch（紧急关闭开关）和明确的设备音色备用选项。
 - 保留现有学习调度、评分、Motion、键盘、触控和 bilingual example（双语例句）行为；朗读成功、失败或重放都不写 Review event、Daily actual 或 FSRS state。
-- 本地代码、fixture（固定样例）、用户 ADC 供应商证明、exact voice 选择与本地真人语料验收已经完成。Gate E 已由用户单独批准；Preview WIF identity 与 `staging` 的 `0004` / `0005` 已完成，exact deployment 与 Preview 真人复测仍在本 Gate 内继续。
+- 本地代码、fixture（固定样例）、用户 ADC 供应商证明、exact voice 选择与本地真人语料验收已经完成。Gate E 已由用户单独批准；Preview WIF identity、`staging` 的 `0004` / `0005`、exact deployment、Kill Switch closed/open 与四条机器路径验证均已完成。用户/Mimi 真机复测仍在本 Gate 内继续。
 
 Non-Scope:
 
@@ -68,7 +68,7 @@ Target capability tier: Tier 3
 
 Working tier: Tier 3
 
-Status: `High / Preview-ready`. Gate B 本地实现、Gate C 用户 ADC 供应商证明、exact voice 选择与 Gate D 本地真人语料验收已完成。使用者接受 Standard-C；两条重音体验问题和两条未记录评分均按下文保留为 accepted evidence limitation（已接受的证据限制）。Gate E 的独立 Preview WIF identity 与 `staging` `0004` / `0005` 已完成；exact deployment 与用户/Mimi Preview 复测仍未完成。
+Status: `High / Preview-ready`. Gate B 本地实现、Gate C 用户 ADC 供应商证明、exact voice 选择与 Gate D 本地真人语料验收已完成。使用者接受 Standard-C；两条重音体验问题和两条未记录评分均按下文保留为 accepted evidence limitation（已接受的证据限制）。Gate E 的独立 Preview WIF identity、`staging` `0004` / `0005`、exact deployment、Kill Switch closed/open 与机器路径验证已完成；用户/Mimi 真机 Preview 复测尚未完成。
 
 ## 1. Accepted Provider Decision
 
@@ -290,7 +290,7 @@ Schema Version 仍为 6，`0005` 是 additive contract。固定 SHA-256 为 `ce0
 - Human evidence：2026-07-21 收到 `v2-8-2-3-tts-human-result-v1` 导出，Voice Contract 为 `google-en-au-standard-c-v1`，导出时间为 `2026-07-21T09:01:35.195Z`，文件 SHA-256 为 `e1b7a7e1de1978c2815070f1fea9b11b59203ba44684d2eca241d423be851e08`。50 条语料中有 48 条记录：46 `Good`、2 `Review`、0 `Bad`。两条 `Review` 为 `interdisciplinary` 与 `photosynthesis`；导出未包含逐条备注，使用者的整体反馈是“个别单词的重音不太明显，不过这不是什么大问题，可以使用这一版本语音”。
 - Accepted evidence limitation：`whereas` 与 `adapt. adopt.` 没有记录评分。使用者已经在知悉整体试听表现后明确采用 Standard-C，因此不要求为这两条重做本地试听，也不把结果描述为“50/50 全部通过”。Gate D 以 `48 recorded / 46 Good / 2 Review / 0 Bad / 2 unrecorded` 的真实结果通过。
 - Data handling：原始导出继续位于使用者本机 Downloads，不复制进仓库、Postgres、学习记录或 backup；版本文档只保留契约、汇总、限制与文件 hash。
-- Remaining：Gate E 的 exact deployment、Kill Switch closed/open 机器证据，以及用户/Mimi 真实设备 Preview 复测仍未完成；PF-001 不能仅凭本地验收、WIF 或数据库迁移关闭。
+- Remaining：用户/Mimi 真实设备 Preview 复测仍未完成；PF-001 不能仅凭本地验收或机器路径验证关闭。
 
 ### 6.2 Gate E infrastructure and migration record — 2026-07-21
 
@@ -303,7 +303,19 @@ Schema Version 仍为 6，`0005` 是 additive contract。固定 SHA-256 为 `ce0
 - Migration：首次执行在连接前因 Vercel Sensitive variables 不可回读而安全停止；第二次执行在发送 SQL 前暴露迁移包装器不能接受文件头注释，也安全停止。修复后以固定 SHA-256、exact target 与 recovery confirmations 在一个 transaction 中只应用 `0004_v2_bilingual_examples.sql` 和 `0005_v2_standard_tts_accounting.sql`。
 - Post-migration：Schema Version 6，14 张受检表、12 个约束；`people=1`、`vocabulary_items=5`、`review_states=3`、`review_events=9`、`daily_study_plans=8`、`ai_runs=4` 等核心计数前后完全一致。invalid profile/event、submitted AI/TTS run 与 active provider call 均为 `0`。
 - Secret handling：临时连接串只经系统 clipboard 直接传入 guarded command，未显示、未写入仓库或 `.env`；执行后 clipboard 已清空。Vercel pull 的临时 ignored 文件设为 mode `600`，确认 Sensitive 值不可回读后立即删除。
-- Local candidate：新增 Preview-only WIF runtime gate、Runtime Cache + Postgres accounting wiring，以及允许事务外纯注释但拒绝事务外 SQL 的共享 migration-body parser；exact deployment 尚未执行，本记录不把 Gate E 描述为通过。
+- Local candidate：新增 Preview-only WIF runtime gate、Runtime Cache + Postgres accounting wiring，以及允许事务外纯注释但拒绝事务外 SQL 的共享 migration-body parser。
+
+### 6.3 Gate E deployment and machine-route record — 2026-07-21
+
+- Exact application：受保护 Preview deployment `dpl_9kJb31QgP7tj3RnfYL2oubprUzNA` 运行 exact code commit `deab32f3ab96025116597881b7b69c9dde84b8f4`，unique URL 为 `https://words-learning-app-for-mimi-dxcoldggf-anorias-projects.vercel.app`，target 为 Preview、Git ref 为 `V2`，Functions 位于 `syd1`。
+- Kill Switch closed：先在关闭状态部署并验证 Settings 显示真实不可用提示，不跳转登录页、不伪装成功，也不静默切换 device voice；随后只把 `Preview + V2` 的 TTS Kill Switch 改为 `off` 并重新部署 exact candidate。
+- WIF correction：诊断中依次保留 `credentials_unavailable`、`wif_exchange_http_400`、`wif_audience_rejected` 三次安全失败。根因是 Vercel OIDC subject token 需要 HTTPS provider audience，而 Google STS `audience` 参数需要 `//iam.googleapis.com/...` full resource name；代码将两个值显式分离，没有放宽 issuer、subject、team、project、environment 或 Git-ref 条件。
+- Machine routes：Settings Preview、Recognition `Listen`、example-word `Listen` 与 Active Dictation `Play word` 均通过真实 `/api/tts` 返回可播放 MP3；验证词条分别覆盖 Settings 固定试听句、`adapt`、`adapted` 与 `articulate`。没有提交评分，也没有写 Review event、Daily actual 或 FSRS state。
+- Cache：相同 Settings 试听的第二次播放没有新增 provider attempt；页面内/运行缓存重放保持成功。
+- Ledger：本次 Gate E 共记录 7 个 provider attempts、170 characters、公开完整标价折算 `US$0.000680`。其中 3 次诊断失败为 111 characters / `US$0.000444`，4 次成功为 59 characters / `US$0.000236`；成功延迟为 384–1,280 ms，结束后 `active_provider_calls=0`。
+- Final state：Preview TTS Kill Switch 为 `off`，供用户与 Mimi 继续真机验收；12 个变量仍只属于 `Preview + V2` 且保持 Sensitive。Production variables、Production deployment、Neon `main` 与正式学习资料均未改变。
+- Human boundary：机器验证证明路由、鉴权、Cache、费用记录和失败体验可运行，不能代替真机音质与完整学习体验判断。PF-001 保持 `High / Preview-ready`，直到用户或 Mimi 明确给出复测结论。
+- Final local validation：90 个 test files / 550 tests 通过，既有 Postgres integration file/test 保持 1 / 1 skipped；lint、typecheck、三套 backup dry-run、Production build、production dependency audit（0 vulnerabilities）、治理预检与 diff checks 均通过。
 
 ### Gate E — Separately approved protected Preview
 

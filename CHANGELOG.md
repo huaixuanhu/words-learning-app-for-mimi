@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## 2026-07-21 23:55 AEST
+
+- Completed the approved PF-001 Gate E infrastructure, migration, exact protected Preview deployment and machine-route proof. Deployment `dpl_9kJb31QgP7tj3RnfYL2oubprUzNA` runs exact code commit `deab32f3ab96025116597881b7b69c9dde84b8f4` on branch `V2` in `syd1`.
+- Verified Kill Switch closed behavior before opening only the `Preview + V2` TTS route. Settings Preview, Recognition Listen, example-word Listen and Active Dictation Play word then returned playable Cloud audio; a repeated Settings playback added no provider attempt.
+- Corrected the keyless federation exchange by keeping the Vercel OIDC subject-token audience as the HTTPS provider URL and using Google's `//iam.googleapis.com/...` full resource name only for the STS audience. Exact issuer, team, project, environment, subject and Git-ref restrictions remain unchanged.
+- Recorded all Gate E provider work: 7 attempts, 170 characters and `US$0.000680` list-price equivalent. Three safe diagnostic failures consumed 111 characters / `US$0.000444`; four successful route calls consumed 59 characters / `US$0.000236`; active provider concurrency returned to zero.
+- Final local closeout passes 90 test files / 550 tests with the existing Postgres integration file/test skipped, lint, typecheck, three backup dry-runs, Production build, dependency audit with 0 vulnerabilities, governance preflight and diff checks.
+- PF-001 remains `High / Preview-ready` until the user or Mimi completes real-device Preview listening. Production V1, Neon `main`, Production variables/deployments, V2-8-3 Gate 2, learning data and SSO remain unchanged.
+- Reason: preserve exact Preview evidence and leave subjective audio/learning acceptance to the intended users before any Production work.
+
 ## 2026-07-21 23:05 AEST
 
 - Began the separately approved PF-001 Gate E for protected `V2` Preview only. Added a Preview runtime contract that requires HTTPS, Vercel Preview, Git ref `V2`, `postgres-preview`, Schema/accounting confirmations, exact project identity and short-lived Vercel OIDC through Google Workload Identity Federation.
@@ -7,7 +17,7 @@
 - Added 12 Sensitive Vercel variables scoped to `Preview + V2`, with `MIMI_TTS_KILL_SWITCH=on` for the first deployment. No Production variable, credential, deployment or Neon `main` state changed.
 - Migrated long-lived non-Production `staging` only after exact branch/endpoint/database/role/recovery checks. `0004_v2_bilingual_examples.sql` and `0005_v2_standard_tts_accounting.sql` were applied in one transaction; core counts were unchanged, and post-inspection reports Schema 6, 14 required tables, 12 required constraints and zero invalid or in-flight AI/TTS state.
 - Fixed a migration-runner defect exposed before SQL execution: versioned migrations may contain pure comments outside their `BEGIN/COMMIT` wrapper. A shared tested parser now accepts those comments while rejecting executable SQL outside the exact transaction, and is used by both Preview and dormant Production tooling.
-- Local validation so far passes lint, typecheck, focused WIF/route/accounting and migration-wrapper tests, 547 full-suite tests with the existing Postgres integration file/test skipped, three backup dry-runs, Production build and diff checks. Exact Preview application deployment, Kill Switch closed/open evidence and human real-device retest remain open, so PF-001 stays `High / Preview-ready`.
+- Local validation at that checkpoint passed lint, typecheck, focused WIF/route/accounting and migration-wrapper tests, 547 full-suite tests with the existing Postgres integration file/test skipped, three backup dry-runs, Production build and diff checks. Later Gate E evidence above supersedes the then-pending deployment and Kill Switch work.
 - Reason: prepare a keyless, bounded Standard-C Preview deployment after database readiness without crossing into Production or declaring the user-facing issue closed early.
 
 ## 2026-07-21 19:03 AEST

@@ -63,7 +63,7 @@ Target capability tier: Tier 3
 
 Working tier: Tier 3
 
-Status: active. PF-001 is `High / Preview-ready`: its child plan owns the exact `en-AU-Standard-C` Voice Contract, local code, additive `0005`, the user-approved ADC provider proof and accepted local human listening evidence. Gate E is separately approved; independent Preview WIF identity and `staging` `0004` / `0005` are complete. Exact deployment and remote human retest remain incomplete.
+Status: active. PF-001 is `High / Preview-ready`: its child plan owns the exact `en-AU-Standard-C` Voice Contract, local code, additive `0005`, the user-approved ADC provider proof and accepted local human listening evidence. Gate E is separately approved; independent Preview WIF identity, `staging` `0004` / `0005`, exact deployment, Kill Switch closed/open and machine-route verification are complete. User/Mimi real-device retest remains incomplete.
 
 ## 1. Stage Position And Release Effect
 
@@ -80,7 +80,7 @@ V2-8-2 protected Preview rehearsal
 
 - V2-8-3 Gate 0B 与 local Gate 1 保留为已完成历史，不撤销、不重新编号。
 - V2-8-3 Gate 2 在本阶段关闭前暂停。此前的“Gate 2 是下一步”被本文件更新为“V2-8-2.3 完成后，Gate 2 才是下一步”。
-- `staging` 已先完成 `0004` 与 `0005`；当前 protected Preview 仍运行旧 application commit。Gate E 继续遵守 `migration first, application second`，下一步是 exact candidate deployment 与 Kill Switch closed/open 验收。
+- `staging` 已先完成 `0004` 与 `0005`；protected Preview 随后部署 exact commit `deab32f3ab96025116597881b7b69c9dde84b8f4` 并通过 Kill Switch closed/open 与四条机器路径验收。下一步只剩用户/Mimi 真机复测与人工关闭结论。
 - 本阶段允许多轮本地修复和 Preview 复测，但每一轮必须绑定问题编号、exact commit、验证结果和人工结论。
 
 ## 2. What Counts As A Preview Feedback Item
@@ -183,17 +183,21 @@ Local validation: strict route, fixture/provider adapters, explicit device fallb
   are implemented. User-ADC route proof returned a valid 24 kHz MP3 for en-AU-Standard-C and the
   second identical word was a Cache hit. The versioned 50-entry 20/10/10/5/5 corpus generated
   50 valid MP3 files through the real route (858 characters, US$0.003432 list-price equivalent);
-  five replay probes were Cache hits. Full repository closeout passes 89 files / 538 tests plus
-  all three backup dry-runs after the corpus tranche.
-Preview deployment / exact commit: Gate E approved; WIF identity and staging 0004/0005 complete.
-  Exact application deployment is pending.
+  five replay probes were Cache hits. Final Gate E repository closeout passes 90 files / 550 tests,
+  all three backup dry-runs, lint, typecheck, build, dependency audit, governance and diff checks.
+Preview deployment / exact commit: deployment dpl_9kJb31QgP7tj3RnfYL2oubprUzNA runs exact
+  commit deab32f3ab96025116597881b7b69c9dde84b8f4 on protected V2 Preview in syd1.
+  Kill Switch closed/open checks passed. Settings, Recognition, example-word and Active Dictation
+  returned playable Cloud audio. The second identical Settings playback added no provider attempt.
+  Gate E ledger totals 7 attempts / 170 characters / US$0.000680 list-price equivalent: 3 safe
+  diagnostic failures and 4 successful route calls, with zero active provider calls afterward.
 User or Mimi retest: user selected C from four current en-AU Standard candidates. The local result
   records 48 of 50 entries: 46 Good, 2 Review, 0 Bad. The two Review entries are interdisciplinary
   and photosynthesis; the user accepts the minor stress weakness and explicitly approves this voice.
-  Whereas and adapt/adopt have no recorded rating. Real-device protected Preview flow remains pending.
+  Whereas and adapt/adopt have no recorded rating. User/Mimi real-device protected Preview flow remains pending.
 Resolution or accepted limitation: local audio quality is accepted with two minor stress observations
   and two unrecorded entries retained as an evidence limitation. PF-001 remains open at Preview-ready
-  until the protected Preview exact deployment and human retest satisfy the child plan.
+  until the protected Preview human retest satisfies the child plan.
 ```
 
 ## 5. Bounded Fix Loop
