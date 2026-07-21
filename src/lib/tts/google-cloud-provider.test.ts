@@ -157,4 +157,38 @@ describe("Google Cloud Standard TTS provider", () => {
       message: "Voice unavailable · Try again",
     });
   });
+
+  it("maps only approved WIF failure reasons without retaining the response", async () => {
+    const identity = {
+      audience:
+        "https://iam.googleapis.com/projects/123456789012/locations/global/" +
+        "workloadIdentityPools/mimi-vercel-preview/providers/mimi-v2-preview",
+      projectNumber: "123456789012",
+      serviceAccountEmail:
+        "mimi-tts-preview@for-tts-502913.iam.gserviceaccount.com",
+      workloadIdentityPoolId: "mimi-vercel-preview",
+      workloadIdentityProviderId: "mimi-v2-preview",
+    };
+    const resolver = createVercelWifAccessTokenResolver(identity, {
+      createExternalClient: () => ({
+        getAccessToken: async () => {
+          throw {
+            response: {
+              status: 400,
+              data: {
+                error: "invalid_grant",
+                error_description:
+                  "The given credential is rejected by the attribute condition. secret",
+              },
+            },
+          };
+        },
+      }),
+    });
+
+    await expect(resolver()).rejects.toMatchObject({
+      category: "wif_attribute_condition_rejected",
+      message: "Voice unavailable · Try again",
+    });
+  });
 });

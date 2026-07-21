@@ -53,6 +53,35 @@ function credentialExchangeCategory(error: unknown) {
     "status" in error.response &&
     typeof error.response.status === "number"
   ) {
+    if (
+      "data" in error.response &&
+      typeof error.response.data === "object" &&
+      error.response.data !== null
+    ) {
+      const data = error.response.data;
+      const description =
+        "error_description" in data && typeof data.error_description === "string"
+          ? data.error_description.toLowerCase()
+          : "";
+      if (description.includes("attribute condition")) {
+        return "wif_attribute_condition_rejected";
+      }
+      if (description.includes("audience")) return "wif_audience_rejected";
+      if (description.includes("issuer")) return "wif_issuer_rejected";
+      const code =
+        "error" in data && typeof data.error === "string" ? data.error : "";
+      if (
+        [
+          "access_denied",
+          "invalid_grant",
+          "invalid_request",
+          "invalid_target",
+          "unauthorized_client",
+        ].includes(code)
+      ) {
+        return `wif_exchange_${code}`;
+      }
+    }
     return `wif_exchange_http_${error.response.status}`;
   }
   return "wif_exchange_failed";
