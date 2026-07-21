@@ -1,5 +1,34 @@
 # AI Agent Log
 
+## 2026-07-21 19:03 AEST
+
+- Task: validate the completed Standard-C listening export, record the user's quality decision, and advance PF-001 without starting any remote action.
+- Plan agreed: yes. The user explicitly accepted this voice after listening and stated that the occasional less-obvious stress is not a material problem.
+- Working tier: Tier 3. This tranche reads one local human-result JSON and changes documentation only; it does not call a provider or alter application, database or deployment state.
+- Evidence: `mimi-standard-c-listening-results.json` has artifact kind `v2-8-2-3-tts-human-result-v1`, Voice Contract `google-en-au-standard-c-v1`, export time `2026-07-21T09:01:35.195Z` and SHA-256 `e1b7a7e1de1978c2815070f1fea9b11b59203ba44684d2eca241d423be851e08`. It contains 48 recorded ratings: 46 Good, 2 Review and 0 Bad. The two Review entries are `interdisciplinary` and `photosynthesis`; no per-entry note was exported. `whereas` and `adapt. adopt.` are unrecorded.
+- Decision: the user's overall statement supplies the acceptance decision for the chosen voice. The two Review entries are retained as minor stress observations, and the two missing ratings as an accepted evidence limitation. The record does not claim all 50 samples were rated or passed.
+- Changed files: synchronized the PF register, PF-001 child plan, V2 Master, V2-8-3 handoff, Architecture, README, AGENTS, Changelog and this governance record. The raw result file remains outside the repository.
+- Validation: the result contract/counts/IDs and file hash were checked directly; no unexpected corpus ID exists. Targeted stale-status search, `git diff --check` and Tier 3 governance preflight pass.
+- Safety notes: no Google Cloud call, credential read/change, remote database connection/migration, Vercel environment/deployment, Production read/write, Git commit/push/PR or learner-data write occurred.
+- Residual boundary: PF-001 is `High / Preview-ready`, not Closed. Gate E still requires fresh approval for Preview WIF identity, remote `0004`/`0005`, exact deployment and user/Mimi real-device retest. V2-8-3 Gate 2 remains paused.
+- Reason: preserve the user's practical quality judgment as auditable evidence without concealing incomplete ratings or widening deployment authority.
+
+## 2026-07-21 18:43 AEST
+
+- Task: continue PF-001 after commit by executing Gate D's 50-entry local human listening corpus without starting protected Preview deployment.
+- Plan agreed: yes. The user asked to continue; the existing child plan already approved at most 50 versioned samples, and prior explicit approval covers bounded use of dedicated TTS project `for-tts-502913`. Preview identity, migration and deployment remain a separate Gate E.
+- Working tier: Tier 3. The run used a paid external provider but stayed within existing hard limits and sent only versioned non-personal English samples.
+- Changed files:
+  - added `scripts/fixtures/v2-stage8-2-3-tts-corpus.json` with the accepted 20/10/10/5/5 sample distribution;
+  - added `scripts/v2-stage8-2-3-tts-corpus.mjs` and its test for confirmation gating, exact route/voice checks, MP3 output, Cache retest and a local rating/export page;
+  - added the package command and synchronized PF-001, child plan, Architecture, AGENTS, Changelog and this record.
+- Provider result: 50 route misses produced 50 MP3 files from `google-en-au-standard-c-v1`, using 858 characters and `US$0.003432` full-list-price equivalent. Five repeated samples were server Cache hits. Generation latency min/average/max was 250/630/4,751 ms.
+- Data result: generated audio, manifest, HTML and unfinished browser-local ratings live only in `/tmp/mimi-tts-corpus-en-au-standard-c-2026-07-21T08-43-17-525Z`. They contain fixed test English and no credential, person, vocabulary id, rating history, AI draft or learner backup data.
+- Validation: corpus contract and affected TTS tests pass; full suite passes 89 files / 538 tests with the existing Postgres integration file/test skipped. Typecheck, lint, all three backup dry-runs, Production build, 50-file/audio-format check, group/count check, Cache evidence and credential scan pass. Governance and final diff checks close this tranche.
+- Safety notes: no remote database, `0005` migration, Vercel environment, WIF/service account, Preview/Production deployment, Production read/write, Git commit/push/PR or learner-data write occurred. The local application server was stopped after generation.
+- Residual boundary: PF-001 remains `High / Fixed locally` until the user/Mimi export or report the 50 human ratings. Any `Review / Bad` sample must be examined before Gate E; protected Preview still requires fresh approval.
+- Reason: produce auditable human-quality evidence for the selected voice while preserving the app's learner-facing simplicity and remote release gates.
+
 ## 2026-07-21 17:53 AEST
 
 - Task: continue PF-001 after the user selected candidate C, make Google Cloud Standard the local V2 playback route, and retain device speech only as explicit fallback.

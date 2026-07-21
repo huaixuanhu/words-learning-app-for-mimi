@@ -41,6 +41,7 @@
     "v2:8-2:db:ai-evidence": "node scripts/v2-stage8-2-db.mjs ai-evidence",
     "v2:8-2:db:seed-preview": "node scripts/v2-stage8-2-db.mjs seed-preview --i-confirm-v2-8-2-synthetic-seed",
     "v2:8-2-3:tts:start": "MIMI_TTS_KILL_SWITCH=off MIMI_TTS_RUNTIME_ENABLED=true MIMI_TTS_EXECUTION_SCOPE=v2-8-2-3-local-google-adc MIMI_TTS_PROVIDER=google-cloud-standard MIMI_TTS_GCP_PROJECT=for-tts-502913 next start -H 127.0.0.1 -p 3000",
+    "v2:8-2-3:tts:corpus": "node scripts/v2-stage8-2-3-tts-corpus.mjs --i-confirm-50-provider-attempts",
     "v2:8-3:db:inventory:clone": "STAGE6B_DATABASE_TARGET=production-clone MIMI_STORAGE_RUNTIME=postgres-production-clone MIMI_V2_8_3_DATABASE_TARGET=production-clone MIMI_V2_8_3_DATABASE_ACTION=inventory-schema5 node scripts/v2-stage8-3-db.mjs inventory-schema5 --i-confirm-v2-8-3-read-only-inventory",
     "v2:8-3:db:migrate:clone": "STAGE6B_DATABASE_TARGET=production-clone MIMI_STORAGE_RUNTIME=postgres-production-clone MIMI_V2_8_3_DATABASE_TARGET=production-clone MIMI_V2_8_3_DATABASE_ACTION=migrate-clone node scripts/v2-stage8-3-db.mjs migrate-clone --i-confirm-v2-8-3-clone-migration",
     "v2:8-3:db:inspect:clone": "STAGE6B_DATABASE_TARGET=production-clone MIMI_STORAGE_RUNTIME=postgres-production-clone MIMI_V2_8_3_DATABASE_TARGET=production-clone MIMI_V2_8_3_DATABASE_ACTION=inspect-schema6 node scripts/v2-stage8-3-db.mjs inspect-schema6 --i-confirm-v2-8-3-read-only-inspection",

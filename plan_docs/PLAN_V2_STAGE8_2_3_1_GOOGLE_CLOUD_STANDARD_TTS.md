@@ -27,7 +27,7 @@ Scope:
 - 每次只向 Google Cloud 发送使用者明确点击或当前 Dictation 所需的英文单词、短语、固定搭配或例句选词，不附带中文释义、`person_id`、学习历史、评分、Track、AI draft、prompt token 或 credential。
 - 建立 Runtime Cache（运行缓存）、同请求合并、独立原子用量计数、费用估算、并发、timeout（超时）、Kill Switch（紧急关闭开关）和明确的设备音色备用选项。
 - 保留现有学习调度、评分、Motion、键盘、触控和 bilingual example（双语例句）行为；朗读成功、失败或重放都不写 Review event、Daily actual 或 FSRS state。
-- 本地代码、fixture（固定样例）、用户 ADC 供应商证明与 exact voice 选择已经完成；Preview identity、远程迁移、部署和 Preview 真人复测仍按后续批准执行。
+- 本地代码、fixture（固定样例）、用户 ADC 供应商证明、exact voice 选择与本地真人语料验收已经完成；Preview identity、远程迁移、部署和 Preview 真人复测仍按后续批准执行。
 
 Non-Scope:
 
@@ -68,7 +68,7 @@ Target capability tier: Tier 3
 
 Working tier: Tier 3
 
-Status: `High / Fixed locally`. Gate B 本地实现、Gate C 用户 ADC 供应商证明和 exact voice 选择已完成；`en-AU-Standard-C`、`0.9` speaking rate、`0` pitch、MP3 已固定。50 条本地试听、protected Preview identity/`0005` 迁移、部署和用户/Mimi Preview 复测仍未完成。
+Status: `High / Preview-ready`. Gate B 本地实现、Gate C 用户 ADC 供应商证明、exact voice 选择与 Gate D 本地真人语料验收已完成。使用者接受 Standard-C；两条重音体验问题和两条未记录评分均按下文保留为 accepted evidence limitation（已接受的证据限制）。Protected Preview identity/`0005` 迁移、部署和 Preview 复测仍未完成。
 
 ## 1. Accepted Provider Decision
 
@@ -284,7 +284,13 @@ Schema Version 仍为 6，`0005` 是 additive contract。固定 SHA-256 为 `ce0
 - Local command：先运行 `npm run build`，再运行 `npm run v2:8-2-3:tts:start`。该命令只在 loopback、本机 ADC、固定项目和 exact execution scope 全部匹配时打开。
 - Safety：没有读取或输出 credential value，没有 `.env` 写入，没有远程 Postgres 连接/迁移，没有 Vercel environment、Preview/Production deployment 或 Production 资料变更。Google Cloud API/Billing 检查、ADC 建立、quota project 设置与本地有界调用属于用户明确批准的 Gate C。
 - Automated closeout：10 个 TTS/interaction focused files / 35 tests 与完整 88 files / 536 tests 通过，既有 Postgres integration file/test 保持 skipped；lint、typecheck、三套 backup dry-run、Production build、script syntax、manifest template、production dependency audit（0 vulnerabilities）和 diff check 通过。
-- Remaining：50 条代表性试听、Preview WIF identity、远程 `0005`、exact deployment 与用户/Mimi Preview 复测仍在 Gate D/E；PF-001 不能据此关闭。
+- Gate D corpus：版本化 `scripts/fixtures/v2-stage8-2-3-tts-corpus.json` 按 `20 / 10 / 10 / 5 / 5` 固定 50 条；`scripts/v2-stage8-2-3-tts-corpus.mjs` 只允许 loopback 与显式 50-attempt confirmation，生成本地 MP3、manifest 和带 `Good / Review / Bad`、备注及结果导出的评分页。
+- Gate D live run：50 次 provider miss 共 858 characters，公开完整标价折算 `US$0.003432`；5 次复播全部为 Cache hit（2–4 ms）。首次生成 latency 为 250–4,751 ms，平均 630 ms；保留 `Preparing...`、不可用提示与重试行为。
+- Gate D automated closeout：新增 corpus test 后完整 suite 为 89 files / 538 tests，通过且既有 Postgres integration file/test 保持 skipped；三套 backup dry-run、lint、typecheck、Production build、audio/file/contract 检查均通过。
+- Human evidence：2026-07-21 收到 `v2-8-2-3-tts-human-result-v1` 导出，Voice Contract 为 `google-en-au-standard-c-v1`，导出时间为 `2026-07-21T09:01:35.195Z`，文件 SHA-256 为 `e1b7a7e1de1978c2815070f1fea9b11b59203ba44684d2eca241d423be851e08`。50 条语料中有 48 条记录：46 `Good`、2 `Review`、0 `Bad`。两条 `Review` 为 `interdisciplinary` 与 `photosynthesis`；导出未包含逐条备注，使用者的整体反馈是“个别单词的重音不太明显，不过这不是什么大问题，可以使用这一版本语音”。
+- Accepted evidence limitation：`whereas` 与 `adapt. adopt.` 没有记录评分。使用者已经在知悉整体试听表现后明确采用 Standard-C，因此不要求为这两条重做本地试听，也不把结果描述为“50/50 全部通过”。Gate D 以 `48 recorded / 46 Good / 2 Review / 0 Bad / 2 unrecorded` 的真实结果通过。
+- Data handling：原始导出继续位于使用者本机 Downloads，不复制进仓库、Postgres、学习记录或 backup；版本文档只保留契约、汇总、限制与文件 hash。
+- Remaining：Gate E 的 Preview WIF identity、远程 `0004`/`0005`、exact deployment 与用户/Mimi 真实设备 Preview 复测仍未批准和未完成；PF-001 不能仅凭本地验收关闭。
 
 ### Gate E — Separately approved protected Preview
 

@@ -62,7 +62,7 @@
 - V2-8-2.2 修复了“Space / Enter 可用但 Arrow 无反应”的焦点边界：Recognition 和 Active 都可在 2×2 评分中用方向键移动，文字输入与弹窗不会被快捷键打断；现有卡片 Motion 与评分色阶保持不变。
 - Settings 仍可明确选择设备 English voice 作为备用。PF-001 的本地默认路线已固定 Google Cloud `en-AU-Standard-C`（`0.9` 语速、原始音高、MP3），并接入 Recognition、Active revealed answer / Dictation、例句选词与 Settings preview；重复词优先使用无明文 key 的 Cache。protected Preview 尚未迁移或部署这条路线。
 - 新建、编辑、导入和 AI 接受的英文例句都需要配对中文翻译。Library 可筛选 `Needs translation`，旧资料的缺口会明确显示并可通过人工审核的 AI suggestion 逐词补齐。JSON backup 已升到 Version 4；Version 1–3 仍可读取。
-- V2-8-2.3 使用 `PF-001` 起的连续编号集中处理 Preview 反馈；每项都要记录复现证据、优先级、本地验证、exact-commit Preview 复测和人工关闭结论。PF-001 现为 `High / Fixed locally`，使用独立 TTS Cache、Kill Switch、全局额度和 additive `0005`，不复用 Gemini ledger。50 条试听与 protected Preview 复测完成前仍不关闭，也不进入 Production Gate 2。该阶段不会把 SSO 带入 V2。
+- V2-8-2.3 使用 `PF-001` 起的连续编号集中处理 Preview 反馈；每项都要记录复现证据、优先级、本地验证、exact-commit Preview 复测和人工关闭结论。PF-001 现为 `High / Preview-ready`，使用独立 TTS Cache、Kill Switch、全局额度和 additive `0005`，不复用 Gemini ledger。本地真人结果为 46 `Good`、2 `Review`、0 `Bad`、2 条未记录；使用者接受个别重音不明显的限制并采用 Standard-C。protected Preview 复测完成前仍不关闭，也不进入 Production Gate 2。该阶段不会把 SSO 带入 V2。
 - V2-8-3 的本地 Gate 1 使用 `maintenance`、`schema6-readiness`、`live` 三个明确模式；缺失或未知模式会安全停止。Basic Auth 仍先于维护状态执行，只有 `live` 接受带 `v2-schema6` 标记的 Production 写入，旧页面会被要求重新载入。
 - Schema 5 / Schema 6 的非空 clone/main 检查和迁移命令目前只是 dormant tooling（未启用工具），必须同时通过 exact target、environment、action 和人工确认。`0003`、`0004`、`0005` migration SHA-256 已分别固定，迁移顺序为 `0003 -> 0004 -> 0005`；切换记录使用不含密钥的 manifest（清单）并要求 V1/Schema 5 与 V2/Schema 6 成对回退准备。
 - Production AI 的独立 `v2-8-3-production` scope 只有在 `live`、HTTPS、Vercel Production `main`、`NODE_ENV=production`、Schema 6、明确 Kill Switch 状态和其他正式确认全部满足时才可能打开；首轮最多 4 次供应商调用，进入 300 次/日长期边界还需单独确认。

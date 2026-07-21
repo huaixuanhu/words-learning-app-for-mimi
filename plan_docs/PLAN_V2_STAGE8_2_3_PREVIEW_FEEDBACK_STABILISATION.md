@@ -63,7 +63,7 @@ Target capability tier: Tier 3
 
 Working tier: Tier 3
 
-Status: active. PF-001 is `High / Fixed locally`: its child plan now owns the exact `en-AU-Standard-C` Voice Contract, local code, additive `0005` and a user-approved ADC provider proof. Staging/Preview migration, Preview identity, deployment and remote retest remain unapproved and incomplete.
+Status: active. PF-001 is `High / Preview-ready`: its child plan owns the exact `en-AU-Standard-C` Voice Contract, local code, additive `0005`, the user-approved ADC provider proof and accepted local human listening evidence. Staging/Preview migration, Preview identity, deployment and remote retest remain unapproved and incomplete.
 
 ## 1. Stage Position And Release Effect
 
@@ -170,7 +170,7 @@ Reproduction steps and evidence: play representative words through current Previ
   selector and the four learning entry points; user listening is accepted as subjective quality
   evidence. Code inspection confirms all routes share the browser speech helper. Exact device,
   browser and installed voice list remain required in the final comparison record.
-Priority / status: High / Fixed locally
+Priority / status: High / Preview-ready
 Scope decision: replace the default route with Google Cloud Text-to-Speech Standard voices under
   plan_docs/PLAN_V2_STAGE8_2_3_1_GOOGLE_CLOUD_STANDARD_TTS.md. User auditioned the Standard family
   and accepted its quality. Current voices:list returned en-AU-Standard-A/B/C/D; the user selected
@@ -181,13 +181,18 @@ Files or contracts affected: shared speech facade, all playback callers, Setting
 Local validation: strict route, fixture/provider adapters, explicit device fallback, Cache-before-ledger,
   in-flight coalescing, independent local/Postgres accounting, migration hash/order and Google adapter
   are implemented. User-ADC route proof returned a valid 24 kHz MP3 for en-AU-Standard-C and the
-  second identical word was a Cache hit. Focused tests, typecheck, lint and Production build passed;
-  50-entry listening and full repository closeout remain pending.
+  second identical word was a Cache hit. The versioned 50-entry 20/10/10/5/5 corpus generated
+  50 valid MP3 files through the real route (858 characters, US$0.003432 list-price equivalent);
+  five replay probes were Cache hits. Full repository closeout passes 89 files / 538 tests plus
+  all three backup dry-runs after the corpus tranche.
 Preview deployment / exact commit: none; separately approved after local completion.
-User or Mimi retest: user selected C from four current en-AU Standard candidates. The 50-entry
-  human corpus and real-device protected Preview flow remain pending.
-Resolution or accepted limitation: open. PF-001 blocks V2-8-2.3 closure until High issue criteria
-  and child-plan exit criteria pass.
+User or Mimi retest: user selected C from four current en-AU Standard candidates. The local result
+  records 48 of 50 entries: 46 Good, 2 Review, 0 Bad. The two Review entries are interdisciplinary
+  and photosynthesis; the user accepts the minor stress weakness and explicitly approves this voice.
+  Whereas and adapt/adopt have no recorded rating. Real-device protected Preview flow remains pending.
+Resolution or accepted limitation: local audio quality is accepted with two minor stress observations
+  and two unrecorded entries retained as an evidence limitation. PF-001 remains open at Preview-ready
+  until the separately approved protected Preview deployment and human retest satisfy the child plan.
 ```
 
 ## 5. Bounded Fix Loop

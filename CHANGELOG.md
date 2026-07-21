@@ -1,5 +1,22 @@
 # CHANGELOG
 
+## 2026-07-21 19:03 AEST
+
+- Validated the local Standard-C listening export against the versioned 50-entry corpus and Voice Contract. The export records 48 ratings: 46 `Good`, 2 `Review`, 0 `Bad`; `interdisciplinary` and `photosynthesis` are the two Review entries.
+- Recorded the user's overall acceptance: a few words have less obvious stress, but the limitation is minor and `en-AU-Standard-C` can be used for V2. `whereas` and `adapt. adopt.` have no exported rating and remain an explicit accepted evidence limitation; the record does not claim 50/50 completion.
+- Advanced PF-001 from `High / Fixed locally` to `High / Preview-ready`. Gate D local human acceptance is complete; protected Preview identity, `0004`/`0005` migration, exact deployment and real-device retest remain separately approved Gate E work. Production and V2-8-3 Gate 2 remain unchanged and paused.
+- Kept the raw human export outside the repository and recorded only its contract, summary, limitations and SHA-256 `e1b7a7e1de1978c2815070f1fea9b11b59203ba44684d2eca241d423be851e08`.
+- Reason: adopt the voice that passed practical listening while preserving the exact evidence gaps and remote release boundary.
+
+## 2026-07-21 18:43 AEST
+
+- Added a versioned 50-entry Standard-C human listening corpus with the accepted `20 common/PTE + 10 long/uncommon + 10 phrases/collocations + 5 sound/confusable pairs + 5 short sentences` composition.
+- Added a confirmation-gated loopback runner that exercises the real `/api/tts` route with concurrency 2, verifies the fixed provider/voice/content contract, writes MP3 only to a timestamped `/tmp` folder, and requires five subsequent server Cache hits.
+- Generated all 50 MP3 files successfully: 858 characters, 50 provider attempts, list-price equivalent `US$0.003432`, latency min/average/max `250 / 630 / 4,751 ms`. Five replay probes were Cache hits at 2–4 ms.
+- Added a local mobile-friendly rating page with per-sample `Good / Review / Bad`, optional notes, browser-local progress and JSON export. The page and unfinished ratings are not learner data and do not enter Git, Postgres or backup.
+- Focused corpus/TTS tests, full suite 89 files / 538 tests, all three backup dry-runs, typecheck, lint, Production build, audio/file count, corpus shape, Cache results and credential scan pass. Human ratings remain required before PF-001 can advance beyond `Fixed locally`.
+- Reason: turn the chosen C voice into a reproducible, category-balanced human acceptance check without adding test controls to the learner UI or widening the remote deployment gate.
+
 ## 2026-07-21 17:53 AEST
 
 - Implemented the local PF-001 Google Cloud Standard TTS candidate across Recognition, Active revealed answers / Dictation, selected example words and Settings preview. Cloud is the client default; browser SpeechSynthesis is available only when the learner explicitly chooses `Use device voice`. Playback never writes review or scheduling state.
