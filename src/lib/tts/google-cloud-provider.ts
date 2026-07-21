@@ -42,6 +42,22 @@ type ExternalAccessTokenClient = Readonly<{
 
 type ExternalAccountOptions = Parameters<typeof ExternalAccountClient.fromJSON>[0];
 
+function credentialExchangeCategory(error: unknown) {
+  if (error instanceof TtsProviderError) return error.category;
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "response" in error &&
+    typeof error.response === "object" &&
+    error.response !== null &&
+    "status" in error.response &&
+    typeof error.response.status === "number"
+  ) {
+    return `wif_exchange_http_${error.response.status}`;
+  }
+  return "wif_exchange_failed";
+}
+
 export function createVercelWifAccessTokenResolver(
   identity: TtsPreviewWifIdentity,
   dependencies: Readonly<{
@@ -65,15 +81,26 @@ export function createVercelWifAccessTokenResolver(
         token_url: "https://sts.googleapis.com/v1/token",
         service_account_impersonation_url:
           "https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/" +
-          `${encodeURIComponent(identity.serviceAccountEmail)}:generateAccessToken`,
+          `${identity.serviceAccountEmail}:generateAccessToken`,
         scopes: [CLOUD_PLATFORM_SCOPE],
         subject_token_supplier: {
-          getSubjectToken: () => getOidcToken({ audience: identity.audience }),
+          getSubjectToken: async () => {
+            try {
+              return await getOidcToken({ audience: identity.audience });
+            } catch {
+              throw new TtsProviderError("vercel_oidc_unavailable");
+            }
+          },
         },
       });
     }
     if (!client) throw new TtsProviderError("credentials_unavailable");
-    const response = await client.getAccessToken();
+    let response: Awaited<ReturnType<ExternalAccessTokenClient["getAccessToken"]>>;
+    try {
+      response = await client.getAccessToken();
+    } catch (error) {
+      throw new TtsProviderError(credentialExchangeCategory(error));
+    }
     if (!response.token) throw new TtsProviderError("credentials_unavailable");
     return response.token;
   };

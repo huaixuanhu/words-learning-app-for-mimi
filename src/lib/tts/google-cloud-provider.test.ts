@@ -96,12 +96,65 @@ describe("Google Cloud Standard TTS provider", () => {
     });
     expect(externalOptions?.service_account_impersonation_url).toBe(
       "https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/" +
-        "mimi-tts-preview%40for-tts-502913.iam.gserviceaccount.com:generateAccessToken",
+        "mimi-tts-preview@for-tts-502913.iam.gserviceaccount.com:generateAccessToken",
     );
     const supplier = externalOptions?.subject_token_supplier as {
       getSubjectToken: () => Promise<string>;
     };
     await expect(supplier.getSubjectToken()).resolves.toBe("short-lived-vercel-oidc");
     expect(getOidcToken).toHaveBeenCalledWith({ audience: identity.audience });
+  });
+
+  it("records a bounded category when Vercel cannot issue the OIDC token", async () => {
+    const identity = {
+      audience:
+        "https://iam.googleapis.com/projects/123456789012/locations/global/" +
+        "workloadIdentityPools/mimi-vercel-preview/providers/mimi-v2-preview",
+      projectNumber: "123456789012",
+      serviceAccountEmail:
+        "mimi-tts-preview@for-tts-502913.iam.gserviceaccount.com",
+      workloadIdentityPoolId: "mimi-vercel-preview",
+      workloadIdentityProviderId: "mimi-v2-preview",
+    };
+    const resolver = createVercelWifAccessTokenResolver(identity, {
+      getOidcToken: async () => {
+        throw new Error("secret-bearing provider detail");
+      },
+      createExternalClient: (options) => {
+        const supplier = (options as unknown as Record<string, unknown>)
+          .subject_token_supplier as { getSubjectToken: () => Promise<string> };
+        return { getAccessToken: async () => ({ token: await supplier.getSubjectToken() }) };
+      },
+    });
+
+    await expect(resolver()).rejects.toMatchObject({
+      category: "vercel_oidc_unavailable",
+      message: "Voice unavailable · Try again",
+    });
+  });
+
+  it("records only the credential-exchange HTTP status", async () => {
+    const identity = {
+      audience:
+        "https://iam.googleapis.com/projects/123456789012/locations/global/" +
+        "workloadIdentityPools/mimi-vercel-preview/providers/mimi-v2-preview",
+      projectNumber: "123456789012",
+      serviceAccountEmail:
+        "mimi-tts-preview@for-tts-502913.iam.gserviceaccount.com",
+      workloadIdentityPoolId: "mimi-vercel-preview",
+      workloadIdentityProviderId: "mimi-v2-preview",
+    };
+    const resolver = createVercelWifAccessTokenResolver(identity, {
+      createExternalClient: () => ({
+        getAccessToken: async () => {
+          throw { response: { status: 403, data: "secret response" } };
+        },
+      }),
+    });
+
+    await expect(resolver()).rejects.toMatchObject({
+      category: "wif_exchange_http_403",
+      message: "Voice unavailable · Try again",
+    });
   });
 });
