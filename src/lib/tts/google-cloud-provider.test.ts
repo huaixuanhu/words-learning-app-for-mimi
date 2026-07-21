@@ -89,7 +89,9 @@ describe("Google Cloud Standard TTS provider", () => {
     expect(getAccessToken).toHaveBeenCalledOnce();
     expect(externalOptions).toMatchObject({
       type: "external_account",
-      audience: identity.audience,
+      audience:
+        "//iam.googleapis.com/projects/123456789012/locations/global/" +
+        "workloadIdentityPools/mimi-vercel-preview/providers/mimi-v2-preview",
       subject_token_type: "urn:ietf:params:oauth:token-type:jwt",
       token_url: "https://sts.googleapis.com/v1/token",
       scopes: ["https://www.googleapis.com/auth/cloud-platform"],
