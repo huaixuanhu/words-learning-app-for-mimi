@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## 2026-07-20 22:57 AEST
+
+- Added the documentation-only `V2-8-2.3 Preview Feedback Stabilisation` stage before Production cutover. It is the canonical register for user/Mimi findings discovered through protected Preview and uses sequential `PF` identifiers, evidence-backed reproduction, priority/status rules, bounded fixes, exact-commit Preview retest and explicit human closure.
+- Defined the release threshold: all `Blocker` and `High` items must close, the current candidate and required migrations must run together on protected Preview, and representative user/Mimi learning flows must be retested or carry an explicit evidence limitation.
+- Paused V2-8-3 Gate 2 until V2-8-2.3 is marked complete. Completion will make Gate 2 eligible for a new approval; it will not authorize remote inventory, migration, deployment, credentials, paid provider calls or Production work by itself.
+- Reconfirmed across the V2 Master, cutover plan, Architecture, README, AGENTS and Version-hold record that the entire V2 release excludes SSO, OAuth and confidential per-person authorization. Preview feedback cannot reactivate those capabilities inside V2.
+- No application code, schema, backup shape, environment value, credential, database, deployment, provider or Production state changed.
+- Documentation consistency search, `git diff --check` and Tier 3 governance preflight passed. Runtime tests and build were intentionally not rerun because this tranche changes documentation only.
+- Reason: create one controlled pre-launch correction loop for real Preview experience findings while preserving the existing release and safety gates.
+
 ## 2026-07-20 00:22 AEST
 
 - Completed the local-only V2-8-2.2 interaction/audio/example slice. Recognition and Active now share one guarded 2×2 keyboard selector: the first valid Arrow chooses the first rating, subsequent arrows move without wrapping, Enter confirms, Space flips, and real text entry/dialog/IME contexts retain priority. Existing rating colors, Motion and reduced-motion behavior were not changed.

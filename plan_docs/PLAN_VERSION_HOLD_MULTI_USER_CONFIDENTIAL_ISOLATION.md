@@ -1,7 +1,7 @@
 # Words Learning App For Mimi Version-Hold: Multi-User Confidential Isolation
 
 Created: 2026-07-13 00:16 AEST
-Last updated: 2026-07-16 00:27 AEST
+Last updated: 2026-07-20 AEST
 
 Source plan:
 - `plan_docs/PLAN_V2_MASTER.md`
@@ -17,12 +17,15 @@ Input evidence:
 - Current Production uses one shared Basic Auth gate for a private trusted group.
 - `person_id` separates learning records but is not an authentication or authorization boundary.
 - V2 introduces bounded AI use while retaining the current trusted-group access model.
+- The user reconfirmed on 2026-07-20 that the entire V2 release excludes SSO and that the V2-8-2.3 Preview feedback stage must not reactivate it.
 
 Consumer / next stage:
 - A future version master plan created only after a reactivation trigger and explicit human decision.
 
 Document nature:
 This is a Version-hold record. It preserves the future problem, current limitations, reactivation triggers, and required decisions. It is not an implementation stage, an auth-provider selection, or permission to change credentials, schema, accounts, or Production.
+
+Current boundary: SSO and confidential per-person authorization remain outside every V2 stage, including Preview stabilisation and Production cutover. Only a future version master plan created after an explicit reactivation decision may move this work out of Version-hold.
 
 Current operational tier: Tier 3.
 

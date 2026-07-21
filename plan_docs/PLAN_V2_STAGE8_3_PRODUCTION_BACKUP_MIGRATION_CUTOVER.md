@@ -13,6 +13,7 @@ Derived from:
 - `plan_docs/PLAN_V2_STAGE8_2_STAGING_PREVIEW_RELEASE_REHEARSAL.md`
 - `plan_docs/PLAN_V2_STAGE8_2_1_PERFORMANCE_STABILISATION.md`
 - `plan_docs/PLAN_V2_STAGE8_2_2_REVIEW_AUDIO_BILINGUAL_EXAMPLES.md`
+- `plan_docs/PLAN_V2_STAGE8_2_3_PREVIEW_FEEDBACK_STABILISATION.md`
 - `plan_docs/PLAN_V2_STAGE7B_1_FORMAL_AI_LOCAL_ORCHESTRATION.md`
 - `plan_docs/PLAN_V2_STAGE7B_2_NONPRODUCTION_PROVIDER_PROOF.md`
 - `plan_docs/PLAN_V2_STAGE3_DATA_MODEL_BACKUP_PARITY.md`
@@ -31,12 +32,13 @@ Input evidence:
 - 当前正式 AI activation（启用）只接受历史 localhost proof 与 `v2-8-2-preview`，Vercel Production 继续 fail closed（默认关闭）。
 - `db/migrations/0003_v2_schema6_data_model.sql` 已在非 Production 目标通过演练，尚未在 Production `main` 执行。
 - V2-8-2.2 已在本地增加 `0004_v2_bilingual_examples.sql`、JSON backup Version 4、双语例句和新版 AI draft contract；`0004` 尚未在长期 `staging`、protected Preview 或 Production 执行。
+- 用户在 2026-07-20 把 V2-8-2.3 插入 Production cutover 前，专门收集并关闭 protected Preview 真实使用问题；整个 V2 明确不包含 SSO。
 - repository 现有三套 JSON backup dry-run（备份模拟）证明应用资料形状可迁移，但它们不等同于 Production 独立加密 logical backup（逻辑备份）与真实 restore（恢复）证明。
 
 Consumer / next stage:
 
 - 本文件直接约束 V2-8-3 的本地守门实现、远程只读核验、备份恢复演练、Production clone（正式数据克隆）演练、正式切换、验收与收口。
-- Gate 0B 与本地 Gate 1 完成后，下一步是 Gate 2 的 metadata-only remote inventory（仅元资料远程清单）与官方事实刷新；Gate 2 仍需新的明确批准。
+- Gate 0B 与本地 Gate 1 已完成；V2-8-2.3 是当前阶段。只有 V2-8-2.3 达到 Exit criteria（退出条件）后，Gate 2 的 metadata-only remote inventory（仅元资料远程清单）与官方事实刷新才成为下一步，而且仍需新的明确批准。
 - 如果后续必须派生执行记录或事故恢复文件，新文件开头必须继续引用本文件为 `Source plan`，并写明 `Scope`、`Non-Scope` 与 `Exit criteria`，不得形成无来源的平级计划。
 - V2-8-3 全部完成后，V2 替换 V1；multi-user confidential isolation（多用户机密隔离）仍留在 Version-hold 计划。
 
@@ -50,7 +52,7 @@ Target capability tier: Tier 3
 
 Working tier: Tier 3
 
-Status: Gate 0B protected Preview performance verification and Gate 1 documentation/local guard implementation are complete. V2-8-2.2 has updated the local candidate and migration sequence, but has not changed remote Preview/Staging. Gate 2–7 的远程 Production inventory、备份、credential、Neon/Vercel/Gemini 变更、Production migration（正式迁移）、正式部署和正式数据写入仍未批准。
+Status: Gate 0B protected Preview performance verification and Gate 1 documentation/local guard implementation are complete. V2-8-2.2 has updated the local candidate and migration sequence, but has not changed remote Preview/Staging. V2-8-2.3 is active, so Gate 2 is paused until its Exit criteria are met. Gate 2–7 的远程 Production inventory、备份、credential、Neon/Vercel/Gemini 变更、Production migration（正式迁移）、正式部署和正式数据写入仍未批准。
 
 ## Scope
 
@@ -69,7 +71,7 @@ Status: Gate 0B protected Preview performance verification and Gate 1 documentat
 - 不修改现有 migration `0001`、`0002`、`0003` 或 `0004` 的历史内容；若发现 migration 缺陷，立即停止并以新的前向 migration 和新批准处理。
 - 不把 Preview / Staging 的 synthetic data（合成资料）、AI draft 或 accounting 行复制进 Production。
 - 不把 Production 真实学习资料放入普通 Staging、公开 Preview、本地 fixture、测试日志或仓库文件。
-- 不引入 SSO（Single Sign-On，单点登录）、OAuth、public registration、per-person authorization 或 confidential tenant isolation。
+- 整个 V2 都不引入 SSO（Single Sign-On，单点登录）、OAuth、public registration、per-person authorization 或 confidential tenant isolation；V2-8-2.3 的 Preview 反馈也不能改变这一边界。
 - 不改变 FSRS-6、Daily Episode first-attempt anchor、Recognition / Active 独立 Profile、Dashboard 定义、Motion、reduced-motion 或 mobile navigation 产品契约。Keyboard 以已经完成的 V2-8-2.2 共用 2×2 规则为正式候选基线，本阶段不再改变。
 - 不增加 personal AI attempt limit（个人调用上限）。V2 继续依赖全局请求、token、cost、concurrency、Cache、Idempotency 与 Kill Switch。
 - 不设计自动 Schema 6 → Schema 5 down migration（向下迁移）。当前没有经演练的安全 down-conversion（向下转换）路径。
@@ -132,7 +134,7 @@ Status: Gate 0B protected Preview performance verification and Gate 1 documentat
 | --- | --- | --- | --- |
 | 0 | 记录 protected Preview 性能版本与恢复资源状态；经批准后部署并验证 V2-8-2.1 | 已完成 | 停在 Gate 2 前；未授权 alias/environment/checkpoint mutation |
 | 1 | 实现本地 Production guards、inspectors、maintenance/client-version/AI gates 与 tests | 已批准 | 本次 local tranche（本地批次）在此完成并交付 |
-| 2 | 远程只读 Production/Vercel/Neon/Gemini inventory 与官方事实刷新 | 未批准 | 展示脱敏证据并等待 backup/rehearsal 批准 |
+| 2 | 远程只读 Production/Vercel/Neon/Gemini inventory 与官方事实刷新 | 未批准；等待 V2-8-2.3 关闭 | 展示脱敏证据并等待 backup/rehearsal 批准 |
 | 3 | 选择独立加密 logical backup 方法并完成 restore rehearsal | 未批准 | 备份和恢复证据通过后等待 clone migration 批准 |
 | 4 | 在非空 Production clone 演练 Schema 5 → 6、parity 与 recovery | 未批准 | 删除/保留临时资源须按批准执行；main 仍不变 |
 | 5 | 暂停写入、最终备份、Production-only secrets、迁移 `main`、promote V2 | 未批准 | 每个 Production mutation 前按本 Gate 的 stop point 再确认 |
@@ -238,7 +240,7 @@ Implemented contract:
 - full `npm run lint`、`npm run typecheck`、`npm run test`、三套 backup dry-run、`npm run build`、`npm run governance:preflight` 与 `git diff --check`。
 - 审查 changed files、tracked/untracked inventory 和 secret-shaped diff；不运行任何 remote integration test。
 
-**Approval Stop 1:** Gate 1 完成时结束了原始本地批次。后续 Gate 0B 依靠新的明确批准独立执行；本地 tests 与 Gate 0B 结果都不授权进入 Gate 2。
+**Approval Stop 1:** Gate 1 完成时结束了原始本地批次。后续 Gate 0B 依靠新的明确批准独立执行；本地 tests 与 Gate 0B 结果都不授权进入 Gate 2。V2-8-2.3 现进一步暂停 Gate 2；V2-8-2.3 关闭后仍须再次取得明确批准。
 
 ## Gate 2 — Remote Read-only Inventory And Official Fact Refresh
 

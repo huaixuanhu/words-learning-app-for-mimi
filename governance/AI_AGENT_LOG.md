@@ -1,5 +1,20 @@
 # AI Agent Log
 
+## 2026-07-20 22:57 AEST
+
+- Task: add a documentation-only stage before V2 Production launch for issues discovered while the user and Mimi test protected Preview. The user confirmed the stage and clarified that SSO is excluded from the entire V2 release.
+- Plan agreed: yes. Scope was limited to the child plan and synchronization of current planning, architecture, release and governance documents. No implementation or external action was requested.
+- Working tier: Tier 3. This tranche changed documentation only and preserved all existing remote, credential, database, provider and Production approval boundaries.
+- Changed files:
+  - added `plan_docs/PLAN_V2_STAGE8_2_3_PREVIEW_FEEDBACK_STABILISATION.md` with explicit Source plan, Derived from, Scope, Non-Scope and Exit criteria;
+  - synchronized `plan_docs/PLAN_V2_MASTER.md` and `plan_docs/PLAN_V2_STAGE8_3_PRODUCTION_BACKUP_MIGRATION_CUTOVER.md` so V2-8-2.3 sits between V2-8-2.2 and V2-8-3 Gate 2;
+  - synchronized `ARCHITECTURE.md`, `README.md`, `AGENTS.md`, `plan_docs/PLAN_VERSION_HOLD_MULTI_USER_CONFIDENTIAL_ISOLATION.md`, `CHANGELOG.md` and this governance record.
+- Result: V2-8-2.3 is the canonical Preview feedback register. Findings use `PF-001` onward, explicit priority/status, reproduction evidence, bounded local validation, exact-commit Preview retest and a human closure result. All `Blocker` and `High` findings must close before Gate 2 can be reconsidered.
+- Release boundary: V2-8-3 Gate 2 is paused until V2-8-2.3 closes. Closure does not authorize Gate 2; a new explicit approval remains required. The whole V2 release excludes SSO, OAuth, public registration and confidential per-person authorization, which stay in the Version-hold plan.
+- Validation: documentation consistency search, `git diff --check` and Tier 3 governance preflight passed. Runtime tests/build were intentionally not rerun because no runtime file changed.
+- Safety notes: no code, migration, backup format, environment value, credential, remote account/database, deployment, AI call, Production write, commit, push, pull request or merge occurred.
+- Reason: keep iterative Preview feedback inside one evidence-backed pre-launch loop without allowing scope drift into identity work or Production execution.
+
 ## 2026-07-20 00:22 AEST
 
 - Task: commit the previously completed V2-8-3 Gate 1/Gate 0B batch, then implement the user-confirmed V2-8-2.2 fixes for Arrow-key ratings, browser pronunciation quality controls and Chinese translations beside every English example. The user accepted browser voice selection first and reserved Cloud TTS for a later real-device quality decision.
