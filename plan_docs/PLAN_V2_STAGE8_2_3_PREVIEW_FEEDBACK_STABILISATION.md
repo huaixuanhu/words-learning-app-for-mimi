@@ -64,7 +64,7 @@ Target capability tier: Tier 3
 
 Working tier: Tier 3
 
-Status: active again on 2026-07-22. PF-001 remains `High / Closed`: its exact `en-AU-Standard-C` Voice Contract, local and provider evidence, additive `0005`, Preview-only WIF, `staging` migration, exact deployment, Kill Switch checks and machine-route verification are complete. The user passed Settings Preview, Recognition, Active and example-word playback on MacBook + Chrome and described the audio as “非常理想”; Mimi later independently confirmed that the sound had no problem, while her exact device/browser was not recorded. PF-002 is `Normal / Fixed locally` under `plan_docs/PLAN_V2_STAGE8_2_3_2_LEARNING_NAVIGATION_GOAL_HIERARCHY_TYPOGRAPHY.md`: the historical exact Preview passed machine acceptance, but the user found Instrument Serif uncomfortable in real use. The font-only rollback restores Geist titles and the prior large-word fallback without changing the remaining PF-002 interaction work. A fresh exact Preview and human retest remain pending. iPhone + Safari remains an untested occasional-use environment. V2-8-3 Gate 2 is paused again until PF-002 is closed or explicitly accepted.
+Status: active again on 2026-07-22. PF-001 remains `High / Closed`: its exact `en-AU-Standard-C` Voice Contract, local and provider evidence, additive `0005`, Preview-only WIF, `staging` migration, exact deployment, Kill Switch checks and machine-route verification are complete. The user passed Settings Preview, Recognition, Active and example-word playback on MacBook + Chrome and described the audio as “非常理想”; Mimi later independently confirmed that the sound had no problem, while her exact device/browser was not recorded. PF-002 is `Normal / Preview-ready` under `plan_docs/PLAN_V2_STAGE8_2_3_2_LEARNING_NAVIGATION_GOAL_HIERARCHY_TYPOGRAPHY.md`: the user-rejected Instrument Serif experiment has been replaced by Geist titles and the prior large-word fallback, and exact commit `54c8ca4492ff9b13d095ea0bd0d3d7ca702c3c2f` is Ready on protected Preview with machine checks passing. Human retest remains pending. iPhone + Safari remains an untested occasional-use environment. V2-8-3 Gate 2 is paused again until PF-002 is closed or explicitly accepted.
 
 ## 1. Stage Position And Release Effect
 
@@ -223,7 +223,7 @@ Reproduction steps and evidence: open Home, compare the four equal metric tiles 
   open Study and compare six equal metrics with the two editable inputs; enter /review?zone=new while
   the sidebar still says Review; compare Goal/Done/Left after a queue has fewer ready entries than the
   daily goal. User supplied protected Preview screenshots and confirmed the derived plan.
-Priority / status: Normal / Fixed locally
+Priority / status: Normal / Preview-ready
 Scope decision: bounded learner-facing Information Architecture, copy, responsive layout and typography
   change under plan_docs/PLAN_V2_STAGE8_2_3_2_LEARNING_NAVIGATION_GOAL_HIERARCHY_TYPOGRAPHY.md.
   Stable route parameters, data contracts and learning behavior remain unchanged.
@@ -246,12 +246,17 @@ Preview machine validation: 1280 px Home has no overflow, both top panels measur
   specified. Browser console has zero warning/error; deployment-filtered Vercel logs show Warning 0,
   Error 0 and Fatal 0. Expected requests return 200/204/304.
 User or Mimi retest: the user tested the historical exact Preview and rejected Instrument Serif as
-  uncomfortable in real use. The feedback was expressly limited to the English font change.
-Resolution or accepted limitation: open at Fixed locally. Instrument Serif loading and references are
+  uncomfortable in real use. The feedback was expressly limited to the English font change. Human
+  retest of the new Geist Preview is pending.
+Resolution or accepted limitation: open at Preview-ready. Instrument Serif loading and references are
   removed; display titles now use Geist semibold and large vocabulary restores its pre-PF-002 Georgia
   fallback. The focused font contract passes 1 file / 3 tests; lint, typecheck, Production build,
-  governance preflight and diff checks pass. A new exact protected Preview and human
-  retest are required before Closed; iPhone + Safari remains untested.
+  governance preflight and diff checks pass. Exact commit 54c8ca4492ff9b13d095ea0bd0d3d7ca702c3c2f
+  is Ready as protected Preview deployment dpl_EmRVmp5YDTKgnh1VEtVBozwhRp6J at
+  https://words-learning-app-for-mimi-l1ih7plu2-anorias-projects.vercel.app. It reports SYD1,
+  retains Deployment Protection, loads real Home data, computes Geist 600/normal spacing on the
+  checked titles, has no desktop overflow and produced zero browser warning/error. Human retest is
+  required before Closed; iPhone + Safari remains untested.
 ```
 
 ### First stage closeout after PF-001 — 2026-07-22 (historical; superseded by PF-002 reopening)

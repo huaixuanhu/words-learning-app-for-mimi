@@ -3,7 +3,7 @@
 Created: 2026-07-22 AEST
 Last updated: 2026-07-22 AEST
 
-Current status: `PF-002 Normal / Fixed locally`. Exact protected Preview machine acceptance is retained as historical evidence, but the user found Instrument Serif uncomfortable in real use. The font-only local rollback is complete; a new exact protected Preview and human retest remain pending.
+Current status: `PF-002 Normal / Preview-ready`. The font-only Geist rollback is deployed from exact commit `54c8ca4492ff9b13d095ea0bd0d3d7ca702c3c2f`; protected Preview machine checks pass and human retest remains pending.
 
 Source plan:
 
@@ -201,4 +201,30 @@ Safety and remaining gate:
 
 - 没有 deployment、environment、credential、database、provider、Production、FSRS、Daily Episode、Motion 或持久资料变更。
 - 历史 deployment `dpl_DxQWHVspQuukaeR6LTCjKp15a3zp` 仍证明旧 Instrument 版本的机器状态，但不再是当前候选版本。
-- PF-002 需要新的 exact protected Preview 与人类复测后才能进入 `Retest passed` 或 `Closed`；V2-8-3 Gate 2 继续暂停并仍需另行批准。
+- 本地回退在本节结束时仍需新的 exact protected Preview；Section 8 记录后续部署。人类复测完成前，PF-002 不能进入 `Retest passed` 或 `Closed`；V2-8-3 Gate 2 继续暂停并仍需另行批准。
+
+## 8. Geist Rollback Exact Protected Preview — 2026-07-22
+
+Status: `PF-002 Normal / Preview-ready`.
+
+Deployment identity:
+
+- Exact code commit：`54c8ca4492ff9b13d095ea0bd0d3d7ca702c3c2f`，branch `V2`，与 `origin/V2` 一致。
+- Vercel deployment：`dpl_EmRVmp5YDTKgnh1VEtVBozwhRp6J`。
+- Exact protected URL：`https://words-learning-app-for-mimi-l1ih7plu2-anorias-projects.vercel.app`。
+- Branch Preview domain：`https://words-learning-app-for-mimi-git-v2-anorias-projects.vercel.app`。
+- Git Integration 已自动完成部署，因此没有创建重复 deployment。Vercel 显示 `Preview / Ready`，build duration 为 39 秒。
+
+Machine acceptance:
+
+- Vercel Resources 显示应用 Functions 位于 `SYD1`；middleware 保持 `ALL`。
+- 未登录 HTTP 请求收到 `302` 并跳转至 Vercel SSO，Deployment Protection 保持启用。
+- 已登录 Chrome 打开 exact URL 后，Home 数据正常加载；`Today` 与 `Today’s plan` 的 computed font 均为 Geist、weight `600`、normal letter spacing。
+- 页面 HTML 只包含 Geist 与 Geist Mono 的 Next.js font variables，没有 Instrument Serif variable；当前桌面 viewport 未出现横向溢出。
+- 浏览器 console 的 warning/error 为 0。
+
+Safety and remaining gate:
+
+- 本轮没有重复部署、environment/credential 修改、database migration、Production action、rating、goal save、reset、AI/TTS 调用或学习资料写入。
+- 机器检查证明 exact candidate 可访问且字体契约生效，不替代用户对舒适度的主观验收。
+- PF-002 仍需用户或 Mimi 实际体验后才能进入 `Retest passed` 或 `Closed`；iPhone + Safari 仍未测试，V2-8-3 Gate 2 继续暂停。

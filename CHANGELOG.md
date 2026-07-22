@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## 2026-07-22 20:47 AEST
+
+- Advanced the Geist rollback candidate from `Normal / Fixed locally` to `Normal / Preview-ready`. Vercel Git Integration had already deployed exact branch `V2` commit `54c8ca4492ff9b13d095ea0bd0d3d7ca702c3c2f` as protected Preview deployment `dpl_EmRVmp5YDTKgnh1VEtVBozwhRp6J`, so no duplicate deployment was created.
+- Confirmed `Preview / Ready`, a 39-second build and application Functions in `SYD1`. The exact deployment URL is `https://words-learning-app-for-mimi-l1ih7plu2-anorias-projects.vercel.app`; the branch Preview alias is `https://words-learning-app-for-mimi-git-v2-anorias-projects.vercel.app`.
+- Verified protection through an unauthenticated redirect to Vercel login. A signed-in MacBook + Chrome check loaded the existing Preview data; `Today` and `Today’s plan` computed to Geist weight `600` with normal letter spacing, the HTML font variables contained no Instrument Serif reference, the desktop viewport had no horizontal overflow, and the browser console reported zero warning/error.
+- Kept the claim bounded: this tranche did not repeat a remote 390 px test and does not count as user/Mimi comfort acceptance. PF-002 remains open for human retest; iPhone + Safari remains untested.
+- Synchronized the PF-002 child/register, V2 Master/cutover handoff, Architecture, README, AGENTS and governance record. Production V1/Schema 5, Neon `main`, credentials, environment values, database state, AI/TTS configuration, learning data, Motion and SSO boundaries remain unchanged; Gate 2 stays paused and separately approval-gated.
+- Reason: make the user-approved Geist rollback available for real protected-Preview testing while preserving exact deployment evidence and the Production stop boundary.
+
 ## 2026-07-22 15:38 AEST
 
 - Moved PF-002 from `Normal / Preview-ready` back to `Normal / Fixed locally` after the user found Instrument Serif uncomfortable during real protected Preview use. The historical deployment and machine checks remain evidence for that superseded candidate.

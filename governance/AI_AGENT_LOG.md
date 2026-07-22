@@ -1,5 +1,19 @@
 # AI Agent Log
 
+## 2026-07-22 20:47 AEST
+
+- Task: deploy the user-committed PF-002 Geist rollback to the protected V2 test environment.
+- Plan agreed: yes. The user explicitly requested test deployment. The announced scope was exact-commit protected Preview deployment and verification; Production, Neon `main`, database migration, credentials/environment changes and V2-8-3 Gate 2 were excluded.
+- Working tier: Tier 3. Vercel deployment metadata and the protected runtime were inspected through the signed-in browser. No secret value or account setting was read or changed.
+- Deployment result: branch `V2` and `origin/V2` were clean and both pointed to `54c8ca4492ff9b13d095ea0bd0d3d7ca702c3c2f`. Vercel Git Integration had already created deployment `dpl_EmRVmp5YDTKgnh1VEtVBozwhRp6J`, so no duplicate deployment was triggered. Vercel reported `Preview`, `Ready`, a 39-second build and application Functions in `SYD1`.
+- Protection/result URL: an unauthenticated request to `https://words-learning-app-for-mimi-l1ih7plu2-anorias-projects.vercel.app` redirected to Vercel login. The branch Preview alias is `https://words-learning-app-for-mimi-git-v2-anorias-projects.vercel.app`.
+- Machine verification: signed-in MacBook + Chrome loaded the existing Preview data. The `Today` h1 and `Today’s plan` h2 computed to Geist weight `600` with normal letter spacing; the HTML font variables no longer include Instrument Serif; the inspected desktop viewport had no horizontal overflow; the browser console reported zero warning/error.
+- Changed files: documentation/evidence only — PF-002 child/register, V2 Master/cutover handoff, Architecture, README, AGENTS, Changelog and this governance record.
+- Validation: the exact protected Preview is `Ready`; signed-in desktop font/overflow/console checks pass; unauthenticated protection and `SYD1` placement are confirmed. Post-record `git diff --check` and Tier 3 governance preflight are required before handoff. Runtime tests and build were not rerun because the deployed code is the user's already-validated exact commit and this post-deployment tranche changes documentation only.
+- Safety notes: no remote database, Production, credential, environment, provider, learning-data or application mutation occurred. This check did not repeat a remote 390 px acceptance and does not substitute for human typography comfort testing.
+- Residual boundary: PF-002 is `Normal / Preview-ready`, not `Retest passed` or `Closed`. User/Mimi human retest remains required; iPhone + Safari remains untested. V2-8-3 Gate 2 stays paused and requires fresh approval even after PF-002 closure or explicit acceptance.
+- Reason: expose the exact approved rollback for realistic testing without widening the V2 release authority.
+
 ## 2026-07-22 15:38 AEST
 
 - Task: withdraw only the PF-002 English Instrument Serif change after the user found it uncomfortable in actual Preview use.
