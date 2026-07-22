@@ -1,5 +1,21 @@
 # AI Agent Log
 
+## 2026-07-22 15:01 AEST
+
+- Task: continue after the user committed PF-002 by executing its exact protected Preview deployment and machine-acceptance stage.
+- Plan agreed: yes. The user explicitly requested the next stage after committing; the announced scope was exact PF-002 protected Preview verification only. Production, Neon `main`, credentials, environment values, database migration and V2-8-3 Gate 2 stayed excluded.
+- Working tier: Tier 3. Vercel/Git Integration state and runtime logs were read through the signed-in browser; no secret value was accessed and no account setting was changed.
+- Deployment result: Git Integration had already created deployment `dpl_DxQWHVspQuukaeR6LTCjKp15a3zp` from exact commit `52942b412d0a2281c4dded2f5b9bd716d7fd0131` on branch `V2`, so no duplicate deployment was created. Vercel reported `Preview`, `Ready`, a 41-second build and application Functions in `SYD1`.
+- Protection result: an isolated unauthenticated browser was redirected to Vercel login before application access. The signed-in protected URL is `https://words-learning-app-for-mimi-745wn6ag9-anorias-projects.vercel.app`.
+- Desktop result: at 1280 × 900 px, Home had no horizontal overflow or visible fixed overlay; `Today’s plan` and `Library at a glance` shared the same top coordinate and both measured `488.32 px`. The page/display title computed to Instrument Serif, while no button or link computed to that family.
+- Mobile result: at 390 × 844 px, Home, Study, Recognition Review/New Learning and Active Review/New Learning had no horizontal overflow. Mobile navigation showed `Learn`; both zone navigations marked the current route with `aria-current="page"`; Home/Study goal hierarchy, `Save today’s goals`, Daily goal/today/Ready now labels and Active `Change practice mode` matched the accepted contract.
+- Runtime result: browser console review returned zero warning/error entries. Vercel logs filtered to this deployment and acceptance window reported `Warning 0`, `Error 0`, `Fatal 0`; inspected app, storage and study requests returned expected `200`, `204` or `304` results.
+- Changed files: synchronized PF-002 child/parent records, V2 Master, V2-8-3 handoff, Architecture, README, AGENTS, Changelog and this governance record from `Fixed locally` to `Preview-ready` while preserving human closure as pending.
+- Validation: exact commit/source/deployment/branch/region/protection were checked directly in Vercel. Responsive layout, text hierarchy, computed font ownership, current-zone state and overflow were checked in the deployed DOM. `git diff --check` and Tier 3 governance preflight pass after synchronizing this record.
+- Safety notes: no rating, goal save, whole-day reset, AI/TTS call, Production action, remote database migration, credential/environment change, alias change, GitHub push/PR/merge or SSO work occurred. Normal learning-route preparation issued bounded `/api/study` queue requests and all returned `200`; no review/scheduling result was submitted. Production remains V1 / Schema Version 5.
+- Residual boundary: PF-002 is `Normal / Preview-ready`, not `Retest passed` or `Closed`. User/Mimi human retest remains required; iPhone + Safari remains untested. V2-8-3 Gate 2 stays paused and requires a later fresh approval even after PF-002 closure/acceptance.
+- Reason: bind the accepted local change to an exact protected Preview and produce auditable machine evidence without overstating user acceptance or expanding release authority.
+
 ## 2026-07-22 13:53 AEST
 
 - Task: implement the user-confirmed PF-002 interaction and typography refinement discovered during protected Preview use.

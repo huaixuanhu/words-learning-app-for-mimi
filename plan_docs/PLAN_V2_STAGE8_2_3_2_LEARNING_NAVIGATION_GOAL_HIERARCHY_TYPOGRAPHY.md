@@ -3,6 +3,8 @@
 Created: 2026-07-22 AEST
 Last updated: 2026-07-22 AEST
 
+Current status: `PF-002 Normal / Preview-ready`. Exact protected Preview and machine acceptance are complete; user/Mimi human retest remains pending.
+
 Source plan:
 
 - `plan_docs/PLAN_V2_STAGE8_2_3_PREVIEW_FEEDBACK_STABILISATION.md` 的 `PF-002`
@@ -157,4 +159,31 @@ Validation:
 Safety and remaining gate:
 
 - No FSRS, Daily Episode, Motion, TTS, AI, schema, backup shape, environment, credential, remote database, Preview or Production state changed.
-- PF-002 is not `Preview-ready`, `Retest passed` or `Closed`. A later protected Preview deployment must bind an exact commit and receive human acceptance under a fresh approval.
+- At the end of this local implementation batch PF-002 was not yet `Preview-ready`, `Retest passed` or `Closed`; the separately approved Preview record below supersedes only the deployment part of that historical statement.
+
+## 6. Exact Protected Preview Record — 2026-07-22
+
+Status: `PF-002 Normal / Preview-ready`.
+
+Deployment identity:
+
+- Exact code commit: `52942b412d0a2281c4dded2f5b9bd716d7fd0131` on branch `V2`.
+- Vercel deployment: `dpl_DxQWHVspQuukaeR6LTCjKp15a3zp`.
+- Protected URL: `https://words-learning-app-for-mimi-745wn6ag9-anorias-projects.vercel.app`.
+- Vercel reported `Preview`, `Ready` and a 41-second build. Its application Functions are in `SYD1`; middleware remains global as designed.
+- An unauthenticated isolated browser was redirected to Vercel login before application access, confirming that Deployment Protection remains active.
+
+Machine acceptance:
+
+- At 1280 × 900 px, Home had no horizontal overflow or visible fixed overlay. `Today’s plan` and `Library at a glance` began at the same top coordinate and both measured `488.32 px` high.
+- Instrument Serif was the computed family on the page/display titles. No visible button or link used Instrument Serif; body, navigation, controls, labels and numbers remained Geist/ChillRoundF-owned.
+- At 390 × 844 px, Home, Study, Recognition Review/New Learning and Active Review/New Learning had no horizontal overflow. Mobile navigation displayed `Learn`; both zone navigations exposed `Review` and `New Learning` with the current zone marked by `aria-current="page"`.
+- Home and Study showed the accepted two-goal hierarchy with lighter `Suggested review` / `Added today`; Study used `Save today’s goals`.
+- Recognition and Active session summaries used `Daily goal`, `Reviewed today` or `Learned today`, and `Ready now`. Active retained `Change practice mode`.
+- Browser console review found zero warnings/errors. Vercel logs filtered to this deployment for the acceptance window reported `Warning 0`, `Error 0`, `Fatal 0`; inspected app/storage/study requests completed with expected `200`, `204` or `304` results.
+
+Safety and remaining gate:
+
+- The automatic Git Integration deployment required no duplicate deployment, environment change, credential read/change, database migration or Production action.
+- Machine navigation did not submit a rating, save goals, reset a day, call AI/TTS, or intentionally change review/scheduling evidence. Normal learning-route preparation issued bounded `/api/study` queue requests and they returned `200`.
+- Human acceptance is still required. PF-002 is not `Retest passed` or `Closed`; V2-8-3 Gate 2 remains paused and separately approval-gated. iPhone + Safari remains untested.

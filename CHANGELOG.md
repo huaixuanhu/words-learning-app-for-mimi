@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## 2026-07-22 15:01 AEST
+
+- Advanced PF-002 from `Normal / Fixed locally` to `Normal / Preview-ready` after Git Integration automatically deployed exact commit `52942b412d0a2281c4dded2f5b9bd716d7fd0131` as protected Preview deployment `dpl_DxQWHVspQuukaeR6LTCjKp15a3zp`; no duplicate deployment was created.
+- Confirmed Vercel `Preview / Ready`, branch `V2`, 41-second build, application Functions in `SYD1`, and active Deployment Protection through an unauthenticated redirect to Vercel login.
+- Repeated acceptance on the exact Preview: 1280 px Home had no overflow, both top panels measured `488.32 px` at the same top coordinate, display titles computed to Instrument Serif and controls did not; 390 px Home/Study/Recognition/Active had no horizontal overflow and showed the accepted `Learn`, Review/New Learning, goal and session-label hierarchy.
+- Browser console reported no warning/error. Deployment-filtered Vercel logs reported `Warning 0`, `Error 0`, `Fatal 0`; inspected routes returned expected `200`, `204` or `304` results.
+- Synchronized the PF-002 child/register, V2 Master/cutover handoff, Architecture, README, AGENTS and governance record; `git diff --check` and Tier 3 governance preflight pass.
+- Kept PF-002 open for user/Mimi human retest. V2-8-3 Gate 2, Production V1/Schema 5, Neon `main`, credentials, environments, AI/TTS providers, learning algorithms, Motion and SSO boundaries remain unchanged.
+- Reason: establish exact protected Preview evidence for the agreed UI refinement without turning machine verification into an unsupported human acceptance claim.
+
 ## 2026-07-22 13:53 AEST
 
 - Registered PF-002 as `Normal / Fixed locally` and reopened V2-8-2.3 after protected Preview feedback showed that Review/New Words navigation, goal hierarchy and session labels required clearer learner-facing structure.

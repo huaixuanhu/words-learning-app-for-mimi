@@ -64,7 +64,7 @@ Target capability tier: Tier 3
 
 Working tier: Tier 3
 
-Status: active again on 2026-07-22. PF-001 remains `High / Closed`: its exact `en-AU-Standard-C` Voice Contract, local and provider evidence, additive `0005`, Preview-only WIF, `staging` migration, exact deployment, Kill Switch checks and machine-route verification are complete. The user passed Settings Preview, Recognition, Active and example-word playback on MacBook + Chrome and described the audio as “非常理想”; Mimi later independently confirmed that the sound had no problem, while her exact device/browser was not recorded. PF-002 is `Normal / Fixed locally` under `plan_docs/PLAN_V2_STAGE8_2_3_2_LEARNING_NAVIGATION_GOAL_HIERARCHY_TYPOGRAPHY.md`: navigation, goal hierarchy, session labels, desktop alignment and bounded Instrument Serif typography are implemented and locally validated. Its protected Preview deployment and human retest remain pending. iPhone + Safari remains an untested occasional-use environment. V2-8-3 Gate 2 is paused again until PF-002 is closed or explicitly accepted.
+Status: active again on 2026-07-22. PF-001 remains `High / Closed`: its exact `en-AU-Standard-C` Voice Contract, local and provider evidence, additive `0005`, Preview-only WIF, `staging` migration, exact deployment, Kill Switch checks and machine-route verification are complete. The user passed Settings Preview, Recognition, Active and example-word playback on MacBook + Chrome and described the audio as “非常理想”; Mimi later independently confirmed that the sound had no problem, while her exact device/browser was not recorded. PF-002 is `Normal / Preview-ready` under `plan_docs/PLAN_V2_STAGE8_2_3_2_LEARNING_NAVIGATION_GOAL_HIERARCHY_TYPOGRAPHY.md`: exact commit `52942b412d0a2281c4dded2f5b9bd716d7fd0131` is Ready on protected Preview, its Functions are in `SYD1`, and desktop/mobile machine acceptance passed. Human retest remains pending. iPhone + Safari remains an untested occasional-use environment. V2-8-3 Gate 2 is paused again until PF-002 is closed or explicitly accepted.
 
 ## 1. Stage Position And Release Effect
 
@@ -223,7 +223,7 @@ Reproduction steps and evidence: open Home, compare the four equal metric tiles 
   open Study and compare six equal metrics with the two editable inputs; enter /review?zone=new while
   the sidebar still says Review; compare Goal/Done/Left after a queue has fewer ready entries than the
   daily goal. User supplied protected Preview screenshots and confirmed the derived plan.
-Priority / status: Normal / Fixed locally
+Priority / status: Normal / Preview-ready
 Scope decision: bounded learner-facing Information Architecture, copy, responsive layout and typography
   change under plan_docs/PLAN_V2_STAGE8_2_3_2_LEARNING_NAVIGATION_GOAL_HIERARCHY_TYPOGRAPHY.md.
   Stable route parameters, data contracts and learning behavior remain unchanged.
@@ -235,11 +235,20 @@ Local validation: focused PF-002/mobile/dashboard/Recognition/Active/copy contra
   production-build browser checks at 1280 px and 390 px found no framework overlay or horizontal
   overflow. Desktop Today’s plan and Library at a glance both measured 488 px high; 390 px Home,
   Study, Recognition New Learning and Active New Learning rendered the intended navigation and copy.
-Preview deployment / exact commit: pending; no deployment is approved by this local batch.
-User or Mimi retest: pending after an exact protected Preview deployment receives separate approval.
-Resolution or accepted limitation: open at Fixed locally. Instrument Serif is self-hosted by Next.js
+Preview deployment / exact commit: exact commit 52942b412d0a2281c4dded2f5b9bd716d7fd0131,
+  deployment dpl_DxQWHVspQuukaeR6LTCjKp15a3zp, protected URL
+  https://words-learning-app-for-mimi-745wn6ag9-anorias-projects.vercel.app. Vercel reports
+  Preview / Ready / 41s and SYD1 Functions; unauthenticated access redirects to Vercel login.
+Preview machine validation: 1280 px Home has no overflow, both top panels measure 488.32 px at
+  the same top coordinate, display titles compute to Instrument Serif and controls do not. 390 px
+  Home, Study, Recognition and Active have no horizontal overflow; Learn, both zone links, current
+  aria state, goal hierarchy, Save today’s goals and Daily goal/today/Ready now labels render as
+  specified. Browser console has zero warning/error; deployment-filtered Vercel logs show Warning 0,
+  Error 0 and Fatal 0. Expected requests return 200/204/304.
+User or Mimi retest: pending; machine acceptance does not substitute for human workflow judgment.
+Resolution or accepted limitation: open at Preview-ready. Instrument Serif is self-hosted by Next.js
   with latin/400/normal/display-swap only; Geist remains on navigation, controls, metrics and body.
-  Exact protected Preview deployment and user/Mimi retest are still required before Closed.
+  User/Mimi retest is still required before Closed; iPhone + Safari remains untested.
 ```
 
 ### First stage closeout after PF-001 — 2026-07-22 (historical; superseded by PF-002 reopening)
