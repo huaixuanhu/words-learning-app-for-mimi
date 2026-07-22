@@ -7,6 +7,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ExampleWordActions } from "@/components/review/example-word-actions";
 import { SimplePanel } from "@/components/simple-panel";
 import { useMimiSound } from "@/components/sound-provider";
+import { LearningZoneTabs } from "@/components/study/learning-zone-tabs";
 import {
   createStudyIdempotencyKey,
   type DailyStudyQueueResult,
@@ -626,6 +627,14 @@ export function ReviewSession({ zone }: ReviewSessionProps) {
     <>
       <div className="grid gap-5 lg:grid-cols-[1fr_300px]">
         <section className="mimi-panel p-4 sm:p-6">
+          <div className="mb-5">
+            <LearningZoneTabs
+              zone={zone}
+              reviewHref="/review?zone=review"
+              newLearningHref="/review?zone=new"
+              label="Recognition learning zone"
+            />
+          </div>
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap items-start gap-3">
               {canRollbackPrevious ? (
@@ -640,9 +649,9 @@ export function ReviewSession({ zone }: ReviewSessionProps) {
               ) : null}
               <div>
                 <p className="text-sm font-semibold text-[var(--mimi-primary)]">
-                  {zone === "new" ? "New Words" : "Review"}
+                  {zone === "new" ? "New Learning" : "Review"}
                 </p>
-                <h2 className="mt-1 text-xl font-semibold text-[var(--mimi-text)]">
+                <h2 className="mimi-display-title mt-1 text-2xl text-[var(--mimi-text)]">
                   {currentItem
                     ? `${completedCount + 1} / ${sessionTotal || 1}`
                     : "Session"}
@@ -806,7 +815,7 @@ export function ReviewSession({ zone }: ReviewSessionProps) {
                     : sessionTotal
                       ? "This session is complete."
                       : zone === "new"
-                        ? "No New Words are planned right now."
+                        ? "No new words are ready right now."
                         : "Nothing is ready for Review right now."}
                 </p>
                 <Link
@@ -884,9 +893,9 @@ export function ReviewSession({ zone }: ReviewSessionProps) {
         <SimplePanel title="Session">
           <div className="grid grid-cols-3 gap-2">
             {[
-              ["Goal", zoneGoal ?? "-"],
-              ["Done", completedCount],
-              ["Left", sessionIds?.length ?? "-"],
+              ["Daily goal", zoneGoal ?? "-"],
+              [zone === "new" ? "Learned today" : "Reviewed today", zone === "new" ? recognitionMetrics?.learnedToday ?? "-" : recognitionMetrics?.reviewedToday ?? "-"],
+              ["Ready now", sessionIds?.length ?? "-"],
             ].map(([label, value]) => (
               <div key={label} className="rounded-md bg-[var(--mimi-surface-muted)] p-3">
                 <p className="text-xs font-medium text-[var(--mimi-text-soft)]">{label}</p>
@@ -894,12 +903,6 @@ export function ReviewSession({ zone }: ReviewSessionProps) {
               </div>
             ))}
           </div>
-          <Link
-            href={zone === "new" ? "/review?zone=review" : "/review?zone=new"}
-            className="mimi-button-secondary mimi-focus-ring mt-4 inline-flex min-h-11 w-full items-center justify-center px-3 text-sm font-semibold"
-          >
-            Open {zone === "new" ? "Review" : "New Words"}
-          </Link>
         </SimplePanel>
       </div>
 
@@ -911,8 +914,8 @@ export function ReviewSession({ zone }: ReviewSessionProps) {
         dismissOnBackdrop={false}
       >
         <CheckCircle2 aria-hidden="true" className="mx-auto size-10 text-[var(--mimi-primary)]" />
-        <h2 id="review-complete-title" className="mt-4 text-xl font-semibold text-[var(--mimi-text)]">
-          Today’s {zone === "new" ? "New Words" : "Review"} are complete
+        <h2 id="review-complete-title" className="mimi-display-title mt-4 text-2xl text-[var(--mimi-text)]">
+          Today’s {zone === "new" ? "New Learning" : "Review"} is complete
         </h2>
         <PressableButton
           type="button"

@@ -13,10 +13,10 @@ function readSource(path: string) {
 
 describe("V2 Stage 4 mobile foundation", () => {
   it("keeps the accepted five-item mobile information architecture", () => {
-    expect(mobilePrimaryNavItems.map((item) => item.label)).toEqual([
+    expect(mobilePrimaryNavItems.map((item) => "mobileLabel" in item ? item.mobileLabel : item.label)).toEqual([
       "Home",
       "Study",
-      "Review",
+      "Learn",
       "Library",
     ]);
     expect(mobileMoreItem.label).toBe("More");

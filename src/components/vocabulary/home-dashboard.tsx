@@ -53,7 +53,7 @@ export function HomeDashboard() {
 
   return (
     <div className="mx-auto grid w-full max-w-5xl gap-4">
-      <CalmEntrance className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_270px]">
+      <CalmEntrance className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_270px] lg:items-stretch">
         <section className="mimi-panel p-4 sm:p-5">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
@@ -61,7 +61,7 @@ export function HomeDashboard() {
                 <Leaf aria-hidden="true" className="size-3.5" />
                 {selectedPerson.displayName}
               </div>
-              <h2 className="text-xl font-semibold text-[var(--mimi-text)]">Today’s plan</h2>
+              <h2 className="mimi-display-title text-2xl text-[var(--mimi-text)]">Today’s plan</h2>
               {todayMessage ? (
                 <p className="mt-2 text-xs leading-5 text-[var(--mimi-text-soft)]">{todayMessage}</p>
               ) : null}
@@ -80,8 +80,8 @@ export function HomeDashboard() {
               title="Recognition Vocabulary"
               eyebrow="Reading and meaning"
               track={today?.tracks.recognition ?? null}
-              href="/review?zone=review"
-              cta="Start Review"
+              reviewHref="/review?zone=review"
+              newLearningHref="/review?zone=new"
               Icon={BookOpen}
               tone="bg-[#d9e5d5] text-[#274331]"
             />
@@ -89,16 +89,16 @@ export function HomeDashboard() {
               title="Active Vocabulary"
               eyebrow="Recall and sound"
               track={today?.tracks.active ?? null}
-              href="/practice-lab?zone=review"
-              cta="Start Active Review"
+              reviewHref="/practice-lab?zone=review"
+              newLearningHref="/practice-lab?zone=new"
               Icon={AudioWaveform}
               tone="bg-[#e7decb] text-[#5b4c2c]"
             />
           </div>
         </section>
 
-        <section className="mimi-panel-dark p-4">
-          <p className="text-sm font-semibold text-[var(--mimi-panel-dark-text)]">Library at a glance</p>
+        <section className="mimi-panel-dark p-4 lg:h-full">
+          <h2 className="mimi-display-title text-xl text-[var(--mimi-panel-dark-text)]">Library at a glance</h2>
           <div className="mt-4 grid gap-2">
             {[
               ["Recognition", isLoaded ? recognitionItems.length : "-"],
@@ -120,7 +120,7 @@ export function HomeDashboard() {
       <div className="grid gap-4 lg:grid-cols-3">
         <section className="mimi-panel p-4">
           <div className="mb-3 flex items-center justify-between gap-3">
-            <h2 className="text-base font-semibold text-[var(--mimi-text)]">Latest entries</h2>
+            <h2 className="mimi-display-title text-xl text-[var(--mimi-text)]">Latest entries</h2>
             <Link href="/library" className="mimi-focus-ring rounded-md text-sm font-semibold text-[var(--mimi-primary)]">
               See all
             </Link>
@@ -152,7 +152,7 @@ export function HomeDashboard() {
               <AudioWaveform aria-hidden="true" className="size-4.5" />
             </span>
             <div>
-              <h2 className="text-base font-semibold text-[var(--mimi-text)]">Practice Lab</h2>
+              <h2 className="mimi-display-title text-xl text-[var(--mimi-text)]">Practice Lab</h2>
             </div>
           </div>
           <div className="mt-3 flex flex-wrap gap-1.5">
@@ -181,7 +181,7 @@ export function HomeDashboard() {
         </section>
 
         <section className="mimi-panel p-4">
-          <h2 className="text-base font-semibold text-[var(--mimi-text)]">More</h2>
+          <h2 className="mimi-display-title text-xl text-[var(--mimi-text)]">More</h2>
           <div className="mt-3 grid gap-2">
             {[
               { href: "/import", label: "Add words", icon: Upload },

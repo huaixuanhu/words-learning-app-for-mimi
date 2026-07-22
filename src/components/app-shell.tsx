@@ -27,7 +27,7 @@ export function AppShell({ title, children }: AppShellProps) {
 
           <main className="mimi-main-content mx-auto w-full max-w-6xl px-4 pt-5 sm:px-6 lg:px-8 lg:pt-8">
             <div className="mimi-page-heading mb-6">
-              <h1 className="text-3xl font-semibold tracking-normal sm:text-4xl">{title}</h1>
+              <h1 className="mimi-display-title text-4xl sm:text-5xl">{title}</h1>
             </div>
             {children}
           </main>

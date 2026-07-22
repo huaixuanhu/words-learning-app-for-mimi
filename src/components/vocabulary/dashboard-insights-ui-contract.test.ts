@@ -17,16 +17,18 @@ const outlookSource = source("memory-outlook-card.tsx");
 const combinedInsightsSource = [insightsSource, rhythmSource, outlookSource].join("\n");
 
 describe("V2-8-1 Dashboard Insights UI contract", () => {
-  it("keeps each Track card compact with four dimensions and two actuals", () => {
+  it("keeps each Track card compact with two primary goals, two references, and two actuals", () => {
     expect(trackCardSource).toContain("Added today");
     expect(trackCardSource).toContain("Suggested review");
     expect(trackCardSource).toContain("Review goal");
-    expect(trackCardSource).toContain("New-word goal");
+    expect(trackCardSource).toContain("New learning goal");
     expect(trackCardSource).toContain("Today’s progress · Actual");
     expect(trackCardSource).toContain("Reviewed today");
     expect(trackCardSource).toContain("Learned today");
     expect(trackCardSource).toContain("No goal");
     expect(trackCardSource).toContain("grid-cols-2");
+    expect(trackCardSource).toContain('reviewHref');
+    expect(trackCardSource).toContain('newLearningHref');
   });
 
   it("adds Track-isolated actual and estimated Insights without persistence", () => {

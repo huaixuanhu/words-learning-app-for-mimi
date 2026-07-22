@@ -345,7 +345,7 @@ export function ExampleWordActions({
                   <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--mimi-text-muted)]">
                     Word in context
                   </p>
-                  <h3 id={titleId} className="mt-1 text-2xl font-semibold text-[var(--mimi-text)]">
+                  <h3 id={titleId} className="mimi-display-title mt-1 text-3xl text-[var(--mimi-text)]">
                     {selectedWord.text}
                   </h3>
                   <p className="mt-1 text-xs text-[var(--mimi-text-soft)]">

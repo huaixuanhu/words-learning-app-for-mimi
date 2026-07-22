@@ -58,7 +58,7 @@ export function DashboardInsights({ data, isLoaded }: DashboardInsightsProps) {
       <section aria-labelledby="dashboard-insights-title">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 id="dashboard-insights-title" className="text-base font-semibold text-[var(--mimi-text)]">
+            <h2 id="dashboard-insights-title" className="mimi-display-title text-xl text-[var(--mimi-text)]">
               Insights
             </h2>
           </div>

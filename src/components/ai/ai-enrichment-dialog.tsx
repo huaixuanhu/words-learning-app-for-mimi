@@ -356,7 +356,7 @@ export function AiEnrichmentDialog({
           <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--mimi-text-muted)]">
             AI suggestions
           </p>
-          <h2 id={titleId} className="mt-1 text-2xl font-semibold text-[var(--mimi-text)]">
+          <h2 id={titleId} className="mimi-display-title mt-1 text-3xl text-[var(--mimi-text)]">
             {item?.surfaceText ?? "Word preview"}
           </h2>
         </div>
@@ -483,7 +483,7 @@ export function AiEnrichmentDialog({
 
           <section className="grid gap-3">
             <div className="flex items-center justify-between gap-3">
-              <h3 className="text-sm font-semibold text-[var(--mimi-text)]">Similar words</h3>
+              <h3 className="mimi-display-title text-lg text-[var(--mimi-text)]">Similar words</h3>
               {decision === "draft" && candidateCount < 3 ? (
                 <button
                   type="button"
@@ -556,7 +556,7 @@ export function AiEnrichmentDialog({
 
           <section className="grid gap-3">
             <div className="flex items-center justify-between gap-3">
-              <h3 className="text-sm font-semibold text-[var(--mimi-text)]">Easy to confuse</h3>
+              <h3 className="mimi-display-title text-lg text-[var(--mimi-text)]">Easy to confuse</h3>
               {decision === "draft" && candidateCount < 3 ? (
                 <button
                   type="button"
@@ -716,7 +716,7 @@ export function AiEnrichmentDialog({
           {candidateToAdd ? (
             <form onSubmit={saveCandidate} className="grid gap-3 rounded-md border border-[var(--mimi-border)] bg-[var(--mimi-surface-muted)] p-3">
               <div className="flex items-center justify-between gap-3">
-                <h3 className="text-sm font-semibold text-[var(--mimi-text)]">Add to learning</h3>
+                <h3 className="mimi-display-title text-lg text-[var(--mimi-text)]">Add to learning</h3>
                 <button type="button" onClick={() => setCandidateToAdd(null)} aria-label="Close add form" className="mimi-focus-ring rounded p-2">
                   <X aria-hidden="true" className="size-4" />
                 </button>

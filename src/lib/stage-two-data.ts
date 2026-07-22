@@ -14,7 +14,12 @@ import type { ReviewRating } from "@/lib/review/types";
 export const appNavItems = [
   { href: "/", label: "Home", icon: Home },
   { href: "/study", label: "Study", icon: GraduationCap },
-  { href: "/review", label: "Review", icon: RotateCcw },
+  {
+    href: "/review",
+    label: "Review / New Learning",
+    mobileLabel: "Learn",
+    icon: RotateCcw,
+  },
   { href: "/library", label: "Library", icon: Library },
   { href: "/practice-lab", label: "Practice Lab", icon: FlaskConical },
   { href: "/import", label: "Add Words", icon: Upload },

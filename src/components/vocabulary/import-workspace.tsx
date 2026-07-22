@@ -315,7 +315,7 @@ export function ImportWorkspace() {
 
       {mode === "single" ? (
         <section className="mimi-panel p-4 sm:p-5">
-          <h2 className="mb-4 text-base font-semibold text-[#203229]">Add one word or phrase</h2>
+          <h2 className="mimi-display-title mb-4 text-xl text-[#203229]">Add one word or phrase</h2>
           <form className="grid gap-4" aria-label="Single vocabulary input" onSubmit={saveSingleInput}>
             <label className="grid gap-2">
               <span className="text-sm font-semibold text-[#203229]">Word or phrase</span>
@@ -394,7 +394,7 @@ export function ImportWorkspace() {
       ) : (
         <>
           <section className="mimi-panel p-4 sm:p-5">
-            <h2 className="mb-4 text-base font-semibold text-[#203229]">Batch import</h2>
+            <h2 className="mimi-display-title mb-4 text-xl text-[#203229]">Batch import</h2>
             <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
               <div className="grid gap-4">
                 <label className="grid gap-2">
@@ -449,7 +449,7 @@ export function ImportWorkspace() {
 
           <section className="mimi-panel p-4 sm:p-5">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-              <h2 className="text-base font-semibold text-[#203229]">Preview</h2>
+              <h2 className="mimi-display-title text-xl text-[#203229]">Preview</h2>
               <PressableButton
                 type="button"
                 disabled={!acceptedIds.size}

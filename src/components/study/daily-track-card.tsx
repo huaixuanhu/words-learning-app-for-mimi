@@ -11,15 +11,6 @@ type DailyTrackCardProps = Readonly<{
   onSaveGoals: Parameters<typeof TodayGoalsForm>[0]["onSave"];
 }>;
 
-const metricLabels = [
-  ["addedToday", "Added today"],
-  ["suggestedReview", "Suggested review"],
-  ["reviewGoal", "Review goal"],
-  ["newWordGoal", "New-word goal"],
-  ["reviewedToday", "Reviewed today"],
-  ["learnedToday", "Learned today"],
-] as const;
-
 export function DailyTrackCard({
   personId,
   localDate,
@@ -37,7 +28,7 @@ export function DailyTrackCard({
           <p className="text-xs font-semibold uppercase tracking-normal text-[var(--mimi-text-muted)]">
             {recognition ? "Reading and meaning" : "Recall and sound"}
           </p>
-          <h2 className="mt-1 text-lg font-semibold text-[var(--mimi-text)]">
+          <h2 className="mimi-display-title mt-1 text-xl text-[var(--mimi-text)]">
             {recognition ? "Recognition Vocabulary" : "Active Vocabulary"}
           </h2>
         </div>
@@ -48,13 +39,15 @@ export function DailyTrackCard({
 
       {track.status === "available" ? (
         <>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-            {metricLabels.map(([key, label]) => (
-              <div key={key} className="rounded-md border border-[var(--mimi-border)] bg-[var(--mimi-surface-muted)] px-3 py-2.5">
-                <p className="text-xs leading-4 text-[var(--mimi-text-soft)]">{label}</p>
-                <p className="mt-1 text-xl font-semibold text-[var(--mimi-text)]">{track.metrics[key]}</p>
-              </div>
-            ))}
+          <div className="grid grid-cols-2 gap-2" aria-label="Today’s actual progress">
+            <div className="rounded-md border border-[var(--mimi-border)] bg-[var(--mimi-surface-muted)] px-3 py-2.5">
+              <p className="text-xs leading-4 text-[var(--mimi-text-soft)]">Reviewed today</p>
+              <p className="mt-1 text-xl font-semibold text-[var(--mimi-text)]">{track.metrics.reviewedToday}</p>
+            </div>
+            <div className="rounded-md border border-[var(--mimi-border)] bg-[var(--mimi-surface-muted)] px-3 py-2.5">
+              <p className="text-xs leading-4 text-[var(--mimi-text-soft)]">Learned today</p>
+              <p className="mt-1 text-xl font-semibold text-[var(--mimi-text)]">{track.metrics.learnedToday}</p>
+            </div>
           </div>
 
           {recognition ? (
@@ -70,7 +63,7 @@ export function DailyTrackCard({
                 href="/review?zone=new"
                 className="mimi-button-secondary mimi-focus-ring inline-flex min-h-11 items-center justify-center gap-2 px-3 text-sm font-semibold"
               >
-                New Words
+                New Learning
                 <ArrowRight aria-hidden="true" className="size-4" />
               </Link>
             </div>
@@ -87,7 +80,7 @@ export function DailyTrackCard({
                 href="/practice-lab?zone=new"
                 className="mimi-button-secondary mimi-focus-ring inline-flex min-h-11 items-center justify-center gap-2 px-3 text-sm font-semibold"
               >
-                New Words
+                New Learning
                 <ArrowRight aria-hidden="true" className="size-4" />
               </Link>
             </div>

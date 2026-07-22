@@ -5,6 +5,7 @@ import { CheckCircle2, Ear, Eye, Keyboard, Mic2, Undo2, Volume2 } from "lucide-r
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { SimplePanel } from "@/components/simple-panel";
+import { LearningZoneTabs } from "@/components/study/learning-zone-tabs";
 import {
   createStudyIdempotencyKey,
   type DailyStudyQueueResult,
@@ -595,6 +596,14 @@ export function ActivePracticeSession({ zone, mode }: Props) {
   return (
     <div className="grid gap-5 lg:grid-cols-[1fr_300px]">
       <section className="mimi-panel p-4 sm:p-6">
+        <div className="mb-5">
+          <LearningZoneTabs
+            zone={zone}
+            reviewHref={`/practice-lab?zone=review&mode=${mode}`}
+            newLearningHref={`/practice-lab?zone=new&mode=${mode}`}
+            label="Active learning zone"
+          />
+        </div>
         <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
           <div className="flex items-start gap-3">
             {completedAttempts.length ? (
@@ -609,9 +618,9 @@ export function ActivePracticeSession({ zone, mode }: Props) {
             ) : null}
             <div>
               <p className="text-sm font-semibold text-[var(--mimi-primary)]">
-                {zone === "new" ? "New Words" : "Review"} · {MODE_DETAILS[mode].label}
+                {zone === "new" ? "New Learning" : "Review"} · {MODE_DETAILS[mode].label}
               </p>
-              <h2 className="mt-1 text-xl font-semibold text-[var(--mimi-text)]">
+              <h2 className="mimi-display-title mt-1 text-2xl text-[var(--mimi-text)]">
                 {currentItem ? `${completedCount + 1} / ${sessionTotal || 1}` : "Active session"}
               </h2>
             </div>
@@ -827,9 +836,9 @@ export function ActivePracticeSession({ zone, mode }: Props) {
       <SimplePanel title="Session">
         <div className="grid grid-cols-3 gap-2">
           {[
-            ["Goal", zoneGoal ?? "-"],
-            ["Done", completedCount],
-            ["Left", sessionIds?.length ?? "-"],
+            ["Daily goal", zoneGoal ?? "-"],
+            [zone === "new" ? "Learned today" : "Reviewed today", zone === "new" ? metrics?.learnedToday ?? "-" : metrics?.reviewedToday ?? "-"],
+            ["Ready now", sessionIds?.length ?? "-"],
           ].map(([label, value]) => (
             <div key={label} className="rounded-md bg-[var(--mimi-surface-muted)] p-3">
               <p className="text-xs font-medium text-[var(--mimi-text-soft)]">{label}</p>

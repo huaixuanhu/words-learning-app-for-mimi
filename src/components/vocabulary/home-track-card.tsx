@@ -4,19 +4,12 @@ import { memo } from "react";
 import { CalmCard } from "@/components/ui/motion-primitives";
 import type { DailyStudyTrackSummary } from "@/lib/daily-study/types";
 
-const metricLabels = [
-  ["addedToday", "Added today"],
-  ["suggestedReview", "Suggested review"],
-  ["reviewGoal", "Review goal"],
-  ["newWordGoal", "New-word goal"],
-] as const;
-
 type HomeTrackCardProps = Readonly<{
   title: string;
   eyebrow: string;
   track: DailyStudyTrackSummary | null;
-  href: string;
-  cta: string;
+  reviewHref: string;
+  newLearningHref: string;
   Icon: typeof BookOpen;
   tone: string;
 }>;
@@ -66,8 +59,8 @@ export const HomeTrackCard = memo(function HomeTrackCard({
   title,
   eyebrow,
   track,
-  href,
-  cta,
+  reviewHref,
+  newLearningHref,
   Icon,
   tone,
 }: HomeTrackCardProps) {
@@ -79,21 +72,31 @@ export const HomeTrackCard = memo(function HomeTrackCard({
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-xs font-semibold uppercase tracking-normal text-[var(--mimi-text-muted)]">{eyebrow}</p>
-            <h3 className="mt-1.5 text-lg font-semibold text-[var(--mimi-text)]">{title}</h3>
+            <h3 className="mimi-display-title mt-1.5 text-xl text-[var(--mimi-text)]">{title}</h3>
           </div>
           <span className={`inline-flex size-9 shrink-0 items-center justify-center rounded-md ${tone}`}>
             <Icon aria-hidden="true" className="size-4.5" />
           </span>
         </div>
         <div className="grid grid-cols-2 gap-1.5">
-          {metricLabels.map(([key, label]) => (
-            <div key={key} className="rounded-md border border-[var(--mimi-border)] bg-[var(--mimi-surface-muted)] px-2 py-2">
-              <p className="text-[0.68rem] leading-4 text-[var(--mimi-text-soft)]">{label}</p>
-              <p className="mt-0.5 text-lg font-semibold text-[var(--mimi-text)]">
-                {metrics ? metrics[key] : "-"}
-              </p>
-            </div>
-          ))}
+          <div className="rounded-md border border-[var(--mimi-border)] bg-[var(--mimi-surface-muted)] px-3 py-2.5">
+            <p className="text-xs leading-4 text-[var(--mimi-text-soft)]">Review goal</p>
+            <p className="mt-0.5 text-xl font-semibold text-[var(--mimi-text)]">
+              {metrics ? metrics.reviewGoal : "-"}
+            </p>
+            <p className="mt-1 text-[0.68rem] leading-4 text-[var(--mimi-text-muted)]">
+              Suggested review · {metrics ? metrics.suggestedReview : "-"}
+            </p>
+          </div>
+          <div className="rounded-md border border-[var(--mimi-border)] bg-[var(--mimi-surface-muted)] px-3 py-2.5">
+            <p className="text-xs leading-4 text-[var(--mimi-text-soft)]">New learning goal</p>
+            <p className="mt-0.5 text-xl font-semibold text-[var(--mimi-text)]">
+              {metrics ? metrics.newWordGoal : "-"}
+            </p>
+            <p className="mt-1 text-[0.68rem] leading-4 text-[var(--mimi-text-muted)]">
+              Added today · {metrics ? metrics.addedToday : "-"}
+            </p>
+          </div>
         </div>
 
         <div className="grid gap-2.5 rounded-md border border-[var(--mimi-border)] bg-[var(--mimi-surface)] p-2.5">
@@ -112,13 +115,22 @@ export const HomeTrackCard = memo(function HomeTrackCard({
           />
         </div>
 
-        <Link
-          href={href}
-          className="mimi-button mimi-focus-ring mt-auto inline-flex min-h-11 w-fit items-center justify-center gap-2 px-3 text-sm font-semibold"
-        >
-          {cta}
-          <ArrowRight aria-hidden="true" className="size-4" />
-        </Link>
+        <div className="mt-auto grid grid-cols-2 gap-2">
+          <Link
+            href={reviewHref}
+            className="mimi-button mimi-focus-ring inline-flex min-h-11 items-center justify-center gap-1 px-2 text-xs font-semibold"
+          >
+            Review
+            <ArrowRight aria-hidden="true" className="size-4" />
+          </Link>
+          <Link
+            href={newLearningHref}
+            className="mimi-button-secondary mimi-focus-ring inline-flex min-h-11 items-center justify-center gap-1 px-2 text-xs font-semibold whitespace-nowrap"
+          >
+            New Learning
+            <ArrowRight aria-hidden="true" className="size-4" />
+          </Link>
+        </div>
       </div>
     </CalmCard>
   );

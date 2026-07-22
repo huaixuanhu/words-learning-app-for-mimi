@@ -73,9 +73,12 @@ export function TodayGoalsForm({
             aria-label={`${track.reviewProfile} review goal for today`}
             className="mimi-input min-h-11 px-3 text-base"
           />
+          <span className="text-xs text-[var(--mimi-text-muted)]">
+            Suggested review · {track.metrics.suggestedReview}
+          </span>
         </label>
         <label className="grid gap-1.5">
-          <span className="text-xs font-semibold text-[var(--mimi-text-soft)]">New-word goal</span>
+          <span className="text-xs font-semibold text-[var(--mimi-text-soft)]">New learning goal</span>
           <input
             name="newWordGoal"
             type="text"
@@ -86,6 +89,9 @@ export function TodayGoalsForm({
             aria-label={`${track.reviewProfile} new-word goal for today`}
             className="mimi-input min-h-11 px-3 text-base"
           />
+          <span className="text-xs text-[var(--mimi-text-muted)]">
+            Added today · {track.metrics.addedToday}
+          </span>
         </label>
       </div>
       <PressableButton
@@ -94,7 +100,7 @@ export function TodayGoalsForm({
         className="mimi-button-secondary mimi-focus-ring inline-flex min-h-11 items-center justify-center gap-2 px-3 text-sm font-semibold disabled:cursor-wait disabled:opacity-60"
       >
         <Save aria-hidden="true" className="size-4" />
-        {isSaving ? "Saving..." : "Save today"}
+        {isSaving ? "Saving..." : "Save today’s goals"}
       </PressableButton>
       {message ? (
         <p className="rounded-md bg-[var(--mimi-primary-soft)] px-3 py-2 text-xs leading-5 text-[var(--mimi-primary-deep)]">

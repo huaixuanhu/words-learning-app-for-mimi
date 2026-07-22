@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## 2026-07-22 13:53 AEST
+
+- Registered PF-002 as `Normal / Fixed locally` and reopened V2-8-2.3 after protected Preview feedback showed that Review/New Words navigation, goal hierarchy and session labels required clearer learner-facing structure.
+- Changed desktop navigation to `Review / New Learning`, mobile navigation to `Learn`, and added persistent accessible `Review / New Learning` tabs to Recognition and Active while preserving Active practice-mode selection.
+- Reworked Home and Study so `Review goal` and `New learning goal` are the two primary goal surfaces, with `Suggested review` and `Added today` as lighter supporting values. Session summaries now use `Daily goal`, zone-specific daily completion and `Ready now`; `Save today` now reads `Save today’s goals`.
+- Matched the desktop `Library at a glance` panel to the Today plan panel height and kept natural mobile stacking. Added Instrument Serif through `next/font` only for semantic English display titles and large vocabulary text; Geist remains on navigation, buttons, labels, numbers, inputs and body, and current Motion/reduced-motion behavior is unchanged.
+- Added focused UI contracts and local 1280/390 px browser acceptance. Full validation passes 91 files / 553 tests with the existing Postgres integration file/test skipped, lint, typecheck, three backup dry-runs, Production build and diff checks.
+- Corrected the historical PF-001 evidence note: Mimi independently confirmed the audio had no problem, although her device/browser was not recorded; iPhone + Safari remains untested.
+- Safety: no FSRS, Daily Episode, Schema, backup shape, API, TTS, AI, credential, environment, database, Preview/Production deployment, Production data or SSO state changed. Gate 2 is paused until PF-002 closes or is explicitly accepted, and would still require fresh approval.
+- Reason: make the two learning zones and daily goals immediately understandable while adding the requested Tradermath-like title character without reducing information-reading speed.
+
 ## 2026-07-22 00:27 AEST
 
 - Closed PF-001 as `High / Closed` after the user completed protected Preview playback on MacBook + Chrome across Settings Preview, Recognition vocabulary, Active vocabulary and example-word audio. The user confirmed the original problem was resolved and described the audio as “非常理想”.

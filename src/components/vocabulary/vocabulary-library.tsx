@@ -527,7 +527,7 @@ export function VocabularyLibrary() {
             <div className="grid gap-3 rounded-md border border-[#d8d1c2] bg-[#fffaf1]/64 p-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <h2 className="text-sm font-semibold text-[#203229]">Batch imported</h2>
+                  <h2 className="mimi-display-title text-lg text-[#203229]">Batch imported</h2>
                   <p className="text-xs leading-5 text-[#5f6d62]">
                     Undo a batch if it was added by mistake.
                   </p>
@@ -925,7 +925,14 @@ export function VocabularyLibrary() {
             ) : (
               <RotateCcw aria-hidden="true" className="mx-auto size-9 text-[var(--mimi-primary)]" />
             )}
-            <h2 id="library-confirm-title" className="mt-4 text-xl font-semibold text-[var(--mimi-text)]">
+            <h2
+              id="library-confirm-title"
+              className={`mt-4 text-xl text-[var(--mimi-text)] ${
+                pendingAction.type === "startFresh"
+                  ? "mimi-display-title"
+                  : "mimi-cjk font-semibold"
+              }`}
+            >
               {pendingAction.type === "delete"
                 ? "确认删除这个词条？"
                 : pendingAction.type === "startFresh"

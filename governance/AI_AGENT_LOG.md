@@ -1,5 +1,21 @@
 # AI Agent Log
 
+## 2026-07-22 13:53 AEST
+
+- Task: implement the user-confirmed PF-002 interaction and typography refinement discovered during protected Preview use.
+- Plan agreed: yes. The assistant first proposed the exact navigation, goal hierarchy, session-copy, layout and font boundary; the user confirmed Instrument Serif and explicitly limited it to the stated title/information-display scope so ordinary reading speed remains the priority.
+- Working tier: Tier 3. This tranche changes local learner UI, focused tests and canonical documents only; it does not use credentials, external providers, remote databases, deployments or Production data.
+- Interaction result: desktop navigation reads `Review / New Learning`, mobile uses `Learn`, and Recognition/Active share accessible persistent zone tabs. Home offers direct Review/New Learning actions; Recognition removes its redundant side-panel zone link while Active keeps the independent `Change practice mode` control.
+- Information result: Home and Study foreground only `Review goal` and `New learning goal`; `Suggested review` and `Added today` are lighter supporting values. Session summaries use `Daily goal`, `Reviewed today`/`Learned today` and `Ready now`; the save action reads `Save today’s goals`.
+- Visual result: the desktop Today plan and Library summary panels share one grid-row height. Instrument Serif is loaded with the one-weight Latin `next/font` contract and applied only to semantic English titles and large vocabulary words; Geist, ChillRoundF and all accepted Motion/reduced-motion behavior remain intact.
+- Browser evidence: local 1280 px Home had no overlay/overflow, both top panels measured 488 px at the same top coordinate, and the page title computed to Instrument Serif. Local 390 px Home, Study, Recognition New Learning and Active New Learning had no horizontal overflow or framework overlay and displayed the accepted navigation, tabs, goals and session labels.
+- Changed files: added the PF-002 child plan, shared learning-zone tabs and focused contract test; updated navigation, Home, Study, Recognition, Active, bounded title typography, affected copy tests, V2 Master/register/cutover handoff, Architecture, README, AGENTS, Changelog and this governance record.
+- Validation: six focused files / 24 tests and the full 91-file / 553-test suite pass, with the existing Postgres integration file/test skipped. Lint, typecheck, all three backup dry-runs, Production build and diff checks pass; final governance validation follows this synchronized record.
+- Evidence correction: Mimi independently confirmed that PF-001 audio had no problem. Her exact device/browser remains unrecorded, and iPhone + Safari remains untested.
+- Safety notes: no FSRS, Daily Episode, rating, queue, data metric, Schema, migration, backup shape, API, TTS, AI, paid-provider, credential, environment, remote database, Preview/Production deployment, Production write, GitHub push/PR/merge or SSO action occurred.
+- Residual boundary: PF-002 remains `Fixed locally`. Exact protected Preview deployment and human retest require fresh approval; V2-8-3 Gate 2 remains paused and separately approval-gated.
+- Reason: reduce navigation and metric interpretation friction while adopting the requested editorial display type only where it helps visual hierarchy.
+
 ## 2026-07-22 00:27 AEST
 
 - Task: record the user's final PF-001 real-device acceptance, close the TTS finding and determine whether V2-8-2.3 can complete.

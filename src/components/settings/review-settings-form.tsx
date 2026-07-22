@@ -125,7 +125,7 @@ export function ReviewSettingsForm() {
           />
           <DailyGoalInput
             name="recognitionNewWordGoal"
-            label="New-word goal"
+            label="New learning goal"
             value={recognition?.newWordGoal ?? recognitionMetrics?.newWordGoal ?? 0}
           />
         </div>
@@ -141,7 +141,7 @@ export function ReviewSettingsForm() {
           />
           <DailyGoalInput
             name="activeNewWordGoal"
-            label="New-word goal"
+            label="New learning goal"
             value={active?.newWordGoal ?? activeMetrics?.newWordGoal ?? 0}
           />
         </div>

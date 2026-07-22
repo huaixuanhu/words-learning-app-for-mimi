@@ -73,7 +73,7 @@ export function ResetTodayControl({
             <RotateCcw aria-hidden="true" className="size-5" />
           </span>
           <div>
-            <h2 className="text-base font-semibold text-[var(--mimi-panel-dark-text)]">Today’s progress</h2>
+            <h2 className="mimi-display-title text-xl text-[var(--mimi-panel-dark-text)]">Today’s progress</h2>
             <p className="mt-1 text-sm leading-6 text-[var(--mimi-panel-dark-muted)]">
               Clearing today returns both Tracks to the start of this study day.
             </p>
@@ -106,7 +106,7 @@ export function ResetTodayControl({
         dismissOnBackdrop={false}
       >
         <RotateCcw aria-hidden="true" className="mx-auto size-9 text-[var(--mimi-primary)]" />
-        <h2 id="reset-today-first-title" className="mt-4 text-xl font-semibold text-[var(--mimi-text)]">
+        <h2 id="reset-today-first-title" className="mimi-display-title mt-4 text-2xl text-[var(--mimi-text)]">
           Reset today’s progress?
         </h2>
         <div className="mt-5 grid grid-cols-2 gap-3">

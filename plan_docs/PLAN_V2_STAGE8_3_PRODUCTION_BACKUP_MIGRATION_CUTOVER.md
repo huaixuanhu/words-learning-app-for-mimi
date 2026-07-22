@@ -1,7 +1,7 @@
 # Words Learning App For Mimi V2-8-3：Production Backup, Migration And V2 Cutover
 
 Created: 2026-07-19 AEST
-Last updated: 2026-07-21 AEST
+Last updated: 2026-07-22 AEST
 
 Source plan:
 
@@ -15,6 +15,7 @@ Derived from:
 - `plan_docs/PLAN_V2_STAGE8_2_2_REVIEW_AUDIO_BILINGUAL_EXAMPLES.md`
 - `plan_docs/PLAN_V2_STAGE8_2_3_PREVIEW_FEEDBACK_STABILISATION.md`
 - `plan_docs/PLAN_V2_STAGE8_2_3_1_GOOGLE_CLOUD_STANDARD_TTS.md`
+- `plan_docs/PLAN_V2_STAGE8_2_3_2_LEARNING_NAVIGATION_GOAL_HIERARCHY_TYPOGRAPHY.md`
 - `plan_docs/PLAN_V2_STAGE7B_1_FORMAL_AI_LOCAL_ORCHESTRATION.md`
 - `plan_docs/PLAN_V2_STAGE7B_2_NONPRODUCTION_PROVIDER_PROOF.md`
 - `plan_docs/PLAN_V2_STAGE3_DATA_MODEL_BACKUP_PARITY.md`
@@ -34,13 +35,14 @@ Input evidence:
 - `db/migrations/0003_v2_schema6_data_model.sql` 已在非 Production 目标通过演练，尚未在 Production `main` 执行。
 - V2-8-2.2 已增加 `0004_v2_bilingual_examples.sql`、JSON backup Version 4、双语例句和新版 AI draft contract；`0004` 已在长期非 Production `staging` 执行并随 PF-001 exact application 在 protected Preview 验证，Production 尚未执行。
 - 用户在 2026-07-20 把 V2-8-2.3 插入 Production cutover 前，专门收集并关闭 protected Preview 真实使用问题；整个 V2 明确不包含 SSO。
-- 2026-07-22 PF-001 完成：Google Cloud Standard-C、`0005`、Preview-only WIF、`staging` migration、exact deployment 与机器路径验证均完成；使用者在 MacBook + Chrome 通过 Settings、Recognition、Active 与例句词汇朗读，确认原问题解决且音效非常理想。独立 Mimi 与 iPhone + Safari 结果未被写成通过。Production identity、迁移与部署仍不存在。
+- 2026-07-22 PF-001 完成：Google Cloud Standard-C、`0005`、Preview-only WIF、`staging` migration、exact deployment 与机器路径验证均完成；使用者在 MacBook + Chrome 通过 Settings、Recognition、Active 与例句词汇朗读，确认原问题解决且音效非常理想。Mimi 后续独立确认音效没有问题，但没有记录其设备/浏览器；iPhone + Safari 尚未测试。Production identity、迁移与部署仍不存在。
+- 2026-07-22 PF-002 重新打开 V2-8-2.3：Review/New Learning 导航、两项目标层级、会话文案、桌面面板对齐和限定范围的 Instrument Serif 已 `Fixed locally`；protected Preview deployment 与人工复测尚未批准或执行。
 - repository 现有三套 JSON backup dry-run（备份模拟）证明应用资料形状可迁移，但它们不等同于 Production 独立加密 logical backup（逻辑备份）与真实 restore（恢复）证明。
 
 Consumer / next stage:
 
 - 本文件直接约束 V2-8-3 的本地守门实现、远程只读核验、备份恢复演练、Production clone（正式数据克隆）演练、正式切换、验收与收口。
-- Gate 0B、本地 Gate 1 与 V2-8-2.3 已完成。Gate 2 的 metadata-only remote inventory（仅元资料远程清单）与官方事实刷新现在是下一候选工作，但仍需新的明确批准。
+- Gate 0B 与本地 Gate 1 已完成。V2-8-2.3 因 PF-002 再次 active；Gate 2 的 metadata-only remote inventory（仅元资料远程清单）与官方事实刷新暂停到 PF-002 关闭或由人明确接受，之后仍需新的明确批准。
 - 如果后续必须派生执行记录或事故恢复文件，新文件开头必须继续引用本文件为 `Source plan`，并写明 `Scope`、`Non-Scope` 与 `Exit criteria`，不得形成无来源的平级计划。
 - V2-8-3 全部完成后，V2 替换 V1；multi-user confidential isolation（多用户机密隔离）仍留在 Version-hold 计划。
 
@@ -54,7 +56,7 @@ Target capability tier: Tier 3
 
 Working tier: Tier 3
 
-Status: Gate 0B protected Preview performance verification、Gate 1 local guards 与 V2-8-2.3 均已完成；PF-001 为 `High / Closed`. Gate 2 是下一候选工作，但尚未批准。Gate 2–7 的远程 Production inventory、备份、credential、Neon/Vercel/Gemini/Google Cloud TTS 变更、Production migration（正式迁移）、正式部署和正式数据写入仍未批准。
+Status: Gate 0B protected Preview performance verification 与 Gate 1 local guards 已完成；PF-001 为 `High / Closed`，PF-002 为 `Normal / Fixed locally`，V2-8-2.3 因此保持 active。Gate 2 暂停，且在 PF-002 收口后仍须重新批准。Gate 2–7 的远程 Production inventory、备份、credential、Neon/Vercel/Gemini/Google Cloud TTS 变更、Production migration（正式迁移）、正式部署和正式数据写入仍未批准。
 
 ## Scope
 
@@ -137,7 +139,7 @@ Status: Gate 0B protected Preview performance verification、Gate 1 local guards
 | --- | --- | --- | --- |
 | 0 | 记录 protected Preview 性能版本与恢复资源状态；经批准后部署并验证 V2-8-2.1 | 已完成 | 停在 Gate 2 前；未授权 alias/environment/checkpoint mutation |
 | 1 | 实现本地 Production guards、inspectors、maintenance/client-version/AI gates 与 tests | 已批准 | 本次 local tranche（本地批次）在此完成并交付 |
-| 2 | 远程只读 Production/Vercel/Neon/Gemini inventory 与官方事实刷新 | 未批准；等待 V2-8-2.3 关闭 | 展示脱敏证据并等待 backup/rehearsal 批准 |
+| 2 | 远程只读 Production/Vercel/Neon/Gemini inventory 与官方事实刷新 | 未批准；等待 PF-002 关闭或明确接受 | 展示脱敏证据并等待 backup/rehearsal 批准 |
 | 3 | 选择独立加密 logical backup 方法并完成 restore rehearsal | 未批准 | 备份和恢复证据通过后等待 clone migration 批准 |
 | 4 | 在非空 Production clone 演练 Schema 5 → 6、parity 与 recovery | 未批准 | 删除/保留临时资源须按批准执行；main 仍不变 |
 | 5 | 暂停写入、最终备份、Production-only secrets、迁移 `main`、promote V2 | 未批准 | 每个 Production mutation 前按本 Gate 的 stop point 再确认 |
@@ -243,7 +245,7 @@ Implemented contract:
 - full `npm run lint`、`npm run typecheck`、`npm run test`、三套 backup dry-run、`npm run build`、`npm run governance:preflight` 与 `git diff --check`。
 - 审查 changed files、tracked/untracked inventory 和 secret-shaped diff；不运行任何 remote integration test。
 
-**Approval Stop 1:** Gate 1 完成时结束了原始本地批次。后续 Gate 0B 依靠新的明确批准独立执行；本地 tests 与 Gate 0B 结果都不授权进入 Gate 2。V2-8-2.3 已关闭其唯一 High 问题，但进入 Gate 2 仍须再次取得明确批准。
+**Approval Stop 1:** Gate 1 完成时结束了原始本地批次。后续 Gate 0B 依靠新的明确批准独立执行；本地 tests 与 Gate 0B 结果都不授权进入 Gate 2。V2-8-2.3 已关闭 PF-001，但 PF-002 仍等待 protected Preview 人工收口；进入 Gate 2 还须再次取得明确批准。
 
 ## Gate 2 — Remote Read-only Inventory And Official Fact Refresh
 
@@ -448,7 +450,7 @@ Gate 1 实际文件与职责：
 - Gate 1 guard tooling、focused/full tests、build、backup dry-runs、governance 和 diff review 通过。
 - 最终结果为 13 个聚焦文件 / 138 项测试通过；完整 Vitest 为 77 个文件 / 484 项通过，既有 Postgres integration 文件 / 测试各跳过 1 项。Lint、TypeScript、三套备份模拟、manifest template、Production build、Tier 3 governance 与 diff 检查均通过；两轮独立只读复核未留下 P0/P1/P2。
 - Gate 1 当时保持所有 Production/Preview/Neon/Gemini 连接、credential、remote inventory、deployment 和 mutation 未执行；后续 Gate 0B 的独立批准与证据记录在本文件前部。
-- 向用户提交 changed-file inventory、验证结果和已知限制；Gate 0B 已完成，进入 Gate 2 仍需要新的批准。
+- 向用户提交 changed-file inventory、验证结果和已知限制；Gate 0B 已完成，PF-002 收口前不进入 Gate 2，之后仍需要新的批准。
 
 ### Full V2-8-3 completion
 

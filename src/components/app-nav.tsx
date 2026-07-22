@@ -104,7 +104,7 @@ export function MobileBottomNav() {
                 <span className="relative z-10">
                   <Icon aria-hidden="true" className="size-5" />
                 </span>
-                <span className="relative z-10">{item.label}</span>
+                <span className="relative z-10">{"mobileLabel" in item ? item.mobileLabel : item.label}</span>
               </Link>
             );
           })}
@@ -144,7 +144,7 @@ export function MobileBottomNav() {
         panelClassName="sm:max-w-md"
       >
         <div className="flex items-start justify-between gap-4">
-          <h2 id="mobile-more-title" className="text-2xl font-semibold text-[var(--mimi-text)]">
+          <h2 id="mobile-more-title" className="mimi-display-title text-2xl text-[var(--mimi-text)]">
             More
           </h2>
           <button

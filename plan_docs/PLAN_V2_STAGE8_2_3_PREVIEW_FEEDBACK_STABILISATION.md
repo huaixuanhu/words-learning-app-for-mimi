@@ -1,7 +1,7 @@
 # Words Learning App For Mimi V2-8-2.3：Preview Feedback Stabilisation
 
 Created: 2026-07-20 AEST
-Last updated: 2026-07-21 AEST
+Last updated: 2026-07-22 AEST
 
 Source plan:
 
@@ -41,7 +41,7 @@ Exit criteria:
 - 所有 `Blocker` 与 `High` 问题关闭；`Normal` 与 `Cosmetic` 问题已关闭、由人明确接受，或转入有来源的后续/Version-hold 计划。
 - 用户与 Mimi 各完成至少一段代表性学习流程；如果某位使用者无法参与，执行记录必须写明证据限制，不能把单人验收描述成双人通过。
 - 如果修复涉及跨日调度、Daily Plan 或 Dashboard 日期归属，至少跨过一个 `Australia/Melbourne` natural-day boundary（自然日边界）复测。
-- Recognition / Active、Review / New Words、键盘/鼠标/触控、手机/桌面、朗读、Library、Add Words、Backup 与 AI resting/degraded path（AI 关闭或不可用路径）均没有未解释的回归。
+- Recognition / Active、Review / New Learning、键盘/鼠标/触控、手机/桌面、朗读、Library、Add Words、Backup 与 AI resting/degraded path（AI 关闭或不可用路径）均没有未解释的回归。
 - PF-001 的 Google Cloud Standard TTS 已通过派生计划的本地/Preview/真人试听退出条件；在此之前不得仅凭文档选择把它标为关闭。
 - 当前完整 validation（验证）、治理预检、diff 检查和 protected Preview runtime/log 检查通过；所有真实远端证据绑定 exact commit 与 exact environment。
 - 发布候选版本、已接受限制和剩余远期事项写回 V2 Master、Architecture、README、AGENTS、Changelog 与 AI Agent Log。
@@ -52,6 +52,7 @@ Consumer / next stage:
 - `plan_docs/PLAN_V2_STAGE8_3_PRODUCTION_BACKUP_MIGRATION_CUTOVER.md` Gate 2
 - `plan_docs/PLAN_VERSION_HOLD_MULTI_USER_CONFIDENTIAL_ISOLATION.md`
 - `plan_docs/PLAN_V2_STAGE8_2_3_1_GOOGLE_CLOUD_STANDARD_TTS.md`
+- `plan_docs/PLAN_V2_STAGE8_2_3_2_LEARNING_NAVIGATION_GOAL_HIERARCHY_TYPOGRAPHY.md`
 
 Document nature:
 
@@ -63,7 +64,7 @@ Target capability tier: Tier 3
 
 Working tier: Tier 3
 
-Status: complete on 2026-07-22. PF-001 is `High / Closed`: its exact `en-AU-Standard-C` Voice Contract, local and provider evidence, additive `0005`, Preview-only WIF, `staging` migration, exact deployment, Kill Switch checks and machine-route verification are complete. The user then passed Settings Preview, Recognition, Active and example-word playback on MacBook + Chrome and described the audio as “非常理想”. No other `PF` item is registered. Mimi did not provide a separate test result, and iPhone + Safari is a planned occasional-use environment rather than a claimed passing environment; both are explicit evidence limitations. V2-8-3 Gate 2 is now the next candidate stage but remains unapproved.
+Status: active again on 2026-07-22. PF-001 remains `High / Closed`: its exact `en-AU-Standard-C` Voice Contract, local and provider evidence, additive `0005`, Preview-only WIF, `staging` migration, exact deployment, Kill Switch checks and machine-route verification are complete. The user passed Settings Preview, Recognition, Active and example-word playback on MacBook + Chrome and described the audio as “非常理想”; Mimi later independently confirmed that the sound had no problem, while her exact device/browser was not recorded. PF-002 is `Normal / Fixed locally` under `plan_docs/PLAN_V2_STAGE8_2_3_2_LEARNING_NAVIGATION_GOAL_HIERARCHY_TYPOGRAPHY.md`: navigation, goal hierarchy, session labels, desktop alignment and bounded Instrument Serif typography are implemented and locally validated. Its protected Preview deployment and human retest remain pending. iPhone + Safari remains an untested occasional-use environment. V2-8-3 Gate 2 is paused again until PF-002 is closed or explicitly accepted.
 
 ## 1. Stage Position And Release Effect
 
@@ -75,11 +76,12 @@ V2-8-2 protected Preview rehearsal
   -> V2-8-2.2 keyboard / voice / bilingual examples
   -> V2-8-2.3 Preview feedback stabilisation
        -> V2-8-2.3-1 PF-001 Google Cloud Standard TTS
+       -> V2-8-2.3-2 PF-002 learning navigation / goal hierarchy / typography
   -> V2-8-3 Gate 2–7 Production cutover work
 ```
 
 - V2-8-3 Gate 0B 与 local Gate 1 保留为已完成历史，不撤销、不重新编号。
-- V2-8-3 Gate 2 曾在本阶段关闭前暂停。V2-8-2.3 现已完成，因此 Gate 2 恢复为下一候选工作，但仍须新的明确批准。
+- V2-8-3 Gate 2 曾在 PF-001 关闭后恢复为下一候选工作。PF-002 登记后，本阶段重新进入 active，Gate 2 再次暂停；PF-002 关闭或由人明确接受后才重新评估。
 - `staging` 已先完成 `0004` 与 `0005`；protected Preview 随后部署 exact commit `deab32f3ab96025116597881b7b69c9dde84b8f4`，并通过 Kill Switch closed/open、四条机器路径和 MacBook + Chrome 人工验收。
 - 本阶段允许多轮本地修复和 Preview 复测，但每一轮必须绑定问题编号、exact commit、验证结果和人工结论。
 
@@ -198,20 +200,56 @@ User or Mimi retest: user selected C from four current en-AU Standard candidates
   Recognition, Active vocabulary and example-word playback on MacBook + Chrome, confirmed the
   original problem was resolved, and described the audio as “非常理想”.
 Resolution or accepted limitation: PF-001 closed on 2026-07-22. The two minor local-corpus stress
-  observations and two unrecorded corpus entries remain accepted limitations. Mimi did not provide
-  an independent retest, so this is not described as dual-user acceptance. iPhone + Safari is a
-  planned occasional-use environment and has not been claimed as tested; a future device-specific
+  observations and two unrecorded corpus entries remain accepted limitations. Mimi later independently
+  confirmed that the sound had no problem, but her exact device/browser was not recorded. iPhone + Safari
+  is a planned occasional-use environment and has not been claimed as tested; a future device-specific
   problem should receive a new PF record rather than reopening this evidence silently.
 ```
 
-### Stage closeout — 2026-07-22
+#### PF-002 — Learning navigation and goal information are difficult to parse
+
+```text
+ID: PF-002
+Reported at / reporter: 2026-07-22 / user and Mimi feedback summarized by user
+Area / route / device / browser: Home, Study, Recognition, Active / protected Preview /
+  MacBook + Chrome; responsive behavior also requires local 390 px verification
+Observed behavior: Review navigation also contains New Words; Home/Study give goal, suggestion,
+  added and actual values similar visual weight; session Goal/Done/Left can look contradictory;
+  Home Library panel is shorter than Today’s plan; title typography lacks the desired display hierarchy.
+Expected behavior: Review and New Learning are predictable entry points; goals are primary and their
+  reference values are visibly secondary; session values say exactly what they count; desktop panels
+  align; Instrument Serif appears only in English display titles and large vocabulary words.
+Reproduction steps and evidence: open Home, compare the four equal metric tiles and two top panels;
+  open Study and compare six equal metrics with the two editable inputs; enter /review?zone=new while
+  the sidebar still says Review; compare Goal/Done/Left after a queue has fewer ready entries than the
+  daily goal. User supplied protected Preview screenshots and confirmed the derived plan.
+Priority / status: Normal / Fixed locally
+Scope decision: bounded learner-facing Information Architecture, copy, responsive layout and typography
+  change under plan_docs/PLAN_V2_STAGE8_2_3_2_LEARNING_NAVIGATION_GOAL_HIERARCHY_TYPOGRAPHY.md.
+  Stable route parameters, data contracts and learning behavior remain unchanged.
+Files or contracts affected: navigation labels, Home/Study goal composition, Recognition/Active zone
+  navigation and session summary, AppShell/display-title typography, focused UI contracts and docs.
+Local validation: focused PF-002/mobile/dashboard/Recognition/Active/copy contracts pass 6 files /
+  24 tests. Full Vitest passes 91 files / 553 tests with the existing Postgres integration file/test
+  skipped. Lint, typecheck, three backup dry-runs, Production build and diff checks pass. Local
+  production-build browser checks at 1280 px and 390 px found no framework overlay or horizontal
+  overflow. Desktop Today’s plan and Library at a glance both measured 488 px high; 390 px Home,
+  Study, Recognition New Learning and Active New Learning rendered the intended navigation and copy.
+Preview deployment / exact commit: pending; no deployment is approved by this local batch.
+User or Mimi retest: pending after an exact protected Preview deployment receives separate approval.
+Resolution or accepted limitation: open at Fixed locally. Instrument Serif is self-hosted by Next.js
+  with latin/400/normal/display-swap only; Geist remains on navigation, controls, metrics and body.
+  Exact protected Preview deployment and user/Mimi retest are still required before Closed.
+```
+
+### First stage closeout after PF-001 — 2026-07-22 (historical; superseded by PF-002 reopening)
 
 - Register result：PF-001 是本阶段唯一登记项，现为 `High / Closed`；未剩余 `Blocker`、`High`、`Normal` 或 `Cosmetic` 项目。
 - Human result：使用者在 MacBook + Chrome 完成 Settings Preview、Recognition、Active vocabulary 与例句词汇朗读，确认朗读问题已经解决且音效非常理想。
-- Evidence limits：没有独立 Mimi 复测结果，不写成 user + Mimi 双人通过；iPhone + Safari 仅是未来少量使用环境，尚未写成兼容性通过。现有明确 device fallback 保留；未来若出现设备特定问题，进入新的 `PF` 记录。
+- Evidence limits：Mimi 后续独立确认音效没有问题，但未记录她的 exact device/browser；iPhone + Safari 仅是未来少量使用环境，尚未写成兼容性通过。现有明确 device fallback 保留；未来若出现设备特定问题，进入新的 `PF` 记录。
 - Unaffected criteria：本修复不改变跨日调度、Daily Plan、Dashboard、FSRS、Motion、键盘或学习资料；相关既有验证继续有效。
 - Candidate：exact code commit `deab32f3ab96025116597881b7b69c9dde84b8f4`、deployment `dpl_9kJb31QgP7tj3RnfYL2oubprUzNA`、Schema 6 + `0004` + `0005`、JSON backup Version 4 和 90 files / 550 tests 构成本阶段冻结证据。
-- Decision：V2-8-2.3 标记 `complete`。Gate 2 只恢复为下一候选阶段；本结论不批准任何 Production、credential、database、provider 或 deployment 操作。
+- Historical decision：V2-8-2.3 当时标记 `complete`。PF-002 随后重新打开本阶段并再次暂停 Gate 2；该历史结论仍不批准任何 Production、credential、database、provider 或 deployment 操作。
 
 ## 5. Bounded Fix Loop
 

@@ -421,8 +421,18 @@ select {
   border-color: rgb(216 209 194 / 0.74);
 }
 
+.mimi-display-title {
+  font-family: var(--font-instrument-serif), Georgia, "Times New Roman", var(--font-cjk-rounded);
+  font-weight: 400;
+  font-synthesis: none;
+  letter-spacing: -0.025em;
+}
+
 .mimi-word-serif {
-  font-family: Georgia, "Times New Roman", var(--font-cjk-rounded);
+  font-family: var(--font-instrument-serif), Georgia, "Times New Roman", var(--font-cjk-rounded);
+  font-weight: 400;
+  font-synthesis: none;
+  letter-spacing: -0.015em;
 }
 
 .mimi-cjk {

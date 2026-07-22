@@ -36,7 +36,7 @@ export const MemoryOutlookCard = memo(function MemoryOutlookCard({
   return (
     <section className="rounded-lg border border-[var(--mimi-border)] bg-[var(--mimi-surface)] p-3 sm:p-4" aria-labelledby="memory-outlook-title">
       <div className="flex flex-wrap items-center gap-2">
-        <h3 id="memory-outlook-title" className="text-sm font-semibold text-[var(--mimi-text)]">
+        <h3 id="memory-outlook-title" className="mimi-display-title text-lg text-[var(--mimi-text)]">
           Memory outlook
         </h3>
         <span className="mimi-pill-muted px-2 py-0.5 text-[0.68rem] font-semibold">FSRS estimate</span>

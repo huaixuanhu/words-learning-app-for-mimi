@@ -45,7 +45,7 @@ export const LearningRhythmChart = memo(function LearningRhythmChart({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <h3 id="learning-rhythm-title" className="text-sm font-semibold text-[var(--mimi-text)]">
+            <h3 id="learning-rhythm-title" className="mimi-display-title text-lg text-[var(--mimi-text)]">
               Learning rhythm
             </h3>
             <span className="mimi-pill-muted px-2 py-0.5 text-[0.68rem] font-semibold">Actual</span>
