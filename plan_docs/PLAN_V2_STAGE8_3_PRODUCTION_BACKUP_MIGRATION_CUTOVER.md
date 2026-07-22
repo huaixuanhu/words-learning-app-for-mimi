@@ -16,6 +16,7 @@ Derived from:
 - `plan_docs/PLAN_V2_STAGE8_2_3_PREVIEW_FEEDBACK_STABILISATION.md`
 - `plan_docs/PLAN_V2_STAGE8_2_3_1_GOOGLE_CLOUD_STANDARD_TTS.md`
 - `plan_docs/PLAN_V2_STAGE8_2_3_2_LEARNING_NAVIGATION_GOAL_HIERARCHY_TYPOGRAPHY.md`
+- `plan_docs/PLAN_V2_STAGE8_3_GATE2_REMOTE_READ_ONLY_INVENTORY.md`
 - `plan_docs/PLAN_V2_STAGE7B_1_FORMAL_AI_LOCAL_ORCHESTRATION.md`
 - `plan_docs/PLAN_V2_STAGE7B_2_NONPRODUCTION_PROVIDER_PROOF.md`
 - `plan_docs/PLAN_V2_STAGE3_DATA_MODEL_BACKUP_PARITY.md`
@@ -36,14 +37,14 @@ Input evidence:
 - V2-8-2.2 已增加 `0004_v2_bilingual_examples.sql`、JSON backup Version 4、双语例句和新版 AI draft contract；`0004` 已在长期非 Production `staging` 执行并随 PF-001 exact application 在 protected Preview 验证，Production 尚未执行。
 - 用户在 2026-07-20 把 V2-8-2.3 插入 Production cutover 前，专门收集并关闭 protected Preview 真实使用问题；整个 V2 明确不包含 SSO。
 - 2026-07-22 PF-001 完成：Google Cloud Standard-C、`0005`、Preview-only WIF、`staging` migration、exact deployment 与机器路径验证均完成；使用者在 MacBook + Chrome 通过 Settings、Recognition、Active 与例句词汇朗读，确认原问题解决且音效非常理想。Mimi 后续独立确认音效没有问题，但没有记录其设备/浏览器；iPhone + Safari 尚未测试。Production identity、迁移与部署仍不存在。
-- 2026-07-22 PF-002 重新打开 V2-8-2.3：Review/New Learning 导航、两项目标层级、会话文案和桌面面板对齐保留。历史 Instrument Serif 版本完成 exact protected Preview 机器验收后，用户在实际使用中认为字体不舒服；现已恢复 Geist 标题与原有大词 fallback。新 exact commit `54c8ca4492ff9b13d095ea0bd0d3d7ca702c3c2f` 已作为 protected Preview deployment `dpl_EmRVmp5YDTKgnh1VEtVBozwhRp6J` Ready，状态为 `Normal / Preview-ready`，仍需人工复测。
-- 2026-07-22 PF-003 登记并修复：Active New Learning/Review 现复用 Recognition 完成弹窗和本地 Mimi 完成音效，覆盖三种 Active 模式。Exact commit `acd009cc3879275dffa1d22c470b6c82fd1f8263` 已作为 protected Preview deployment `dpl_BAYB3tDx1m4ybKFRtw9rdf32jZon` Ready；状态为 `Normal / Preview-ready`，仍需人工音效复测。
+- 2026-07-22 PF-002 重新打开 V2-8-2.3：Review/New Learning 导航、两项目标层级、会话文案和桌面面板对齐保留。历史 Instrument Serif 版本完成 exact protected Preview 机器验收后，用户在实际使用中认为字体不舒服；现已恢复 Geist 标题与原有大词 fallback。新 exact commit `54c8ca4492ff9b13d095ea0bd0d3d7ca702c3c2f` 已作为 protected Preview deployment `dpl_EmRVmp5YDTKgnh1VEtVBozwhRp6J` Ready。用户随后明确接受 PF-002，以 `Normal / Closed by explicit acceptance` 收口，不虚构一次新的舒适度复测。
+- 2026-07-22 PF-003 登记并修复：Active New Learning/Review 现复用 Recognition 完成弹窗和本地 Mimi 完成音效，覆盖三种 Active 模式。Exact commit `acd009cc3879275dffa1d22c470b6c82fd1f8263` 已作为 protected Preview deployment `dpl_BAYB3tDx1m4ybKFRtw9rdf32jZon` Ready。用户随后明确接受 PF-003，以 `Normal / Closed by explicit acceptance` 收口，不声称完成了新的真人音效试听。
 - repository 现有三套 JSON backup dry-run（备份模拟）证明应用资料形状可迁移，但它们不等同于 Production 独立加密 logical backup（逻辑备份）与真实 restore（恢复）证明。
 
 Consumer / next stage:
 
 - 本文件直接约束 V2-8-3 的本地守门实现、远程只读核验、备份恢复演练、Production clone（正式数据克隆）演练、正式切换、验收与收口。
-- Gate 0B 与本地 Gate 1 已完成。V2-8-2.3 因 PF-002 / PF-003 保持 active；Gate 2 的 metadata-only remote inventory（仅元资料远程清单）与官方事实刷新暂停到所有 open PF 关闭或由人明确接受，之后仍需新的明确批准。
+- Gate 0B、本地 Gate 1 与 Gate 2 已完成。用户明确接受 PF-002 / PF-003，并另行批准 Gate 2 metadata-only remote inventory（仅元资料远程清单）与上线前本地收口。Gate 2 证据见 `plan_docs/PLAN_V2_STAGE8_3_GATE2_REMOTE_READ_ONLY_INVENTORY.md`；当前停在 Approval Stop 2，等待 Gate 3 独立批准。
 - 如果后续必须派生执行记录或事故恢复文件，新文件开头必须继续引用本文件为 `Source plan`，并写明 `Scope`、`Non-Scope` 与 `Exit criteria`，不得形成无来源的平级计划。
 - V2-8-3 全部完成后，V2 替换 V1；multi-user confidential isolation（多用户机密隔离）仍留在 Version-hold 计划。
 
@@ -57,7 +58,7 @@ Target capability tier: Tier 3
 
 Working tier: Tier 3
 
-Status: Gate 0B protected Preview performance verification 与 Gate 1 local guards 已完成；PF-001 为 `High / Closed`，PF-002 与 PF-003 均为 `Normal / Preview-ready`。Gate 2 暂停，且在所有 open PF 收口后仍须重新批准。Gate 2–7 的远程 Production inventory、备份、credential、Neon/Vercel/Gemini/Google Cloud TTS 变更、Production migration（正式迁移）、正式部署和正式数据写入仍未批准。
+Status: Gate 0B protected Preview performance verification、Gate 1 local guards 与 Gate 2 remote read-only inventory 已完成。PF-001 为 `High / Closed`；PF-002 与 PF-003 均为 `Normal / Closed by explicit acceptance`，V2-8-2.3 再次 complete。当前停在 Approval Stop 2。Gate 3–7 的备份、credential mutation、Neon/Vercel/Gemini/Google Cloud TTS 变更、Production migration（正式迁移）、正式部署和正式数据写入仍未批准。
 
 ## Scope
 
@@ -99,7 +100,7 @@ Status: Gate 0B protected Preview performance verification 与 Gate 1 local guar
 - rollback unit（回退单元）始终是 application artifact + database state（应用版本与数据库状态）这一对。
 - V1 deployment 只能与已确认的 Schema 5 recovery state 一起恢复；V2 deployment 只能与已确认的 Schema 6 state 一起运行。若切换期间旧 V1 database credential 已旋转或撤销，rollback 需要从 retained V1 artifact/commit 以新批准的 Schema 5 credential 重建，不能把旧 deployment URL 直接重新指向 alias 后假定可写。
 - 迁移失败或 V2 写入开放前发现 blocker 时：保持 maintenance，确认数据库已回到 Schema 5，再恢复指定 V1 deployment。顺序与证据必须在 clone 演练中先通过。
-- `0003` 与 `0004` 必须按固定顺序在同一 transaction（事务）内执行；仍须以迁移后 inspector 的实际结果判断成功，不能只依赖 command exit code（命令退出码）。
+- `0003`、`0004` 与 `0005` 必须按固定顺序在同一 transaction（事务）内执行；仍须以迁移后 inspector 的实际结果判断成功，不能只依赖 command exit code（命令退出码）。
 
 ### 3. Post-cutover V2 write reconciliation
 
@@ -140,7 +141,7 @@ Status: Gate 0B protected Preview performance verification 与 Gate 1 local guar
 | --- | --- | --- | --- |
 | 0 | 记录 protected Preview 性能版本与恢复资源状态；经批准后部署并验证 V2-8-2.1 | 已完成 | 停在 Gate 2 前；未授权 alias/environment/checkpoint mutation |
 | 1 | 实现本地 Production guards、inspectors、maintenance/client-version/AI gates 与 tests | 已批准 | 本次 local tranche（本地批次）在此完成并交付 |
-| 2 | 远程只读 Production/Vercel/Neon/Gemini inventory 与官方事实刷新 | 未批准；等待 PF-002 / PF-003 关闭或明确接受 | 展示脱敏证据并等待 backup/rehearsal 批准 |
+| 2 | 远程只读 Production/Vercel/Neon/Gemini/TTS inventory 与官方事实刷新 | 已批准并完成 | 脱敏证据已交付；停在 Approval Stop 2 等待 backup/rehearsal 批准 |
 | 3 | 选择独立加密 logical backup 方法并完成 restore rehearsal | 未批准 | 备份和恢复证据通过后等待 clone migration 批准 |
 | 4 | 在非空 Production clone 演练 Schema 5 → 6、parity 与 recovery | 未批准 | 删除/保留临时资源须按批准执行；main 仍不变 |
 | 5 | 暂停写入、最终备份、Production-only secrets、迁移 `main`、promote V2 | 未批准 | 每个 Production mutation 前按本 Gate 的 stop point 再确认 |
@@ -195,7 +196,7 @@ Status: Gate 0B protected Preview performance verification 与 Gate 1 local guar
 - 多查询 inventory 固定为 UTC 并在一个 `repeatable read read only` snapshot（可重复读只读快照）内完成，避免 count、invariant 与 digest 分别看到不同瞬间。
 - 摘要不得输出单词、释义、例句、person name/id、note、typed answer、prompt、accepted AI content 或连接信息。
 - 支持 machine-readable manifest，并以 exact target/environment confirmation 防止 Development/Preview/Production 误用。branch/parent/endpoint 的绑定无法只从 Postgres 连接内证明；保存本地 JSON 与同会话 hash 仍是 self-attestation（自我证明），不能作为授权来源。因此每条未来获批的真实命令都必须在连接 Postgres 前，使用独立 `NEON_API_KEY` 对硬编码官方 HTTPS base 发出只读 GET，实时读取目标 endpoint、Production-main endpoint、目标 branch 与 main branch，并核对 project、endpoint→branch、branch parent/name/state、`parent-data` clone 和 `read_write` type。API response、project id 与 credential 不写入 stdout；只保留稳定 target digest 和控制面摘要 hash。
-- 操作者输入 project id 也不能单独成为授权来源。Gate 1 的 code-owned approved Production project SHA-256（代码内批准项目摘要）固定为 `null`，因此真实命令在任何控制面请求和 Postgres 连接前都会停止。Gate 2 必须先以获批的只读 account inventory 独立确认 Production project，再通过代码审查把其 SHA-256 写入固定常量并重跑全部验证；环境变量不能覆盖这项 pin（固定值）。
+- 操作者输入 project id 不能单独成为授权来源。Gate 2 已通过获批的只读 account inventory 独立确认 Production project，并把其 SHA-256 写入 code-owned fixed constant（代码内固定常量）；raw project id 不进入 source control。环境变量不能覆盖这项 pin（固定值），而 live control-plane、target、action、backup、clone、write-free 与人工确认 gates 仍在任何 Postgres 连接前继续生效。
 - 当前官方契约依据：[Retrieve compute endpoint details](https://api-docs.neon.tech/reference/getprojectendpoint)、[Retrieve branch details](https://api-docs.neon.tech/reference/getprojectbranch) 与 [Neon API authentication](https://api-docs.neon.tech/reference/authentication)，checked 2026-07-19。官方 base/response contract 变化时必须更新代码与测试，不能改用自定义 API base 或本地 evidence file 绕过。
 
 ### 2. Migration and parity guard
@@ -274,6 +275,17 @@ Gate 2 需要单独批准远程账户与 Production 元资料的只读访问。�
 
 **Approval Stop 2:** 将脱敏 inventory、官方链接、checked-at 时间和差异交给用户。用户需要分别确认 Production target、backup/rehearsal scope、credential audit 处理方式和下一 Gate；只读结果不授权任何 mutation。
 
+### Gate 2 execution evidence — 2026-07-22
+
+- Canonical derived evidence：`plan_docs/PLAN_V2_STAGE8_3_GATE2_REMOTE_READ_ONLY_INVENTORY.md`。
+- Production target 已在已登录 Neon Console 独立确认；仓库只固定 project id 的 SHA-256，不记录 raw id。`main` 仍是非空 Schema 5，核心 counts、Track counts、预期结构与六组引用完整性检查均无异常，检查时没有 assigned in-flight transaction。
+- Vercel Production 仍是 V1 `main` commit `6837d8c7c3b8c974afd7f86b9dd6fb9219b19b10`，Functions 在 `IAD1`；Production 只有 V1 Basic Auth/storage/database variable names，尚无 V2 cutover、AI 或 TTS variables。最新 clean `V2` Preview 为 Ready。
+- Neon Free `main` 当前只有 6 小时 history；旧 Staging Schema 5 recovery branch 仍在、无 compute，并确认 `2026-08-17T12:00:00Z` expiry。它不替代 Production logical backup。
+- Gemini `gemini-3.1-flash-lite` Tier 1 project limit 为 4,000 RPM、4,000,000 TPM、150,000 RPD；应用更低的 request/token/cost/concurrency/Kill Switch 边界继续生效。旧 V2-7B-2 proof key 无法证明 orphaned，且其 value 在只读控制台交互中曾意外短暂可见，因此不得用于 Production，并须在另行批准下确认引用后轮换/撤销。
+- Google Cloud TTS Preview service account 已启用且无长期 key；Preview WIF pool/provider 已启用。Production 尚无独立 TTS identity。
+- 本地将 independently verified Production project SHA-256 写入 code-owned constant，并把文档漂移统一为 `0003 -> 0004 -> 0005`。固定摘要不解除后续 live control-plane、target、action、backup、clone、write-free 与人工确认 gates。
+- Gate 2 没有生成包含个人资料的 full-table digest；`safe-inventory-v1` 完整 baseline 留给获批的 Gate 3/4 加密与 clone 流程。没有备份、branch mutation、credential mutation、migration、provider call 或 Production deployment。
+
 ## Gate 3 — Independent Encrypted Logical Backup And Restore Rehearsal
 
 ### Method decision
@@ -307,12 +319,12 @@ Gate 2 需要单独批准远程账户与 Production 元资料的只读访问。�
 
 - 从当时的 Production `main` Schema 5 创建 exact child/clone；记录 parent、created-at 和 expiry，不连接普通 Preview，不开放给无关使用者。
 - clone 含真实学习资料，继续按 Production confidential-data controls（机密资料控制）处理。
-- migration 工具必须同时确认 clone identity、parent=`main`、`target=production-rehearsal`、Schema 5 以及 canonical `0003` / `0004` hashes；任何一项不符立即停止。
+- migration 工具必须同时确认 clone identity、parent=`main`、`target=production-rehearsal`、Schema 5 以及 canonical `0003` / `0004` / `0005` hashes；任何一项不符立即停止。
 
 ### Forward migration and parity
 
 1. 在迁移前运行 non-empty Schema 5 manifest。
-2. 在同一 transaction 内依次应用未改写的 `0003_v2_schema6_data_model.sql` 与 `0004_v2_bilingual_examples.sql` 一次。
+2. 在同一 transaction 内依次应用未改写的 `0003_v2_schema6_data_model.sql`、`0004_v2_bilingual_examples.sql` 与 `0005_v2_standard_tts_accounting.sql` 一次。
 3. 验证 Schema 6 expected tables、constraints、indexes、triggers 和 invalid-row queries。
 4. 验证所有 people、settings、imports、vocabulary、Recognition review state/event 的 count 与 stable digest 保持一致。
 5. 验证旧 review history 只迁移为 Recognition；不凭空产生 Active history。`first_rated_at` 来自 retained earliest event，缺少事件的历史使用 `legacy_unknown`。
@@ -322,7 +334,7 @@ Gate 2 需要单独批准远程账户与 Production 元资料的只读访问。�
 ### Recovery rehearsal
 
 - 在 clone 上证明 Schema 6 → pre-migration Schema 5 recovery 的受支持 provider reset/restore 路径；运行 Schema 5 manifest 并证明 V1 read compatibility。
-- 再从恢复后的 clone 重新执行一次固定的 `0003` + `0004` sequence，证明相同输入得到相同 Schema 6 parity manifest。
+- 再从恢复后的 clone 重新执行一次固定的 `0003` + `0004` + `0005` sequence，证明相同输入得到相同 Schema 6 parity manifest。
 - 独立从 Gate 3 encrypted logical backup 恢复一次 Schema 5 target，证明 branch recovery 与 logical restore 是两条不同的恢复路径。
 - 记录 paired application/database rollback 顺序；不需要、也不得在 clone 上产生真实学习写入或 Gemini 调用。
 
@@ -351,7 +363,7 @@ Gate 5 至少分成两个独立批准点：Preparation（准备）与 Live cutov
 4. 按已经演练的 credential/permission 路径关闭旧 V1 runtime 的数据库写入能力；用 retained old deployment URL 发出一条无资料变化的 authenticated rejection probe，证明它不能到达写事务。只验证 canonical alias 不足以通过本步骤。
 5. 在 write-free 状态下生成 final independent encrypted logical backup，并创建/确认 Production Schema 5 recovery point；比较 final manifest 与 Gate 2 baseline，解释全部合法差异。
 6. 再次确认 exact `main`、Schema 5、canonical migration hash、backup checksum、0 in-flight write、old-runtime-blocked evidence 与 paired rollback packet。
-7. 只对 Production `main` 在同一 transaction 内执行 `0003` + `0004` 一次；立即运行 Schema 6 inspector 和 full parity manifest。
+7. 只对 Production `main` 在同一 transaction 内执行 `0003` + `0004` + `0005` 一次；立即运行 Schema 6 inspector 和 full parity manifest。
 8. 若 migration/parity 不通过，保持 maintenance，按 Gate 4 已证明路径恢复 Schema 5；确认 Schema 5 与可用的新 credential 后，重建/恢复 V1 artifact。
 9. migration/parity 通过后 promote exact V2 candidate；验证 Basic Auth、`postgres-production`、Schema 6 和 client contract version。
 10. 先完成只读 acceptance，再允许 V2 mutation。write-free end time 与第一笔 V2 write time 分别记录。
@@ -434,11 +446,11 @@ Gate 5 至少分成两个独立批准点：Preparation（准备）与 Live cutov
 
 Gate 1 实际文件与职责：
 
-- `scripts/v2-stage8-3-contract.mjs`、`scripts/v2-stage8-3-db-core.mjs` 与 `scripts/v2-stage8-3-db.mjs`：non-empty inventory、clone/main exact guards、分别固定的 `0003` / `0004` migration sequence、Schema 6 inspect 与 parity artifact。
+- `scripts/v2-stage8-3-contract.mjs`、`scripts/v2-stage8-3-db-core.mjs` 与 `scripts/v2-stage8-3-db.mjs`：non-empty inventory、clone/main exact guards、分别固定的 `0003` / `0004` / `0005` migration sequence、Schema 6 inspect 与 parity artifact。
 - `scripts/v2-stage8-3-cutover-manifest.mjs`：secret-free cutover/rollback evidence。
 - `src/lib/ai-enrichment/runtime-config.ts` 与 tests：独立 Production AI scope、fresh pricing 和 `4` 次 rollout ceiling。
 - `src/lib/security/production-cutover-mode.ts`、Production proxy/security guards 与 tests：三段 cutover mode、Basic Auth 优先、client contract version 与 fail-closed mutation boundary。
-- `package.json`：只添加明确命名、不会被 test/build 误触的 dormant V2-8-3 remote-capable commands；Gate 1 的 Production project hash 尚未 pin，故当前命令即使获得环境变量也保持机械关闭。local fixture 测试直接使用依赖替换，不伪装成真实 DB dry-run evidence。
+- `package.json`：只添加明确命名、不会被 test/build 误触的 dormant V2-8-3 remote-capable commands；Gate 2 已固定 Production project hash，但当前命令仍需未获批的 credential、exact target、backup、clone、write-free 与人工确认 evidence 才能继续。local fixture 测试直接使用依赖替换，不伪装成真实 DB dry-run evidence。
 - focused tests：non-empty Schema 5、安全 count/digest、Schema 6 table/column/constraint/index/trigger contract、两份 migration hash/target drift、control-plane endpoint/branch binding、old-client refusal、AI ledger、paired rollback 与 secret-free output。
 
 当前 tranche 不选择或安装 backup/encryption package；Gate 3 选择完成后再记录工具与命令。
@@ -451,14 +463,14 @@ Gate 1 实际文件与职责：
 - Gate 1 guard tooling、focused/full tests、build、backup dry-runs、governance 和 diff review 通过。
 - 最终结果为 13 个聚焦文件 / 138 项测试通过；完整 Vitest 为 77 个文件 / 484 项通过，既有 Postgres integration 文件 / 测试各跳过 1 项。Lint、TypeScript、三套备份模拟、manifest template、Production build、Tier 3 governance 与 diff 检查均通过；两轮独立只读复核未留下 P0/P1/P2。
 - Gate 1 当时保持所有 Production/Preview/Neon/Gemini 连接、credential、remote inventory、deployment 和 mutation 未执行；后续 Gate 0B 的独立批准与证据记录在本文件前部。
-- 向用户提交 changed-file inventory、验证结果和已知限制；Gate 0B、PF-002 历史 Instrument Preview、当前 Geist rollback exact protected Preview 和 PF-003 exact protected Preview 的机器验收已完成，但 PF-002 / PF-003 仍需人工收口。此前不进入 Gate 2，之后仍需要新的批准。
+- 向用户提交 changed-file inventory、验证结果和已知限制；Gate 0B、PF-002 历史 Instrument Preview、当前 Geist rollback exact protected Preview 和 PF-003 exact protected Preview 的机器验收均保留。PF-002 / PF-003 已由用户明确接受；Gate 2 已完成并停在 Approval Stop 2，Gate 3 仍需要新的批准。
 
 ### Full V2-8-3 completion
 
 - Protected Preview 已运行 V2-8-2.1 exact commit，`syd1` 与真实 network performance 已验证。
 - Production official facts 与 non-empty Schema 5 inventory 已刷新并脱敏记录。
 - 独立 encrypted logical backup 方法已选择，真实 restore rehearsal 和 final pre-cutover backup 均通过。
-- Non-empty Production clone 的 Schema 5 → fixed `0003` + `0004` Schema 6、parity、recovery、logical restore 与再次迁移完整通过。
+- Non-empty Production clone 的 Schema 5 → fixed `0003` + `0004` + `0005` Schema 6、parity、recovery、logical restore 与再次迁移完整通过。
 - write-free window、old-client guard、maintenance artifact、old V1 runtime database-write revocation、Production-only secrets、`main` migration 与 exact V2 promotion 按批准顺序完成。
 - 既有单词、Track、settings、imports、Recognition history 和 person-separated data 全部保留；Schema 6 没有虚构 Active history 或丢失事件。
 - Production AI 在最多 4 次初始调用内通过 Disclosure、generation、Replay、Cache、Kill Switch、accounting 与 cost 对账；随后才切换到无个人上限的全局 `300 / US$0.50 day / US$2 month` 边界。

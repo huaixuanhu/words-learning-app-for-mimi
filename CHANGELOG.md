@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## 2026-07-22 22:41 AEST
+
+- Closed PF-002 and PF-003 as `Normal / Closed by explicit acceptance` after the user explicitly accepted both exact protected Preview candidates. The record preserves machine evidence and does not claim a new typography-comfort or Active completion-sound human retest; iPhone + Safari remains untested.
+- Completed the separately approved V2-8-3 Gate 2 remote read-only inventory. Vercel Production remains V1 on commit `6837d8c7c3b8c974afd7f86b9dd6fb9219b19b10` in `IAD1`; the latest clean `V2` Preview is Ready. Production has only the V1 Basic Auth/storage/database variable names and no V2 cutover, AI or TTS variables.
+- Confirmed Neon `main` is the non-empty Schema 5 Production root in Sydney with 1 person, 1,486 vocabulary items, 125 review states and 203 review events. Expected structure and six orphan/reference checks pass, no assigned in-flight transaction was observed, and the current Free-plan restore history is only six hours. The retained Staging Schema 5 recovery branch remains no-compute and expires at `2026-08-17T12:00:00Z`.
+- Refreshed Gemini/TTS metadata and official facts without provider calls. Gemini 3.1 Flash-Lite project limits are 4,000 RPM / 4M TPM / 150K RPD; GenerateContent logging is off while unused Interactions logging is on. TTS Preview WIF and its keyless service account remain enabled; Production has no independent AI/TTS identity yet.
+- Recorded a credential safety boundary: the older V2-7B-2 proof key remains available and its value was accidentally displayed briefly by the signed-in console during read-only inspection. It was not copied, used, written or committed. Production will not reuse it; reference confirmation and rotation/revocation require a later explicit credential-mutation approval.
+- Pinned only the independently verified Production Neon project SHA-256 in source, kept the raw project id out of the repository, updated focused fail-before-request coverage, and repaired all current V2-8-3 migration wording to `0003 -> 0004 -> 0005` in one outer transaction.
+- Validation: focused V2-8-3 tests pass 3 files / 59 tests; full Vitest passes 91 files / 554 tests with the existing Postgres integration file/test skipped; lint, typecheck, all three backup dry-runs, cutover manifest template, Production build, Tier 3 governance preflight and `git diff --check` pass.
+- Safety: no secret value was intentionally captured, no `v2:8-3:db:*` command ran, and no backup, branch, environment, credential, provider, migration, Production data or deployment mutation occurred. Gate 2 ends at Approval Stop 2; Gate 3 remains unapproved.
+- Reason: bind the real Production target and platform constraints before selecting a recoverable backup path, while keeping every mutation behind a new human decision.
+
 ## 2026-07-22 21:32 AEST
 
 - Advanced PF-003 from `Normal / Fixed locally` to `Normal / Preview-ready`. Vercel Git Integration had already deployed clean exact branch `V2` commit `acd009cc3879275dffa1d22c470b6c82fd1f8263` as protected Preview deployment `dpl_BAYB3tDx1m4ybKFRtw9rdf32jZon`, so no duplicate deployment was created.

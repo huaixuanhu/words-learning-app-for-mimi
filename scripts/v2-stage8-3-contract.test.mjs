@@ -30,6 +30,8 @@ const SHA_A = "a".repeat(64);
 const SHA_B = "b".repeat(64);
 const PROJECT_ID = "mimi-project-123";
 const APPROVED_PROJECT_SHA256 = sha256(PROJECT_ID);
+const PRODUCTION_PROJECT_SHA256 =
+  "70b4a70d6cfcd6a872c5d9be7649be69332266624fb3cfec3aa6b32143caa880";
 
 function cloneEnv() {
   return {
@@ -340,14 +342,16 @@ describe("V2-8-3 command and target guards", () => {
     ).rejects.toThrow(/NEON_API_KEY is required/u);
   });
 
-  it("keeps every real database command dormant until Gate 2 pins the Production project", async () => {
+  it("pins only the approved Production project and rejects a different project before any request", async () => {
     const env = cloneEnv();
     const fetchImpl = neonControlPlaneFetch(env);
 
-    expect(V2_STAGE8_3_APPROVED_PRODUCTION_PROJECT_ID_SHA256).toBeNull();
+    expect(V2_STAGE8_3_APPROVED_PRODUCTION_PROJECT_ID_SHA256).toBe(
+      PRODUCTION_PROJECT_SHA256,
+    );
     await expect(
       assertTargetIdentity({ env, fetchImpl, rawUrl: databaseUrl() }),
-    ).rejects.toThrow(/not pinned/u);
+    ).rejects.toThrow(/does not match the approved Gate 2 target/u);
     expect(fetchImpl.calls).toHaveLength(0);
   });
 

@@ -64,7 +64,7 @@ Target capability tier: Tier 3
 
 Working tier: Tier 3
 
-Status: active again on 2026-07-22. PF-001 remains `High / Closed`: its exact `en-AU-Standard-C` Voice Contract, local and provider evidence, additive `0005`, Preview-only WIF, `staging` migration, exact deployment, Kill Switch checks and machine-route verification are complete. The user passed Settings Preview, Recognition, Active and example-word playback on MacBook + Chrome and described the audio as “非常理想”; Mimi later independently confirmed that the sound had no problem, while her exact device/browser was not recorded. PF-002 is `Normal / Preview-ready` under `plan_docs/PLAN_V2_STAGE8_2_3_2_LEARNING_NAVIGATION_GOAL_HIERARCHY_TYPOGRAPHY.md`: the user-rejected Instrument Serif experiment has been replaced by Geist titles and the prior large-word fallback, and exact commit `54c8ca4492ff9b13d095ea0bd0d3d7ca702c3c2f` is Ready on protected Preview with machine checks passing. Human retest remains pending. PF-003 is `Normal / Preview-ready`: Active New Learning and Review now reuse the Recognition completion dialog and existing local completion sound across Say it, Spell it and Dictation; exact commit `acd009cc3879275dffa1d22c470b6c82fd1f8263` is Ready on protected Preview with machine checks passing, while human sound retest remains pending. iPhone + Safari remains an untested occasional-use environment. V2-8-3 Gate 2 is paused until all open PF items are closed or explicitly accepted.
+Status: complete again on 2026-07-22. PF-001 remains `High / Closed`: its exact `en-AU-Standard-C` Voice Contract, local and provider evidence, additive `0005`, Preview-only WIF, `staging` migration, exact deployment, Kill Switch checks and machine-route verification are complete. The user passed Settings Preview, Recognition, Active and example-word playback on MacBook + Chrome and described the audio as “非常理想”; Mimi later independently confirmed that the sound had no problem, while her exact device/browser was not recorded. PF-002 is `Normal / Closed by explicit acceptance` under `plan_docs/PLAN_V2_STAGE8_2_3_2_LEARNING_NAVIGATION_GOAL_HIERARCHY_TYPOGRAPHY.md`: the user-rejected Instrument Serif experiment has been replaced by Geist titles and the prior large-word fallback, and exact commit `54c8ca4492ff9b13d095ea0bd0d3d7ca702c3c2f` is Ready on protected Preview with machine checks passing. PF-003 is `Normal / Closed by explicit acceptance`: Active New Learning and Review reuse the Recognition completion dialog and existing local completion sound across Say it, Spell it and Dictation; exact commit `acd009cc3879275dffa1d22c470b6c82fd1f8263` is Ready on protected Preview with machine checks passing. The user's explicit acceptance closes both without claiming a new typography-comfort or completion-sound human retest. iPhone + Safari remains an untested occasional-use environment. V2-8-3 Gate 2 was separately approved and completed after this acceptance.
 
 ## 1. Stage Position And Release Effect
 
@@ -82,7 +82,7 @@ V2-8-2 protected Preview rehearsal
 ```
 
 - V2-8-3 Gate 0B 与 local Gate 1 保留为已完成历史，不撤销、不重新编号。
-- V2-8-3 Gate 2 曾在 PF-001 关闭后恢复为下一候选工作。PF-002 登记后，本阶段重新进入 active；PF-003 随后进入同一 register。Gate 2 保持暂停，直到全部 open PF 关闭或由人明确接受后才重新评估。
+- V2-8-3 Gate 2 曾在 PF-001 关闭后恢复为下一候选工作。PF-002 登记后，本阶段重新进入 active；PF-003 随后进入同一 register。2026-07-22 用户明确接受 PF-002 / PF-003，本阶段再次 complete；Gate 2 随后在独立批准下执行，不由本次 PF 接受自动授权。
 - PF-003 是 parent register（主问题清单）内的有界修复，不派生新的平级计划：它只复用现有 completion sound（完成音效）、声音设置与 ResponsiveDialog（响应式弹窗），不改变学习完成条件或资料。
 - `staging` 已先完成 `0004` 与 `0005`；protected Preview 随后部署 exact commit `deab32f3ab96025116597881b7b69c9dde84b8f4`，并通过 Kill Switch closed/open、四条机器路径和 MacBook + Chrome 人工验收。
 - 本阶段允许多轮本地修复和 Preview 复测，但每一轮必须绑定问题编号、exact commit、验证结果和人工结论。
@@ -225,7 +225,7 @@ Reproduction steps and evidence: open Home, compare the four equal metric tiles 
   open Study and compare six equal metrics with the two editable inputs; enter /review?zone=new while
   the sidebar still says Review; compare Goal/Done/Left after a queue has fewer ready entries than the
   daily goal. User supplied protected Preview screenshots and confirmed the derived plan.
-Priority / status: Normal / Preview-ready
+Priority / status: Normal / Closed by explicit acceptance
 Scope decision: bounded learner-facing Information Architecture, copy, responsive layout and typography
   change under plan_docs/PLAN_V2_STAGE8_2_3_2_LEARNING_NAVIGATION_GOAL_HIERARCHY_TYPOGRAPHY.md.
   Stable route parameters, data contracts and learning behavior remain unchanged.
@@ -248,17 +248,17 @@ Preview machine validation: 1280 px Home has no overflow, both top panels measur
   specified. Browser console has zero warning/error; deployment-filtered Vercel logs show Warning 0,
   Error 0 and Fatal 0. Expected requests return 200/204/304.
 User or Mimi retest: the user tested the historical exact Preview and rejected Instrument Serif as
-  uncomfortable in real use. The feedback was expressly limited to the English font change. Human
-  retest of the new Geist Preview is pending.
-Resolution or accepted limitation: open at Preview-ready. Instrument Serif loading and references are
+  uncomfortable in real use. The feedback was expressly limited to the English font change. The user
+  later explicitly accepted PF-002 without requiring a new Geist comfort retest.
+Resolution or accepted limitation: closed by explicit acceptance. Instrument Serif loading and references are
   removed; display titles now use Geist semibold and large vocabulary restores its pre-PF-002 Georgia
   fallback. The focused font contract passes 1 file / 3 tests; lint, typecheck, Production build,
   governance preflight and diff checks pass. Exact commit 54c8ca4492ff9b13d095ea0bd0d3d7ca702c3c2f
   is Ready as protected Preview deployment dpl_EmRVmp5YDTKgnh1VEtVBozwhRp6J at
   https://words-learning-app-for-mimi-l1ih7plu2-anorias-projects.vercel.app. It reports SYD1,
   retains Deployment Protection, loads real Home data, computes Geist 600/normal spacing on the
-  checked titles, has no desktop overflow and produced zero browser warning/error. Human retest is
-  required before Closed; iPhone + Safari remains untested.
+  checked titles, has no desktop overflow and produced zero browser warning/error. Closure records the
+  user's acceptance and does not claim a new comfort retest; iPhone + Safari remains untested.
 ```
 
 #### PF-003 — Active completion sound is missing
@@ -277,7 +277,7 @@ Reproduction steps and evidence: complete the final card in any Active zone and 
   the final card in Recognition. Source inspection confirms Recognition opens showCompletionModal after
   the accepted final rating and calls playReviewCompleteSound from confirmCompletion; Active only empties
   sessionIds and renders This Active session is complete, with no sound-setting or completion-player call.
-Priority / status: Normal / Preview-ready
+Priority / status: Normal / Closed by explicit acceptance
 Scope decision: bounded UI feedback parity inside the existing Active client component and its focused
   contract test. Reuse ResponsiveDialog, useMimiSound, playReviewCompleteSound and the current local asset.
 Files or contracts affected: src/components/practice/active-practice-session.tsx,
@@ -292,13 +292,21 @@ Preview deployment / exact commit: exact commit acd009cc3879275dffa1d22c470b6c82
   Preview, a 42-second build, both the unique URL and V2 branch alias, and application Functions in
   SYD1. An unauthenticated request received HTTP 302 to Vercel Authentication; signed-in Chrome
   loaded the application shell and reported zero browser console error.
-User or Mimi retest: pending.
-Resolution or accepted limitation: open at Preview-ready. Active now opens the same non-backdrop-dismissable
+User or Mimi retest: no new final-card listening run was recorded. The user explicitly accepted PF-003
+  after reviewing the fixed exact Preview and its bounded machine evidence.
+Resolution or accepted limitation: closed by explicit acceptance. Active now opens the same non-backdrop-dismissable
   completion dialog after the final accepted queue result. Done closes it and, only when the existing Review
   complete preference is enabled, attempts the same local Mimi sound from that user gesture. Session/mode
   reset and rollback clear the dialog. No FSRS, Daily Episode, pass condition, queue selection, rollback
   semantics, sound asset, TTS, Schema, backup, API, persistent data, Motion or reduced-motion change.
 ```
+
+### Second stage closeout after PF-002 / PF-003 acceptance — 2026-07-22
+
+- PF-002：`Normal / Closed by explicit acceptance`。Geist rollback exact Preview 与机器证据保留；没有虚构新的字体舒适度复测。
+- PF-003：`Normal / Closed by explicit acceptance`。Active completion-feedback exact Preview 与机器证据保留；没有虚构新的最终卡片音效试听。
+- V2-8-2.3：`complete`。iPhone + Safari 仍是未测试的偶发使用环境；未来设备特定问题使用新 PF 编号。
+- 用户另行批准的 V2-8-3 Gate 2 已在 `plan_docs/PLAN_V2_STAGE8_3_GATE2_REMOTE_READ_ONLY_INVENTORY.md` 记录。PF 收口本身没有授权远程清单或任何 Production mutation。
 
 ### First stage closeout after PF-001 — 2026-07-22 (historical; superseded by PF-002 reopening)
 
@@ -333,7 +341,7 @@ Resolution or accepted limitation: open at Preview-ready. Active now opens the s
 - Voice：Google Standard current voice list、exact allowlist、preview、Cloud/default 与 explicit device fallback、Recognition/Dictation/example-word playback、Cache/timeout/Kill Switch；音质由人试听。
 - Bilingual examples：Add/Import/Edit/Review/AI/CSV/JSON、legacy gap、`Needs translation`、English exact offsets。
 - AI：Disclosure、minimal outbound data、editable acceptance、lineage、Cache/Replay/Idempotency、Kill Switch、quota/cost ledger、AI unavailable 时学习功能继续可用。
-- Persistence：local/Postgres parity、Backup Version 1–4 compatibility、`0003` + `0004` order、no partial readiness、no synthetic-to-Production copy。
+- Persistence：local/Postgres parity、Backup Version 1–4 compatibility、`0003` + `0004` + `0005` order、no partial readiness、no synthetic-to-Production copy。
 - Repository gate：`npm run governance:preflight`、`npm run lint`、`npm run typecheck`、`npm run test`、三套 backup dry-run、`npm run build`、`git diff --check`。
 
 ## 7. Remote And Data Safety

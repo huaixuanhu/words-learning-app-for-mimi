@@ -11,10 +11,12 @@ export const V2_STAGE8_3_ARTIFACT_KIND = "v2-8-3-safe-inventory-v1";
 export const V2_STAGE8_3_NEON_API_BASE_URL =
   "https://console.neon.tech/api/v2";
 
-// Gate 1 intentionally leaves every real database command dormant. Gate 2
-// must replace this null with the SHA-256 of the independently verified
-// Production Neon project id, followed by review and full validation.
-export const V2_STAGE8_3_APPROVED_PRODUCTION_PROJECT_ID_SHA256 = null;
+// Gate 2 independently verified the Production Neon project and stores only
+// its SHA-256 here. The raw project id remains outside source control. Every
+// remote-capable command still requires the remaining live control-plane,
+// target, action and human-confirmation gates before any database connection.
+export const V2_STAGE8_3_APPROVED_PRODUCTION_PROJECT_ID_SHA256 =
+  "70b4a70d6cfcd6a872c5d9be7649be69332266624fb3cfec3aa6b32143caa880";
 
 export const V2_STAGE8_3_TARGETS = Object.freeze({
   CLONE: "production-clone",

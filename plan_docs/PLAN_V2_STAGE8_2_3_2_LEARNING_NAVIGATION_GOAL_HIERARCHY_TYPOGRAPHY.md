@@ -3,7 +3,7 @@
 Created: 2026-07-22 AEST
 Last updated: 2026-07-22 AEST
 
-Current status: `PF-002 Normal / Preview-ready`. The font-only Geist rollback is deployed from exact commit `54c8ca4492ff9b13d095ea0bd0d3d7ca702c3c2f`; protected Preview machine checks pass and human retest remains pending.
+Current status: `PF-002 Normal / Closed by explicit acceptance`. The font-only Geist rollback is deployed from exact commit `54c8ca4492ff9b13d095ea0bd0d3d7ca702c3c2f`; protected Preview machine checks pass. On 2026-07-22 the user explicitly accepted PF-002 without requiring a new typography-comfort retest.
 
 Source plan:
 
@@ -227,4 +227,13 @@ Safety and remaining gate:
 
 - 本轮没有重复部署、environment/credential 修改、database migration、Production action、rating、goal save、reset、AI/TTS 调用或学习资料写入。
 - 机器检查证明 exact candidate 可访问且字体契约生效，不替代用户对舒适度的主观验收。
-- PF-002 仍需用户或 Mimi 实际体验后才能进入 `Retest passed` 或 `Closed`；iPhone + Safari 仍未测试，V2-8-3 Gate 2 继续暂停。
+- Historical boundary：本次 exact Preview 机器检查完成时，PF-002 仍需用户或 Mimi 接受；后续 explicit-acceptance closeout 见下节。iPhone + Safari 仍未测试。
+
+## 9. Explicit Acceptance Closeout — 2026-07-22
+
+Status: `PF-002 Normal / Closed by explicit acceptance`.
+
+- 用户明确接受 PF-002，并同时单独批准 V2-8-3 Gate 2 远程只读清单与上线前本地收口。
+- Closure（收口）保留 exact Geist Preview 与机器验收，且明确不声称又完成了一次字体舒适度人工复测。
+- Review / New Learning、两项目标层级、session labels、桌面面板等高与 Geist rollback 成为 V2 release candidate（发布候选）的接受基线。
+- iPhone + Safari 保持未测试；若以后发现设备特定问题，登记新的 PF，不改写本次接受证据。
