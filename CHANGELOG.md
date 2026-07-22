@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## 2026-07-22 15:38 AEST
+
+- Moved PF-002 from `Normal / Preview-ready` back to `Normal / Fixed locally` after the user found Instrument Serif uncomfortable during real protected Preview use. The historical deployment and machine checks remain evidence for that superseded candidate.
+- Removed Instrument Serif from the Next.js font load and HTML font variables. English display titles now use the existing Geist semibold system; large vocabulary text restores its pre-PF-002 Georgia fallback.
+- Kept all other PF-002 work unchanged: Review/New Learning navigation, two-goal hierarchy, session labels, `Save today’s goals`, desktop panel equality, responsive layout and accepted Motion/reduced-motion behavior.
+- Updated the focused PF-002 font contract; 1 test file / 3 tests, ESLint, TypeScript, Production build, Tier 3 governance preflight and `git diff --check` pass. A fresh exact protected Preview and human retest remain required before PF-002 can close.
+- Safety: no component structure, learning behavior, FSRS, Daily Episode, persistent data, Schema, backup, API, TTS, AI, credential, environment, database, deployment, Production, GitHub or SSO action changed.
+- Reason: restore the more comfortable pre-experiment type system while preserving the already accepted interaction and information-hierarchy improvements.
+
 ## 2026-07-22 15:01 AEST
 
 - Advanced PF-002 from `Normal / Fixed locally` to `Normal / Preview-ready` after Git Integration automatically deployed exact commit `52942b412d0a2281c4dded2f5b9bd716d7fd0131` as protected Preview deployment `dpl_DxQWHVspQuukaeR6LTCjKp15a3zp`; no duplicate deployment was created.

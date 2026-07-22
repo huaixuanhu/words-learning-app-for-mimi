@@ -1,5 +1,18 @@
 # AI Agent Log
 
+## 2026-07-22 15:38 AEST
+
+- Task: withdraw only the PF-002 English Instrument Serif change after the user found it uncomfortable in actual Preview use.
+- Plan agreed: yes. The assistant proposed a font-only rollback to the existing Geist system, font-contract test update and synchronized PF-002 status records; the user confirmed. Navigation, goal hierarchy, session copy, panel height, Motion, data and remote work were explicitly excluded.
+- Working tier: Tier 3. This tranche changes local font loading/styles, one focused contract and canonical records only; it does not use credentials, external providers, remote databases, deployment or Production data.
+- Implementation result: `src/app/layout.tsx` no longer imports or declares Instrument Serif. `mimi-display-title` now uses Geist semibold with normal spacing, while `mimi-word-serif` restores its pre-PF-002 Georgia fallback. Existing class hooks and component sizing remain untouched.
+- Human result: the historical exact protected Preview passed machine checks, but the user rejected its Instrument Serif feel. This feedback is limited to the font experiment; no request was made to undo the remaining PF-002 UI work.
+- Changed files: font loading/styles, the focused PF-002 contract, PF-002 child/register, V2 Master/cutover handoff, Architecture, README, AGENTS, Changelog and this record.
+- Validation: focused PF-002 contract passes 1 file / 3 tests. ESLint, TypeScript, Production build, Tier 3 governance preflight and `git diff --check` pass.
+- Safety notes: no component structure, Review/New Learning behavior, goal/session semantics, panel layout, Motion, FSRS, Daily Episode, persistent data, Schema, backup, API, TTS, AI, credential, environment, database, Preview/Production deployment, GitHub or SSO action occurred.
+- Residual boundary: PF-002 is `Normal / Fixed locally`. Historical deployment `dpl_DxQWHVspQuukaeR6LTCjKp15a3zp` is not the current candidate because it still contains Instrument Serif. A new exact protected Preview and human retest are required; V2-8-3 Gate 2 remains paused and separately approval-gated.
+- Reason: preserve the user's real-use comfort judgment without disturbing the other accepted interaction improvements.
+
 ## 2026-07-22 15:01 AEST
 
 - Task: continue after the user committed PF-002 by executing its exact protected Preview deployment and machine-acceptance stage.

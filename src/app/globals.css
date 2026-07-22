@@ -422,17 +422,13 @@ select {
 }
 
 .mimi-display-title {
-  font-family: var(--font-instrument-serif), Georgia, "Times New Roman", var(--font-cjk-rounded);
-  font-weight: 400;
-  font-synthesis: none;
-  letter-spacing: -0.025em;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  letter-spacing: normal;
 }
 
 .mimi-word-serif {
-  font-family: var(--font-instrument-serif), Georgia, "Times New Roman", var(--font-cjk-rounded);
-  font-weight: 400;
-  font-synthesis: none;
-  letter-spacing: -0.015em;
+  font-family: Georgia, "Times New Roman", var(--font-cjk-rounded);
 }
 
 .mimi-cjk {

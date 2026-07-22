@@ -3,7 +3,7 @@
 Created: 2026-07-22 AEST
 Last updated: 2026-07-22 AEST
 
-Current status: `PF-002 Normal / Preview-ready`. Exact protected Preview and machine acceptance are complete; user/Mimi human retest remains pending.
+Current status: `PF-002 Normal / Fixed locally`. Exact protected Preview machine acceptance is retained as historical evidence, but the user found Instrument Serif uncomfortable in real use. The font-only local rollback is complete; a new exact protected Preview and human retest remain pending.
 
 Source plan:
 
@@ -28,7 +28,7 @@ Scope:
 - 把学习会话的 `Goal / Done / Left` 改为含义明确的 `Daily goal / Reviewed today` 或 `Learned today / Ready now`。
 - 把 `Save today` 改为 `Save today’s goals`。
 - 让桌面 Home 的 `Library at a glance` 与左侧 `Today’s plan` 面板等高；手机端保持自然内容高度。
-- 使用 `next/font` 自托管 Instrument Serif，仅应用于已确认的英文显示标题：页面标题、Section 标题、Track 标题、Session / dialog 标题、信息卡标题和大号词汇；正文、导航、按钮、数值、小标签、输入和状态说明继续使用 Geist，中文继续使用 ChillRoundF。
+- 撤回 Instrument Serif：英文显示标题恢复现有 Geist semibold（半粗体）体系；大号词汇恢复加入该字体前的 Georgia fallback（后备字体）。标题大小、组件布局及其他 PF-002 交互保持不变。
 
 Non-Scope:
 
@@ -36,7 +36,7 @@ Non-Scope:
 - 不修改 Motion、transition timing 或 reduced-motion 行为。
 - 不修改 Schema Version 6、migration、JSON backup、CSV、Postgres、API payload、TTS、Gemini、费用边界、凭证或环境变量。
 - 不引入 SSO、身份权限、Production 数据操作、Vercel deployment、Neon 操作、Provider 请求、GitHub push、PR 或 merge。
-- 不把所有英文文字改成衬线字体；导航、按钮、数据读数和学习正文的读取速度优先。
+- 不引入另一套替代字体，也不重新设计标题大小、导航、按钮、数据读数或学习正文。
 - `Add Words` 继续表示录入动作，`Batch imported` 保留；代码内部的 `zone: "new"` 和 `newWordGoal` 等稳定契约不重命名。
 
 Exit criteria:
@@ -45,7 +45,7 @@ Exit criteria:
 - Recognition 与 Active 学习页都提供持续可见、可访问的 `Review / New Learning` 分区切换；当前分区有明确状态。
 - Home 和 Study 只把两个目标作为主要信息，辅助量在各自目标下方，实际完成量仍保留且口径不变。
 - Recognition 与 Active 会话不再显示容易混淆的 `Goal / Done / Left`，也不保留重复的 Recognition 右侧分区跳转按钮。
-- Instrument Serif 只加载 `latin`、`normal`、weight `400`，使用 `display: swap`，并且 learner UI 没有把按钮、数字、小标签和正文改成衬线字体。
+- 应用不再加载或引用 Instrument Serif；英文显示标题使用 Geist semibold，大号词汇恢复原有 Georgia fallback，按钮、数字、小标签和正文的字体归属不变。
 - 320–1280 px 无横向溢出；桌面双面板等高，390 px 面板自然堆叠；现有交互动效未改变。
 - 聚焦 contract tests（契约测试）、lint、typecheck、完整 test、三套 backup dry-run、Production build、governance preflight 与 `git diff --check` 通过。
 - 本地完成只把 PF-002 标为 `Fixed locally`。protected Preview deployment、exact commit 绑定与人类复测须另行批准，完成后才能 `Closed`。
@@ -57,7 +57,7 @@ protected Preview 的功能可以完成，但当前 Information Architecture（�
 1. 左侧只有 `Review`，进入后却同时承载 Review 与 New Words，第一次使用时不容易预测页面内容。
 2. Home 与 Study 把目标、系统建议、当日加入和实际完成显示为同等重量，使用者要自己判断哪些可设置、哪些只是参考。
 3. 学习会话中的 `Done` 是当前会话值，Dashboard/Study 的完成量是今日 distinct entry（不同词条）值；同时 `Left` 可能为 0 而 Daily goal 仍大于 0，容易被理解成资料冲突。
-4. 当前 Geist 易读，但标题层级的个性较弱。用户希望参考 Tradermath 的 display-serif（展示衬线）层级，同时明确要求保持普通信息与数字的读取速度。
+4. 初版曾按用户要求试用接近 Tradermath 的 display-serif（展示衬线）层级；用户在 protected Preview 实际体验后认为 Instrument Serif 不舒服，因此要求只撤回该字体实验，其余 PF-002 改动保持不变。
 
 ## 2. Accepted Interaction Contract
 
@@ -99,20 +99,13 @@ Study 每个 Track：
 
 ## 3. Typography Contract
 
-Instrument Serif 的目的为形成类似 Tradermath 的标题层级，不复制其付费 Teodor 字体或整站视觉。
+当前生效契约：
 
-- Source：Instrument Serif 官方仓库，SIL Open Font License 1.1。
-- Loading：Next.js `next/font/google` 在 build 时取得并由应用自身托管；浏览器不向 Google Fonts 发起字体请求。
-- Payload：仅 `latin`、weight `400`、normal、`display: swap`。
-- Applied：页面/Section/Track/Session/dialog/信息卡英文标题与大号词汇。
-- Preserved：Geist 用于 navigation、button、metric label、number、input、helper/status/body；ChillRoundF 用于中文 fallback。
-- Styling：标题使用正常字重与轻微负字距，不人为合成 bold；现有字号只做必要适配，避免手机溢出。
-
-Verified references on 2026-07-22:
-
-- Next.js Font Optimization: `https://nextjs.org/docs/app/getting-started/fonts`
-- Instrument Serif: `https://github.com/Instrument/instrument-serif`
-- SIL Open Font License 1.1: `https://openfontlicense.org/open-font-license-official-text/`
+- Loading：`src/app/layout.tsx` 只加载既有 Geist 与 Geist Mono，不再加载 Instrument Serif。
+- Display titles：保留 `mimi-display-title` 作为稳定样式入口，但其字体恢复为 Geist、weight `600`、正常字距。
+- Large vocabulary：`mimi-word-serif` 恢复 PF-002 前的 Georgia / Times New Roman / 中文 fallback 顺序。
+- Preserved：标题字号、组件结构、navigation、button、metric label、number、input、helper/status/body 与 ChillRoundF 中文 fallback 均不因本次撤回重新设计。
+- Historical evidence：Instrument Serif 的许可、加载和 exact Preview 机器结果只作为已撤回实验的历史记录保留，不再属于当前 V2 候选契约。
 
 ## 4. Files And Validation
 
@@ -133,7 +126,7 @@ Expected governance surfaces:
 
 No remote side effect belongs to this implementation batch.
 
-## 5. Local Implementation Record — 2026-07-22
+## 5. Historical Local Implementation Record — 2026-07-22
 
 Status: `PF-002 Normal / Fixed locally`.
 
@@ -161,7 +154,7 @@ Safety and remaining gate:
 - No FSRS, Daily Episode, Motion, TTS, AI, schema, backup shape, environment, credential, remote database, Preview or Production state changed.
 - At the end of this local implementation batch PF-002 was not yet `Preview-ready`, `Retest passed` or `Closed`; the separately approved Preview record below supersedes only the deployment part of that historical statement.
 
-## 6. Exact Protected Preview Record — 2026-07-22
+## 6. Historical Exact Protected Preview Record — 2026-07-22
 
 Status: `PF-002 Normal / Preview-ready`.
 
@@ -186,4 +179,26 @@ Safety and remaining gate:
 
 - The automatic Git Integration deployment required no duplicate deployment, environment change, credential read/change, database migration or Production action.
 - Machine navigation did not submit a rating, save goals, reset a day, call AI/TTS, or intentionally change review/scheduling evidence. Normal learning-route preparation issued bounded `/api/study` queue requests and they returned `200`.
-- Human acceptance is still required. PF-002 is not `Retest passed` or `Closed`; V2-8-3 Gate 2 remains paused and separately approval-gated. iPhone + Safari remains untested.
+- Human acceptance was still required at this checkpoint. Section 7 supersedes its current status after the user rejected the title font in real use. V2-8-3 Gate 2 remains paused and separately approval-gated. iPhone + Safari remains untested.
+
+## 7. Human Preview Feedback And Font-only Local Rollback — 2026-07-22
+
+Status: `PF-002 Normal / Fixed locally`.
+
+Human result:
+
+- 用户实际体验 exact protected Preview 后认为 Instrument Serif 在真实使用中不舒服，并明确要求撤回英文标题字体修改。
+- 本轮反馈仅否定字体实验；没有要求撤回 Review/New Learning 导航、两项目标层级、会话文案、`Save today’s goals`、桌面面板等高或现有 Motion。
+
+Local rollback:
+
+- `src/app/layout.tsx` 已移除 Instrument Serif import、font declaration 与 HTML variable。
+- `mimi-display-title` 恢复为 Geist semibold 与正常字距；`mimi-word-serif` 恢复原有 Georgia fallback。
+- 所有标题大小、现有组件 class hook、布局、交互、数据和动态效果保持不变。
+- 字体契约测试通过：1 个文件 / 3 项测试；ESLint、TypeScript、Production build、Tier 3 governance preflight 与 `git diff --check` 通过。
+
+Safety and remaining gate:
+
+- 没有 deployment、environment、credential、database、provider、Production、FSRS、Daily Episode、Motion 或持久资料变更。
+- 历史 deployment `dpl_DxQWHVspQuukaeR6LTCjKp15a3zp` 仍证明旧 Instrument 版本的机器状态，但不再是当前候选版本。
+- PF-002 需要新的 exact protected Preview 与人类复测后才能进入 `Retest passed` 或 `Closed`；V2-8-3 Gate 2 继续暂停并仍需另行批准。

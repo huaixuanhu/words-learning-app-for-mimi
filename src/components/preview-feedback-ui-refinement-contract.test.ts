@@ -49,21 +49,20 @@ describe("V2-8-2.3 PF-002 learner UI refinement", () => {
     }
   });
 
-  it("uses one lightweight display font without changing body, control, or motion fonts", () => {
+  it("keeps the original Geist title system without changing layout or motion contracts", () => {
     const layout = source("src/app/layout.tsx");
     const css = source("src/app/globals.css");
     const shell = source("src/components/app-shell.tsx");
-    const nav = source("src/components/app-nav.tsx");
     const home = source("src/components/vocabulary/home-dashboard.tsx");
 
-    expect(layout).toContain("Instrument_Serif");
-    expect(layout).toContain('subsets: ["latin"]');
-    expect(layout).toContain('weight: "400"');
-    expect(layout).toContain('display: "swap"');
+    expect(layout).not.toContain("Instrument_Serif");
+    expect(layout).not.toContain("--font-instrument-serif");
     expect(css).toContain(".mimi-display-title");
-    expect(css).toContain("var(--font-instrument-serif)");
+    expect(css).toContain("font-family: var(--font-sans)");
+    expect(css).toContain("font-weight: 600");
+    expect(css).toContain('font-family: Georgia, "Times New Roman", var(--font-cjk-rounded)');
+    expect(css).not.toContain("--font-instrument-serif");
     expect(shell).toContain('className="mimi-display-title');
-    expect(nav).not.toContain("mimi-display-title relative flex min-h-14");
     expect(home).toContain("lg:items-stretch");
     expect(home).toContain("lg:h-full");
     expect(css).not.toContain("transition-duration: 1ms");
