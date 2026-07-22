@@ -1,5 +1,18 @@
 # AI Agent Log
 
+## 2026-07-22 21:32 AEST
+
+- Task: deploy the user-committed PF-003 Active completion-feedback fix to protected Preview.
+- Plan agreed: yes. The user explicitly requested the Preview deployment. Scope was exact-commit Preview deployment and bounded machine verification; Production, remote database, credentials/environment changes, provider configuration and V2-8-3 Gate 2 were excluded.
+- Working tier: Tier 3. The Vercel project and protected application were inspected through the signed-in Chrome session; no secret value or account setting was read or changed.
+- Deployment result: the clean local `V2` branch, `origin/V2` and Vercel source all point to `acd009cc3879275dffa1d22c470b6c82fd1f8263`. Git Integration had already created `dpl_BAYB3tDx1m4ybKFRtw9rdf32jZon`, so no duplicate deployment was triggered. Vercel reports `Preview`, `Ready`, a 42-second build and application Functions in `SYD1`.
+- URL/result: unique URL `https://words-learning-app-for-mimi-1iozhbda7-anorias-projects.vercel.app`; branch alias `https://words-learning-app-for-mimi-git-v2-anorias-projects.vercel.app`. An unauthenticated request received HTTP 302 to Vercel Authentication; signed-in Chrome loaded the expected V2 application shell with zero browser console error.
+- Changed files: documentation/evidence only — PF-003 register, V2 Master/cutover handoff, Architecture, README, AGENTS, Changelog and this governance record.
+- Validation: the exact deployment/source/environment/region/protection/application-shell checks pass. The deployed code was already validated before commit at 91 test files / 554 tests plus lint, typecheck, three backup dry-runs and Production build. Those local gates were not rerun for this documentation-only post-deployment tranche; post-record `git diff --check` and Tier 3 governance preflight pass.
+- Safety notes: no Production deployment, promote, alias mutation, database action, credential/environment change, provider call, learning-data write, Motion, TTS contract or SSO work occurred.
+- Residual boundary: PF-003 is `Normal / Preview-ready`, not Closed. The machine check did not complete an Active queue or hear audio; user/Mimi must retest the final-card completion sound. PF-002 also remains `Normal / Preview-ready`; Gate 2 remains paused and separately approval-gated.
+- Reason: bind the accepted fix to an exact protected Preview while preserving human listening as the closure authority.
+
 ## 2026-07-22 21:11 AEST
 
 - Task: inspect and fix the protected Preview report that Active New Learning and Review lacked the completion sound available after Recognition completion.

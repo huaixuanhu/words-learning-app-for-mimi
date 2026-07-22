@@ -19,13 +19,13 @@
 - **ADHD-friendly 学习体验**：把任务拆小、保持明确反馈，并允许保守地回退和重新开始。
 - **长期数据可控**：正式学习数据保存在云端数据库，同时保留导出和备份能力。
 
-当前 V1 已作为受保护的私人应用上线。V2 主线已经完成每日学习、独立 Active 三种练习、手机端与 Dashboard、第一代付费 AI enrichment（AI 词汇补充）及 V2-only 性能收口。V2-8-2.2 已加入可靠的方向键评分、设备 English voice 备用选项，以及每条英文例句相邻的中文翻译资料链。V2-8-2.3 的 PF-001 已在 protected Preview 关闭；PF-002 的 Geist 回退 exact Preview 已 Ready 并等待人工复测；PF-003 已在本地补齐 Active New Learning/Review 的完成弹窗和 Mimi 完成音效，等待 commit、Preview 与人工复测。Production 继续运行 V1 / Schema Version 5。V2-8-3 Gate 2 暂停到全部 PF 收口，并且届时仍需新的明确批准。整个 V2 不包含 SSO（Single Sign-On，单点登录）或 confidential per-person authorization（个人机密授权隔离）。
+当前 V1 已作为受保护的私人应用上线。V2 主线已经完成每日学习、独立 Active 三种练习、手机端与 Dashboard、第一代付费 AI enrichment（AI 词汇补充）及 V2-only 性能收口。V2-8-2.2 已加入可靠的方向键评分、设备 English voice 备用选项，以及每条英文例句相邻的中文翻译资料链。V2-8-2.3 的 PF-001 已在 protected Preview 关闭；PF-002 的 Geist 回退 exact Preview 已 Ready 并等待人工复测；PF-003 的 Active New Learning/Review 完成音效修复已在 exact protected Preview Ready，等待人工复测。Production 继续运行 V1 / Schema Version 5。V2-8-3 Gate 2 暂停到全部 PF 收口，并且届时仍需新的明确批准。整个 V2 不包含 SSO（Single Sign-On，单点登录）或 confidential per-person authorization（个人机密授权隔离）。
 
 ## 正式版本
 
 - 访问地址：[words-learning-app-for-mimi.vercel.app](https://words-learning-app-for-mimi.vercel.app)
 - 当前线上版本：cloud-backed V1（云端持久化 V1）
-- 当前开发分支：`V2`；PF-002 为 `Normal / Preview-ready`，PF-003 为 `Normal / Fixed locally`；本地 V2-8-3 Gate 1 与 protected Preview Gate 0B 已完成，Gate 2 暂停且仍需重新批准
+- 当前开发分支：`V2`；PF-002 与 PF-003 均为 `Normal / Preview-ready`；本地 V2-8-3 Gate 1 与 protected Preview Gate 0B 已完成，Gate 2 暂停且仍需重新批准
 - 访问方式：私人 Basic Auth（基础认证）；账号信息不会存放在仓库中
 - 正式数据：Neon Postgres（关系型数据库）
 
@@ -63,7 +63,7 @@
 - Settings 仍可明确选择设备 English voice 作为备用。PF-001 的默认路线固定 Google Cloud `en-AU-Standard-C`（`0.9` 语速、原始音高、MP3），并接入 Recognition、Active revealed answer / Dictation、例句选词与 Settings preview；重复词优先使用无明文 key 的 Cache。Preview-only WIF、`staging` `0004` / `0005`、exact deployment、机器路径和 MacBook + Chrome 人工复测已完成。Mimi 也确认音效没有问题，但其设备/浏览器没有记录；iPhone + Safari 是未来少量使用环境，尚未验证。
 - 新建、编辑、导入和 AI 接受的英文例句都需要配对中文翻译。Library 可筛选 `Needs translation`，旧资料的缺口会明确显示并可通过人工审核的 AI suggestion 逐词补齐。JSON backup 已升到 Version 4；Version 1–3 仍可读取。
 - V2-8-2.3 使用 `PF-001` 起的连续编号集中处理 Preview 反馈。PF-001 为 `High / Closed`，使用独立 TTS Cache、Kill Switch、全局额度和 additive `0005`，不复用 Gemini ledger；用户与 Mimi 均确认音效可接受，Mimi 的设备环境和 iPhone + Safari 兼容性仍未形成证据。PF-002 为 `Normal / Preview-ready`：桌面入口改为 `Review / New Learning`，手机入口为 `Learn`；Home/Study 使用两项目标层级；Session 文案更明确；桌面面板继续等高。历史 Instrument Serif 版本的 1280/390 px 与运行机器检查均通过，但用户实际使用后要求撤回该字体。Geist 回退 commit `54c8ca4492ff9b13d095ea0bd0d3d7ca702c3c2f` 已作为 protected Preview deployment `dpl_EmRVmp5YDTKgnh1VEtVBozwhRp6J` Ready；桌面字体、保护、区域、溢出与控制台机器检查通过，人工复测仍待完成。该阶段仍不包含 SSO。
-- PF-003 为 `Normal / Fixed locally`：Active 在最后一项成功记录且队列清空后，现与 Recognition 一样显示完成弹窗；`Done` 根据既有 `Review complete` 开关播放同一份本地 Mimi 音效。该行为覆盖 Active New Learning、Review、Say it、Spell it 与 Dictation，不修改完成条件、FSRS、资料、TTS 或动态效果。
+- PF-003 为 `Normal / Preview-ready`：Active 在最后一项成功记录且队列清空后，现与 Recognition 一样显示完成弹窗；`Done` 根据既有 `Review complete` 开关播放同一份本地 Mimi 音效。Exact commit `acd009cc3879275dffa1d22c470b6c82fd1f8263` 已作为 protected Preview deployment `dpl_BAYB3tDx1m4ybKFRtw9rdf32jZon` Ready，等待人工音效复测。该行为覆盖 Active New Learning、Review、Say it、Spell it 与 Dictation，不修改完成条件、FSRS、资料、TTS 或动态效果。
 - V2-8-3 的本地 Gate 1 使用 `maintenance`、`schema6-readiness`、`live` 三个明确模式；缺失或未知模式会安全停止。Basic Auth 仍先于维护状态执行，只有 `live` 接受带 `v2-schema6` 标记的 Production 写入，旧页面会被要求重新载入。
 - Schema 5 / Schema 6 的非空 clone/main 检查和迁移命令目前只是 dormant tooling（未启用工具），必须同时通过 exact target、environment、action 和人工确认。`0003`、`0004`、`0005` migration SHA-256 已分别固定，迁移顺序为 `0003 -> 0004 -> 0005`；切换记录使用不含密钥的 manifest（清单）并要求 V1/Schema 5 与 V2/Schema 6 成对回退准备。
 - Production AI 的独立 `v2-8-3-production` scope 只有在 `live`、HTTPS、Vercel Production `main`、`NODE_ENV=production`、Schema 6、明确 Kill Switch 状态和其他正式确认全部满足时才可能打开；首轮最多 4 次供应商调用，进入 300 次/日长期边界还需单独确认。

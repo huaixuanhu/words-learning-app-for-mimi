@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 2026-07-22 21:32 AEST
+
+- Advanced PF-003 from `Normal / Fixed locally` to `Normal / Preview-ready`. Vercel Git Integration had already deployed clean exact branch `V2` commit `acd009cc3879275dffa1d22c470b6c82fd1f8263` as protected Preview deployment `dpl_BAYB3tDx1m4ybKFRtw9rdf32jZon`, so no duplicate deployment was created.
+- Confirmed `Preview / Ready`, a 42-second build, branch alias `https://words-learning-app-for-mimi-git-v2-anorias-projects.vercel.app`, unique URL `https://words-learning-app-for-mimi-1iozhbda7-anorias-projects.vercel.app`, and application Functions in `SYD1`.
+- Confirmed protection through an unauthenticated HTTP 302 redirect to Vercel Authentication. Loaded the signed-in Preview application shell in Chrome and confirmed the expected V2 navigation with zero browser console error. This machine check does not claim that an Active session was completed or that the sound was heard; user/Mimi human retest remains required.
+- Synchronized the PF-003 register, V2 Master/cutover handoff, Architecture, README, AGENTS and governance record. Production V1/Schema 5, Neon `main`, database state, credentials, environment values, AI/TTS configuration and V2-8-3 Gate 2 remain unchanged.
+- Reason: make the exact Active completion-feedback fix available for protected Preview listening without widening Production authority.
+
 ## 2026-07-22 21:11 AEST
 
 - Registered protected Preview finding PF-003 as `Normal` after the user confirmed that Active New Learning and Review reached their completion state without the completion sound already available in Recognition.

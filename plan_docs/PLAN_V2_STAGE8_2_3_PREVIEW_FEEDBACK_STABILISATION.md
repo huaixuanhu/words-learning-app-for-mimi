@@ -64,7 +64,7 @@ Target capability tier: Tier 3
 
 Working tier: Tier 3
 
-Status: active again on 2026-07-22. PF-001 remains `High / Closed`: its exact `en-AU-Standard-C` Voice Contract, local and provider evidence, additive `0005`, Preview-only WIF, `staging` migration, exact deployment, Kill Switch checks and machine-route verification are complete. The user passed Settings Preview, Recognition, Active and example-word playback on MacBook + Chrome and described the audio as “非常理想”; Mimi later independently confirmed that the sound had no problem, while her exact device/browser was not recorded. PF-002 is `Normal / Preview-ready` under `plan_docs/PLAN_V2_STAGE8_2_3_2_LEARNING_NAVIGATION_GOAL_HIERARCHY_TYPOGRAPHY.md`: the user-rejected Instrument Serif experiment has been replaced by Geist titles and the prior large-word fallback, and exact commit `54c8ca4492ff9b13d095ea0bd0d3d7ca702c3c2f` is Ready on protected Preview with machine checks passing. Human retest remains pending. PF-003 is `Normal / Fixed locally`: Active New Learning and Review now reuse the Recognition completion dialog and existing local completion sound across Say it, Spell it and Dictation, with Preview deployment/retest pending. iPhone + Safari remains an untested occasional-use environment. V2-8-3 Gate 2 is paused until all open PF items are closed or explicitly accepted.
+Status: active again on 2026-07-22. PF-001 remains `High / Closed`: its exact `en-AU-Standard-C` Voice Contract, local and provider evidence, additive `0005`, Preview-only WIF, `staging` migration, exact deployment, Kill Switch checks and machine-route verification are complete. The user passed Settings Preview, Recognition, Active and example-word playback on MacBook + Chrome and described the audio as “非常理想”; Mimi later independently confirmed that the sound had no problem, while her exact device/browser was not recorded. PF-002 is `Normal / Preview-ready` under `plan_docs/PLAN_V2_STAGE8_2_3_2_LEARNING_NAVIGATION_GOAL_HIERARCHY_TYPOGRAPHY.md`: the user-rejected Instrument Serif experiment has been replaced by Geist titles and the prior large-word fallback, and exact commit `54c8ca4492ff9b13d095ea0bd0d3d7ca702c3c2f` is Ready on protected Preview with machine checks passing. Human retest remains pending. PF-003 is `Normal / Preview-ready`: Active New Learning and Review now reuse the Recognition completion dialog and existing local completion sound across Say it, Spell it and Dictation; exact commit `acd009cc3879275dffa1d22c470b6c82fd1f8263` is Ready on protected Preview with machine checks passing, while human sound retest remains pending. iPhone + Safari remains an untested occasional-use environment. V2-8-3 Gate 2 is paused until all open PF items are closed or explicitly accepted.
 
 ## 1. Stage Position And Release Effect
 
@@ -277,7 +277,7 @@ Reproduction steps and evidence: complete the final card in any Active zone and 
   the final card in Recognition. Source inspection confirms Recognition opens showCompletionModal after
   the accepted final rating and calls playReviewCompleteSound from confirmCompletion; Active only empties
   sessionIds and renders This Active session is complete, with no sound-setting or completion-player call.
-Priority / status: Normal / Fixed locally
+Priority / status: Normal / Preview-ready
 Scope decision: bounded UI feedback parity inside the existing Active client component and its focused
   contract test. Reuse ResponsiveDialog, useMimiSound, playReviewCompleteSound and the current local asset.
 Files or contracts affected: src/components/practice/active-practice-session.tsx,
@@ -285,9 +285,15 @@ Files or contracts affected: src/components/practice/active-practice-session.tsx
 Local validation: focused Active contract passes 1 file / 4 tests. Full Vitest passes 91 files / 554 tests
   with the existing Postgres integration file/test skipped. Lint, typecheck, three backup dry-runs and
   Production build pass; final governance preflight and diff check follow synchronized documentation.
-Preview deployment / exact commit: pending a later explicit deployment request after local commit.
+Preview deployment / exact commit: exact commit acd009cc3879275dffa1d22c470b6c82fd1f8263,
+  branch V2, is Ready as protected Preview deployment dpl_BAYB3tDx1m4ybKFRtw9rdf32jZon at
+  https://words-learning-app-for-mimi-1iozhbda7-anorias-projects.vercel.app. Git Integration
+  created the deployment automatically, so no duplicate deployment was triggered. Vercel reports
+  Preview, a 42-second build, both the unique URL and V2 branch alias, and application Functions in
+  SYD1. An unauthenticated request received HTTP 302 to Vercel Authentication; signed-in Chrome
+  loaded the application shell and reported zero browser console error.
 User or Mimi retest: pending.
-Resolution or accepted limitation: open at Fixed locally. Active now opens the same non-backdrop-dismissable
+Resolution or accepted limitation: open at Preview-ready. Active now opens the same non-backdrop-dismissable
   completion dialog after the final accepted queue result. Done closes it and, only when the existing Review
   complete preference is enabled, attempts the same local Mimi sound from that user gesture. Session/mode
   reset and rollback clear the dialog. No FSRS, Daily Episode, pass condition, queue selection, rollback
