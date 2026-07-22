@@ -64,7 +64,7 @@ Target capability tier: Tier 3
 
 Working tier: Tier 3
 
-Status: active again on 2026-07-22. PF-001 remains `High / Closed`: its exact `en-AU-Standard-C` Voice Contract, local and provider evidence, additive `0005`, Preview-only WIF, `staging` migration, exact deployment, Kill Switch checks and machine-route verification are complete. The user passed Settings Preview, Recognition, Active and example-word playback on MacBook + Chrome and described the audio as “非常理想”; Mimi later independently confirmed that the sound had no problem, while her exact device/browser was not recorded. PF-002 is `Normal / Preview-ready` under `plan_docs/PLAN_V2_STAGE8_2_3_2_LEARNING_NAVIGATION_GOAL_HIERARCHY_TYPOGRAPHY.md`: the user-rejected Instrument Serif experiment has been replaced by Geist titles and the prior large-word fallback, and exact commit `54c8ca4492ff9b13d095ea0bd0d3d7ca702c3c2f` is Ready on protected Preview with machine checks passing. Human retest remains pending. iPhone + Safari remains an untested occasional-use environment. V2-8-3 Gate 2 is paused again until PF-002 is closed or explicitly accepted.
+Status: active again on 2026-07-22. PF-001 remains `High / Closed`: its exact `en-AU-Standard-C` Voice Contract, local and provider evidence, additive `0005`, Preview-only WIF, `staging` migration, exact deployment, Kill Switch checks and machine-route verification are complete. The user passed Settings Preview, Recognition, Active and example-word playback on MacBook + Chrome and described the audio as “非常理想”; Mimi later independently confirmed that the sound had no problem, while her exact device/browser was not recorded. PF-002 is `Normal / Preview-ready` under `plan_docs/PLAN_V2_STAGE8_2_3_2_LEARNING_NAVIGATION_GOAL_HIERARCHY_TYPOGRAPHY.md`: the user-rejected Instrument Serif experiment has been replaced by Geist titles and the prior large-word fallback, and exact commit `54c8ca4492ff9b13d095ea0bd0d3d7ca702c3c2f` is Ready on protected Preview with machine checks passing. Human retest remains pending. PF-003 is `Normal / Fixed locally`: Active New Learning and Review now reuse the Recognition completion dialog and existing local completion sound across Say it, Spell it and Dictation, with Preview deployment/retest pending. iPhone + Safari remains an untested occasional-use environment. V2-8-3 Gate 2 is paused until all open PF items are closed or explicitly accepted.
 
 ## 1. Stage Position And Release Effect
 
@@ -77,11 +77,13 @@ V2-8-2 protected Preview rehearsal
   -> V2-8-2.3 Preview feedback stabilisation
        -> V2-8-2.3-1 PF-001 Google Cloud Standard TTS
        -> V2-8-2.3-2 PF-002 learning navigation / goal hierarchy / typography
+       -> PF-003 bounded Active completion-feedback parity fix
   -> V2-8-3 Gate 2–7 Production cutover work
 ```
 
 - V2-8-3 Gate 0B 与 local Gate 1 保留为已完成历史，不撤销、不重新编号。
-- V2-8-3 Gate 2 曾在 PF-001 关闭后恢复为下一候选工作。PF-002 登记后，本阶段重新进入 active，Gate 2 再次暂停；PF-002 关闭或由人明确接受后才重新评估。
+- V2-8-3 Gate 2 曾在 PF-001 关闭后恢复为下一候选工作。PF-002 登记后，本阶段重新进入 active；PF-003 随后进入同一 register。Gate 2 保持暂停，直到全部 open PF 关闭或由人明确接受后才重新评估。
+- PF-003 是 parent register（主问题清单）内的有界修复，不派生新的平级计划：它只复用现有 completion sound（完成音效）、声音设置与 ResponsiveDialog（响应式弹窗），不改变学习完成条件或资料。
 - `staging` 已先完成 `0004` 与 `0005`；protected Preview 随后部署 exact commit `deab32f3ab96025116597881b7b69c9dde84b8f4`，并通过 Kill Switch closed/open、四条机器路径和 MacBook + Chrome 人工验收。
 - 本阶段允许多轮本地修复和 Preview 复测，但每一轮必须绑定问题编号、exact commit、验证结果和人工结论。
 
@@ -257,6 +259,39 @@ Resolution or accepted limitation: open at Preview-ready. Instrument Serif loadi
   retains Deployment Protection, loads real Home data, computes Geist 600/normal spacing on the
   checked titles, has no desktop overflow and produced zero browser warning/error. Human retest is
   required before Closed; iPhone + Safari remains untested.
+```
+
+#### PF-003 — Active completion sound is missing
+
+```text
+ID: PF-003
+Reported at / reporter: 2026-07-22 / user during protected Preview testing
+Area / route / device / browser: Active New Learning and Review / protected Preview / user test
+Observed behavior: after the last eligible Active entry passes, the queue becomes complete and the
+  inline completion card appears, but the existing Mimi completion sound is never offered. Recognition
+  New Learning and Review show a completion dialog whose Done button plays that sound when enabled.
+Expected behavior: Active New Learning and Review use the same completion-feedback contract as
+  Recognition across Say it, Spell it and Dictation. The sound remains controlled by the existing
+  Review complete setting and is attempted from the learner's Done-button gesture.
+Reproduction steps and evidence: complete the final card in any Active zone and compare the result with
+  the final card in Recognition. Source inspection confirms Recognition opens showCompletionModal after
+  the accepted final rating and calls playReviewCompleteSound from confirmCompletion; Active only empties
+  sessionIds and renders This Active session is complete, with no sound-setting or completion-player call.
+Priority / status: Normal / Fixed locally
+Scope decision: bounded UI feedback parity inside the existing Active client component and its focused
+  contract test. Reuse ResponsiveDialog, useMimiSound, playReviewCompleteSound and the current local asset.
+Files or contracts affected: src/components/practice/active-practice-session.tsx,
+  src/components/practice/active-practice-contract.test.ts, this register and canonical handoff records.
+Local validation: focused Active contract passes 1 file / 4 tests. Full Vitest passes 91 files / 554 tests
+  with the existing Postgres integration file/test skipped. Lint, typecheck, three backup dry-runs and
+  Production build pass; final governance preflight and diff check follow synchronized documentation.
+Preview deployment / exact commit: pending a later explicit deployment request after local commit.
+User or Mimi retest: pending.
+Resolution or accepted limitation: open at Fixed locally. Active now opens the same non-backdrop-dismissable
+  completion dialog after the final accepted queue result. Done closes it and, only when the existing Review
+  complete preference is enabled, attempts the same local Mimi sound from that user gesture. Session/mode
+  reset and rollback clear the dialog. No FSRS, Daily Episode, pass condition, queue selection, rollback
+  semantics, sound asset, TTS, Schema, backup, API, persistent data, Motion or reduced-motion change.
 ```
 
 ### First stage closeout after PF-001 — 2026-07-22 (historical; superseded by PF-002 reopening)

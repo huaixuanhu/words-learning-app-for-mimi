@@ -41,4 +41,16 @@ describe("Stage 6 Active practice UI contract", () => {
     expect(sessionSource).toContain("event.isComposing");
     expect(sessionSource).toContain('mode === "say" && event.key === " "');
   });
+
+  it("reuses the Recognition completion dialog and sound contract in every Active zone and mode", () => {
+    expect(sessionSource).toContain("useMimiSound");
+    expect(sessionSource).toContain("ResponsiveDialog");
+    expect(sessionSource).toContain("playReviewCompleteSound");
+    expect(sessionSource).toContain("soundSettings.reviewComplete");
+    expect(sessionSource).toContain("nextIds.length === 0 && sessionTotal > 0");
+    expect(sessionSource).toContain("setShowCompletionModal(true)");
+    expect(sessionSource).toContain('zone === "new" ? "New Learning" : "Review"');
+    expect(sessionSource).toContain('data-mimi-sound-skip="true"');
+    expect(sessionSource).toContain("onClick={confirmCompletion}");
+  });
 });

@@ -5,6 +5,7 @@ import { CheckCircle2, Ear, Eye, Keyboard, Mic2, Undo2, Volume2 } from "lucide-r
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { SimplePanel } from "@/components/simple-panel";
+import { useMimiSound } from "@/components/sound-provider";
 import { LearningZoneTabs } from "@/components/study/learning-zone-tabs";
 import {
   createStudyIdempotencyKey,
@@ -12,6 +13,7 @@ import {
   useDailyStudy,
 } from "@/components/study/use-daily-study";
 import { PressableButton } from "@/components/ui/motion-primitives";
+import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import {
   ACTIVE_ANSWER_NORMALIZATION_VERSION,
   compareActiveTypedAnswer,
@@ -43,6 +45,7 @@ import {
   moveReviewAttemptBackToFront,
 } from "@/lib/review/session-queue";
 import { reviewRatings } from "@/lib/stage-two-data";
+import { playReviewCompleteSound } from "@/lib/ui/sound-player";
 import { cancelEnglishSpeech, speakEnglishText } from "@/lib/ui/speech-synthesis";
 import { getActiveTrackVocabularyItems } from "@/lib/vocabulary/repository";
 
@@ -142,6 +145,7 @@ export function ActivePracticeSession({ zone, mode }: Props) {
     recordRating,
     rollbackRating,
   } = useDailyStudy();
+  const { settings: soundSettings } = useMimiSound();
   const reduceMotion = useReducedMotion();
   const selectedPersonId = getSelectedPersonId(data);
   const activeItems = useMemo(() => getActiveTrackVocabularyItems(data), [data]);
@@ -159,6 +163,7 @@ export function ActivePracticeSession({ zone, mode }: Props) {
   const [isLoading, setIsLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [message, setMessage] = useState("");
   const requestKeyRef = useRef("");
   const activationKeyRef = useRef("");
@@ -206,6 +211,7 @@ export function ActivePracticeSession({ zone, mode }: Props) {
         setOutcome(null);
         setRevealed(false);
         setSelectedRatingIndex(null);
+        setShowCompletionModal(false);
         activationKeyRef.current = "";
       })
       .catch((error) => {
@@ -348,6 +354,16 @@ export function ActivePracticeSession({ zone, mode }: Props) {
     }
   };
 
+  const confirmCompletion = () => {
+    setShowCompletionModal(false);
+
+    if (soundSettings.reviewComplete) {
+      void playReviewCompleteSound().catch(() => {
+        // Completion sound is decorative and should not block study flow.
+      });
+    }
+  };
+
   const checkTypedAnswer = (revealWithoutAnswer = false) => {
     if (!currentItem) {
       return;
@@ -480,6 +496,10 @@ export function ActivePracticeSession({ zone, mode }: Props) {
               ? `${PROMPT_REFRESHED_COPY} Saved.`
               : "Saved.",
       );
+
+      if (nextIds.length === 0 && sessionTotal > 0) {
+        setShowCompletionModal(true);
+      }
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Could not save this rating");
     } finally {
@@ -519,6 +539,7 @@ export function ActivePracticeSession({ zone, mode }: Props) {
       setOutcome(null);
       setRevealed(false);
       setSelectedRatingIndex(null);
+      setShowCompletionModal(false);
       setMessage(`Returned to ${previous.surfaceText}.`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Could not return this entry");
@@ -853,6 +874,27 @@ export function ActivePracticeSession({ zone, mode }: Props) {
           Change practice mode
         </Link>
       </SimplePanel>
+
+      <ResponsiveDialog
+        open={showCompletionModal}
+        onClose={() => setShowCompletionModal(false)}
+        labelledBy="active-complete-title"
+        panelClassName="max-w-sm text-center sm:max-w-sm"
+        dismissOnBackdrop={false}
+      >
+        <CheckCircle2 aria-hidden="true" className="mx-auto size-10 text-[var(--mimi-primary)]" />
+        <h2 id="active-complete-title" className="mimi-display-title mt-4 text-2xl text-[var(--mimi-text)]">
+          Today’s {zone === "new" ? "New Learning" : "Review"} is complete
+        </h2>
+        <PressableButton
+          type="button"
+          data-mimi-sound-skip="true"
+          onClick={confirmCompletion}
+          className="mimi-button mimi-focus-ring mt-5 inline-flex min-h-11 min-w-28 items-center justify-center px-5 text-sm font-semibold"
+        >
+          Done
+        </PressableButton>
+      </ResponsiveDialog>
     </div>
   );
 }

@@ -1,5 +1,18 @@
 # AI Agent Log
 
+## 2026-07-22 21:11 AEST
+
+- Task: inspect and fix the protected Preview report that Active New Learning and Review lacked the completion sound available after Recognition completion.
+- Plan agreed: yes. The assistant first performed a read-only comparison, identified the missing Active completion-dialog/sound path, proposed a bounded PF-003 fix, and the user confirmed. Scheduling, data, TTS, Motion and remote work were explicitly excluded.
+- Working tier: Tier 3. This tranche changes local client UI, one focused source contract and canonical records only; it performs no remote, credential, provider, database or Production action.
+- Root cause: `ReviewSession` opened `showCompletionModal` after the final accepted queue result and called `playReviewCompleteSound()` from the `Done` user gesture when `soundSettings.reviewComplete` was enabled. `ActivePracticeSession` shared all Active zones/modes but only emptied its queue and rendered an inline completion card; it had no sound-setting, dialog or completion-player integration.
+- Implementation result: Active now opens the same non-backdrop-dismissable `ResponsiveDialog` after the final accepted queue result. `Done` uses `data-mimi-sound-skip`, closes the dialog and conditionally plays the existing local Mimi completion sound. New Learning/Review and Say it/Spell it/Dictation inherit the behavior from the shared component; initialization and rollback clear the dialog.
+- Changed files: Active practice component and focused contract; PF-003 parent register; V2 Master/cutover handoff; Architecture; README; AGENTS; Changelog; this governance record. Existing uncommitted PF-002 deployment-evidence documentation was preserved.
+- Validation: focused Active contract passes 1 file / 4 tests. Full Vitest passes 91 files / 554 tests with the existing Postgres integration file/test skipped. ESLint, TypeScript, all three backup dry-runs and Production build pass; final Tier 3 governance preflight and `git diff --check` follow synchronized records.
+- Safety notes: no learning completion rule, queue selection, FSRS, Daily Episode, review event/state, rollback semantics, persistent data, Schema, migration, backup shape, API, TTS, sound asset, Motion/reduced-motion, credential, environment, remote database, Preview/Production deployment, Production write, GitHub action or SSO work occurred.
+- Residual boundary: PF-003 is `Normal / Fixed locally`, not Preview-ready or Closed. It still needs commit, exact protected Preview and user/Mimi retest. PF-002 remains `Normal / Preview-ready`; V2-8-3 Gate 2 stays paused and separately approval-gated.
+- Reason: repair one verified Active UI omission by reusing the already accepted Recognition sound contract and browser user-gesture boundary.
+
 ## 2026-07-22 20:47 AEST
 
 - Task: deploy the user-committed PF-002 Geist rollback to the protected V2 test environment.

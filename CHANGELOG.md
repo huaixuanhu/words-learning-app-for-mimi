@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## 2026-07-22 21:11 AEST
+
+- Registered protected Preview finding PF-003 as `Normal` after the user confirmed that Active New Learning and Review reached their completion state without the completion sound already available in Recognition.
+- Confirmed the cause in source: Recognition opened a completion dialog after the final accepted queue result and played the local Mimi sound from its `Done` gesture; the shared Active component only rendered its inline completed state and never read the existing sound preference or called the completion player.
+- Added the same bounded completion-dialog contract to Active across New Learning/Review and Say it/Spell it/Dictation. `Done` skips the global soft click, closes the dialog and plays `mimi-review-complete.m4a` only when the existing `Review complete` preference is enabled. Session/mode initialization and rollback clear the dialog.
+- Added focused Active regression coverage. Focused validation passes 1 file / 4 tests; full Vitest passes 91 files / 554 tests with the existing Postgres integration file/test skipped; lint, TypeScript, three backup dry-runs and Production build pass.
+- Marked PF-003 `Normal / Fixed locally`. Commit, protected Preview and human sound retest remain pending; PF-002 remains independently `Normal / Preview-ready`.
+- Safety: no completion criterion, queue, FSRS, Daily Episode, event/state, persistent data, Schema, backup, API, TTS, sound asset, Motion, credential, environment, database, deployment, Production or SSO change occurred.
+- Reason: restore consistent and browser-reliable completion feedback for both vocabulary Tracks without changing learning behavior.
+
 ## 2026-07-22 20:47 AEST
 
 - Advanced the Geist rollback candidate from `Normal / Fixed locally` to `Normal / Preview-ready`. Vercel Git Integration had already deployed exact branch `V2` commit `54c8ca4492ff9b13d095ea0bd0d3d7ca702c3c2f` as protected Preview deployment `dpl_EmRVmp5YDTKgnh1VEtVBozwhRp6J`, so no duplicate deployment was created.
