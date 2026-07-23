@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## 2026-07-23 23:36 AEST
+
+- Completed the user-approved V2-8-3 Gate 4 on clean exact commit `16acd9102b77bf01565b2d963099ef3c819a0add`.
+- Created one project-scoped Neon organization API key through the signed-in Console and transferred it directly to macOS Keychain through a one-shot loopback bridge. The temporary browser value and both clipboards were cleared; no credential or connection string entered the repository or logs.
+- Bound one fixed non-empty `parent-data` clone of Production `main`, then ran `0003 -> 0004 -> 0005` twice in outer transactions around an official restore-from-parent operation. The first migrated state was preserved under the fixed recovery name.
+- Both Schema 5 inventories match exactly: 1 person, 1,486 vocabulary items, 125 review states, 203 review events and 1,854 total core rows. Both Schema 6 runs report 22 tables, 12 constraints, zero invalid/orphan/in-flight/provider states and full digest parity.
+- Refreshed the exact-commit synthetic encrypted backup proof, created a second repository-external `age` archive, and restored it into an isolated PostgreSQL 17 cluster. Archive SHA-256 is `8393d36e675a77878a9e5b14be4783419083287250ebb922e52c2e6c5daeee93`; restore evidence SHA-256 is `76afae35953d891255649c72582e8fed552290c89f53ad76293e2e6ee264532d`.
+- Production `main`, V1, Production Vercel environment and AI/TTS remained unchanged during Gate 4. The clone and preserved branch remain temporarily available for Gate 5 rollback evidence.
+- The user subsequently authorized direct execution through complete V2 Production launch. Gate 5–7 may proceed, while all exact-target, maintenance, final-backup, write-free, migration, provider ceiling and rollback guards remain mandatory.
+- Reason: prove the real non-empty migration and two independent recovery paths before touching Production `main`.
+
 ## 2026-07-23 23:40 AEST
 
 - Began the explicitly approved V2-8-3 Gate 4 with a documentation-first Production clone migration/recovery contract derived from the canonical V2-8-3 cutover plan.

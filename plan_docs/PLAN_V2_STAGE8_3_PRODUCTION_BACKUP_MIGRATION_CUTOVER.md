@@ -44,7 +44,7 @@ Input evidence:
 Consumer / next stage:
 
 - 本文件直接约束 V2-8-3 的本地守门实现、远程只读核验、备份恢复演练、Production clone（正式数据克隆）演练、正式切换、验收与收口。
-- Gate 0B、本地 Gate 1 与 Gate 2 已完成。用户明确接受 PF-002 / PF-003，并另行批准 Gate 2 metadata-only remote inventory（仅元资料远程清单）与 Gate 3 encrypted backup/restore。Gate 2 证据见 `plan_docs/PLAN_V2_STAGE8_3_GATE2_REMOTE_READ_ONLY_INVENTORY.md`；Gate 3 当前停在 clean exact-commit checkpoint，完成真实备份后再进入 Approval Stop 3。
+- Gate 0B、本地 Gate 1、Gate 2、Gate 3 与 Gate 4 已完成。Gate 2 证据见 `plan_docs/PLAN_V2_STAGE8_3_GATE2_REMOTE_READ_ONLY_INVENTORY.md`；Gate 3 与 Gate 4 的真实备份、clone migration、restore 和 parity 证据分别见对应 derived plans。
 - 如果后续必须派生执行记录或事故恢复文件，新文件开头必须继续引用本文件为 `Source plan`，并写明 `Scope`、`Non-Scope` 与 `Exit criteria`，不得形成无来源的平级计划。
 - V2-8-3 全部完成后，V2 替换 V1；multi-user confidential isolation（多用户机密隔离）仍留在 Version-hold 计划。
 
@@ -58,7 +58,7 @@ Target capability tier: Tier 3
 
 Working tier: Tier 3
 
-Status: Gate 0B protected Preview performance verification、Gate 1 local guards、Gate 2 remote read-only inventory 与 Gate 3 encrypted logical backup/restore rehearsal 均已完成。PF-001 为 `High / Closed`；PF-002 与 PF-003 均为 `Normal / Closed by explicit acceptance`，V2-8-2.3 complete。Gate 3 exact commit `88ddb1c2c96437ca3cc4a8f2103990ae70e79eac` 已生成仓库外 age-encrypted Production Schema 5 archive，并在本机隔离 PostgreSQL 17 完成 counts/invariants/逐表 digest parity；`restoreVerified=true`。用户已在 2026-07-23 明确批准 Gate 4 clone migration/recovery rehearsal，并派生 `plan_docs/PLAN_V2_STAGE8_3_GATE4_PRODUCTION_CLONE_MIGRATION_RECOVERY.md`。当前停在 Gate 4A credential checkpoint：本机没有可用的 `NEON_API_KEY`，创建或读取 credential value 仍需独立明确批准。Production V1、Neon `main` 与 Schema 5 未发生 mutation；Gate 5–7 仍未批准。
+Status: Gate 0B、Gate 1、Gate 2、Gate 3 与 Gate 4 均已完成。Gate 4 在 exact commit `16acd9102b77bf01565b2d963099ef3c819a0add` 上创建受限制 Production clone，两次执行固定 `0003 -> 0004 -> 0005`、一次 restore-from-parent，并证明两次 Schema 6 parity 与独立 encrypted logical restore 全部通过。Production V1、Neon `main` 与 Schema 5 在 Gate 4 内未发生 migration。用户已进一步明确授权直接执行到 V2 完全上线；当前进入 Gate 5 的 Production-only credentials、maintenance、最终备份与 `main` migration 准备，仍由既有 exact-target 和 fail-closed guards 逐项约束。
 
 ## Scope
 
@@ -143,10 +143,10 @@ Status: Gate 0B protected Preview performance verification、Gate 1 local guards
 | 1 | 实现本地 Production guards、inspectors、maintenance/client-version/AI gates 与 tests | 已批准 | 本次 local tranche（本地批次）在此完成并交付 |
 | 2 | 远程只读 Production/Vercel/Neon/Gemini/TTS inventory 与官方事实刷新 | 已批准并完成 | 脱敏证据已交付；Gate 3 已另行批准 |
 | 3 | 选择独立加密 logical backup 方法并完成 restore rehearsal | 已批准并完成 | PostgreSQL 17 custom archive + `age` 流式加密 + 本机隔离恢复已通过；停在 Approval Stop 3，等待 Gate 4 新批准 |
-| 4 | 在非空 Production clone 演练 Schema 5 → 6、parity 与 recovery | 已批准；停在独立 credential checkpoint | 删除/保留临时资源须按批准执行；main 仍不变 |
-| 5 | 暂停写入、最终备份、Production-only secrets、迁移 `main`、promote V2 | 未批准 | 每个 Production mutation 前按本 Gate 的 stop point 再确认 |
-| 6 | 有认证的资料、学习、AI、日志、成本、手机和性能验收 | 未批准 | 移除 AI `4` 次上限及开放长期边界前停止 |
-| 7 | 稳定观察、最终备份、Preview/旧 key 与 checkpoint 收口 | 未批准 | 删除恢复资源或撤销 credential 前停止 |
+| 4 | 在非空 Production clone 演练 Schema 5 → 6、parity 与 recovery | 已完成 | 两次 migration、provider restore 与独立 encrypted restore 均通过；`main` 仍为 Schema 5 |
+| 5 | 暂停写入、最终备份、Production-only secrets、迁移 `main`、promote V2 | 已由 2026-07-23 总授权批准执行 | 继续保留 exact-target、maintenance、write-free、backup 与 rollback guards |
+| 6 | 有认证的资料、学习、AI、日志、成本、手机和性能验收 | 已由 2026-07-23 总授权批准执行 | AI 首轮仍限制 4 次；证据不通过则保持 Kill Switch |
+| 7 | 稳定观察、最终备份、Preview/旧 key 与 checkpoint 收口 | 已由 2026-07-23 总授权批准执行 | 只清理已确认无引用的临时资源；保留 V1 rollback 证据 |
 
 ## Gate 0 — Protected Preview Performance State
 
@@ -343,6 +343,14 @@ Gate 3C 前两个 fail-closed checkpoints 分别修复了 URI/libpq mapping 与 
 - 记录 paired application/database rollback 顺序；不需要、也不得在 clone 上产生真实学习写入或 Gemini 调用。
 
 **Approval Stop 4:** 创建、迁移、Reset/Restore、再次迁移或删除 Production clone 都是 remote mutation，需要明确批准和 exact target evidence。Gate 4 通过后仍不得操作 `main`。
+
+### Gate 4 completion — 2026-07-23
+
+- Project-scoped Neon API key 使用 Keychain custody；连接 URI 只存在于单次进程，clipboard 已清空。
+- 固定 clone 完成两次原子 Schema 5 → 6 migration、一次 restore-from-parent 和两次完整 parity；两次 before inventory 均有 1,854 行 core rows，combined digest `c269c3133008cc5ae9c30f54f49c88cd792566397ff3aefca5e5fba551f2e794`，无 drift。
+- Schema 6 两次均为 22 tables / 12 constraints，AI/TTS submitted 与 active provider calls 均为 0；migration hashes 无漂移。
+- 当前 commit 的新加密逻辑备份与 isolated PostgreSQL 17 restore 再次通过，archive SHA-256 `8393d36e675a77878a9e5b14be4783419083287250ebb922e52c2e6c5daeee93`，evidence SHA-256 `76afae35953d891255649c72582e8fed552290c89f53ad76293e2e6ee264532d`。
+- 用户新的“直接执行到 V2 完全上线”授权取代本段原 Approval Stop 4；实现仍必须逐项满足 Gate 5–7 的机械保护。
 
 ## Gate 5 — Write-free Production Cutover
 

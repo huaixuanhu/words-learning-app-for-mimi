@@ -46,7 +46,7 @@ Exit criteria:
 Current operational tier: Tier 3  
 Working tier: Tier 3
 
-Status: Gate 4 已在 2026-07-23 获得用户明确批准；documentation-first（文档先行）和现有 guard review（保护层复核）已开始。当前停在 Gate 4A credential checkpoint（凭证检查点）：本机进程环境及专用 Keychain 条目均没有可用 `NEON_API_KEY`，且未读取任何 `.env` 文件或 secret value。创建或读取 API key 需要独立明确批准。
+Status: Gate 4 已完成。用户随后明确授权继续执行至 V2 完全上线；在该授权下创建了 project-scoped Neon organization API key，并仅存入 macOS Keychain。固定 Production clone 已完成两次 Schema 5 → 6 migration、一次 restore-from-parent、两次完整 parity，以及同一 exact commit 的独立 encrypted logical backup / isolated restore。Production `main` 在本 Gate 内保持 Schema 5 且没有 migration。下一步进入 Gate 5 的 Production credential、maintenance、最终备份和 `main` cutover 准备。
 
 ## 1. Authority Boundary
 
@@ -151,7 +151,48 @@ Neon 官方当前说明：
 4. 更新 parent plan、V2 Master、Architecture、README、CHANGELOG 与 governance log。
 5. 停在 Approval Stop 4。Gate 5、clone deletion、API key revoke 和 Production `main` mutation 都需要新的明确批准。
 
-## 5. Stop Conditions
+## 5. Execution Evidence — 2026-07-23
+
+### 5.1 Exact source and credential custody
+
+- Source commit：`16acd9102b77bf01565b2d963099ef3c819a0add`，执行前 `HEAD == origin/V2` 且工作树 clean。
+- Neon project pin：`70b4a70d6cfcd6a872c5d9be7649be69332266624fb3cfec3aa6b32143caa880`。
+- Project-scoped organization API key 由已登录 Console 创建，使用本机 loopback bridge（回环转存页）直接写入 Keychain service `mimi-v2-8-3-neon-api-key`。浏览器临时变量、Chrome clipboard 和系统 clipboard 随后清空；key value、connection URI 和 host 没有进入 stdout、文件或 Git。
+- 最初一次 Keychain 转存读取到了旧的系统 clipboard 内容，live GET 返回 `401`；没有发生远程 mutation。该条目随后被正确值覆盖，并通过 `napi_` prefix、69-byte length 和 metadata-only SHA-256 检查。
+
+### 5.2 Clone identity and operation results
+
+- Clone name：`v2-8-3-production-clone-20260723`；preserved migrated state：`v2-8-3-schema6-preserved-20260723`。
+- Clone branch SHA-256：`b63dc17bbdde97b0d8eb50e05aafa0ac3f020484f78009987a2876704f6f9f6c`。
+- Clone endpoint SHA-256：`db53ee609bb158d9ac04a97a8196a44decdf67cf4f008549c29a4790f2678c7d`。
+- Preserved branch SHA-256：`3bbda4c99e34301eea5b7eddac22e220feea925f4d95db0d388c2f50c0f00155`。
+- `main` parent SHA-256：`45b96691ad36f57a4d9505651a8aff337280c8b4e3a7401297c10a61983a5174`；`main` endpoint SHA-256：`46d0bacffc82ed1b0b8793a31f6b7669c2f17871889c868c46f19c5f8c953ad3`。
+- Create branch、start compute、restore suspend 与 preserved-branch create operations 均到达 `finished`。Clone 建立时间为 `2026-07-23T13:28:41Z`；restore 于 `2026-07-23T13:32:05Z` 完成。
+- Endpoint 保持 `read_write`、0.25 CU，并使用 `suspend_timeout_seconds=0` 的 Neon 默认五分钟 scale-to-zero（自动休眠）设置。
+
+### 5.3 Schema 5 baseline and two forward migrations
+
+- 两次 Schema 5 before inventory 完全一致：people `1`、vocabulary items `1,486`、import batches `38`、review states `125`、review events `203`、review settings `1`、backup imports/mappings `0/0`；Recognition/Active/archived vocabulary 为 `1,486/0/0`。
+- 六项 Schema 5 orphan invariants 均为 `0`；两次 core combined digest 均为 `c269c3133008cc5ae9c30f54f49c88cd792566397ff3aefca5e5fba551f2e794`。
+- 第一次 migration、inspect 与 parity 通过。`npm` 前缀曾被 `tee` 写入 before artifact，parity runner 在 local JSON guard 停止；机械提取同一 safe JSON 后，只读重试通过，没有重复 migration。
+- Restore-from-parent 后 Schema 5 counts、逐表 digests 与 combined digest 无 drift。第二次 `0003 -> 0004 -> 0005` 同样在一个 outer transaction 内通过。
+- 两次 Schema 6 均为 22 tables、15 checked columns、12 constraints、21 indexes、7 triggers；新增 operational counts 中 AI/TTS runs、usage buckets、submitted/active provider calls 全部为 `0`。
+- 两次 parity 均为 `matched=true`、`mismatches=[]`，保留 `1,854` 行 core rows。三个 migration SHA-256 与固定值完全一致。
+
+### 5.4 Independent encrypted logical restore
+
+- 当前 exact commit 重新通过 PostgreSQL `17.10`、`age 1.3.1`、wrong-identity rejection、corrupt-archive rejection、parity 与 cleanup synthetic rehearsal；evidence SHA-256 为 `ffdb046dcaa4ed7d16e409dbd679d49666a4831d9086becaabf79ad1cf92eeb7`。
+- 新的 repository-external archive 为 `mimi-production-schema5-20260723T133451Z-16acd9102b77.dump.age`，`112,253` bytes，SHA-256 `8393d36e675a77878a9e5b14be4783419083287250ebb922e52c2e6c5daeee93`。
+- Source 与 isolated local restore combined digest 同为 `6c82ba44caf462051b9579ca90f8a59994c8794649d6e871dd135cf0c23e2aa9`；`restoreVerified=true`。Secret-free evidence SHA-256 为 `76afae35953d891255649c72582e8fed552290c89f53ad76293e2e6ee264532d`。
+- Archive permissions 为 `0600`，private age identity 仍只在 Keychain；system clipboard 为 0 bytes。
+
+### 5.5 Result and retained resources
+
+- Gate 4 exit criteria 全部通过。V1 storage tables 的完整只读 inventory 与 Schema 6 inventory/parity 同时证明旧资料可读和 V2 core-row preservation；没有执行 rating、reset、AI accept、TTS/provider 或其他学习写入。
+- Clone 与 preserved branch 暂时保留，intended cleanup deadline 为 `2026-07-30T13:28:41Z`；清理安排在 Production 稳定验收后。
+- 用户在 Gate 4 执行期间进一步明确授权“直接执行到 V2 完全上线”，因此 Approval Stop 4 已由新的总授权取代；后续仍保留代码内 exact-target、backup、maintenance、write-free、migration 和 rollout ceilings。
+
+## 6. Stop Conditions
 
 - 无法取得符合最小权限边界的 API key，或必须把 secret 写入仓库/`.env` 才能继续；
 - Production `main`、project、region、branch parent、endpoint、database 或 role 与固定证据不一致；
@@ -163,7 +204,7 @@ Neon 官方当前说明：
 - 任何输出包含 learner content、connection string、password、API key 或 private link；
 - 操作需要升级付费计划、开启自动续费、扩大 credential 权限或触碰 Production `main`。
 
-## 6. Evidence Shape
+## 7. Evidence Shape
 
 Gate 4 evidence 只允许保存：
 
@@ -177,4 +218,3 @@ Gate 4 evidence 只允许保存：
 - secret scan、validation 与 Approval Stop 4 状态。
 
 Learner rows、词条、例句、review event 内容与任何 credential value 不进入 evidence。
-

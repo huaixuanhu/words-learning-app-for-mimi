@@ -3428,6 +3428,22 @@
 - Validation:
   - Passed: `find . -maxdepth 3 -type f | sort`
 - Safety notes: local documentation files only. No application code, git initialization, push, Vercel deployment, credential access, or database mutation was performed. The GitHub repo URL was user-provided, but remote verification was blocked by missing GitHub credentials in the local environment.
+# 2026-07-23 23:36 AEST
+
+- Task: complete V2-8-3 Gate 4 and continue toward the user-authorized full V2 Production launch.
+- Plan agreed: yes. The user explicitly requested direct execution until V2 is fully live, superseding the earlier Approval Stop 4 while retaining all mechanical safety guards.
+- Remote actions:
+  - Created one project-scoped Neon organization API key through the signed-in Console and stored it only in macOS Keychain.
+  - Created one fixed non-empty child clone from Production `main`.
+  - Ran the pinned Schema 5 → 6 migration twice, with one official restore-from-parent and preserved migrated-state branch between runs.
+  - Generated a new encrypted Schema 5 logical backup and restored it only into an isolated local PostgreSQL 17 cluster.
+- Evidence:
+  - Two Schema 5 inventories and both migrated Schema 6 parity results preserve 1,854 core rows and the same allowlisted core digest.
+  - All orphan/invalid/in-flight/provider invariants are zero.
+  - Encrypted archive and isolated restore parity pass; system clipboard is empty and secret-shape scans remain required before commit.
+  - Production `main` and V1 remain Schema 5 at this checkpoint.
+- Safety notes: no learner rows, credential values, database URLs, hosts or private backup identities were printed or committed. No Production `main` migration, Production deployment, provider request or learning mutation occurred during Gate 4. SSO remains outside the whole V2 release.
+
 # 2026-07-23 23:40 AEST
 
 - Task: begin the explicitly approved V2-8-3 Gate 4 Production clone migration, parity and recovery rehearsal.
