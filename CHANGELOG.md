@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## 2026-07-23 00:50 AEST
+
+- Began the explicitly approved V2-8-3 Gate 3 encrypted logical backup/restore tranche. Added its derived plan, PostgreSQL 17 custom-archive + `age` stream-encryption contract, dedicated macOS Keychain identity custody, repository-external archive path, isolated Unix-socket restore runner and focused fail-closed tests.
+- Installed PostgreSQL 17.10 and `age` 1.3.1 locally. The Homebrew PostgreSQL service remains stopped. The dedicated private age identity exists only in Keychain; its public recipient is stored outside the repository with restricted permissions.
+- Passed the synthetic Schema 5 backup/restore rehearsal, including encrypted archive creation, wrong-identity rejection, single-byte-corruption rejection, core-table count/digest parity and deletion of the temporary PostgreSQL cluster and identity files.
+- Rejected the intended `vercel env run` credential path after controlled probes showed it could observe existing `.env.local` in the repository and did not inject Sensitive Production values in a clean linked temporary directory. Vercel API inspection and current official documentation also confirmed that Sensitive values cannot be read back, so the earlier per-id decrypted-value design was removed.
+- The runner now consumes one unpooled Production `main` connection string copied read-only from the signed-in Neon Console, clears the system clipboard immediately, and rejects pooled, wrong-region, wrong-role/database or non-pinned endpoint identities before a database command. Only the endpoint SHA-256 is fixed in source.
+- Confirmed the dirty-worktree guard fires before credential retrieval or database connection. Gate 3C–3D remain pending until these changes are reviewed and committed; a new same-commit synthetic proof is required before the real Production backup.
+- Focused Gate 3 contract validation passes 1 file / 10 tests; full Vitest passes 92 files / 564 tests with the existing Postgres integration file/test skipped. Node syntax, ESLint, TypeScript, three application backup dry-runs, Production build, Tier 3 governance preflight, synthetic encrypted backup/restore/negative-test proof and `git diff --check` pass.
+- Safety: no Production database connection, backup, data/Schema write, Neon branch, Vercel environment/deployment, provider, AI/TTS, Preview, learning behavior, Motion or Gate 4 action occurred. The Neon connection string was inspected only within the user-approved Gate 3 scope, was not printed or persisted, and was removed from the clipboard immediately.
+- Reason: establish a genuinely restorable independent Schema 5 backup path before any clone, migration or V2 Production cutover.
+
 ## 2026-07-22 22:41 AEST
 
 - Closed PF-002 and PF-003 as `Normal / Closed by explicit acceptance` after the user explicitly accepted both exact protected Preview candidates. The record preserves machine evidence and does not claim a new typography-comfort or Active completion-sound human retest; iPhone + Safari remains untested.

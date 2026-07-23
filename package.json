@@ -52,6 +52,10 @@
     "v2:8-3:db:parity:main": "STAGE6B_DATABASE_TARGET=production VERCEL_ENV=production MIMI_STORAGE_RUNTIME=postgres-production MIMI_V2_8_3_DATABASE_TARGET=production-main MIMI_V2_8_3_DATABASE_ACTION=parity-schema6 node scripts/v2-stage8-3-db.mjs parity-schema6 --i-confirm-v2-8-3-read-only-parity",
     "v2:8-3:manifest:template": "node scripts/v2-stage8-3-cutover-manifest.mjs template",
     "v2:8-3:manifest:validate": "node scripts/v2-stage8-3-cutover-manifest.mjs validate",
+    "v2:8-3:backup:tools": "node scripts/v2-stage8-3-backup.mjs tools",
+    "v2:8-3:backup:identity": "node scripts/v2-stage8-3-backup.mjs create-identity --i-confirm-v2-8-3-create-backup-identity",
+    "v2:8-3:backup:synthetic": "node scripts/v2-stage8-3-backup.mjs synthetic --i-confirm-v2-8-3-synthetic-backup-rehearsal",
+    "v2:8-3:backup:production": "node scripts/v2-stage8-3-backup.mjs production --i-confirm-v2-8-3-production-encrypted-backup",
     "db:inspect:schema5:prod": "STAGE6B_DATABASE_TARGET=production MIMI_PRODUCTION_DATABASE_ACTION=inspect VERCEL_ENV=production node scripts/inspect-database-schema5-production.mjs --i-confirm-production-read",
     "governance:preflight": "python3 governance/preflight.py --tier 3 --strict-side-effects --require-skill-marker"
   },

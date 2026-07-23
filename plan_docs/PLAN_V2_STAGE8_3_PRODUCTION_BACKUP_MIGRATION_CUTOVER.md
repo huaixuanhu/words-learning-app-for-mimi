@@ -44,7 +44,7 @@ Input evidence:
 Consumer / next stage:
 
 - 本文件直接约束 V2-8-3 的本地守门实现、远程只读核验、备份恢复演练、Production clone（正式数据克隆）演练、正式切换、验收与收口。
-- Gate 0B、本地 Gate 1 与 Gate 2 已完成。用户明确接受 PF-002 / PF-003，并另行批准 Gate 2 metadata-only remote inventory（仅元资料远程清单）与上线前本地收口。Gate 2 证据见 `plan_docs/PLAN_V2_STAGE8_3_GATE2_REMOTE_READ_ONLY_INVENTORY.md`；当前停在 Approval Stop 2，等待 Gate 3 独立批准。
+- Gate 0B、本地 Gate 1 与 Gate 2 已完成。用户明确接受 PF-002 / PF-003，并另行批准 Gate 2 metadata-only remote inventory（仅元资料远程清单）与 Gate 3 encrypted backup/restore。Gate 2 证据见 `plan_docs/PLAN_V2_STAGE8_3_GATE2_REMOTE_READ_ONLY_INVENTORY.md`；Gate 3 当前停在 clean exact-commit checkpoint，完成真实备份后再进入 Approval Stop 3。
 - 如果后续必须派生执行记录或事故恢复文件，新文件开头必须继续引用本文件为 `Source plan`，并写明 `Scope`、`Non-Scope` 与 `Exit criteria`，不得形成无来源的平级计划。
 - V2-8-3 全部完成后，V2 替换 V1；multi-user confidential isolation（多用户机密隔离）仍留在 Version-hold 计划。
 
@@ -58,7 +58,7 @@ Target capability tier: Tier 3
 
 Working tier: Tier 3
 
-Status: Gate 0B protected Preview performance verification、Gate 1 local guards 与 Gate 2 remote read-only inventory 已完成。PF-001 为 `High / Closed`；PF-002 与 PF-003 均为 `Normal / Closed by explicit acceptance`，V2-8-2.3 再次 complete。当前停在 Approval Stop 2。Gate 3–7 的备份、credential mutation、Neon/Vercel/Gemini/Google Cloud TTS 变更、Production migration（正式迁移）、正式部署和正式数据写入仍未批准。
+Status: Gate 0B protected Preview performance verification、Gate 1 local guards 与 Gate 2 remote read-only inventory 已完成。PF-001 为 `High / Closed`；PF-002 与 PF-003 均为 `Normal / Closed by explicit acceptance`，V2-8-2.3 再次 complete。用户于 2026-07-23 明确批准 Gate 3 encrypted logical backup/restore rehearsal；派生执行计划为 `plan_docs/PLAN_V2_STAGE8_3_GATE3_ENCRYPTED_LOGICAL_BACKUP_RESTORE_REHEARSAL.md`。Gate 3A–3B 已在本机完成，Gate 3C 等待把当前实现提交为 clean exact commit 后再生成同 commit synthetic proof 与真实 Production encrypted backup/restore evidence。Gate 4–7 的 clone、credential mutation、Neon/Vercel/Gemini/Google Cloud TTS 变更、Production migration（正式迁移）、正式部署和正式数据写入仍未批准。
 
 ## Scope
 
@@ -141,8 +141,8 @@ Status: Gate 0B protected Preview performance verification、Gate 1 local guards
 | --- | --- | --- | --- |
 | 0 | 记录 protected Preview 性能版本与恢复资源状态；经批准后部署并验证 V2-8-2.1 | 已完成 | 停在 Gate 2 前；未授权 alias/environment/checkpoint mutation |
 | 1 | 实现本地 Production guards、inspectors、maintenance/client-version/AI gates 与 tests | 已批准 | 本次 local tranche（本地批次）在此完成并交付 |
-| 2 | 远程只读 Production/Vercel/Neon/Gemini/TTS inventory 与官方事实刷新 | 已批准并完成 | 脱敏证据已交付；停在 Approval Stop 2 等待 backup/rehearsal 批准 |
-| 3 | 选择独立加密 logical backup 方法并完成 restore rehearsal | 未批准 | 备份和恢复证据通过后等待 clone migration 批准 |
+| 2 | 远程只读 Production/Vercel/Neon/Gemini/TTS inventory 与官方事实刷新 | 已批准并完成 | 脱敏证据已交付；Gate 3 已另行批准 |
+| 3 | 选择独立加密 logical backup 方法并完成 restore rehearsal | 已批准；3A–3B 本机完成 | 采用 PostgreSQL 17 custom archive + `age` 流式加密 + 本机隔离恢复；clean exact commit 后执行 3C–3D，通过后等待 Gate 4 批准 |
 | 4 | 在非空 Production clone 演练 Schema 5 → 6、parity 与 recovery | 未批准 | 删除/保留临时资源须按批准执行；main 仍不变 |
 | 5 | 暂停写入、最终备份、Production-only secrets、迁移 `main`、promote V2 | 未批准 | 每个 Production mutation 前按本 Gate 的 stop point 再确认 |
 | 6 | 有认证的资料、学习、AI、日志、成本、手机和性能验收 | 未批准 | 移除 AI `4` 次上限及开放长期边界前停止 |
@@ -288,11 +288,13 @@ Gate 2 需要单独批准远程账户与 Production 元资料的只读访问。�
 
 ## Gate 3 — Independent Encrypted Logical Backup And Restore Rehearsal
 
+Canonical derived execution plan: `plan_docs/PLAN_V2_STAGE8_3_GATE3_ENCRYPTED_LOGICAL_BACKUP_RESTORE_REHEARSAL.md`。用户于 2026-07-23 批准工具安装、Production unpooled 只读连接、本机临时恢复数据库、仓库外真实加密备份与独立密钥材料。该批准不延伸到 remote restore target、Production clone、migration、credential cleanup 或 deployment。
+
 ### Method decision
 
-- 当前 backup tool、encryption tool、storage location 与 restore method 均未选择。不得在正式窗口临时拼装，也不得在本计划中虚构为已完成。
-- 选择时比较：完整 schema/data 支持、Postgres/Neon 兼容版本、consistent snapshot（一致快照）、checksum、encryption at rest、key custody、restore verification、可重复命令、个人资料最小暴露、安装来源与维护状态。
-- 可评估 `pg_dump`/`pg_restore` custom format（自定义格式）配合独立加密容器，但只有安装版本、官方兼容性和一次 restore proof 通过后才能成为选定方法。
+- 选定方法为 PostgreSQL 17 `pg_dump -Fc` / `pg_restore` custom format（自定义格式），直接流经 `age` 加密；本机已安装 PostgreSQL 17.10 与 `age` 1.3.1，synthetic restore proof、错误 identity、损坏 archive 与 cleanup 均已通过。
+- 加密 archive 位于仓库外 `$HOME/Documents/Mimi Vocabulary Backups/`，private identity 只在 macOS Keychain；恢复使用 `/private/tmp` 下仅 Unix socket 可达的 disposable PostgreSQL 17 cluster。
+- Vercel Sensitive Environment Variable values 不可回读。Gate 3 runner 只消费一次由已登录 Neon Console `main` Connect 对话框复制的 unpooled connection string，在解析/连接前清空剪贴板，并校验固定 endpoint SHA-256、region、database、role 与 TLS。
 - application JSON backup 是额外的语义核验和人工可导出资料，不替代数据库 logical backup；Neon checkpoint 也不替代 logical backup。
 
 ### Rehearsal requirements
@@ -311,7 +313,7 @@ Gate 2 需要单独批准远程账户与 Production 元资料的只读访问。�
 - restore 只验证“命令成功”，没有通过 counts/digests/invariants；
 - 需要升级付费计划、开启自动续费或扩大账户权限但未另行批准。
 
-**Approval Stop 3:** 安装 backup/encryption 工具、读取 Production/clone、创建或删除 remote restore target、保存真实资料备份均需单独批准。restore rehearsal 通过后再申请 Gate 4。
+**Approval Stop 3:** Gate 3 已在上述固定范围内获批；真实 backup/restore 仍必须绑定 clean exact commit。通过后立即停止并提交脱敏证据，再申请 Gate 4；本批准不允许创建或删除 remote restore target。
 
 ## Gate 4 — Non-empty Production Clone Migration, Parity And Recovery
 
@@ -463,7 +465,7 @@ Gate 1 实际文件与职责：
 - Gate 1 guard tooling、focused/full tests、build、backup dry-runs、governance 和 diff review 通过。
 - 最终结果为 13 个聚焦文件 / 138 项测试通过；完整 Vitest 为 77 个文件 / 484 项通过，既有 Postgres integration 文件 / 测试各跳过 1 项。Lint、TypeScript、三套备份模拟、manifest template、Production build、Tier 3 governance 与 diff 检查均通过；两轮独立只读复核未留下 P0/P1/P2。
 - Gate 1 当时保持所有 Production/Preview/Neon/Gemini 连接、credential、remote inventory、deployment 和 mutation 未执行；后续 Gate 0B 的独立批准与证据记录在本文件前部。
-- 向用户提交 changed-file inventory、验证结果和已知限制；Gate 0B、PF-002 历史 Instrument Preview、当前 Geist rollback exact protected Preview 和 PF-003 exact protected Preview 的机器验收均保留。PF-002 / PF-003 已由用户明确接受；Gate 2 已完成并停在 Approval Stop 2，Gate 3 仍需要新的批准。
+- 向用户提交 changed-file inventory、验证结果和已知限制；Gate 0B、PF-002 历史 Instrument Preview、当前 Geist rollback exact protected Preview 和 PF-003 exact protected Preview 的机器验收均保留。PF-002 / PF-003 已由用户明确接受；Gate 2 已完成，Gate 3 已批准并进入派生计划管理。
 
 ### Full V2-8-3 completion
 
