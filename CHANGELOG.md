@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## 2026-07-23 18:20 AEST
+
+- Continued the approved V2-8-3 Gate 3 from clean commit `a6aa17e7e10e2e11ffa0a8a56f50e85bd4d1e17e`. PostgreSQL 17.10, `age` 1.3.1, Keychain custody and a new same-commit synthetic backup/restore proof passed before Production credential access.
+- The runner consumed and cleared one approved Neon Console `main` unpooled connection string, passed Production target/Schema 5/Gate 2 baseline checks, streamed `pg_dump` through `age`, restored into a disposable local PostgreSQL 17 cluster and then stopped as `V2_8_3_BACKUP_RESTORE_PARITY_FAILED`.
+- No count mismatch was reported. Every non-empty table digest differed while both empty tables matched. The runner deleted the encrypted archive and temporary cluster, wrote no Production evidence and left the clipboard empty.
+- Reproduced the cause with a separate synthetic PostgreSQL 17 probe: the same `timestamptz` instant serializes differently under UTC and Melbourne. Inventory now sets local UTC inside its repeatable-read read-only transaction before canonical JSON/SHA-256 generation.
+- Strengthened the synthetic proof by intentionally using Melbourne for the source session and UTC for the restore session. Count/digest parity, wrong-identity rejection, corruption rejection and cleanup pass.
+- Focused Gate 3 validation passes 1 file / 12 tests; full Vitest passes 92 files / 566 tests with the existing Postgres integration file/test skipped. ESLint, TypeScript, three application backup dry-runs and Production build pass; Tier 3 governance and diff checks follow synchronized records.
+- The real retry remains blocked until this UTC correction is committed and a new synthetic proof binds to that clean exact commit. No Production write, Schema change, retained archive, Neon/Vercel mutation, deployment, provider call or Gate 4 action occurred.
+- Reason: distinguish identical stored instants from server display-timezone differences without weakening full table parity.
+
 ## 2026-07-23 17:38 AEST
 
 - Resumed the approved V2-8-3 Gate 3 on clean `V2` commit `644bdc006c792a67efc5c7c1f9057d7d295c8cd7`. Tool versions, the existing Keychain identity and a new exact-commit synthetic backup/restore proof passed before Production credential access.

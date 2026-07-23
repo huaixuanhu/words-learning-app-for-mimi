@@ -395,6 +395,7 @@ copy (
     .join("\n");
   return `
 begin transaction isolation level repeatable read read only;
+set local timezone = 'UTC';
 \\echo __MIMI_METADATA__
 with
 actual_tables as (
@@ -935,6 +936,7 @@ async function runSynthetic(tools) {
   const wrong = generateAgeIdentity();
   const outcome = await withTemporaryPostgres(async ({ root, socketDir }) => {
     const sourceEnv = createLocalDatabase(socketDir, "source_schema5");
+    sourceEnv.PGOPTIONS = "-c timezone=Australia/Melbourne";
     await applySchema5Fixture(sourceEnv);
     const source = inventoryDatabase(sourceEnv, {
       expectedDatabase: "source_schema5",
@@ -953,6 +955,7 @@ async function runSynthetic(tools) {
       await corruptArchive(archive.path, corruptPath);
       expectDecryptFailure(corruptPath, identityPath);
       const restoreEnv = createLocalDatabase(socketDir, "restored_schema5");
+      restoreEnv.PGOPTIONS = "-c timezone=UTC";
       await restoreEncryptedArchive({ archivePath: archive.path, identityPath, localEnv: restoreEnv });
       const restored = inventoryDatabase(restoreEnv, {
         expectedDatabase: "restored_schema5",

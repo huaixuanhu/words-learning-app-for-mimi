@@ -1,5 +1,20 @@
 # AI Agent Log
 
+## 2026-07-23 18:20 AEST
+
+- Task: continue the explicitly approved V2-8-3 Gate 3C–3D from the user's newly committed connection-mapping repair.
+- Plan agreed: yes. The standing Gate 3 approval permits one read-only Production logical backup and isolated local restore. Gate 4+, Production mutation/migration/deployment, remote restore resources, credential/environment mutation and provider actions remain excluded.
+- Exact checkpoint: branch `V2`, clean commit `a6aa17e7e10e2e11ffa0a8a56f50e85bd4d1e17e`. PostgreSQL 17.10, `age` 1.3.1, existing Keychain custody and same-commit synthetic proof passed before Production credential retrieval.
+- Production attempt: the signed-in Neon Console showed branch `main`, database `neondb`, role `neondb_owner` and Connection pooling off. The runner consumed and cleared the copied URL, passed pinned endpoint/Schema 5/Gate 2 baseline checks, streamed a custom dump directly through `age`, restored into a disposable PostgreSQL 17 cluster, and stopped at parity with `V2_8_3_BACKUP_RESTORE_PARITY_FAILED`.
+- Safe cleanup: the mismatch list contained no counts, listed all six non-empty table digests and the combined digest, and did not list the two empty tables. The runner removed the encrypted archive and temporary cluster and wrote no Production evidence. The system clipboard was confirmed empty and no temporary Gate 3 directory remained.
+- Root cause: a separate no-real-data PostgreSQL 17 probe showed that one identical `timestamptz` instant is rendered differently by `to_jsonb` under UTC and `Australia/Melbourne`. The stored instant and row are unchanged; the textual digest input differed.
+- Repair: the repeatable-read read-only inventory transaction now sets local timezone to UTC before serializing rows. Synthetic source/restore sessions are intentionally Melbourne/UTC, so removing the normalization would reproduce the parity failure. No stored value, dump content or Production session setting is persistently changed.
+- Changed files: Gate 3 runner and focused contract; Gate 3 derived/parent/master plans; Architecture, README, AGENTS, Changelog and this governance record.
+- Validation: focused Gate 3 contract passes 1 file / 12 tests; full Vitest passes 92 files / 566 tests with the existing Postgres integration file/test skipped. ESLint, TypeScript, all three application backup dry-runs, Production build and the strengthened synthetic encrypted backup/restore/negative-test proof pass. Tier 3 governance preflight and `git diff --check` follow this record synchronization.
+- Safety notes: Production remained read-only and Schema 5. No retained archive, Production write, migration, data correction, Neon branch, Vercel environment/deployment, credential change, provider call, Git commit/push or Gate 4 action occurred.
+- Residual boundary: the Production retry is blocked until human review/commit and a new synthetic proof tied to that exact clean HEAD. Gate 4 remains unapproved.
+- Reason: preserve strict source/restore parity while making the digest independent of server display timezone.
+
 ## 2026-07-23 17:38 AEST
 
 - Task: resume approved V2-8-3 Gate 3C–3D after the user committed the local backup implementation.

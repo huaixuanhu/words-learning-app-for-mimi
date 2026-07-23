@@ -37,7 +37,7 @@ Exit criteria:
 - 临时 PostgreSQL、socket、解密流和失败产生的残缺 archive 已清理；加密备份、独立密钥保管与 secret-free evidence（无敏感资料证据）完整。
 - Gate 3 完成后停在 Approval Stop 3；Gate 4 仍需新的明确批准。
 
-Status: `Approved / Gate 3A–3B complete; Gate 3C connection mapping repaired locally; corrected exact commit pending`. 用户于 2026-07-23 明确批准 Gate 3，包括工具安装、Production unpooled 只读连接、本机临时恢复数据库、仓库外真实加密备份和独立密钥材料。PostgreSQL 17.10、`age` 1.3.1、Keychain identity 与 synthetic backup/restore/negative-test 已通过。第一次 clean-commit Production runner 在 inventory 前因错误的 libpq environment（连接环境）映射安全停止；最小只读诊断随后证明修复后的远程连接与 Schema 5 安全元资料可读。尚未产生真实 Production backup 或 restore evidence。
+Status: `Approved / Gate 3A–3B complete; Gate 3C UTC digest repair validated locally; new exact commit pending`. 用户于 2026-07-23 明确批准 Gate 3，包括工具安装、Production unpooled 只读连接、本机临时恢复数据库、仓库外真实加密备份和独立密钥材料。PostgreSQL 17.10、`age` 1.3.1、Keychain identity 与 synthetic backup/restore/negative-test 已通过。第一次 clean-commit runner 暴露并修复了 libpq environment（连接环境）映射；第二个 clean-commit runner 完成 Production 只读 inventory、加密 stream 和本机 restore 后，在逐表 digest（摘要）比较时安全停止。独立本机证明确认根因是 source/restore 的 `timestamptz` 显示时区不同，资料行与时间点本身没有丢失。inventory 现于 read-only transaction（只读事务）内固定 UTC，跨 Melbourne/UTC synthetic parity 已通过。失败 archive、临时 restore cluster 和剪贴板均已清理；尚无可接受的真实 Production backup 或 restore evidence。
 
 ## 1. Accepted Method
 
@@ -45,6 +45,7 @@ Status: `Approved / Gate 3A–3B complete; Gate 3C connection mapping repaired l
 
 - PostgreSQL server 与工具使用 major version 17。`pg_dump -Fc` 建立 portable custom archive（可移植自定义归档）；`pg_restore` 负责恢复。
 - `pg_dump` 运行在 repeatable/consistent snapshot（可重复读取的一致快照）语义下，并额外使用 `PGOPTIONS=-c default_transaction_read_only=on` 限制连接为只读。
+- Source 与 restore inventory 在 read-only transaction 内把 `timezone` 固定为 `UTC` 后再把 row 转成 canonical JSON（规范 JSON）并计算 SHA-256，避免同一 `timestamptz` 时间点因服务器显示时区不同而产生假差异。
 - 只接受 `DATABASE_URL_UNPOOLED` 或 `POSTGRES_URL_NON_POOLING`。host 含 `-pooler`、database/role 不符、非 Neon TLS endpoint 或 Schema 不是 5 时立即拒绝。
 - Vercel 已标记为 Sensitive Environment Variable（敏感环境变量）的 value 创建后不可回读；只读 REST/CLI 只能确认 metadata（元资料），不能作为 Gate 3 credential source（凭据来源）。
 - 不使用 `vercel env pull`，不写 `.env`。实际探测发现 Vercel CLI 56.5.0 的 `env run` 在 repository 内会继续看见已有 `.env.local`，而在全新 linked temporary directory 又没有注入 sensitive Production values；因此也拒绝该路径。
@@ -89,7 +90,7 @@ Status: `Approved / Gate 3A–3B complete; Gate 3C connection mapping repaired l
 ### Gate 3D — Isolated restore and verification
 
 1. `age --decrypt | pg_restore` 恢复到本机临时数据库；不产生解密 archive 文件。
-2. 运行同一组 Schema 5 structure、counts、core-table SHA-256 和 reference invariants。
+2. 运行同一组 Schema 5 structure、counts、UTC-canonical core-table SHA-256 和 reference invariants。
 3. 运行 application read parity（应用读取对等）检查，至少覆盖 people、vocabulary、review state/event 与 settings 的可读数量和字段形状。
 4. 只有 source/restored digest 完全一致、错误路径测试通过、cleanup 完成后，backup 才标记为 `restoreVerified=true`。
 
@@ -147,7 +148,17 @@ Gate 3 完成只证明 Schema 5 independent encrypted logical backup（独立加
 - Focused coverage now asserts both the explicit libpq mapping and mandatory channel binding. Because this repair changes the runner, the real backup remains blocked until the correction is committed and the synthetic proof is regenerated against that new exact commit.
 - Connection-repair validation passes 1 focused file / 11 tests and 92 full-suite files / 565 tests, with the existing Postgres integration file/test skipped. Script syntax, lint, typecheck, all three application backup dry-runs, Production build, Tier 3 governance and diff checks form the repaired checkpoint gate.
 
-## 8. Current Primary References
+## 8. Gate 3C Attempt 2 And UTC Digest Repair — 2026-07-23 AEST
+
+- Commit `a6aa17e7e10e2e11ffa0a8a56f50e85bd4d1e17e` was clean on branch `V2`. PostgreSQL 17.10, `age` 1.3.1, the existing Keychain identity and a new same-commit synthetic proof passed before Production credential access.
+- The runner consumed and cleared the approved Neon Console `main` unpooled connection string, passed target/Schema 5/Gate 2 baseline checks, streamed `pg_dump` through `age`, restored into a disposable local PostgreSQL 17 cluster, and then stopped as `V2_8_3_BACKUP_RESTORE_PARITY_FAILED`.
+- Counts did not appear in the mismatch list. Every non-empty table digest differed, while both empty-table digests matched. The runner deleted the encrypted archive and temporary restore cluster and wrote no Production evidence; the clipboard was confirmed empty.
+- A separate synthetic PostgreSQL 17 probe proved that `to_jsonb` renders one identical `timestamptz` value differently under `UTC` and `Australia/Melbourne`. This explains the all-non-empty-table digest pattern without implying changed rows or changed instants.
+- Inventory now executes `set local timezone = 'UTC'` inside its repeatable-read read-only transaction. The synthetic source intentionally starts in Melbourne and the restored database in UTC; full count/digest parity, wrong-identity rejection, corruption rejection and cleanup all pass.
+- UTC-repair validation passes 1 focused file / 12 tests and 92 full-suite files / 566 tests, with the existing Postgres integration file/test skipped. Lint, typecheck, all three application backup dry-runs and Production build pass. Governance and diff checks complete after this checkpoint is synchronized.
+- Because the runner changed, a second Production attempt is blocked until these changes are committed and a new synthetic proof is generated against that clean exact commit. Gate 4 remains unapproved.
+
+## 9. Current Primary References
 
 - PostgreSQL 17 `pg_dump`: <https://www.postgresql.org/docs/17/app-pgdump.html>
 - PostgreSQL 17 `pg_restore`: <https://www.postgresql.org/docs/17/app-pgrestore.html>

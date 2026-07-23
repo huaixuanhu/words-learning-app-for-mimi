@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
@@ -22,6 +23,10 @@ import {
 
 const SECRET = "test-password";
 const ENDPOINT = "ep-calm-river-a1b2c3d4.ap-southeast-2.aws.neon.tech";
+const BACKUP_RUNNER_SOURCE = readFileSync(
+  new URL("./v2-stage8-3-backup.mjs", import.meta.url),
+  "utf8",
+);
 
 function databaseUrl({ pooled = false, database = "neondb", role = "neondb_owner" } = {}) {
   const host = pooled ? ENDPOINT.replace(".", "-pooler.") : ENDPOINT;
@@ -155,6 +160,16 @@ describe("V2-8-3 Gate 3 Production source contract", () => {
 });
 
 describe("V2-8-3 Gate 3 inventory and evidence contract", () => {
+  it("canonicalizes timestamp output to UTC across source and restore server timezones", () => {
+    expect(BACKUP_RUNNER_SOURCE).toContain("set local timezone = 'UTC';");
+    expect(BACKUP_RUNNER_SOURCE).toContain(
+      'sourceEnv.PGOPTIONS = "-c timezone=Australia/Melbourne";',
+    );
+    expect(BACKUP_RUNNER_SOURCE).toContain(
+      'restoreEnv.PGOPTIONS = "-c timezone=UTC";',
+    );
+  });
+
   it("locks the Gate 2 baseline and rejects unexplained drift", () => {
     expect(assertGate2Baseline(V2_STAGE8_3_GATE2_BASELINE_COUNTS)).toEqual(
       Object.fromEntries(

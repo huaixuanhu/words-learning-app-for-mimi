@@ -19,13 +19,13 @@
 - **ADHD-friendly 学习体验**：把任务拆小、保持明确反馈，并允许保守地回退和重新开始。
 - **长期数据可控**：正式学习数据保存在云端数据库，同时保留导出和备份能力。
 
-当前 V1 已作为受保护的私人应用上线。V2 主线已经完成每日学习、独立 Active 三种练习、手机端与 Dashboard、第一代付费 AI enrichment（AI 词汇补充）及 V2-only 性能收口。V2-8-2.2 已加入可靠的方向键评分、设备 English voice 备用选项，以及每条英文例句相邻的中文翻译资料链。V2-8-2.3 的 PF-001 已关闭；用户明确接受 PF-002 Geist 回退与 PF-003 Active 完成音效修复，两项均以 `Closed by explicit acceptance` 收口。V2-8-3 Gate 0B、Gate 1 与远程只读 Gate 2 已完成；Gate 3 已批准，本机加密备份实现与 synthetic restore（合成恢复）通过。第一次正式备份执行在 archive 产生前安全发现并修复了本机连接字段映射，最小 Production 只读查询已经通过；真实备份等待修复后的 clean exact commit。Production 继续运行 V1 / Schema Version 5。整个 V2 不包含 SSO（Single Sign-On，单点登录）或 confidential per-person authorization（个人机密授权隔离）。
+当前 V1 已作为受保护的私人应用上线。V2 主线已经完成每日学习、独立 Active 三种练习、手机端与 Dashboard、第一代付费 AI enrichment（AI 词汇补充）及 V2-only 性能收口。V2-8-2.2 已加入可靠的方向键评分、设备 English voice 备用选项，以及每条英文例句相邻的中文翻译资料链。V2-8-2.3 的 PF-001 已关闭；用户明确接受 PF-002 Geist 回退与 PF-003 Active 完成音效修复，两项均以 `Closed by explicit acceptance` 收口。V2-8-3 Gate 0B、Gate 1 与远程只读 Gate 2 已完成；Gate 3 已批准，本机加密备份实现与 synthetic restore（合成恢复）通过。两个 fail-closed（安全停止）检查点先后发现连接字段映射和跨时区摘要问题；当前修复会在只读清单事务内固定 UTC，跨 Melbourne/UTC 合成恢复已经通过。真实备份等待新的 clean exact commit。Production 继续运行 V1 / Schema Version 5。整个 V2 不包含 SSO（Single Sign-On，单点登录）或 confidential per-person authorization（个人机密授权隔离）。
 
 ## 正式版本
 
 - 访问地址：[words-learning-app-for-mimi.vercel.app](https://words-learning-app-for-mimi.vercel.app)
 - 当前线上版本：cloud-backed V1（云端持久化 V1）
-- 当前开发分支：`V2`；PF-002 与 PF-003 均为 `Normal / Closed by explicit acceptance`；V2-8-3 Gate 0B、Gate 1 与只读 Gate 2 已完成，Gate 3A–3B 已在批准范围内完成
+- 当前开发分支：`V2`；PF-002 与 PF-003 均为 `Normal / Closed by explicit acceptance`；V2-8-3 Gate 0B、Gate 1 与只读 Gate 2 已完成，Gate 3A–3B 已完成，Gate 3C UTC 摘要修复等待 clean exact commit
 - 访问方式：私人 Basic Auth（基础认证）；账号信息不会存放在仓库中
 - 正式数据：Neon Postgres（关系型数据库）
 
@@ -68,7 +68,7 @@
 - Schema 5 / Schema 6 的非空 clone/main 检查和迁移命令目前只是 dormant tooling（未启用工具），必须同时通过 exact target、environment、action 和人工确认。`0003`、`0004`、`0005` migration SHA-256 已分别固定，迁移顺序为 `0003 -> 0004 -> 0005`；切换记录使用不含密钥的 manifest（清单）并要求 V1/Schema 5 与 V2/Schema 6 成对回退准备。
 - Production AI 的独立 `v2-8-3-production` scope 只有在 `live`、HTTPS、Vercel Production `main`、`NODE_ENV=production`、Schema 6、明确 Kill Switch 状态和其他正式确认全部满足时才可能打开；首轮最多 4 次供应商调用，进入 300 次/日长期边界还需单独确认。
 - Preview 使用独立 study-token secret、独立 Gemini Auth Key、全局 300 次/日与 `US$0.50/日` / `US$2/月` 边界、Cache、Idempotency 和 Kill Switch。私有 Shareable Link 不写入仓库；Preview AI 会保留到 V2-8-3 Production 稳定后再撤销。
-- Gate 0B 只读取了受保护 Preview / Neon checkpoint 状态并验证 Git Integration 自动建立的 exact-commit Preview。Gate 2 随后在独立批准下完成 Vercel/Neon/Gemini/TTS 只读清单和官方事实刷新；Production target 只以 SHA-256 固定。Gate 3 已独立批准，采用 PostgreSQL 17 custom archive 直接流入 `age`、Keychain 独立密钥和本机 Unix-socket restore；当前只完成本地与合成演练，尚未连接 Production 数据库。V1 与 Neon `main` 仍保持线上 Schema Version 5。
+- Gate 0B 只读取了受保护 Preview / Neon checkpoint 状态并验证 Git Integration 自动建立的 exact-commit Preview。Gate 2 随后在独立批准下完成 Vercel/Neon/Gemini/TTS 只读清单和官方事实刷新；Production target 只以 SHA-256 固定。Gate 3 已独立批准，采用 PostgreSQL 17 custom archive 直接流入 `age`、Keychain 独立密钥和本机 Unix-socket restore。Production 只读连接、加密 stream 和本机 restore 已实际运行，但最后一次结果因跨时区 digest 假差异被拒绝并清理；UTC 修复仍需新 exact commit 后重试。V1 与 Neon `main` 仍保持线上 Schema Version 5。
 - 普通界面继续使用简短自然的英文；不可逆操作和重要隐私提示保留中文或双语。
 
 完整范围和阶段顺序见 [V2 Master Plan](./plan_docs/PLAN_V2_MASTER.md)。V2-8-2.2 的键盘、浏览器音色和双语例句契约见 [V2 Stage 8-2.2](./plan_docs/PLAN_V2_STAGE8_2_2_REVIEW_AUDIO_BILINGUAL_EXAMPLES.md)；正式上线前的 Preview 反馈微调与关闭规则见 [V2 Stage 8-2.3](./plan_docs/PLAN_V2_STAGE8_2_3_PREVIEW_FEEDBACK_STABILISATION.md)，PF-001 的默认音源升级见 [V2 Stage 8-2.3-1 Google Cloud Standard TTS](./plan_docs/PLAN_V2_STAGE8_2_3_1_GOOGLE_CLOUD_STANDARD_TTS.md)，PF-002 的交互与字体边界见 [V2 Stage 8-2.3-2](./plan_docs/PLAN_V2_STAGE8_2_3_2_LEARNING_NAVIGATION_GOAL_HIERARCHY_TYPOGRAPHY.md)，V2-8-3 Gate 2 脱敏清单见 [Gate 2 Remote Read-only Inventory](./plan_docs/PLAN_V2_STAGE8_3_GATE2_REMOTE_READ_ONLY_INVENTORY.md)，Gate 3 方法与检查点见 [Gate 3 Encrypted Backup And Restore](./plan_docs/PLAN_V2_STAGE8_3_GATE3_ENCRYPTED_LOGICAL_BACKUP_RESTORE_REHEARSAL.md)。
