@@ -58,7 +58,7 @@ Target capability tier: Tier 3
 
 Working tier: Tier 3
 
-Status: Gate 0B protected Preview performance verification、Gate 1 local guards、Gate 2 remote read-only inventory 与 Gate 3 encrypted logical backup/restore rehearsal 均已完成。PF-001 为 `High / Closed`；PF-002 与 PF-003 均为 `Normal / Closed by explicit acceptance`，V2-8-2.3 complete。Gate 3 exact commit `88ddb1c2c96437ca3cc4a8f2103990ae70e79eac` 已生成仓库外 age-encrypted Production Schema 5 archive，并在本机隔离 PostgreSQL 17 完成 counts/invariants/逐表 digest parity；`restoreVerified=true`。Production V1 / Schema 5 未发生 mutation。当前停在 Approval Stop 3；Gate 4–7 的 clone、credential mutation、Neon/Vercel/Gemini/Google Cloud TTS 变更、Production migration（正式迁移）、正式部署和正式数据写入仍未批准。
+Status: Gate 0B protected Preview performance verification、Gate 1 local guards、Gate 2 remote read-only inventory 与 Gate 3 encrypted logical backup/restore rehearsal 均已完成。PF-001 为 `High / Closed`；PF-002 与 PF-003 均为 `Normal / Closed by explicit acceptance`，V2-8-2.3 complete。Gate 3 exact commit `88ddb1c2c96437ca3cc4a8f2103990ae70e79eac` 已生成仓库外 age-encrypted Production Schema 5 archive，并在本机隔离 PostgreSQL 17 完成 counts/invariants/逐表 digest parity；`restoreVerified=true`。用户已在 2026-07-23 明确批准 Gate 4 clone migration/recovery rehearsal，并派生 `plan_docs/PLAN_V2_STAGE8_3_GATE4_PRODUCTION_CLONE_MIGRATION_RECOVERY.md`。当前停在 Gate 4A credential checkpoint：本机没有可用的 `NEON_API_KEY`，创建或读取 credential value 仍需独立明确批准。Production V1、Neon `main` 与 Schema 5 未发生 mutation；Gate 5–7 仍未批准。
 
 ## Scope
 
@@ -143,7 +143,7 @@ Status: Gate 0B protected Preview performance verification、Gate 1 local guards
 | 1 | 实现本地 Production guards、inspectors、maintenance/client-version/AI gates 与 tests | 已批准 | 本次 local tranche（本地批次）在此完成并交付 |
 | 2 | 远程只读 Production/Vercel/Neon/Gemini/TTS inventory 与官方事实刷新 | 已批准并完成 | 脱敏证据已交付；Gate 3 已另行批准 |
 | 3 | 选择独立加密 logical backup 方法并完成 restore rehearsal | 已批准并完成 | PostgreSQL 17 custom archive + `age` 流式加密 + 本机隔离恢复已通过；停在 Approval Stop 3，等待 Gate 4 新批准 |
-| 4 | 在非空 Production clone 演练 Schema 5 → 6、parity 与 recovery | 未批准 | 删除/保留临时资源须按批准执行；main 仍不变 |
+| 4 | 在非空 Production clone 演练 Schema 5 → 6、parity 与 recovery | 已批准；停在独立 credential checkpoint | 删除/保留临时资源须按批准执行；main 仍不变 |
 | 5 | 暂停写入、最终备份、Production-only secrets、迁移 `main`、promote V2 | 未批准 | 每个 Production mutation 前按本 Gate 的 stop point 再确认 |
 | 6 | 有认证的资料、学习、AI、日志、成本、手机和性能验收 | 未批准 | 移除 AI `4` 次上限及开放长期边界前停止 |
 | 7 | 稳定观察、最终备份、Preview/旧 key 与 checkpoint 收口 | 未批准 | 删除恢复资源或撤销 credential 前停止 |

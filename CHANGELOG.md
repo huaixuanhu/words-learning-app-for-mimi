@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## 2026-07-23 23:40 AEST
+
+- Began the explicitly approved V2-8-3 Gate 4 with a documentation-first Production clone migration/recovery contract derived from the canonical V2-8-3 cutover plan.
+- Fixed the Gate 4 authority boundary: create one non-empty `parent-data` clone from Production `main`, migrate `0003 -> 0004 -> 0005`, prove full parity, restore the clone from `main` head, migrate again, and independently re-verify the Gate 3 encrypted logical archive. Production `main`, V1, deployment and providers remain out of scope.
+- Reviewed the existing dormant guards and confirmed that every clone database command requires authenticated live Neon control-plane checks before Postgres connection. The process environment and dedicated Keychain entry contain no available `NEON_API_KEY`; no `.env` or credential value was read.
+- Added an independent credential checkpoint. Creating or reading an API key still requires explicit approval; project-scoped organization access is preferred when available. No clone, endpoint, credential, database, Schema, Vercel, provider or Production mutation has occurred.
+- Recorded fixed clone/preserved-state names, migration hashes, no-blind-retry behavior for non-idempotent Neon API calls, restore identity refresh, secret-free evidence shape, 7-day intended retention and a fresh approval requirement before branch deletion.
+- Reason: begin the approved rehearsal without weakening the existing exact-target guard or treating broad Gate 4 approval as authority to create a credential.
+
 ## 2026-07-23 22:20 AEST
 
 - Completed the explicitly approved V2-8-3 Gate 3 encrypted logical backup and isolated restore on clean exact commit `88ddb1c2c96437ca3cc4a8f2103990ae70e79eac`, equal to `origin/V2` before execution.

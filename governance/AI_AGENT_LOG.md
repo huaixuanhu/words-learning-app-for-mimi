@@ -3428,3 +3428,22 @@
 - Validation:
   - Passed: `find . -maxdepth 3 -type f | sort`
 - Safety notes: local documentation files only. No application code, git initialization, push, Vercel deployment, credential access, or database mutation was performed. The GitHub repo URL was user-provided, but remote verification was blocked by missing GitHub credentials in the local environment.
+# 2026-07-23 23:40 AEST
+
+- Task: begin the explicitly approved V2-8-3 Gate 4 Production clone migration, parity and recovery rehearsal.
+- Plan agreed: yes. The user explicitly approved entering the next stage after the Gate 3 closure commit.
+- Changed files:
+  - `plan_docs/PLAN_V2_STAGE8_3_GATE4_PRODUCTION_CLONE_MIGRATION_RECOVERY.md`
+  - `plan_docs/PLAN_V2_STAGE8_3_PRODUCTION_BACKUP_MIGRATION_CUTOVER.md`
+  - `plan_docs/PLAN_V2_MASTER.md`
+  - `ARCHITECTURE.md`
+  - `README.md`
+  - `CHANGELOG.md`
+  - `governance/AI_AGENT_LOG.md`
+- Reason: bind Gate 4 to a single derived execution contract before using a confidential Production clone.
+- Implementation notes:
+  - Reviewed the existing V2-8-3 database contracts. They already require a pinned Production project, authenticated live Neon endpoint/branch/parent/state checks, exact clone/main separation, Schema checks, migration hashes and explicit command/action flags before any Postgres connection.
+  - Verified current Neon branch-create, branch-restore and API-key behavior from official API documentation. Non-idempotent mutation calls will not be blindly retried after an unknown response.
+  - Checked only credential-presence booleans. Neither the current process environment nor the dedicated Gate 4 Keychain service has a usable `NEON_API_KEY`; no `.env` or secret value was read.
+  - Gate 4 is paused at an independent credential checkpoint. The stage approval covers clone/migration/recovery rehearsal, while API-key creation or retrieval remains a separate explicit-approval action.
+- Safety notes: documentation and local read-only inspection only. No Neon branch/endpoint/API key/database/Schema mutation, connection string access, learner-row read, Vercel/GitHub/deployment action, provider call, AI/TTS opening, Production write, Gate 5 action or SSO work occurred.
