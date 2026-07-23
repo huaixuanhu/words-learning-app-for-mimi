@@ -5,6 +5,10 @@ import {
   TTS_LOCAL_FIXTURE_SCOPE,
   TTS_LOCAL_GOOGLE_SCOPE,
   TTS_PREVIEW_GOOGLE_SCOPE,
+  TTS_PRODUCTION_GOOGLE_SCOPE,
+  TTS_PRODUCTION_SERVICE_ACCOUNT_EMAIL,
+  TTS_PRODUCTION_WIF_POOL_ID,
+  TTS_PRODUCTION_WIF_PROVIDER_ID,
 } from "./runtime-config";
 
 const enabled = {
@@ -123,5 +127,80 @@ describe("TTS local runtime gate", () => {
     expect(
       resolveTtsRuntimeConfig("http://preview.example/api/tts", previewEnabled),
     ).toEqual({ status: "resting", reason: "preview_boundary_rejected" });
+  });
+
+  it("opens only the exact independent Production WIF boundary", () => {
+    const productionEnabled = {
+      MIMI_TTS_KILL_SWITCH: "off",
+      MIMI_TTS_RUNTIME_ENABLED: "true",
+      MIMI_TTS_EXECUTION_SCOPE: TTS_PRODUCTION_GOOGLE_SCOPE,
+      MIMI_TTS_PROVIDER: "google-cloud-standard",
+      MIMI_TTS_GCP_PROJECT: TTS_GOOGLE_PROJECT_ID,
+      MIMI_TTS_GCP_PROJECT_NUMBER: "123456789012",
+      MIMI_TTS_GCP_SERVICE_ACCOUNT_EMAIL:
+        TTS_PRODUCTION_SERVICE_ACCOUNT_EMAIL,
+      MIMI_TTS_GCP_WORKLOAD_IDENTITY_POOL_ID: TTS_PRODUCTION_WIF_POOL_ID,
+      MIMI_TTS_GCP_WORKLOAD_IDENTITY_PROVIDER_ID:
+        TTS_PRODUCTION_WIF_PROVIDER_ID,
+      MIMI_TTS_ACCOUNTING_READY: "true",
+      MIMI_TTS_SCHEMA6_READY: "true",
+      MIMI_TTS_IDENTITY_TYPE_CONFIRMED: "wif",
+      MIMI_STORAGE_RUNTIME: "postgres-production",
+      MIMI_V2_8_3_PRODUCTION_TARGET_CONFIRMED: "true",
+      MIMI_V2_8_3_PRODUCTION_ACCESS_CONFIRMED: "true",
+      MIMI_PRODUCTION_CUTOVER_MODE: "live",
+      STAGE6B_DATABASE_TARGET: "production",
+      VERCEL: "1",
+      VERCEL_ENV: "production",
+      VERCEL_GIT_COMMIT_REF: "main",
+      NODE_ENV: "production",
+    };
+    expect(
+      resolveTtsRuntimeConfig("https://words.example/api/tts", productionEnabled),
+    ).toEqual({
+      status: "available",
+      executionScope: TTS_PRODUCTION_GOOGLE_SCOPE,
+      provider: "google-cloud-standard",
+      projectId: TTS_GOOGLE_PROJECT_ID,
+      credentialMode: "vercel-wif",
+      identity: {
+        audience:
+          "https://iam.googleapis.com/projects/123456789012/locations/global/" +
+          "workloadIdentityPools/mimi-vercel-production/providers/mimi-v2-production",
+        projectNumber: "123456789012",
+        serviceAccountEmail: TTS_PRODUCTION_SERVICE_ACCOUNT_EMAIL,
+        workloadIdentityPoolId: TTS_PRODUCTION_WIF_POOL_ID,
+        workloadIdentityProviderId: TTS_PRODUCTION_WIF_PROVIDER_ID,
+      },
+    });
+
+    for (const unsafe of [
+      { ...productionEnabled, VERCEL_ENV: "preview" },
+      { ...productionEnabled, VERCEL_GIT_COMMIT_REF: "V2" },
+      { ...productionEnabled, MIMI_STORAGE_RUNTIME: "postgres-preview" },
+      { ...productionEnabled, MIMI_PRODUCTION_CUTOVER_MODE: "schema6-readiness" },
+      { ...productionEnabled, MIMI_V2_8_3_PRODUCTION_TARGET_CONFIRMED: "false" },
+      { ...productionEnabled, MIMI_TTS_ACCOUNTING_READY: "false" },
+      {
+        ...productionEnabled,
+        MIMI_TTS_GCP_SERVICE_ACCOUNT_EMAIL:
+          "mimi-tts-preview@for-tts-502913.iam.gserviceaccount.com",
+      },
+      {
+        ...productionEnabled,
+        MIMI_TTS_GCP_WORKLOAD_IDENTITY_POOL_ID: "mimi-vercel-preview",
+      },
+      {
+        ...productionEnabled,
+        MIMI_TTS_GCP_WORKLOAD_IDENTITY_PROVIDER_ID: "mimi-v2-preview",
+      },
+    ]) {
+      expect(
+        resolveTtsRuntimeConfig("https://words.example/api/tts", unsafe),
+      ).toMatchObject({ status: "resting" });
+    }
+    expect(
+      resolveTtsRuntimeConfig("http://words.example/api/tts", productionEnabled),
+    ).toEqual({ status: "resting", reason: "production_boundary_rejected" });
   });
 });

@@ -3428,6 +3428,23 @@
 - Validation:
   - Passed: `find . -maxdepth 3 -type f | sort`
 - Safety notes: local documentation files only. No application code, git initialization, push, Vercel deployment, credential access, or database mutation was performed. The GitHub repo URL was user-provided, but remote verification was blocked by missing GitHub credentials in the local environment.
+# 2026-07-23 23:45 AEST
+
+- Task: begin V2-8-3 Gate 5 and close the missing Production TTS runtime boundary before credentials or cutover.
+- Plan agreed: yes. The user explicitly authorized direct execution through complete V2 launch.
+- Changed files:
+  - `plan_docs/PLAN_V2_STAGE8_3_GATE5_PRODUCTION_RUNTIME_CREDENTIAL_CUTOVER.md`
+  - `plan_docs/PLAN_V2_STAGE8_3_PRODUCTION_BACKUP_MIGRATION_CUTOVER.md`
+  - `CHANGELOG.md`
+  - `governance/AI_AGENT_LOG.md`
+- Reason: Production currently cannot satisfy the accepted Standard-C WIF route because TTS only recognizes Local and Preview scopes.
+- Implementation:
+  - Added exact `v2-8-3-production` TTS runtime scope and code-owned Production service-account/pool/provider labels.
+  - Required HTTPS, Vercel Production Git `main`, `live`, Schema 6, `postgres-production`, accounting and target/access confirmations.
+  - Reused only the generic short-lived WIF exchange implementation; Preview and Production runtime identities remain distinct.
+- Validation: focused TTS tests 3 files / 15 tests, TypeScript, ESLint and diff check pass.
+- Safety notes: no credential, Vercel environment, Google IAM, database, deployment, provider or learning mutation occurred at this implementation checkpoint. SSO remains outside V2.
+
 # 2026-07-23 23:36 AEST
 
 - Task: complete V2-8-3 Gate 4 and continue toward the user-authorized full V2 Production launch.

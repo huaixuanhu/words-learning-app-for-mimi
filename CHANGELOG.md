@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## 2026-07-23 23:45 AEST
+
+- Began the fully authorized V2-8-3 Gate 5 with a documentation-first child plan derived from the canonical Production cutover and Gate 4 evidence.
+- Found one fail-closed release gap before remote preparation: TTS supports Local and protected Preview WIF, while no independent Production runtime scope currently exists. Production would therefore fall back to device voice instead of the accepted Standard-C path.
+- Fixed the intended Production TTS boundary before code changes: exact `v2-8-3-production` scope, dedicated service account/pool/provider labels, Vercel Production `main`, HTTPS, Schema 6, `postgres-production`, `live`, accounting and access confirmations.
+- Implemented that boundary in the TTS runtime and route wiring. Preview and Production both use the common short-lived Vercel WIF provider code while retaining distinct runtime scopes and identities; Production rejects Preview service account/pool/provider values.
+- Focused validation passes 3 files / 15 tests, TypeScript, ESLint and `git diff --check`.
+- Kept Preview identity, SSO, FSRS, Daily Episode, UI, Motion and the accepted `en-AU-Standard-C` voice contract unchanged.
+- Reason: prevent a technically deployed V2 from being called fully live while its accepted Cloud TTS path remains unavailable in Production.
+
 ## 2026-07-23 23:36 AEST
 
 - Completed the user-approved V2-8-3 Gate 4 on clean exact commit `16acd9102b77bf01565b2d963099ef3c819a0add`.

@@ -9,7 +9,7 @@ import { createPostgresTtsAccounting } from "@/lib/tts/postgres-accounting";
 import { handleTtsPost } from "@/lib/tts/route-handler";
 import {
   resolveTtsRuntimeConfig,
-  type TtsPreviewWifIdentity,
+  type TtsVercelWifIdentity,
   type TtsRuntimeConfig,
 } from "@/lib/tts/runtime-config";
 import { TtsService } from "@/lib/tts/service";
@@ -24,7 +24,7 @@ type RouteDependencies = Readonly<{
   resolveConfig: (requestUrl: string) => TtsRuntimeConfig;
   createLocalFixtureProvider: () => TtsProvider;
   createLocalGoogleProvider: () => TtsProvider;
-  createPreviewGoogleProvider: (identity: TtsPreviewWifIdentity) => TtsProvider;
+  createVercelWifGoogleProvider: (identity: TtsVercelWifIdentity) => TtsProvider;
   createMemoryCache: () => TtsCache;
   createRuntimeCache: () => TtsCache;
   createMemoryAccounting: () => TtsAccounting;
@@ -35,7 +35,7 @@ const defaultDependencies: RouteDependencies = {
   resolveConfig: resolveTtsRuntimeConfig,
   createLocalFixtureProvider: () => localFixtureTtsProvider,
   createLocalGoogleProvider: () => createGoogleCloudTtsProvider(),
-  createPreviewGoogleProvider: (identity) =>
+  createVercelWifGoogleProvider: (identity) =>
     createGoogleCloudTtsProvider({
       resolveAuthorization: createVercelWifAccessTokenResolver(identity),
     }),
@@ -50,7 +50,7 @@ export function createTtsServiceResolver(
 ) {
   let localFixtureService: TtsService | null = null;
   let localGoogleService: TtsService | null = null;
-  let previewGoogleService: TtsService | null = null;
+  let vercelWifGoogleService: TtsService | null = null;
   return (request: Request) => {
     const config = dependencies.resolveConfig(request.url);
     if (config.status !== "available") return null;
@@ -66,15 +66,15 @@ export function createTtsServiceResolver(
       return localFixtureService;
     }
     if (config.credentialMode === "vercel-wif") {
-      if (!previewGoogleService) {
-        previewGoogleService = new TtsService({
+      if (!vercelWifGoogleService) {
+        vercelWifGoogleService = new TtsService({
           executionScope: config.executionScope,
-          provider: dependencies.createPreviewGoogleProvider(config.identity),
+          provider: dependencies.createVercelWifGoogleProvider(config.identity),
           cache: dependencies.createRuntimeCache(),
           accounting: dependencies.createPostgresAccounting(),
         });
       }
-      return previewGoogleService;
+      return vercelWifGoogleService;
     }
     if (!localGoogleService) {
       localGoogleService = new TtsService({

@@ -356,6 +356,8 @@ Gate 3C 前两个 fail-closed checkpoints 分别修复了 URI/libpq mapping 与 
 
 Gate 5 至少分成两个独立批准点：Preparation（准备）与 Live cutover（正式切换）。
 
+Canonical derived execution plan：`plan_docs/PLAN_V2_STAGE8_3_GATE5_PRODUCTION_RUNTIME_CREDENTIAL_CUTOVER.md`。它显性补齐当前缺少的 Production TTS WIF/runtime scope，并约束 credentials、maintenance、final backup、`main` migration、deployment 与 initial AI/TTS acceptance。
+
 ### Gate 5A：Production preparation
 
 - 冻结 exact Git commit，要求 clean tree、完整 local/Preview validation 和 Gate 0–4 evidence。

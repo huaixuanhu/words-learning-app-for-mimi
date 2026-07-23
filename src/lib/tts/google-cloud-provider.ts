@@ -4,7 +4,7 @@ import { GOOGLE_STANDARD_VOICE_CONTRACT } from "./contract";
 import { TtsProviderError, type TtsProvider } from "./provider";
 import {
   TTS_GOOGLE_PROJECT_ID,
-  type TtsPreviewWifIdentity,
+  type TtsVercelWifIdentity,
 } from "./runtime-config";
 
 const GOOGLE_TTS_SYNTHESIZE_URL =
@@ -88,7 +88,7 @@ function credentialExchangeCategory(error: unknown) {
 }
 
 export function createVercelWifAccessTokenResolver(
-  identity: TtsPreviewWifIdentity,
+  identity: TtsVercelWifIdentity,
   dependencies: Readonly<{
     getOidcToken?: (options: { audience: string }) => Promise<string>;
     createExternalClient?: (

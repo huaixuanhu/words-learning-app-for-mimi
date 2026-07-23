@@ -1,9 +1,14 @@
 export const TTS_LOCAL_FIXTURE_SCOPE = "v2-8-2-3-local-fixture";
 export const TTS_LOCAL_GOOGLE_SCOPE = "v2-8-2-3-local-google-adc";
 export const TTS_PREVIEW_GOOGLE_SCOPE = "v2-8-2-3-preview";
+export const TTS_PRODUCTION_GOOGLE_SCOPE = "v2-8-3-production";
 export const TTS_GOOGLE_PROJECT_ID = "for-tts-502913";
+export const TTS_PRODUCTION_SERVICE_ACCOUNT_EMAIL =
+  "mimi-tts-production@for-tts-502913.iam.gserviceaccount.com";
+export const TTS_PRODUCTION_WIF_POOL_ID = "mimi-vercel-production";
+export const TTS_PRODUCTION_WIF_PROVIDER_ID = "mimi-v2-production";
 
-export type TtsPreviewWifIdentity = Readonly<{
+export type TtsVercelWifIdentity = Readonly<{
   audience: string;
   projectNumber: string;
   serviceAccountEmail: string;
@@ -27,7 +32,11 @@ type TtsEnvironment = Record<string, string | undefined> & {
   MIMI_STORAGE_RUNTIME?: string;
   MIMI_V2_8_2_STAGING_TARGET_CONFIRMED?: string;
   MIMI_V2_8_2_PREVIEW_PROTECTED_CONFIRMED?: string;
+  MIMI_V2_8_3_PRODUCTION_TARGET_CONFIRMED?: string;
+  MIMI_V2_8_3_PRODUCTION_ACCESS_CONFIRMED?: string;
+  MIMI_PRODUCTION_CUTOVER_MODE?: string;
   STAGE5F_DATABASE_TARGET?: string;
+  STAGE6B_DATABASE_TARGET?: string;
   NODE_ENV?: string;
   VERCEL?: string;
   VERCEL_ENV?: string;
@@ -53,7 +62,15 @@ export type TtsRuntimeConfig =
       provider: "google-cloud-standard";
       projectId: typeof TTS_GOOGLE_PROJECT_ID;
       credentialMode: "vercel-wif";
-      identity: TtsPreviewWifIdentity;
+      identity: TtsVercelWifIdentity;
+    }>
+  | Readonly<{
+      status: "available";
+      executionScope: typeof TTS_PRODUCTION_GOOGLE_SCOPE;
+      provider: "google-cloud-standard";
+      projectId: typeof TTS_GOOGLE_PROJECT_ID;
+      credentialMode: "vercel-wif";
+      identity: TtsVercelWifIdentity;
     }>
   | Readonly<{
       status: "resting";
@@ -66,6 +83,8 @@ export type TtsRuntimeConfig =
         | "local_boundary_rejected"
         | "preview_boundary_rejected"
         | "preview_readiness_missing"
+        | "production_boundary_rejected"
+        | "production_readiness_missing"
         | "identity_not_available";
     }>;
 
@@ -81,7 +100,7 @@ function validWifId(value: string) {
   return /^[a-z][a-z0-9-]{3,31}$/u.test(value);
 }
 
-function resolvePreviewIdentity(env: TtsEnvironment): TtsPreviewWifIdentity | null {
+function resolveVercelIdentity(env: TtsEnvironment): TtsVercelWifIdentity | null {
   const projectNumber = clean(env.MIMI_TTS_GCP_PROJECT_NUMBER);
   const serviceAccountEmail = clean(env.MIMI_TTS_GCP_SERVICE_ACCOUNT_EMAIL);
   const workloadIdentityPoolId = clean(env.MIMI_TTS_GCP_WORKLOAD_IDENTITY_POOL_ID);
@@ -159,7 +178,10 @@ export function resolveTtsRuntimeConfig(
     };
   }
 
-  if (env.MIMI_TTS_EXECUTION_SCOPE !== TTS_PREVIEW_GOOGLE_SCOPE) {
+  if (
+    env.MIMI_TTS_EXECUTION_SCOPE !== TTS_PREVIEW_GOOGLE_SCOPE &&
+    env.MIMI_TTS_EXECUTION_SCOPE !== TTS_PRODUCTION_GOOGLE_SCOPE
+  ) {
     return { status: "resting", reason: "scope_not_available" };
   }
   if (env.MIMI_TTS_PROVIDER !== "google-cloud-standard") {
@@ -168,35 +190,78 @@ export function resolveTtsRuntimeConfig(
   if (env.MIMI_TTS_GCP_PROJECT !== TTS_GOOGLE_PROJECT_ID) {
     return { status: "resting", reason: "project_not_available" };
   }
+  if (env.MIMI_TTS_EXECUTION_SCOPE === TTS_PREVIEW_GOOGLE_SCOPE) {
+    if (
+      url.protocol !== "https:" ||
+      clean(env.VERCEL) !== "1" ||
+      clean(env.VERCEL_ENV) !== "preview" ||
+      clean(env.VERCEL_GIT_COMMIT_REF) !== "V2" ||
+      env.MIMI_STORAGE_RUNTIME !== "postgres-preview" ||
+      env.STAGE5F_DATABASE_TARGET !== "preview" ||
+      env.NODE_ENV === "test"
+    ) {
+      return { status: "resting", reason: "preview_boundary_rejected" };
+    }
+    if (
+      env.MIMI_TTS_ACCOUNTING_READY !== "true" ||
+      env.MIMI_TTS_SCHEMA6_READY !== "true" ||
+      env.MIMI_V2_8_2_STAGING_TARGET_CONFIRMED !== "true" ||
+      env.MIMI_V2_8_2_PREVIEW_PROTECTED_CONFIRMED !== "true"
+    ) {
+      return { status: "resting", reason: "preview_readiness_missing" };
+    }
+    if (env.MIMI_TTS_IDENTITY_TYPE_CONFIRMED !== "wif") {
+      return { status: "resting", reason: "identity_not_available" };
+    }
+    const identity = resolveVercelIdentity(env);
+    if (!identity) {
+      return { status: "resting", reason: "identity_not_available" };
+    }
+    return {
+      status: "available",
+      executionScope: TTS_PREVIEW_GOOGLE_SCOPE,
+      provider: "google-cloud-standard",
+      projectId: TTS_GOOGLE_PROJECT_ID,
+      credentialMode: "vercel-wif",
+      identity,
+    };
+  }
+
   if (
     url.protocol !== "https:" ||
     clean(env.VERCEL) !== "1" ||
-    clean(env.VERCEL_ENV) !== "preview" ||
-    clean(env.VERCEL_GIT_COMMIT_REF) !== "V2" ||
-    env.MIMI_STORAGE_RUNTIME !== "postgres-preview" ||
-    env.STAGE5F_DATABASE_TARGET !== "preview" ||
-    env.NODE_ENV === "test"
+    clean(env.VERCEL_ENV) !== "production" ||
+    clean(env.VERCEL_GIT_COMMIT_REF) !== "main" ||
+    clean(env.NODE_ENV) !== "production" ||
+    env.MIMI_STORAGE_RUNTIME !== "postgres-production" ||
+    env.STAGE6B_DATABASE_TARGET !== "production" ||
+    env.MIMI_PRODUCTION_CUTOVER_MODE !== "live"
   ) {
-    return { status: "resting", reason: "preview_boundary_rejected" };
+    return { status: "resting", reason: "production_boundary_rejected" };
   }
   if (
     env.MIMI_TTS_ACCOUNTING_READY !== "true" ||
     env.MIMI_TTS_SCHEMA6_READY !== "true" ||
-    env.MIMI_V2_8_2_STAGING_TARGET_CONFIRMED !== "true" ||
-    env.MIMI_V2_8_2_PREVIEW_PROTECTED_CONFIRMED !== "true"
+    env.MIMI_V2_8_3_PRODUCTION_TARGET_CONFIRMED !== "true" ||
+    env.MIMI_V2_8_3_PRODUCTION_ACCESS_CONFIRMED !== "true"
   ) {
-    return { status: "resting", reason: "preview_readiness_missing" };
+    return { status: "resting", reason: "production_readiness_missing" };
   }
   if (env.MIMI_TTS_IDENTITY_TYPE_CONFIRMED !== "wif") {
     return { status: "resting", reason: "identity_not_available" };
   }
-  const identity = resolvePreviewIdentity(env);
-  if (!identity) {
+  const identity = resolveVercelIdentity(env);
+  if (
+    !identity ||
+    identity.serviceAccountEmail !== TTS_PRODUCTION_SERVICE_ACCOUNT_EMAIL ||
+    identity.workloadIdentityPoolId !== TTS_PRODUCTION_WIF_POOL_ID ||
+    identity.workloadIdentityProviderId !== TTS_PRODUCTION_WIF_PROVIDER_ID
+  ) {
     return { status: "resting", reason: "identity_not_available" };
   }
   return {
     status: "available",
-    executionScope: TTS_PREVIEW_GOOGLE_SCOPE,
+    executionScope: TTS_PRODUCTION_GOOGLE_SCOPE,
     provider: "google-cloud-standard",
     projectId: TTS_GOOGLE_PROJECT_ID,
     credentialMode: "vercel-wif",

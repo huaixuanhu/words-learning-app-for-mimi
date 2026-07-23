@@ -85,7 +85,7 @@ describe("POST /api/tts", () => {
     };
     const cache = new MemoryTtsCache();
     const accounting = new InMemoryTtsAccounting();
-    const createPreviewGoogleProvider = vi.fn(() => provider);
+    const createVercelWifGoogleProvider = vi.fn(() => provider);
     const createRuntimeCache = vi.fn(() => cache);
     const createPostgresAccounting = vi.fn(() => accounting);
     const resolver = createTtsServiceResolver({
@@ -108,7 +108,7 @@ describe("POST /api/tts", () => {
       }),
       createLocalFixtureProvider: () => provider,
       createLocalGoogleProvider: () => provider,
-      createPreviewGoogleProvider,
+      createVercelWifGoogleProvider,
       createMemoryCache: () => cache,
       createRuntimeCache,
       createMemoryAccounting: () => accounting,
@@ -117,7 +117,7 @@ describe("POST /api/tts", () => {
 
     expect(resolver(request(body))).toBeInstanceOf(TtsService);
     expect(resolver(request(body))).toBeInstanceOf(TtsService);
-    expect(createPreviewGoogleProvider).toHaveBeenCalledOnce();
+    expect(createVercelWifGoogleProvider).toHaveBeenCalledOnce();
     expect(createRuntimeCache).toHaveBeenCalledOnce();
     expect(createPostgresAccounting).toHaveBeenCalledOnce();
   });
