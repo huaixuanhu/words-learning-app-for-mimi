@@ -3496,3 +3496,45 @@
   - Checked only credential-presence booleans. Neither the current process environment nor the dedicated Gate 4 Keychain service has a usable `NEON_API_KEY`; no `.env` or secret value was read.
   - Gate 4 is paused at an independent credential checkpoint. The stage approval covers clone/migration/recovery rehearsal, while API-key creation or retrieval remains a separate explicit-approval action.
 - Safety notes: documentation and local read-only inspection only. No Neon branch/endpoint/API key/database/Schema mutation, connection string access, learner-row read, Vercel/GitHub/deployment action, provider call, AI/TTS opening, Production write, Gate 5 action or SSO work occurred.
+
+# 2026-07-24 01:14 AEST
+
+- Task: complete the user-authorized V2 Production launch from the Gate 5 migration checkpoint through live provider acceptance, steady state, post-cutover backup and documentation closeout.
+- Plan agreed: yes. The user explicitly requested direct execution until V2 was fully live. The work retained the code-owned exact-target, Basic Auth, migration, accounting, quota and recovery guards; SSO remained outside V2.
+- Production result:
+  - Exact Git `main` V2 deployment `dpl_3w23RXZS7bxXcc6N1FQskPX6eU65` is Ready and canonical in `syd1`.
+  - Anonymous `/`, storage health, TTS and AI routes all return Basic Auth `401` before application/provider logic.
+  - Neon `main` remains Schema 6 with 1 person, 1,486 vocabulary items, 125 Review states, 203 Review events, 1,854 parity-protected legacy core rows and zero structural/in-flight invariants.
+- Provider result:
+  - Production WIF synthesized one `en-AU-Standard-C` MP3 through Google Cloud; the identical replay was a Cache hit with the same digest. TTS accounting reports 1 success, 8 characters, `US$0.000032` and zero in-flight.
+  - Production Gemini generated one enrichment and one context explanation; Replay reused the enrichment without another call. AI accounting reports 2 successes, 1,440 tokens, `US$0.000887` and zero in-flight.
+  - The enrichment draft was explicitly rejected; no generated content entered vocabulary data and no learning history changed.
+- Steady-state result:
+  - Removed the temporary four-attempt ceiling only after ledger reconciliation and set the explicit Production steady-state acceptance flag.
+  - Retained 300 attempts/day, 600k input tokens/day, 210k output/thinking tokens/day, `US$0.50/day`, `US$2/month`, concurrency 2, Cache, Idempotency and Kill Switch.
+  - Removed both disposable staged provider-smoke deployments and their temporary local auth items. Canonical credentials/domain were not changed by the smoke.
+- Backup result:
+  - Created repository-external Schema 6 archive `mimi-production-schema6-20260723T150730Z-84cafac89d22.dump.age`, 222,110 bytes, SHA-256 `50cfd666fbed345fe9bdb5403a9b7ca6b1908d29d2e661abcc59a7640a7373cd`.
+  - Decrypted and restored it into an isolated local PostgreSQL 17 instance. Source and restore Schema/count/invariant snapshots matched exactly; ignored evidence SHA-256 is `d10eeb7a819ebffb9a3ef2f995f69431c25349665d87f2865a8c7e3a564e331a`.
+  - Temporary identity, local database, socket and execution script were removed. The encrypted backup remains outside the repository.
+- Security closeout:
+  - A fresh audit after the first release checks found the newly published Next.js July 2026 security advisories against `16.2.10`. Official Next.js guidance requires `16.2.11`.
+  - Upgraded `next` and `eslint-config-next` to `16.2.11`, forced Next's optional image path to the current patched `sharp@0.35.3`, and accepted the non-breaking lockfile fix for development-only `brace-expansion`.
+  - `npm ls` resolves Next `16.2.11` to Sharp `0.35.3`; both full `npm audit` and `npm audit --omit=dev` report 0 vulnerabilities.
+- Validation:
+  - Full Vitest passes 92 files / 567 tests with the existing Postgres integration file/test skipped.
+  - ESLint, TypeScript, all three backup dry-runs, Next.js 16.2.11 Production build, live cutover manifest validation, Tier 3 governance preflight, full dependency audit and `git diff --check` pass.
+- Changed files:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `README.md`
+  - `CHANGELOG.md`
+  - `governance/AI_AGENT_LOG.md`
+  - `plan_docs/PLAN_V2_MASTER.md`
+  - `plan_docs/PLAN_V2_STAGE8_3_PRODUCTION_BACKUP_MIGRATION_CUTOVER.md`
+  - `plan_docs/PLAN_V2_STAGE8_3_GATE5_PRODUCTION_RUNTIME_CREDENTIAL_CUTOVER.md`
+  - `plan_docs/evidence/V2_8_3_CUTOVER_MANIFEST.json`
+  - `package.json`
+  - `package-lock.json`
+- Safety notes: no credential value, connection URI, raw learner row, provider body or private backup identity entered Git or documentation. The previous V1 artifact, protected Preview, Schema 5 recovery branch, rehearsal branches and encrypted backups remain intentionally retained until the natural-day/two-user Gate 7 observation is complete. That future human evidence is not claimed here.
+- Reason: finish V2 as the real Production product while preserving recoverability and keeping post-launch human observation distinct from machine-verified release completion.

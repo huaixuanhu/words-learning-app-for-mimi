@@ -65,7 +65,7 @@
     "google-auth-library": "^10.9.0",
     "lucide-react": "^0.562.0",
     "motion": "^12.42.2",
-    "next": "16.2.10",
+    "next": "16.2.11",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "ts-fsrs": "^5.4.1"
@@ -77,12 +77,13 @@
     "@types/react-dom": "^19",
     "dotenv-cli": "^11.0.0",
     "eslint": "^9",
-    "eslint-config-next": "16.2.10",
+    "eslint-config-next": "16.2.11",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^4.1.9"
   },
   "overrides": {
-    "postcss": "8.5.16"
+    "postcss": "8.5.16",
+    "sharp": "0.35.3"
   }
 }

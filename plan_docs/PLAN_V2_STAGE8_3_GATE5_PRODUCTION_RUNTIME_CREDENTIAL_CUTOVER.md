@@ -43,7 +43,7 @@ Exit criteria:
 Current operational tier: Tier 3  
 Working tier: Tier 3
 
-Status: Production preparation、maintenance、旧 V1 database credential rotation（数据库凭证轮换）、最终加密备份、Schema 5 recovery branch、Production `main` Schema 6 migration 与完整 parity 均已完成。当前进入 exact `main` 的 `schema6-readiness` / `live` 部署与运行验收；AI/TTS Kill Switch 仍关闭。
+Status: complete。Production preparation、maintenance、旧 V1 database credential rotation（数据库凭证轮换）、最终加密备份、Schema 5 recovery branch、Production `main` Schema 6 migration、完整 parity、exact `main` live deployment、真实 Gemini/TTS smoke 与 steady-state accounting 均已完成。Gate 7 post-launch stability observation 由 parent plan 继续管理。
 
 ## 1. Current Facts And Gap
 
@@ -168,4 +168,25 @@ Focused validation：3 files / 15 tests，TypeScript、ESLint 与 `git diff --ch
 - The write-free check found zero other active database sessions. The guarded runner revalidated the live Neon project/branch/endpoint, recovery evidence and all three pinned migration hashes before connecting.
 - `0003 -> 0004 -> 0005` completed in one outer transaction. Post-migration inspection reports Schema 6, 22 tables, 12 constraints, 21 indexes, 7 triggers, 1,486 vocabulary creation facts and two Daily Study defaults.
 - Full parity is `matched=true`, `mismatches=[]`, with all 1,854 legacy core rows retained. All orphan, invalid scheduling, missing creation fact, missing default and AI/TTS in-flight invariants are zero.
-- Production remains in maintenance while the exact `main` application deployment and authenticated runtime acceptance proceed.
+- Production main migration completed while maintenance remained active; the later exact `main` deployment and acceptance below closed that window.
+
+### 8.4 Exact V2 live deployment
+
+- Exact cutover commit `84cafac89d22ae7f74b499ddbe59db89c8a0048a` was present on local and remote `main` before runtime opening.
+- Canonical deployment `dpl_3w23RXZS7bxXcc6N1FQskPX6eU65` is Ready in Production and serves `https://words-learning-app-for-mimi.vercel.app` from `syd1`.
+- Production uses exact `live`、Schema 6、`postgres-production` and the code-owned `v2-schema6` client contract。Anonymous `/`、`/api/storage/health`、`/api/tts` and `/api/ai/enrichment` all return Basic Auth `401` before application/provider logic。
+- The secret-free cutover record is `plan_docs/evidence/V2_8_3_CUTOVER_MANIFEST.json`; it validates as `status=live`, records complete write chronology and retains paired V1/Schema 5 recovery material。
+
+### 8.5 Real Production provider acceptance
+
+- A staged Production-target smoke used the same runtime contract without changing the canonical domain or its Basic Auth credential。Both temporary smoke deployments and their temporary local auth items were removed afterward。
+- Google Cloud Standard-C: first request returned provider `google-cloud-standard` / Cache miss and 7,872 MP3 bytes；the same text then returned Cache hit with identical audio digest。Ledger: 1 successful provider attempt、8 characters、`US$0.000032`、0 submitted/failed/in-flight。
+- Gemini: one enrichment produced 2 additional meanings、2 bilingual examples、1 similar word and 1 confusable word；one context explanation returned the expected five fields。Replay reused the same enrichment resource with no added provider attempt。Ledger: 2 succeeded、0 failed/submitted、1,440 total tokens、`US$0.000887`、0 in-flight。
+- The enrichment draft was explicitly rejected after inspection。No AI text was accepted into the vocabulary item and no learning history was changed。
+
+### 8.6 Steady state and post-cutover backup
+
+- After provider ledger reconciliation, `MIMI_AI_PRODUCTION_ROLLOUT_MAX_PROVIDER_ATTEMPTS` was removed and `MIMI_V2_8_3_PRODUCTION_STEADY_STATE_ACCEPTED=true` was set。The long-term 300 attempts/day、600k/210k tokens/day、`US$0.50/day`、`US$2/month`、concurrency 2、Cache、Idempotency and Kill Switch limits remain。
+- The final steady-state deployment is `dpl_3w23RXZS7bxXcc6N1FQskPX6eU65`; anonymous protection and canonical alias binding were rechecked after the configuration change。
+- Immediate Schema 6 archive `mimi-production-schema6-20260723T150730Z-84cafac89d22.dump.age` is 222,110 bytes with SHA-256 `50cfd666fbed345fe9bdb5403a9b7ca6b1908d29d2e661abcc59a7640a7373cd`。An isolated PostgreSQL 17 restore matched the source Schema/count/invariant snapshot exactly；ignored evidence SHA-256 is `d10eeb7a819ebffb9a3ef2f995f69431c25349665d87f2865a8c7e3a564e331a`。
+- Protected Preview、previous V1 deployment、Production Schema 5 recovery branch and encrypted backups remain intentionally retained until the parent Gate 7 natural-day/two-user observation is complete。

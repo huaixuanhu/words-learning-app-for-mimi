@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## 2026-07-24 01:14 AEST
+
+- Completed the V2 Production cutover and replaced the canonical V1 application with exact Git `main` in Vercel `syd1`.
+- Canonical deployment `dpl_3w23RXZS7bxXcc6N1FQskPX6eU65` is Ready and `live`; anonymous page, health, TTS and AI routes remain behind Basic Auth `401`.
+- Verified Production `postgres-production` / Schema 6 continuity: 1 person, 1,486 vocabulary entries, 125 review states, 203 review events and all 1,854 legacy core rows remain intact with zero structural/in-flight invariant failures.
+- Proved the independent Production Google Cloud TTS identity with one Standard-C synthesis and an identical Cache hit. The ledger contains 1 successful provider attempt, 8 characters, `US$0.000032` and zero in-flight calls.
+- Proved paid Gemini with one enrichment, one context explanation and a no-extra-call Replay. The draft was rejected after inspection, so no AI content entered vocabulary data. The ledger contains 2 successful calls, 1,440 tokens, `US$0.000887` and zero in-flight calls.
+- Accepted AI steady state after reconciliation: 300 attempts/day, 600k/210k tokens/day, `US$0.50/day`, `US$2/month`, concurrency 2, Cache, Idempotency and Kill Switch remain.
+- Added the secret-free live cutover manifest and created an immediate post-cutover Schema 6 `age` archive. The 222,110-byte archive has SHA-256 `50cfd666fbed345fe9bdb5403a9b7ca6b1908d29d2e661abcc59a7640a7373cd` and passed isolated PostgreSQL 17 restore with matching Schema/count/invariant snapshot.
+- Upgraded the runtime to the official July 2026 security release `next@16.2.11`, aligned `eslint-config-next`, and overrode Next's optional image dependency to `sharp@0.35.3`. `npm audit fix` also updated the affected development-only `brace-expansion`; full and Production-only audits now report 0 vulnerabilities.
+- Retained protected Preview, the previous V1 artifact, Schema 5 recovery branch and encrypted backups until one Australia/Melbourne day boundary and real user/Mimi learning runs complete the Gate 7 stability record. SSO remains outside V2.
+- Reason: make V2 the real Production product while preserving verified recovery paths and separating machine release proof from later human stability evidence.
+
 ## 2026-07-24 00:14 AEST
 
 - Completed V2-8-3 Gate 5 through the Production `main` Schema 6 migration and parity checkpoint.

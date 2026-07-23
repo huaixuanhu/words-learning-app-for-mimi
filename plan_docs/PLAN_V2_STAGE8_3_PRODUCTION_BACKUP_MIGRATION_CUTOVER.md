@@ -30,13 +30,13 @@ Input evidence:
 - 用户在 2026-07-19 确认进入 V2-8-3，但当前先完成 documentation-first（文档先行）和 local guard implementation（本地守门实现），不直接操作远程环境。
 - V2-8-2 已完成长期 `staging` 的 Schema 5 → Schema 6 演练、受保护 Preview 的完整 V2 / Gemini 验收，并保留独立 Preview credential（凭证）供用户与 Mimi 继续体验。
 - V2-8-2.1 已在 branch `V2` 完成共享数据生命周期、请求合并、Daily Study 快速路径和 `syd1` 区域配置；V2-8-3 Gate 0B 已把 exact commit `2e6145386d018968f61a1bee1b6f897feebff627` 作为受保护 Preview 验证，并记录真实区域、请求与性能证据。
-- live Production（正式环境）已进入受保护 maintenance；Neon `main` 已在最终加密备份与 recovery branch 完成后迁移至 Schema Version 6，真实学习数据通过完整 parity 保持不变。
+- live Production（正式环境）已完成 maintenance 窗口并切换至 exact V2 `main`；Neon `main` 是 Schema Version 6，真实学习数据通过完整 parity 保持不变。
 - 当前 Production Schema 5 inspector（检查器）仍调用 `assertEmptySchema5Counts()`；它不能作为已有真实数据的 V2-8-3 基线工具。
-- 当前正式 AI activation（启用）只接受历史 localhost proof 与 `v2-8-2-preview`，Vercel Production 继续 fail closed（默认关闭）。
+- 正式 AI activation（启用）已增加独立 `v2-8-3-production` scope，并通过真实 enrichment/context smoke、Replay 与 steady-state accounting。
 - `db/migrations/0003_v2_schema6_data_model.sql`、`0004` 与 `0005` 已作为一个 outer transaction 在 Production `main` 执行并通过完整 parity。
-- V2-8-2.2 已增加 `0004_v2_bilingual_examples.sql`、JSON backup Version 4、双语例句和新版 AI draft contract；`0004` 已在长期非 Production `staging` 执行并随 PF-001 exact application 在 protected Preview 验证，Production 尚未执行。
+- V2-8-2.2 已增加 `0004_v2_bilingual_examples.sql`、JSON backup Version 4、双语例句和新版 AI draft contract；`0004` 已在长期非 Production `staging` 与 Production `main` 执行。
 - 用户在 2026-07-20 把 V2-8-2.3 插入 Production cutover 前，专门收集并关闭 protected Preview 真实使用问题；整个 V2 明确不包含 SSO。
-- 2026-07-22 PF-001 完成：Google Cloud Standard-C、`0005`、Preview-only WIF、`staging` migration、exact deployment 与机器路径验证均完成；使用者在 MacBook + Chrome 通过 Settings、Recognition、Active 与例句词汇朗读，确认原问题解决且音效非常理想。Mimi 后续独立确认音效没有问题，但没有记录其设备/浏览器；iPhone + Safari 尚未测试。Production identity、迁移与部署仍不存在。
+- 2026-07-22 PF-001 完成 Preview closeout；V2-8-3 随后创建独立 Production WIF identity、应用 `0005` 并通过真实 Standard-C synthesis 与 Cache hit。Mimi 的确切设备/浏览器和 iPhone + Safari 仍未形成独立证据。
 - 2026-07-22 PF-002 重新打开 V2-8-2.3：Review/New Learning 导航、两项目标层级、会话文案和桌面面板对齐保留。历史 Instrument Serif 版本完成 exact protected Preview 机器验收后，用户在实际使用中认为字体不舒服；现已恢复 Geist 标题与原有大词 fallback。新 exact commit `54c8ca4492ff9b13d095ea0bd0d3d7ca702c3c2f` 已作为 protected Preview deployment `dpl_EmRVmp5YDTKgnh1VEtVBozwhRp6J` Ready。用户随后明确接受 PF-002，以 `Normal / Closed by explicit acceptance` 收口，不虚构一次新的舒适度复测。
 - 2026-07-22 PF-003 登记并修复：Active New Learning/Review 现复用 Recognition 完成弹窗和本地 Mimi 完成音效，覆盖三种 Active 模式。Exact commit `acd009cc3879275dffa1d22c470b6c82fd1f8263` 已作为 protected Preview deployment `dpl_BAYB3tDx1m4ybKFRtw9rdf32jZon` Ready。用户随后明确接受 PF-003，以 `Normal / Closed by explicit acceptance` 收口，不声称完成了新的真人音效试听。
 - repository 现有三套 JSON backup dry-run（备份模拟）证明应用资料形状可迁移，但它们不等同于 Production 独立加密 logical backup（逻辑备份）与真实 restore（恢复）证明。
@@ -44,9 +44,9 @@ Input evidence:
 Consumer / next stage:
 
 - 本文件直接约束 V2-8-3 的本地守门实现、远程只读核验、备份恢复演练、Production clone（正式数据克隆）演练、正式切换、验收与收口。
-- Gate 0B、本地 Gate 1、Gate 2、Gate 3 与 Gate 4 已完成。Gate 2 证据见 `plan_docs/PLAN_V2_STAGE8_3_GATE2_REMOTE_READ_ONLY_INVENTORY.md`；Gate 3 与 Gate 4 的真实备份、clone migration、restore 和 parity 证据分别见对应 derived plans。
+- Gate 0B 与 Gates 1–6 已完成。Gate 2 证据见 `plan_docs/PLAN_V2_STAGE8_3_GATE2_REMOTE_READ_ONLY_INVENTORY.md`；Gate 3–5 的真实备份、clone migration、restore、parity、runtime 与 provider 证据见对应 derived plans和 cutover manifest。
 - 如果后续必须派生执行记录或事故恢复文件，新文件开头必须继续引用本文件为 `Source plan`，并写明 `Scope`、`Non-Scope` 与 `Exit criteria`，不得形成无来源的平级计划。
-- V2-8-3 全部完成后，V2 替换 V1；multi-user confidential isolation（多用户机密隔离）仍留在 Version-hold 计划。
+- V2 已替换 V1；multi-user confidential isolation（多用户机密隔离）仍留在 Version-hold 计划。Gate 7 继续记录上线后稳定性与资源清理。
 
 Document nature:
 
@@ -58,7 +58,7 @@ Target capability tier: Tier 3
 
 Working tier: Tier 3
 
-Status: Gate 0B、Gates 1–4 与 Gate 5 的 Production preparation、maintenance、final backup、Schema 5 recovery point、`main` migration 和 parity 已完成。Production `main` 现为 Schema 6，核心 1,854 行完整保留且所有迁移后 invariants 为 0。当前继续执行 exact Git `main` 的 `schema6-readiness`、`live` 部署、受控 AI/TTS 验收与稳定性收口。
+Status: V2 已正式上线。Gate 0B 与 Gates 1–6 完成；Production `main` 是 Schema 6，核心 1,854 行完整保留且所有迁移后 invariants 为 0。Canonical Vercel Production 运行 exact `main` / `live`；受控 Gemini/TTS 真实调用与长期费用边界通过。Gate 7 的 natural-day/two-user stability evidence 和后续 cleanup 尚未完成，不虚构人工证据。
 
 ## Scope
 
@@ -421,6 +421,15 @@ Canonical derived execution plan：`plan_docs/PLAN_V2_STAGE8_3_GATE5_PRODUCTION_
 
 **Approval Stop 6:** 第一笔真实学习 mutation、第一笔 Gemini call、移除 `4` 次 ceiling、真实 reset/rollback 或任何数据修正分别需要在已批准 acceptance script 内明确列出。超出脚本范围立即停止。
 
+### Gate 5–6 completion — 2026-07-24 AEST
+
+- Canonical Production deployment `dpl_3w23RXZS7bxXcc6N1FQskPX6eU65` 在 `syd1` 进入 `live`；canonical domain 与该 deployment 精确对应。匿名页面、health、TTS 与 AI route 均由 Basic Auth 先返回 `401`。
+- Existing data health confirmed `postgres-production` / Schema 6 with 1 person、1,486 vocabulary items、125 Review states 和 203 Review events。Migration manifest records 1,854 core rows before/after with identical digest and `parityMatched=true`.
+- Production Standard-C 第一次合成为 Google Cloud provider miss，第二次相同请求为 Cache hit，音频 digest 相同；TTS ledger 为 1 successful provider attempt、8 characters、`US$0.000032`、0 in-flight。
+- Production Gemini 生成 1 次 enrichment 与 1 次 context explanation；Replay returned the same enrichment resource without another provider call。AI ledger 为 2 successful attempts、1,440 tokens、`US$0.000887`、0 in-flight。Enrichment draft was explicitly rejected, so no vocabulary row was modified.
+- Initial four-attempt ceiling was removed only after ledger reconciliation。Steady state keeps 300 attempts/day、600k input tokens/day、210k output/thinking tokens/day、`US$0.50/day`、`US$2/month`、concurrency 2、Cache、Idempotency and Kill Switch。
+- Secret-free cutover manifest: `plan_docs/evidence/V2_8_3_CUTOVER_MANIFEST.json`。Paired recovery decision is `forward-repair`; previous V1 artifact、Schema 5 recovery、encrypted backup and protected Preview remain available。
+
 ## Gate 7 — Stability, Final Backup And Preview Cleanup
 
 ### Stability evidence
@@ -428,6 +437,8 @@ Canonical derived execution plan：`plan_docs/PLAN_V2_STAGE8_3_GATE5_PRODUCTION_
 - protected Preview 与 V1 deployment 继续保留，直到 Production 至少跨过一个 Australia/Melbourne natural-day boundary（自然日边界），并由用户与 Mimi 完成各自一段真实学习流程。
 - 期间确认 Daily Plan rollover、Review/Active history、Dashboard、AI ledger、logs、cost 和 performance 无异常；没有 unresolved migration、provider、backup 或 authentication blocker。
 - 稳定窗口结束时再生成一份 encrypted Production logical backup，完成 checksum 与可恢复性记录。
+
+Immediate post-cutover protection 已完成：`mimi-production-schema6-20260723T150730Z-84cafac89d22.dump.age` 为 222,110 bytes，SHA-256 `50cfd666fbed345fe9bdb5403a9b7ca6b1908d29d2e661abcc59a7640a7373cd`。它已解密恢复到隔离 PostgreSQL 17；source/restore Schema、counts 和 invariants 完全一致，ignored secret-free evidence SHA-256 为 `d10eeb7a819ebffb9a3ef2f995f69431c25349665d87f2865a8c7e3a564e331a`。这份即时备份不代替跨自然日稳定窗口结束时的 final backup。
 
 ### Cleanup
 

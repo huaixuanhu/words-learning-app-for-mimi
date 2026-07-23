@@ -1,0 +1,77 @@
+{
+  "artifactKind": "v2-8-3-cutover-manifest-v1",
+  "artifactVersion": 1,
+  "status": "live",
+  "record": {
+    "createdAt": "2026-07-23T14:01:00.073Z",
+    "updatedAt": "2026-07-23T14:55:22.000Z",
+    "approverRole": "product-owner"
+  },
+  "source": {
+    "exactCommitSha": "84cafac89d22ae7f74b499ddbe59db89c8a0048a",
+    "v1CommitSha": "3941fc0ae46e78a4e8eb77f01d5325c5dea02fb4",
+    "v1DeploymentId": "dpl_ZrEHc39z4dufgq3RcPQGUV1vK4n2",
+    "maintenanceDeploymentId": "dpl_9gsFP5D4dRf314CYj5sYArdfpYww",
+    "v2DeploymentId": "dpl_3w23RXZS7bxXcc6N1FQskPX6eU65"
+  },
+  "database": {
+    "targetMode": "production-main",
+    "migrationSha256": "ef991928d299a7dfb78483c96fcd7e6fd673a009cd31ca0f0f91c606d2128fba",
+    "additiveMigrationSha256": "9e00e1213366492db90a97709d605d68770a1b80f46caa8b748886bc8bd4e29c",
+    "ttsMigrationSha256": "ce0890a59dcf262c38894f865cb249339e95727764c6a98a58b43eba2a4c5367",
+    "before": {
+      "schemaVersion": 5,
+      "inventoryArtifactSha256": "e1eb476c837e49ac296833098913ac8d3fa98f03267b03daa654a5aa1b057a6f",
+      "combinedRowSha256": "c269c3133008cc5ae9c30f54f49c88cd792566397ff3aefca5e5fba551f2e794",
+      "coreRowCount": 1854
+    },
+    "after": {
+      "schemaVersion": 6,
+      "inventoryArtifactSha256": "278f78314fb4dacb7f4f5362ff69fadc7e87a6aa6f1efc5f7ff97721c7973a71",
+      "combinedRowSha256": "c269c3133008cc5ae9c30f54f49c88cd792566397ff3aefca5e5fba551f2e794",
+      "coreRowCount": 1854,
+      "parityMatched": true
+    },
+    "backup": {
+      "encrypted": true,
+      "checksumSha256": "63d4a662e49f27d2ea0eaf9521f2b6e3cb295d3b4b4ed9de5cb47492f7b8e569",
+      "evidenceSha256": "3494a78fe998f9158929da57a0ecbddd2eeed5431ecb94854022e6b2c057e7c6",
+      "restoreVerified": true,
+      "custodyConfirmed": true
+    },
+    "recovery": {
+      "schemaVersion": 5,
+      "recoveryId": "br-small-sea-a7wloc2s",
+      "evidenceSha256": "e57369a02f692762ed8c9d54b4ee5e62a0403b4570b00ac2de97787eb1ce5eef",
+      "confirmed": true
+    }
+  },
+  "writeWindow": {
+    "windowId": "v2-8-3-production-write-free-20260723",
+    "startedAt": "2026-07-23T14:01:00.073Z",
+    "endedAt": "2026-07-23T14:28:07.888Z",
+    "firstV2WriteAt": "2026-07-23T14:47:45.597Z",
+    "oldRuntimeWritePathBlocked": true,
+    "oldRuntimeEvidenceSha256": "137e281dca68eb7bd20dfe74b972f339b1f3b6bc3d80460c71894ca238c37b97",
+    "noInFlightWritesConfirmed": true
+  },
+  "ai": {
+    "phase": "steady-state",
+    "killSwitchEnabled": false,
+    "rolloutMaximumProviderAttempts": null,
+    "ledgerBeforeSha256": "85eda631ef85fcdb170386b180dce0165ca21138b942cfdf24415c79e2b08d98",
+    "ledgerAfterSha256": "5f0bb9da2741de6529cd543aee488708bb17972e36b10990bf98cd9f84a9763a",
+    "steadyStateAcceptanceEvidenceSha256": "5f0bb9da2741de6529cd543aee488708bb17972e36b10990bf98cd9f84a9763a"
+  },
+  "rollback": {
+    "v1ArtifactConfirmed": true,
+    "schema5AccessRouteConfirmed": true,
+    "schema5AccessEvidenceSha256": "3494a78fe998f9158929da57a0ecbddd2eeed5431ecb94854022e6b2c057e7c6",
+    "schema5RecoveryConfirmed": true,
+    "encryptedBackupConfirmed": true,
+    "pairedReady": true,
+    "reconciliationDecision": "forward-repair",
+    "reconciliationEvidenceSha256": "5f0bb9da2741de6529cd543aee488708bb17972e36b10990bf98cd9f84a9763a",
+    "lossAcceptanceEvidenceSha256": null
+  }
+}
