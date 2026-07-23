@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## 2026-07-23 22:20 AEST
+
+- Completed the explicitly approved V2-8-3 Gate 3 encrypted logical backup and isolated restore on clean exact commit `88ddb1c2c96437ca3cc4a8f2103990ae70e79eac`, equal to `origin/V2` before execution.
+- Regenerated the same-commit cross-timezone synthetic proof. Full parity, wrong-identity rejection, corruption rejection and cleanup pass; evidence SHA-256 is `2fa450a80bedd4452953f196ee79923b5232ca2dabbe6e738a641540fdc4d5ef`.
+- Consumed and cleared one signed-in Neon Console `main` unpooled connection string. The runner verified pinned Production target, PostgreSQL 17, Schema 5, `neondb` / `neondb_owner`, TLS/channel binding, non-empty data and zero Gate 2 count drift before the backup.
+- Streamed `pg_dump` directly through `age` and restored the encrypted archive into a disposable Unix-socket-only PostgreSQL 17 cluster. Source and restore counts, all core-table digests and eight invariants match; combined SHA-256 is `6c82ba44caf462051b9579ca90f8a59994c8794649d6e871dd135cf0c23e2aa9`.
+- Retained only the repository-external encrypted archive `mimi-production-schema5-20260723T121829Z-88ddb1c2c964.dump.age`: `112,253` bytes, SHA-256 `d30950ee9aecefb2863ad6143494707dd723d8e89a50117bc0cf4b46662847a0`, directory/file permissions `0700/0600`.
+- Secret-free evidence SHA-256 is `365eab7f27a791de9269d8700ed1e3e6444d85671934ee000ee3afa484f29f81`; Keychain custody, evidence secret scan, clipboard clearing, temporary identity/Postgres cleanup and absence of plaintext dump all pass.
+- Final validation passes 92 files / 566 tests with the existing Postgres integration file/test skipped, ESLint, TypeScript, all three application backup dry-runs, Production build, Tier 3 governance preflight and `git diff --check`.
+- Gate 3 is complete and work stops at Approval Stop 3. No Production write, Schema migration, Neon branch, credential/environment mutation, Vercel deployment, AI/TTS opening or Gate 4 action occurred.
+- Reason: establish a verified, independently encrypted and restorable Production Schema 5 recovery artifact before any clone or migration authority is considered.
+
 ## 2026-07-23 18:20 AEST
 
 - Continued the approved V2-8-3 Gate 3 from clean commit `a6aa17e7e10e2e11ffa0a8a56f50e85bd4d1e17e`. PostgreSQL 17.10, `age` 1.3.1, Keychain custody and a new same-commit synthetic backup/restore proof passed before Production credential access.

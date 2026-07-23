@@ -37,7 +37,7 @@ Exit criteria:
 - 临时 PostgreSQL、socket、解密流和失败产生的残缺 archive 已清理；加密备份、独立密钥保管与 secret-free evidence（无敏感资料证据）完整。
 - Gate 3 完成后停在 Approval Stop 3；Gate 4 仍需新的明确批准。
 
-Status: `Approved / Gate 3A–3B complete; Gate 3C UTC digest repair validated locally; new exact commit pending`. 用户于 2026-07-23 明确批准 Gate 3，包括工具安装、Production unpooled 只读连接、本机临时恢复数据库、仓库外真实加密备份和独立密钥材料。PostgreSQL 17.10、`age` 1.3.1、Keychain identity 与 synthetic backup/restore/negative-test 已通过。第一次 clean-commit runner 暴露并修复了 libpq environment（连接环境）映射；第二个 clean-commit runner 完成 Production 只读 inventory、加密 stream 和本机 restore 后，在逐表 digest（摘要）比较时安全停止。独立本机证明确认根因是 source/restore 的 `timestamptz` 显示时区不同，资料行与时间点本身没有丢失。inventory 现于 read-only transaction（只读事务）内固定 UTC，跨 Melbourne/UTC synthetic parity 已通过。失败 archive、临时 restore cluster 和剪贴板均已清理；尚无可接受的真实 Production backup 或 restore evidence。
+Status: `Complete / Approval Stop 3`. 用户于 2026-07-23 明确批准的 Gate 3 已在固定范围内完成。Exact commit `88ddb1c2c96437ca3cc4a8f2103990ae70e79eac` 通过同 commit 跨时区 synthetic proof 后，对 Production `main` Schema 5 完成一次只读 inventory、`pg_dump → age` 加密 stream、仓库外 archive、本机隔离 PostgreSQL 17 restore 和逐表 parity。Source/restore counts、invariants、table digests 与 combined digest 完全一致，`restoreVerified=true`。Archive、evidence、Keychain custody、权限、secret scan、剪贴板与临时资源清理均已核验。Production V1 / Schema 5 没有 mutation；Gate 4 仍未批准。
 
 ## 1. Accepted Method
 
@@ -158,7 +158,20 @@ Gate 3 完成只证明 Schema 5 independent encrypted logical backup（独立加
 - UTC-repair validation passes 1 focused file / 12 tests and 92 full-suite files / 566 tests, with the existing Postgres integration file/test skipped. Lint, typecheck, all three application backup dry-runs and Production build pass. Governance and diff checks complete after this checkpoint is synchronized.
 - Because the runner changed, a second Production attempt is blocked until these changes are committed and a new synthetic proof is generated against that clean exact commit. Gate 4 remains unapproved.
 
-## 9. Current Primary References
+## 9. Gate 3C–3D Successful Completion — 2026-07-23 22:18 AEST
+
+- Exact branch/commit: clean `V2` at `88ddb1c2c96437ca3cc4a8f2103990ae70e79eac`, equal to `origin/V2` before execution.
+- Same-commit synthetic evidence SHA-256: `2fa450a80bedd4452953f196ee79923b5232ca2dabbe6e738a641540fdc4d5ef`; parity、wrong-identity rejection、corruption rejection 与 cleanup 均为 true。
+- Source: pinned Production `main`, `neondb`, `neondb_owner`, PostgreSQL 17, Schema Version 5。Gate 2 baseline delta 全部为 `0`。
+- Source/restored counts 均为：people `1`、vocabulary items `1,486`、import batches `38`、review states `125`、review events `203`、review settings `1`、backup imports/mappings `0/0`；Recognition/Active/archived vocabulary 为 `1,486/0/0`。
+- 八项引用与应用形状 invariant 全部为 `0`。Source 与 restore combined SHA-256 均为 `6c82ba44caf462051b9579ca90f8a59994c8794649d6e871dd135cf0c23e2aa9`；逐表 counts/digests 也全部一致。
+- Encrypted archive: `mimi-production-schema5-20260723T121829Z-88ddb1c2c964.dump.age`, `112,253` bytes, SHA-256 `d30950ee9aecefb2863ad6143494707dd723d8e89a50117bc0cf4b46662847a0`。目录权限为 `0700`，archive 权限为 `0600`；仓库内没有 plaintext dump。
+- Secret-free evidence: ignored local path `local_artifacts/v2-stage8-3-gate3/20260723T121829Z/production-backup-evidence.json`, SHA-256 `365eab7f27a791de9269d8700ed1e3e6444d85671934ee000ee3afa484f29f81`。Evidence secret-shape scan 通过，没有 connection string、host、password、private identity 或 learner row。
+- Local restore duration 为 `884 ms`。Temporary Postgres、socket、temporary identity 与 partial archive cleanup 均为 true；系统剪贴板为 `0` bytes，`/private/tmp` 没有剩余 Gate 3 directory。
+- `age` private identity 继续只存在 macOS Keychain；recipient SHA-256 为 `2a16828f6b7031cdf5f56ac41369188d7f18abbd6ecb72711ac2b957e0e79f12`。
+- Gate 3 已完成并停在 Approval Stop 3。本证据没有授权 Production clone、Schema migration、credential/environment mutation、deployment、AI/TTS opening、Production write 或 Gate 4 action。
+
+## 10. Current Primary References
 
 - PostgreSQL 17 `pg_dump`: <https://www.postgresql.org/docs/17/app-pgdump.html>
 - PostgreSQL 17 `pg_restore`: <https://www.postgresql.org/docs/17/app-pgrestore.html>

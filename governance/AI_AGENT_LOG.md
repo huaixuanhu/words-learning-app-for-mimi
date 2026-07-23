@@ -1,5 +1,22 @@
 # AI Agent Log
 
+## 2026-07-23 22:20 AEST
+
+- Task: execute V2-8-3 Gate 3C–3D after the user committed the UTC-canonical digest repair.
+- Plan agreed: yes. The user asked to continue after committing. The standing Gate 3 approval permits a read-only Production logical backup and isolated local restore; Gate 4+, Production mutation/migration/deployment, remote restore resources, credential/environment mutation and provider actions remain excluded.
+- Exact checkpoint: branch `V2`, clean commit `88ddb1c2c96437ca3cc4a8f2103990ae70e79eac`, equal to `origin/V2`. PostgreSQL 17.10, `age` 1.3.1, existing Keychain custody and the same-commit cross-timezone synthetic proof passed before Production credential retrieval.
+- Credential path: signed-in Neon Console showed branch `main`, database `neondb`, role `neondb_owner` and Connection pooling off. The runner consumed one copied connection string, cleared the system clipboard before parsing/connection, and passed the pinned endpoint/region/role/database/TLS/channel-binding and environment guards. The raw URL, host and password were not emitted or persisted.
+- Backup/restore result: the runner verified Production PostgreSQL 17, Schema Version 5, non-empty inventory, zero Gate 2 count drift and zero invariants; streamed `pg_dump` directly through `age`; restored into a disposable local PostgreSQL 17 cluster reachable only through a Unix socket; and reported `restoreVerified=true`.
+- Parity result: source/restored core counts are people `1`, vocabulary `1,486`, import batches `38`, review states `125`, review events `203`, review settings `1`, backup imports/mappings `0/0`; Recognition/Active/archived vocabulary is `1,486/0/0`. All eight invariants are zero, every table digest matches, and combined SHA-256 is `6c82ba44caf462051b9579ca90f8a59994c8794649d6e871dd135cf0c23e2aa9`.
+- Artifact result: repository-external encrypted archive `mimi-production-schema5-20260723T121829Z-88ddb1c2c964.dump.age` is `112,253` bytes with SHA-256 `d30950ee9aecefb2863ad6143494707dd723d8e89a50117bc0cf4b46662847a0`. Backup directory/file permissions are `0700/0600`; no plaintext dump exists in the repository.
+- Evidence result: ignored evidence SHA-256 is `365eab7f27a791de9269d8700ed1e3e6444d85671934ee000ee3afa484f29f81`; same-commit synthetic proof SHA-256 is `2fa450a80bedd4452953f196ee79923b5232ca2dabbe6e738a641540fdc4d5ef`. Evidence secret-shape scan passes. Clipboard is empty, no temporary Gate 3 directory remains, and temporary identity/Postgres cleanup is verified.
+- Changed files: Gate 3 derived/parent/master plans; Architecture, README, AGENTS, Changelog and this governance record. Runtime code remains the exact committed implementation used for the backup.
+- Validation: exact-commit tools/synthetic/Production backup/restore gates pass. Full Vitest passes 92 files / 566 tests with the existing Postgres integration file/test skipped; lint, typecheck, three application backup dry-runs, Production build, Tier 3 governance preflight and `git diff --check` pass after documentation synchronization.
+- Process note: one final consistency-search command placed Markdown backticks inside a double-quoted shell pattern, so the shell attempted the harmless command name `Complete` and returned `command not found`. No file, credential, database, archive or remote state changed; the corrected search uses single-quoted patterns.
+- Safety notes: Production remained read-only and Schema 5. No learner row, connection string or private identity entered Git or documentation. No Production write, migration, data correction, Neon branch, Vercel environment/deployment, credential change, provider call, Git commit/push or Gate 4 action occurred.
+- Residual boundary: Gate 3 is complete at Approval Stop 3. Gate 4 requires fresh explicit approval before any Production clone or remote mutation.
+- Reason: prove the Production Schema 5 data can be recovered from an independently encrypted logical archive before considering clone/migration work.
+
 ## 2026-07-23 18:20 AEST
 
 - Task: continue the explicitly approved V2-8-3 Gate 3C–3D from the user's newly committed connection-mapping repair.
