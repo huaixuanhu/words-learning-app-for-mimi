@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## 2026-07-24 00:14 AEST
+
+- Completed V2-8-3 Gate 5 through the Production `main` Schema 6 migration and parity checkpoint.
+- Created independent Production Gemini and Google Cloud TTS identities. Gemini is restricted to its API; TTS uses exact Production WIF and has no long-lived service-account key. Sensitive values were piped directly into Vercel and did not enter stdout, files or Git.
+- Deployed the V2 maintenance artifact, preserved anonymous Basic Auth `401`, rotated the Neon `main` owner password, updated Vercel database variables and proved the old V1 credential no longer connects.
+- Created a no-compute Schema 5 recovery branch and a final `age`-encrypted Schema 5 archive. The 112,253-byte archive passed isolated PostgreSQL 17 restore; source/restore digest is `6c82ba44caf462051b9579ca90f8a59994c8794649d6e871dd135cf0c23e2aa9`.
+- Migrated pinned `0003 -> 0004 -> 0005` in one outer transaction after zero active-write confirmation. Schema 6 now has 22 tables, 12 constraints, 21 indexes and 7 triggers.
+- Full parity retained 1,854 core rows: 1 person, 1,486 vocabulary entries, 38 import batches, 125 review states, 203 review events and 1 settings row. All orphan, invalid and AI/TTS in-flight invariants are zero.
+- Production remains in maintenance until the exact Git `main` readiness/live deployment and provider smoke checks complete.
+- Reason: preserve two independent rollback paths and prove data continuity before exposing the V2 application.
+
 ## 2026-07-23 23:45 AEST
 
 - Began the fully authorized V2-8-3 Gate 5 with a documentation-first child plan derived from the canonical Production cutover and Gate 4 evidence.

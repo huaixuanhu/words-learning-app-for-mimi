@@ -1,5 +1,21 @@
 # AI Agent Log
 
+## 2026-07-24 00:14 AEST
+
+- Task: execute the user's explicit instruction to continue from Gate 4 until V2 is fully live; this record covers Gate 5 through Production Schema 6 parity.
+- Plan agreed: yes. The user explicitly authorized all remaining in-scope V2-8-3 credentials, external provider configuration, Production migration/deployment and GitHub actions, while exact-target, maintenance, backup, cost and rollback guards remain mandatory.
+- Working tier: Tier 3. Production TTS received a dedicated service account/WIF pool/provider with exact Vercel Production claims and no user-managed key. Production Gemini received a separate API-restricted Auth Key. Secret values and connection URLs were piped directly to their destinations and not printed, persisted or committed.
+- Validation before remote mutation: exact commit `65f45dae4fbd365781afb45b43c2693cbcd601d3` passed 92 test files / 567 tests, lint, typecheck, three backup dry-runs, Production build, Tier 3 preflight and `git diff --check`; it was pushed to `origin/V2`.
+- Maintenance/write-free result: Production deployment `dpl_9gsFP5D4dRf314CYj5sYArdfpYww` took the canonical domain into maintenance while anonymous access remained HTTP 401. The exact Neon `main` owner password was rotated once; the new credential works and replaced all Vercel database variables, while the old credential is rejected.
+- Recovery result: created no-compute Schema 5 recovery branch `v2-8-3-production-schema5-recovery-20260723`. Same-commit synthetic proof passed. Final encrypted archive `mimi-production-schema5-20260723T140833Z-65f45dae4fbd.dump.age` is 112,253 bytes with SHA-256 `63d4a662e49f27d2ea0eaf9521f2b6e3cb295d3b4b4ed9de5cb47492f7b8e569`; isolated restore passed with secret-free evidence SHA-256 `3494a78fe998f9158929da57a0ecbddd2eeed5431ecb94854022e6b2c057e7c6`.
+- Migration result: zero other active database sessions were present. The guarded runner independently revalidated Neon target identity, recovery evidence, exact Schema 5 digest and pinned `0003` / `0004` / `0005` before applying all three in one transaction.
+- Parity result: Production `main` is Schema 6 with 22 tables, 12 constraints, 21 indexes and 7 triggers. All 1,854 legacy core rows are retained: people 1, vocabulary 1,486, import batches 38, review states/events 125/203 and settings 1. All orphan, invalid-scheduling, missing-fact/default and provider in-flight invariants are zero; parity is matched with no mismatches.
+- Validation: pre-mutation local acceptance passed 92 test files / 567 tests, lint, typecheck, all three application backup dry-runs, Production build, Tier 3 preflight and `git diff --check`. Remote evidence passed maintenance deployment readiness, Basic Auth 401 ordering, new/old database credential positive/negative checks, same-commit synthetic backup, final encrypted backup/isolated restore, zero-active-session check, exact Schema 5 inventory, atomic migration, Schema 6 inspection and full parity.
+- Changed files: Gate 5 child plan; V2-8-3 parent plan; README; Changelog; this governance record. Runtime code remains the exact validated Production TTS guard from the prior commit.
+- Safety notes: Production remains in maintenance; AI and TTS Kill Switches are still closed. The protected Preview, three recovery branches, two encrypted backups and old V1 deployment remain available. No learner content, secret value, connection URL or private backup identity entered Git or documentation.
+- Residual boundary: merge exact V2 to Git `main`, deploy `schema6-readiness`, switch to `live`, run read/data/provider acceptance, reconcile ledgers and only then consider cleanup.
+- Reason: make V1 unable to write, preserve independent Schema 5 recovery, migrate atomically and verify complete real-data continuity before opening V2.
+
 ## 2026-07-23 22:20 AEST
 
 - Task: execute V2-8-3 Gate 3C–3D after the user committed the UTC-canonical digest repair.

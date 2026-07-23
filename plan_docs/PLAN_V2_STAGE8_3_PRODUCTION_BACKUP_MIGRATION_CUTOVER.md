@@ -30,10 +30,10 @@ Input evidence:
 - 用户在 2026-07-19 确认进入 V2-8-3，但当前先完成 documentation-first（文档先行）和 local guard implementation（本地守门实现），不直接操作远程环境。
 - V2-8-2 已完成长期 `staging` 的 Schema 5 → Schema 6 演练、受保护 Preview 的完整 V2 / Gemini 验收，并保留独立 Preview credential（凭证）供用户与 Mimi 继续体验。
 - V2-8-2.1 已在 branch `V2` 完成共享数据生命周期、请求合并、Daily Study 快速路径和 `syd1` 区域配置；V2-8-3 Gate 0B 已把 exact commit `2e6145386d018968f61a1bee1b6f897feebff627` 作为受保护 Preview 验证，并记录真实区域、请求与性能证据。
-- live Production（正式环境）仍运行 V1、`postgres-production` 与 Neon `main` Schema Version 5，并保存真实学习数据。
+- live Production（正式环境）已进入受保护 maintenance；Neon `main` 已在最终加密备份与 recovery branch 完成后迁移至 Schema Version 6，真实学习数据通过完整 parity 保持不变。
 - 当前 Production Schema 5 inspector（检查器）仍调用 `assertEmptySchema5Counts()`；它不能作为已有真实数据的 V2-8-3 基线工具。
 - 当前正式 AI activation（启用）只接受历史 localhost proof 与 `v2-8-2-preview`，Vercel Production 继续 fail closed（默认关闭）。
-- `db/migrations/0003_v2_schema6_data_model.sql` 已在非 Production 目标通过演练，尚未在 Production `main` 执行。
+- `db/migrations/0003_v2_schema6_data_model.sql`、`0004` 与 `0005` 已作为一个 outer transaction 在 Production `main` 执行并通过完整 parity。
 - V2-8-2.2 已增加 `0004_v2_bilingual_examples.sql`、JSON backup Version 4、双语例句和新版 AI draft contract；`0004` 已在长期非 Production `staging` 执行并随 PF-001 exact application 在 protected Preview 验证，Production 尚未执行。
 - 用户在 2026-07-20 把 V2-8-2.3 插入 Production cutover 前，专门收集并关闭 protected Preview 真实使用问题；整个 V2 明确不包含 SSO。
 - 2026-07-22 PF-001 完成：Google Cloud Standard-C、`0005`、Preview-only WIF、`staging` migration、exact deployment 与机器路径验证均完成；使用者在 MacBook + Chrome 通过 Settings、Recognition、Active 与例句词汇朗读，确认原问题解决且音效非常理想。Mimi 后续独立确认音效没有问题，但没有记录其设备/浏览器；iPhone + Safari 尚未测试。Production identity、迁移与部署仍不存在。
@@ -58,7 +58,7 @@ Target capability tier: Tier 3
 
 Working tier: Tier 3
 
-Status: Gate 0B、Gate 1、Gate 2、Gate 3 与 Gate 4 均已完成。Gate 4 在 exact commit `16acd9102b77bf01565b2d963099ef3c819a0add` 上创建受限制 Production clone，两次执行固定 `0003 -> 0004 -> 0005`、一次 restore-from-parent，并证明两次 Schema 6 parity 与独立 encrypted logical restore 全部通过。Production V1、Neon `main` 与 Schema 5 在 Gate 4 内未发生 migration。用户已进一步明确授权直接执行到 V2 完全上线；当前进入 Gate 5 的 Production-only credentials、maintenance、最终备份与 `main` migration 准备，仍由既有 exact-target 和 fail-closed guards 逐项约束。
+Status: Gate 0B、Gates 1–4 与 Gate 5 的 Production preparation、maintenance、final backup、Schema 5 recovery point、`main` migration 和 parity 已完成。Production `main` 现为 Schema 6，核心 1,854 行完整保留且所有迁移后 invariants 为 0。当前继续执行 exact Git `main` 的 `schema6-readiness`、`live` 部署、受控 AI/TTS 验收与稳定性收口。
 
 ## Scope
 

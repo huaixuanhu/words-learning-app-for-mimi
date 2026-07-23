@@ -43,7 +43,7 @@ Exit criteria:
 Current operational tier: Tier 3  
 Working tier: Tier 3
 
-Status: Documentation-first（文档先行）和 Production TTS fail-closed runtime implementation 已完成。Focused TTS runtime/provider/route tests、TypeScript、ESLint 与 diff check 通过；当前进入 Production WIF 与 Vercel environment 准备。
+Status: Production preparation、maintenance、旧 V1 database credential rotation（数据库凭证轮换）、最终加密备份、Schema 5 recovery branch、Production `main` Schema 6 migration 与完整 parity 均已完成。当前进入 exact `main` 的 `schema6-readiness` / `live` 部署与运行验收；AI/TTS Kill Switch 仍关闭。
 
 ## 1. Current Facts And Gap
 
@@ -145,3 +145,27 @@ Focused validation：3 files / 15 tests，TypeScript、ESLint 与 `git diff --ch
 - Any provider credential, connection URI, learner row or private backup identity reaches stdout, Git or documentation.
 - AI/TTS cost, in-flight, quota or provider status cannot be reconciled.
 - External action requires plan upgrade, public access, auto-reload or broader IAM than the exact project/service role.
+
+## 8. Execution Evidence — 2026-07-24 AEST
+
+### 8.1 Production identities and maintenance
+
+- Exact implementation commit `65f45dae4fbd365781afb45b43c2693cbcd601d3` passed 92 test files / 567 tests, lint, typecheck, three backup dry-runs, Production build, Tier 3 preflight and `git diff --check`, then pushed to `origin/V2`.
+- Created the independent restricted Gemini Auth Key `mimi-v2-8-3-production-20260723`; its API restriction is only `generativelanguage.googleapis.com`. The key value and random study-token secret were piped directly into Sensitive Vercel Production variables and were never printed or written to the repository.
+- Created the independent Google Cloud identity `mimi-tts-production@for-tts-502913.iam.gserviceaccount.com`, WIF pool `mimi-vercel-production` and provider `mimi-v2-production`. Its condition binds the exact Vercel owner/project and `environment=production`; it has no user-managed key.
+- Production deployment `dpl_9gsFP5D4dRf314CYj5sYArdfpYww` placed the canonical domain into `maintenance`. Anonymous access remained HTTP `401`; AI and TTS Kill Switches stayed closed.
+
+### 8.2 Write-free and recovery evidence
+
+- Rotated the exact Neon `main` `neondb_owner` password once through the official API. The new credential connected successfully and replaced all three Vercel Production database variables; the previous credential was then rejected, so retained V1 deployments cannot write.
+- Created no-compute Schema 5 recovery branch `v2-8-3-production-schema5-recovery-20260723` from `main`. It is distinct from `main` and has zero endpoints.
+- Same-commit synthetic backup proof passed with evidence SHA-256 `e57369a02f692762ed8c9d54b4ee5e62a0403b4570b00ac2de97787eb1ce5eef`.
+- Final repository-external encrypted archive `mimi-production-schema5-20260723T140833Z-65f45dae4fbd.dump.age` is `112,253` bytes with SHA-256 `63d4a662e49f27d2ea0eaf9521f2b6e3cb295d3b4b4ed9de5cb47492f7b8e569`. Isolated PostgreSQL 17 restore passed; source/restore combined digest is `6c82ba44caf462051b9579ca90f8a59994c8794649d6e871dd135cf0c23e2aa9`; secret-free evidence SHA-256 is `3494a78fe998f9158929da57a0ecbddd2eeed5431ecb94854022e6b2c057e7c6`.
+
+### 8.3 Production main migration
+
+- Immediately before migration, `main` remained Schema 5 with 1 person, 1,486 vocabulary entries, 38 import batches, 125 review states, 203 review events, 1 settings row and zero orphan invariants. Safe-inventory combined digest remained `c269c3133008cc5ae9c30f54f49c88cd792566397ff3aefca5e5fba551f2e794`.
+- The write-free check found zero other active database sessions. The guarded runner revalidated the live Neon project/branch/endpoint, recovery evidence and all three pinned migration hashes before connecting.
+- `0003 -> 0004 -> 0005` completed in one outer transaction. Post-migration inspection reports Schema 6, 22 tables, 12 constraints, 21 indexes, 7 triggers, 1,486 vocabulary creation facts and two Daily Study defaults.
+- Full parity is `matched=true`, `mismatches=[]`, with all 1,854 legacy core rows retained. All orphan, invalid scheduling, missing creation fact, missing default and AI/TTS in-flight invariants are zero.
+- Production remains in maintenance while the exact `main` application deployment and authenticated runtime acceptance proceed.

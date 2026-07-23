@@ -19,13 +19,13 @@
 - **ADHD-friendly 学习体验**：把任务拆小、保持明确反馈，并允许保守地回退和重新开始。
 - **长期数据可控**：正式学习数据保存在云端数据库，同时保留导出和备份能力。
 
-当前 V1 已作为受保护的私人应用上线。V2 主线已经完成每日学习、独立 Active 三种练习、手机端与 Dashboard、第一代付费 AI enrichment（AI 词汇补充）及 V2-only 性能收口。V2-8-2.2 已加入可靠的方向键评分、设备 English voice 备用选项，以及每条英文例句相邻的中文翻译资料链。V2-8-2.3 的 PF-001 已关闭；用户明确接受 PF-002 Geist 回退与 PF-003 Active 完成音效修复，两项均以 `Closed by explicit acceptance` 收口。V2-8-3 Gate 0B 和 Gates 1–4 已完成。Exact commit `16acd9102b77bf01565b2d963099ef3c819a0add` 已在 non-empty Production clone 两次完成 Schema 5→6 migration、provider restore 和完整 parity，并生成新的仓库外 age-encrypted Schema 5 archive，通过本机隔离 PostgreSQL 17 完整恢复。Production 暂时继续运行 V1 / Schema Version 5，Gate 5 的 maintenance、Production-only credentials 和最终 cutover 正在执行。整个 V2 不包含 SSO（Single Sign-On，单点登录）或 confidential per-person authorization（个人机密授权隔离）。
+V2 已进入 Production 正式切换。每日学习、独立 Active 三种练习、手机端与 Dashboard、付费 AI enrichment（AI 词汇补充）、Google Cloud Standard-C TTS 与 V2-only 性能收口均已完成。V2-8-3 Gate 5 已让正式域名进入 maintenance，轮换旧 V1 数据库凭证，并在最终加密备份和无 compute Schema 5 recovery branch 完成后，把 Neon `main` 原子迁移为 Schema 6。迁移前后的 1,854 行 core data 完整 parity，1,486 个词条、125 个复习状态与 203 条复习事件保持不变；当前只剩 exact Git `main` 的 readiness/live 部署和运行验收。整个 V2 不包含 SSO（Single Sign-On，单点登录）或 confidential per-person authorization（个人机密授权隔离）。
 
 ## 正式版本
 
 - 访问地址：[words-learning-app-for-mimi.vercel.app](https://words-learning-app-for-mimi.vercel.app)
-- 当前线上版本：cloud-backed V1（云端持久化 V1）
-- 当前开发分支：`V2`；PF-002 与 PF-003 均为 `Normal / Closed by explicit acceptance`；V2-8-3 Gate 0B 和 Gates 1–4 已完成，当前执行 Gate 5 Production cutover
+- 当前线上状态：V2 cutover maintenance；Production `main` 已为 Schema 6，等待 exact application readiness/live 开放
+- 当前开发分支：`V2`；PF-001、PF-002 与 PF-003 均已关闭；V2-8-3 Gate 5 数据库切换已完成，正在执行最终 Production deployment
 - 访问方式：私人 Basic Auth（基础认证）；账号信息不会存放在仓库中
 - 正式数据：Neon Postgres（关系型数据库）
 
