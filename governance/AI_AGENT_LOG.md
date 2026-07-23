@@ -1,5 +1,19 @@
 # AI Agent Log
 
+## 2026-07-23 17:38 AEST
+
+- Task: resume approved V2-8-3 Gate 3C–3D after the user committed the local backup implementation.
+- Plan agreed: yes. The user asked to continue the next stage; the standing approval permits one read-only Production backup and isolated local restore. Gate 4+, Production mutation/migration/deployment, remote restore resources and credential/environment mutation remain excluded.
+- Exact checkpoint: branch `V2`, clean commit `644bdc006c792a67efc5c7c1f9057d7d295c8cd7`. PostgreSQL 17.10, `age` 1.3.1, existing Keychain custody and a new same-commit synthetic proof passed; synthetic evidence SHA-256 was `ded4b6736f878130e8a01008737a71173ec5ede448a66d1eeca9d81189ebd8c6`.
+- Safe stop: the first Production runner consumed and cleared the approved Neon Console connection string, passed the pinned unpooled endpoint/region/database/role/TLS guards, then stopped as `V2_8_3_BACKUP_INVENTORY_FAILED`. No archive, local restore database or Production evidence file was created.
+- Root cause: the complete URI was assigned to `PGDATABASE`; this `psql` invocation treated it as a database-name default and attempted the local `/tmp/.s.PGSQL.5432` socket. The original failure therefore did not establish a Production database session.
+- Repair: the validated URI is now split into `PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER`, `PGPASSWORD`, `PGSSLMODE` and `PGCHANNELBINDING`. Password material remains process-local and absent from command arguments, files, logs and evidence. The connection contract now requires channel binding and focused tests assert the exact mapping.
+- Bounded read-only proof: a temporary diagnostic with the repaired mapping returned only `neondb`, `neondb_owner`, PostgreSQL 17, eight public tables and four expected Schema 5 vocabulary columns. No learner row, vocabulary text, meaning, connection string, endpoint or password was printed or retained; the clipboard was cleared after every use.
+- Changed files: Gate 3 backup contract, focused test and runner; Gate 3 derived/parent/master plans; Architecture, README, AGENTS, Changelog and this governance record.
+- Validation: focused Gate 3 contract passes 1 file / 11 tests; full Vitest passes 92 files / 565 tests with the existing Postgres integration file/test skipped. Script syntax, ESLint, TypeScript, all three application backup dry-runs, Production build and `git diff --check` pass. Tier 3 governance preflight is rerun after adding its required `Changed files:` marker.
+- Safety notes: Production V1/Schema 5 remains unchanged. No Production write, dump/archive, restore database, evidence artifact, Neon branch, Vercel environment/deployment, AI/TTS provider call, credential change, Git commit/push or Gate 4 action occurred.
+- Reason: preserve the clean-commit and fail-closed guarantees after a real execution exposed a local client-environment defect.
+
 ## 2026-07-23 00:50 AEST
 
 - Task: execute the explicitly approved V2-8-3 Gate 3 encrypted logical Production backup and isolated restore rehearsal.

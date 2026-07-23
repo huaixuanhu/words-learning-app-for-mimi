@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## 2026-07-23 17:38 AEST
+
+- Resumed the approved V2-8-3 Gate 3 on clean `V2` commit `644bdc006c792a67efc5c7c1f9057d7d295c8cd7`. Tool versions, the existing Keychain identity and a new exact-commit synthetic backup/restore proof passed before Production credential access.
+- The first Production runner consumed and cleared the approved unpooled Neon `main` connection string, passed identity guards, then stopped as `V2_8_3_BACKUP_INVENTORY_FAILED` before any archive, restore database or evidence file was created.
+- Diagnosed the local cause without exposing the connection string: assigning the URI directly to `PGDATABASE` made this `psql` invocation fall back to the local Unix socket. The runner now maps the validated URI to explicit libpq environment fields and additionally requires `channel_binding=require`.
+- Added focused regression coverage for the remote environment mapping. A corrected minimal read-only Production probe confirmed `neondb`, `neondb_owner`, PostgreSQL 17, eight public tables and four expected Schema 5 vocabulary columns; it did not read or output learner rows.
+- Focused Gate 3 validation passes 1 file / 11 tests; full Vitest passes 92 files / 565 tests with the existing Postgres integration file/test skipped. Script syntax, ESLint, TypeScript, all three application backup dry-runs, Production build and diff checks pass; Tier 3 governance is rerun after aligning its required log marker.
+- The corrected runner again waits for a clean exact commit and same-commit synthetic proof before generating the real encrypted backup. No Production write, Schema change, archive, remote restore, Neon/Vercel mutation, provider call, deployment or Gate 4 action occurred.
+- Reason: correct a real connection-path defect under the fail-closed Gate 3 contract before any confidential backup artifact is created.
+
 ## 2026-07-23 00:50 AEST
 
 - Began the explicitly approved V2-8-3 Gate 3 encrypted logical backup/restore tranche. Added its derived plan, PostgreSQL 17 custom-archive + `age` stream-encryption contract, dedicated macOS Keychain identity custody, repository-external archive path, isolated Unix-socket restore runner and focused fail-closed tests.

@@ -142,7 +142,7 @@ Status: Gate 0B protected Preview performance verification、Gate 1 local guards
 | 0 | 记录 protected Preview 性能版本与恢复资源状态；经批准后部署并验证 V2-8-2.1 | 已完成 | 停在 Gate 2 前；未授权 alias/environment/checkpoint mutation |
 | 1 | 实现本地 Production guards、inspectors、maintenance/client-version/AI gates 与 tests | 已批准 | 本次 local tranche（本地批次）在此完成并交付 |
 | 2 | 远程只读 Production/Vercel/Neon/Gemini/TTS inventory 与官方事实刷新 | 已批准并完成 | 脱敏证据已交付；Gate 3 已另行批准 |
-| 3 | 选择独立加密 logical backup 方法并完成 restore rehearsal | 已批准；3A–3B 本机完成 | 采用 PostgreSQL 17 custom archive + `age` 流式加密 + 本机隔离恢复；clean exact commit 后执行 3C–3D，通过后等待 Gate 4 批准 |
+| 3 | 选择独立加密 logical backup 方法并完成 restore rehearsal | 已批准；3A–3B 本机完成；3C 连接映射已修复待 commit | 采用 PostgreSQL 17 custom archive + `age` 流式加密 + 本机隔离恢复；修复后的 clean exact commit 上执行 3C–3D，通过后等待 Gate 4 批准 |
 | 4 | 在非空 Production clone 演练 Schema 5 → 6、parity 与 recovery | 未批准 | 删除/保留临时资源须按批准执行；main 仍不变 |
 | 5 | 暂停写入、最终备份、Production-only secrets、迁移 `main`、promote V2 | 未批准 | 每个 Production mutation 前按本 Gate 的 stop point 再确认 |
 | 6 | 有认证的资料、学习、AI、日志、成本、手机和性能验收 | 未批准 | 移除 AI `4` 次上限及开放长期边界前停止 |
@@ -314,6 +314,8 @@ Canonical derived execution plan: `plan_docs/PLAN_V2_STAGE8_3_GATE3_ENCRYPTED_LO
 - 需要升级付费计划、开启自动续费或扩大账户权限但未另行批准。
 
 **Approval Stop 3:** Gate 3 已在上述固定范围内获批；真实 backup/restore 仍必须绑定 clean exact commit。通过后立即停止并提交脱敏证据，再申请 Gate 4；本批准不允许创建或删除 remote restore target。
+
+Gate 3C 第一次正式 runner 在任何 archive 产生前安全停止：完整 URI 被放入 `PGDATABASE` 后，当前 `psql` 执行回落到本机 Unix socket。修复把已验证 URI 分拆为标准 libpq environment fields（连接环境字段），并新增 mandatory channel binding 与字段映射回归测试。最小只读诊断已通过 Production `main` 的 database、role、PostgreSQL major、public table count 与 Schema 5 column count；没有读取 learner rows。真实 backup/restore 继续等待修复后的 clean exact commit 与同 commit synthetic proof。
 
 ## Gate 4 — Non-empty Production Clone Migration, Parity And Recovery
 

@@ -19,7 +19,7 @@
 - **ADHD-friendly 学习体验**：把任务拆小、保持明确反馈，并允许保守地回退和重新开始。
 - **长期数据可控**：正式学习数据保存在云端数据库，同时保留导出和备份能力。
 
-当前 V1 已作为受保护的私人应用上线。V2 主线已经完成每日学习、独立 Active 三种练习、手机端与 Dashboard、第一代付费 AI enrichment（AI 词汇补充）及 V2-only 性能收口。V2-8-2.2 已加入可靠的方向键评分、设备 English voice 备用选项，以及每条英文例句相邻的中文翻译资料链。V2-8-2.3 的 PF-001 已关闭；用户明确接受 PF-002 Geist 回退与 PF-003 Active 完成音效修复，两项均以 `Closed by explicit acceptance` 收口。V2-8-3 Gate 0B、Gate 1 与远程只读 Gate 2 已完成；Gate 3 已批准，本机加密备份实现与 synthetic restore（合成恢复）通过，真实 Production 备份等待 clean exact commit 后执行。Production 继续运行 V1 / Schema Version 5。整个 V2 不包含 SSO（Single Sign-On，单点登录）或 confidential per-person authorization（个人机密授权隔离）。
+当前 V1 已作为受保护的私人应用上线。V2 主线已经完成每日学习、独立 Active 三种练习、手机端与 Dashboard、第一代付费 AI enrichment（AI 词汇补充）及 V2-only 性能收口。V2-8-2.2 已加入可靠的方向键评分、设备 English voice 备用选项，以及每条英文例句相邻的中文翻译资料链。V2-8-2.3 的 PF-001 已关闭；用户明确接受 PF-002 Geist 回退与 PF-003 Active 完成音效修复，两项均以 `Closed by explicit acceptance` 收口。V2-8-3 Gate 0B、Gate 1 与远程只读 Gate 2 已完成；Gate 3 已批准，本机加密备份实现与 synthetic restore（合成恢复）通过。第一次正式备份执行在 archive 产生前安全发现并修复了本机连接字段映射，最小 Production 只读查询已经通过；真实备份等待修复后的 clean exact commit。Production 继续运行 V1 / Schema Version 5。整个 V2 不包含 SSO（Single Sign-On，单点登录）或 confidential per-person authorization（个人机密授权隔离）。
 
 ## 正式版本
 

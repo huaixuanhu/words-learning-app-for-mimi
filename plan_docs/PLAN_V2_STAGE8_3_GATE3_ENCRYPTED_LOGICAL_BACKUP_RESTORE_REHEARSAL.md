@@ -37,7 +37,7 @@ Exit criteria:
 - 临时 PostgreSQL、socket、解密流和失败产生的残缺 archive 已清理；加密备份、独立密钥保管与 secret-free evidence（无敏感资料证据）完整。
 - Gate 3 完成后停在 Approval Stop 3；Gate 4 仍需新的明确批准。
 
-Status: `Approved / Gate 3A–3B complete locally; Gate 3C pending exact clean commit`. 用户于 2026-07-23 明确批准 Gate 3，包括工具安装、Production unpooled 只读连接、本机临时恢复数据库、仓库外真实加密备份和独立密钥材料。PostgreSQL 17.10、`age` 1.3.1、Keychain identity 与 synthetic backup/restore/negative-test 已通过；尚未产生真实 Production backup 或 restore evidence。
+Status: `Approved / Gate 3A–3B complete; Gate 3C connection mapping repaired locally; corrected exact commit pending`. 用户于 2026-07-23 明确批准 Gate 3，包括工具安装、Production unpooled 只读连接、本机临时恢复数据库、仓库外真实加密备份和独立密钥材料。PostgreSQL 17.10、`age` 1.3.1、Keychain identity 与 synthetic backup/restore/negative-test 已通过。第一次 clean-commit Production runner 在 inventory 前因错误的 libpq environment（连接环境）映射安全停止；最小只读诊断随后证明修复后的远程连接与 Schema 5 安全元资料可读。尚未产生真实 Production backup 或 restore evidence。
 
 ## 1. Accepted Method
 
@@ -137,10 +137,22 @@ Gate 3 完成只证明 Schema 5 independent encrypted logical backup（独立加
 - The refreshed local synthetic proof again records parity, wrong-identity rejection, corruption rejection and cleanup as true. It is deliberately not sufficient for Gate 3C after the implementation is committed: the runner requires a new proof whose embedded commit matches the resulting clean exact HEAD.
 - Gate 3C remains pending because Production backup evidence must bind to a clean exact commit and a synthetic proof generated from that same commit. The current local changes must be reviewed and committed first; this stop is part of the accepted contract, not a Production failure.
 
-## 7. Current Primary References
+## 7. Gate 3C Attempt 1 And Connection Repair — 2026-07-23 AEST
+
+- Commit `644bdc006c792a67efc5c7c1f9057d7d295c8cd7` was clean on branch `V2`. PostgreSQL/`age`, the existing Keychain identity and a new same-commit synthetic proof all passed before Production credential access.
+- The first Production runner consumed and cleared the approved Neon Console clipboard value, passed endpoint/role/database/TLS guards, then stopped as `V2_8_3_BACKUP_INVENTORY_FAILED`. It did not create an archive, restore database or evidence file.
+- A bounded diagnostic confirmed the copied credential was real, unpooled and pinned to Production `main`. The failure was local: putting the full URI in `PGDATABASE` made this `psql` invocation fall back to the local Unix socket.
+- The corrected implementation separates the already-validated URL into `PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER`, `PGPASSWORD`, `PGSSLMODE` and `PGCHANNELBINDING`. These values remain process-local; the password is not placed in a command argument, file, log or evidence.
+- A second minimal read-only diagnostic with the corrected mapping succeeded and returned only safe metadata: `neondb`, `neondb_owner`, PostgreSQL 17, eight public tables and four expected Schema 5 vocabulary columns. It did not read or emit learner rows.
+- Focused coverage now asserts both the explicit libpq mapping and mandatory channel binding. Because this repair changes the runner, the real backup remains blocked until the correction is committed and the synthetic proof is regenerated against that new exact commit.
+- Connection-repair validation passes 1 focused file / 11 tests and 92 full-suite files / 565 tests, with the existing Postgres integration file/test skipped. Script syntax, lint, typecheck, all three application backup dry-runs, Production build, Tier 3 governance and diff checks form the repaired checkpoint gate.
+
+## 8. Current Primary References
 
 - PostgreSQL 17 `pg_dump`: <https://www.postgresql.org/docs/17/app-pgdump.html>
 - PostgreSQL 17 `pg_restore`: <https://www.postgresql.org/docs/17/app-pgrestore.html>
 - `age` project and format: <https://age-encryption.org/>
+- PostgreSQL 17 libpq connection parameters: <https://www.postgresql.org/docs/17/libpq-connect.html>
+- PostgreSQL libpq environment variables: <https://www.postgresql.org/docs/current/libpq-envars.html>
 - Vercel Sensitive Environment Variables: <https://vercel.com/docs/environment-variables/sensitive-environment-variables>
 - Neon connection strings and pooled/unpooled connections: <https://neon.com/docs/connect/connect-from-any-app>

@@ -24,6 +24,7 @@ import {
   assertSecretFreeEvidence,
   combineBackupTableDigests,
   compareBackupInventories,
+  postgresEnvironmentFromNeonUrl,
   safeBackupFailure,
   sha256,
   validateBackupEvidence,
@@ -361,9 +362,9 @@ async function ensurePermanentAgeIdentity() {
 function databaseEnv(rawUrl) {
   return {
     ...minimalBaseEnv(),
+    ...postgresEnvironmentFromNeonUrl(rawUrl, "Production database URL"),
     PGAPPNAME: "mimi-v2-8-3-gate3-backup",
     PGCONNECT_TIMEOUT: "15",
-    PGDATABASE: rawUrl,
     PGOPTIONS: "-c default_transaction_read_only=on",
   };
 }

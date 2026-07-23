@@ -118,6 +118,12 @@ export function parseNeonDatabaseIdentity(rawUrl, label = "database URL") {
   if (!sslMode || !["require", "verify-ca", "verify-full"].includes(sslMode)) {
     reject(`${label} must require TLS`, "V2_8_3_BACKUP_URL_TLS_REQUIRED");
   }
+  if (parsed.searchParams.get("channel_binding") !== "require") {
+    reject(
+      `${label} must require channel binding`,
+      "V2_8_3_BACKUP_URL_TLS_REQUIRED",
+    );
+  }
   const pooled = parsed.hostname.includes("-pooler.");
   const endpointFamily = parsed.hostname.replace("-pooler.", ".");
   return {
@@ -126,6 +132,26 @@ export function parseNeonDatabaseIdentity(rawUrl, label = "database URL") {
     endpointSha256: sha256(endpointFamily),
     pooled,
     role,
+  };
+}
+
+export function postgresEnvironmentFromNeonUrl(
+  rawUrl,
+  label = "database URL",
+) {
+  parseNeonDatabaseIdentity(rawUrl, label);
+  const parsed = new URL(rawUrl);
+  return {
+    PGCHANNELBINDING: "require",
+    PGDATABASE: decoded(
+      parsed.pathname.replace(/^\//u, ""),
+      `${label} database`,
+    ),
+    PGHOST: parsed.hostname,
+    PGPASSWORD: decoded(parsed.password, `${label} password`),
+    PGPORT: parsed.port || "5432",
+    PGSSLMODE: parsed.searchParams.get("sslmode"),
+    PGUSER: decoded(parsed.username, `${label} role`),
   };
 }
 

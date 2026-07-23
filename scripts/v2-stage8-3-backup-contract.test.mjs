@@ -12,6 +12,7 @@ import {
   assertSecretFreeEvidence,
   compareBackupInventories,
   parseNeonDatabaseIdentity,
+  postgresEnvironmentFromNeonUrl,
   sha256,
   validateBackupEvidence,
   V2_STAGE8_3_BACKUP_EVIDENCE_KIND,
@@ -121,6 +122,21 @@ describe("V2-8-3 Gate 3 Production source contract", () => {
     expect(() =>
       parseNeonDatabaseIdentity(databaseUrl().replace("sslmode=require", "sslmode=disable")),
     ).toThrow(/must require TLS/u);
+    expect(() =>
+      parseNeonDatabaseIdentity(databaseUrl().replace("&channel_binding=require", "")),
+    ).toThrow(/must require channel binding/u);
+  });
+
+  it("maps the approved URL to libpq environment fields without using the URL as PGDATABASE", () => {
+    expect(postgresEnvironmentFromNeonUrl(databaseUrl())).toEqual({
+      PGCHANNELBINDING: "require",
+      PGDATABASE: "neondb",
+      PGHOST: ENDPOINT,
+      PGPASSWORD: SECRET,
+      PGPORT: "5432",
+      PGSSLMODE: "require",
+      PGUSER: "neondb_owner",
+    });
   });
 
   it("requires the exact Production approval flag before credentials are read", () => {
