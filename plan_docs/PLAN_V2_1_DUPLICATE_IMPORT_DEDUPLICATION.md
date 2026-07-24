@@ -274,9 +274,9 @@ Focused acceptance must cover:
 - zero-remaining batches are hidden from the normal UI but remain backup-compatible.
 - `0006` refuses dirty data and enforces uniqueness after clean data.
 
-## Future Production Gate
+## Production Release Record
 
-Local completion on `v2.1` does not authorize Production repair. A later Production proposal must separately request approval for:
+Local completion on `v2.1` did not authorize Production repair. The separately accepted Production proposal required:
 
 1. Preview/Staging verification with synthetic duplicate data;
 2. pre-change encrypted Production backup and restore evidence;
@@ -287,10 +287,12 @@ Local completion on `v2.1` does not authorize Production repair. A later Product
 7. `0006` Production migration and post-migration verification;
 8. final encrypted backup and rollback record.
 
-That proposal is now the accepted
+That proposal is the completed
 `plan_docs/PLAN_V2_1_PRODUCTION_DUPLICATE_REPAIR_RELEASE.md`. Its Staging
-rehearsal and Production read-only baseline are recorded there; Production
-cleanup and `0006` remain at the plan's exact-count Approval Stop.
+rehearsal, pre/post encrypted backups, exact application deployment, separately
+confirmed 1,204-copy cleanup, zero-duplicate verification and Production `0006`
+evidence are recorded there. Production now retains 282 unique items, 125 review
+states, 203 review events and all 38 import-batch audit rows.
 
 ## Local Implementation Record
 

@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## 2026-07-24 20:18 AEST
+
+- Completed the separately approved V2.1 Production duplicate-repair release. Exact application commit `c3901cbf5e51f6b4e28700b3c0507cf31fe6c76d` is Ready on deployment `dpl_HFofXrqvEQpEHWfcBGDGZ5jZykBC` in `syd1`; canonical aliases, Basic Auth ordering, authenticated Library load, build logs and runtime error/HTTP 500 scans pass.
+- Created and isolated-restore-verified the 222,110-byte pre-change encrypted backup before any real mutation. Its archive SHA-256 is `f173db546d1ba491b1ca13c9e5693a67c9aef33909e272d1f4a639dfa231d534`; matching evidence SHA-256 is `c94da4b2b31afde855d9f81c3b77dcf0f35268c689cfaaaa60df8daac645975b`.
+- After the user separately confirmed the exact destructive counts, removed 1,204 duplicate copies across 75 groups. The operation deleted no review state/event or vocabulary relation, deleted 1 AI draft, detached 2 AI-run source references, preserved all 1,486 creation facts and all 38 import-batch audit rows, and left 282 vocabulary items.
+- Verified zero duplicate groups and zero checked invariant failures before applying pinned `0006`. The Production unique `(person_id, normalized_text)` index is present/unique and the old non-unique index is absent; post-migration counts remain 282 items / 125 review states / 203 review events.
+- Production Library now shows 282 total, only four non-empty batch cards and no duplicate-removal action. Browser console and Vercel error/HTTP 500 scans are empty.
+- Created and isolated-restore-verified the 180,803-byte post-change encrypted backup. Its archive SHA-256 is `ac94d574778a72e848d28f02c215cc6ce03fe8b395a94c584edf935d5c7ead93`; matching evidence SHA-256 is `66a84e60c746b6b8a8abb1008f39fd4a446c78b7af154e03202b68c7feb492f2`. Archive/evidence permissions are `0600`, the 282-item zero-duplicate state matches after restore and temporary resources are absent.
+- No AI/TTS provider call, credential, Basic Auth, billing, domain, Firewall, SSO, semantic merge or cross-person cleanup changed.
+- Reason: finish the accepted repair with an exact human-owned deletion decision, database-level recurrence prevention and verified recovery points on both sides of the destructive change.
+
 ## 2026-07-24 19:40 AEST
 
 - Began the separately approved V2.1 Production duplicate-repair release gate after protected Preview human acceptance.

@@ -1,11 +1,11 @@
 # Words Learning App For Mimi Architecture
 
 Created: 2026-07-02 23:30 AEST
-Last updated: 2026-07-23 AEST
+Last updated: 2026-07-24 AEST
 
 ## Current State
 
-V2 is live on the canonical Production domain. Current operational tier, target capability tier, and working tier are Tier 3 under `human-ai-governance v0.3.0`. PF-001 is `High / Closed`; PF-002 and PF-003 are `Normal / Closed by explicit acceptance`. Vercel Production runs exact Git `main` in `syd1`; Neon `main` is Schema Version 6 with full parity across all 1,854 legacy core rows. Independent Production Gemini and Google Cloud TTS identities passed real route checks and now operate under their long-term quota, Cache, Idempotency, accounting and Kill Switch guards. The prior V1 artifact, Schema 5 recovery point and encrypted backups remain available during post-launch stability observation. The whole V2 release excludes SSO（Single Sign-On，单点登录）and confidential per-person authorization.
+V2.1 is live on the canonical Production domain. Current operational tier, target capability tier, and working tier are Tier 3 under `human-ai-governance v0.3.0`. PF-001 is `High / Closed`; PF-002 and PF-003 are `Normal / Closed by explicit acceptance`. Vercel Production runs exact Git `main` in `syd1`; Neon `main` is Schema Version 6 with the V2.1 unique `(person_id, normalized_text)` index. The confirmed cleanup removed 1,204 duplicate copies from 75 normalized identities and retained 282 unique vocabulary items, 125 review states, 203 review events, all 38 import-batch audit rows and all creation facts. Independent Production Gemini and Google Cloud TTS identities continue under their long-term quota, Cache, Idempotency, accounting and Kill Switch guards. The prior V1 artifact, Schema 5 recovery point and encrypted backups remain available during post-launch stability observation. The whole V2 release excludes SSO（Single Sign-On，单点登录）and confidential per-person authorization.
 
 ### Current Stack And Historical V1 Build Chronology
 
@@ -584,10 +584,11 @@ V2.1 duplicate repair:
 - Library builds a deterministic selected-person cleanup plan. It keeps the item with the strongest review/content evidence, displays exact destructive counts and binds confirmation to the current keeper/loser fingerprint. Postgres recomputes that plan inside the deleting transaction.
 - Loser items use existing hard-delete propagation: review state/events and item-scoped AI records are removed, AI run source references become `null`, and historical creation facts remain. Independent FSRS histories are not merged.
 - Empty import-batch audit rows remain in storage/backups but are hidden from normal Library history after they own no retained item.
-- The implementation is on branch `v2.1` and has passed protected Preview human acceptance. The separately accepted Production gate is `plan_docs/PLAN_V2_1_PRODUCTION_DUPLICATE_REPAIR_RELEASE.md`.
+- The implementation passed protected Preview human acceptance and is live from `main`. The completed Production gate is `plan_docs/PLAN_V2_1_PRODUCTION_DUPLICATE_REPAIR_RELEASE.md`.
 - That gate adds source-pinned Neon target discovery, Schema 6 encrypted backup/isolated restore evidence, aggregate duplicate inventory and exact `0006` migration guards. The connection URI, API key and private backup identity stay outside output and Git.
 - Long-lived Staging has applied the pinned `0006`, verified the unique index and removed only the fixed V2.1 synthetic person. Its retained baseline is 1 person / 8 items / 14 review events with zero duplicate groups.
-- Production is still unchanged at the pre-backup checkpoint. Read-only inventory reports 75 duplicate identities and 1,204 removable copies among 1,486 items; real cleanup remains human-owned after exact destructive counts are shown.
+- Production completed the exact separately confirmed cleanup: 75 duplicate identities and 1,204 removable copies became zero duplicate identities and 282 retained unique items. `0006` removed the historical non-unique index and installed the unique index only after the zero-duplicate check. Library now shows 282 total, four non-empty historical batch rows and no cleanup action; all 38 batch audit rows remain stored.
+- Both repository-external Production `age` backups passed isolated PostgreSQL 17 restore: the pre-change 222,110-byte archive protects the 1,486-item baseline, while the post-change 180,803-byte archive protects the 282-item unique state. Forward repair remains the default after cleanup/migration.
 
 ### Backup Format
 

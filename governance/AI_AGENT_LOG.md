@@ -1,5 +1,22 @@
 # AI Agent Log
 
+## 2026-07-24 20:18 AEST
+
+- Task: complete the exact-count Approval Stop after the user explicitly confirmed deletion, then apply Production `0006`, verify runtime health and close the V2.1 release.
+- Plan agreed: yes. The user confirmed deletion only after receiving the exact 75-group / 1,204-copy propagation counts.
+- Working tier: Tier 3 because this execution deleted real study-data duplicates and changed a Production database index under fresh backup and explicit human approval.
+- Pre-change recovery: repository-external 222,110-byte `age` archive SHA-256 `f173db546d1ba491b1ca13c9e5693a67c9aef33909e272d1f4a639dfa231d534`; evidence SHA-256 `c94da4b2b31afde855d9f81c3b77dcf0f35268c689cfaaaa60df8daac645975b`; isolated PostgreSQL 17 restore verified Schema/count/invariant/22-table-digest parity.
+- Deployment result: exact commit `c3901cbf5e51f6b4e28700b3c0507cf31fe6c76d`, deployment `dpl_HFofXrqvEQpEHWfcBGDGZ5jZykBC`, Production Ready in `syd1`. Basic Auth `401`, authenticated Library, build log and error/HTTP 500 scans pass.
+- Cleanup result: removed 1,204 duplicate vocabulary copies from 75 groups; removed 0 review states, 0 review events, 1 AI draft and 0 vocabulary relations; detached 2 AI-run source references; retained 282 vocabulary items, all 38 import-batch audit rows, all 1,486 creation facts, 125 review states and 203 review events.
+- Migration result: read-only inventory proved zero duplicate groups/removable items before pinned `0006` ran. Migration SHA-256 `fefb5cd66916ac6303a83e250e5c9913fd82602113673c6fe5a9e11830624fe8`; unique index present/unique, old non-unique index absent, all checked invariants zero and post-migration parity digest `bf07d65b7345a2189deaa52634961eb014eefc8e0952013fcf82e39ae0d986f4`.
+- Application result: authenticated Library shows `282 shown / 282 total`, four non-empty batch records and no `Remove duplicates` action; browser console logs are empty.
+- Post-change recovery: repository-external 180,803-byte `age` archive SHA-256 `ac94d574778a72e848d28f02c215cc6ce03fe8b395a94c584edf935d5c7ead93`; evidence SHA-256 `66a84e60c746b6b8a8abb1008f39fd4a446c78b7af154e03202b68c7feb492f2`; archive/evidence permission `0600`; isolated restore verified the 282-item zero-duplicate state and temporary resources are absent.
+- Changed files: V2.1 parent and Production release plans, Architecture, README, AGENTS, Changelog and this governance record. Runtime code and migration bytes remain the exact already-deployed commit.
+- Validation: pre/post Production aggregate inventory, guarded `0006`, authenticated Chrome Library DOM, empty browser console, empty Vercel error/HTTP 500 scans, archive/evidence SHA-256 and permissions, isolated restore, temporary-resource check, Tier 3 governance preflight and final diff checks pass. The exact deployed application commit had already passed 96 files / 589 tests, lint, TypeScript, all three backup dry-runs, Production build and dependency audit with 0 vulnerabilities.
+- Safety notes: no AI/TTS provider request, credential rotation, Basic Auth, billing, domain, Firewall, SSO, semantic merge or cross-person cleanup occurred. Raw learner text, person id, project id, connection URI, API key and private backup identity remain outside Git/output.
+- Residual boundary: application-only rollback to a pre-V2.1 binary is no longer accepted because the unique index is now part of Production. Forward repair is the default; restoring the pre-change backup requires a separate incident-specific reconciliation or explicit data-loss decision.
+- Reason: complete the accepted V2.1 repair with exact human authorization, database recurrence prevention, independently verified UI/runtime health and recoverable before/after states.
+
 ## 2026-07-24 19:40 AEST
 
 - Task: execute the user-approved V2.1 Production duplicate-repair release gate after Preview acceptance.

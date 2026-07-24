@@ -41,7 +41,7 @@ Exit criteria:
 - The unique index is present, the prior non-unique index is absent, and normal application reads remain healthy.
 - A post-change encrypted backup/restore check and release/governance records are complete.
 
-Status: Execution approved by the user on 2026-07-24. Preview human acceptance and the immediate read-only post-check passed. Guard tooling and Staging rehearsal are complete. Production read-only inventory is complete; the application, data and indexes remain unchanged while the gate prepares the pre-change encrypted backup.
+Status: Complete on 2026-07-24. Preview human acceptance, guarded Staging rehearsal/fixture cleanup, pre-change Production backup/restore, exact application deployment, separately confirmed real cleanup, zero-duplicate verification, pinned `0006`, browser/runtime checks and post-change backup/restore all passed.
 
 ## Fixed release sequence
 
@@ -76,4 +76,15 @@ Status: Execution approved by the user on 2026-07-24. Preview human acceptance a
 - Staging final state is 1 retained Preview person, 8 vocabulary items, 1 import batch, 8 review states, 14 review events, zero duplicates and zero submitted/in-flight AI/TTS work.
 - Production read-only inventory reports Schema 6, 22 tables, 1 person, 1,486 vocabulary items, 38 import batches, 125 review states, 203 review events and the unchanged 1,854-row parity digest `c269c3133008cc5ae9c30f54f49c88cd792566397ff3aefca5e5fba551f2e794`.
 - Production currently contains 75 duplicate normalized identities, 1,279 items inside those groups and 1,204 removable copies, all within one person. The unique index is absent and the historical non-unique index remains.
-- All Production orphan/profile/creation/default/provider invariants are zero. No Production write, cleanup, migration, deployment, provider call or credential rotation has occurred at this checkpoint.
+- All Production orphan/profile/creation/default/provider invariants are zero. This paragraph records the final pre-mutation Approval Stop; the completed execution is recorded below.
+
+## Execution evidence — Production closeout
+
+- Pre-change encrypted archive `mimi-production-schema6-v2-1-20260724T095446Z-c3901cbf5e51.dump.age` is 222,110 bytes with SHA-256 `f173db546d1ba491b1ca13c9e5693a67c9aef33909e272d1f4a639dfa231d534`; evidence SHA-256 is `c94da4b2b31afde855d9f81c3b77dcf0f35268c689cfaaaa60df8daac645975b`. Isolated PostgreSQL 17 restore, 22 table digests, counts, schema and invariants match.
+- Exact application commit `c3901cbf5e51f6b4e28700b3c0507cf31fe6c76d` reached Ready Production deployment `dpl_HFofXrqvEQpEHWfcBGDGZ5jZykBC` in `syd1`. Canonical aliases, anonymous Basic Auth `401` checks, authenticated Library load, build logs and initial error/HTTP 500 scans passed.
+- The user separately accepted the exact destructive counts: 75 duplicate groups, 1,204 duplicate vocabulary copies, 0 review states, 0 review events, 1 AI draft and 0 vocabulary relations deleted; 2 AI-run source references detached; 38 import-batch audit rows retained.
+- Immediate read-only inventory after cleanup reports 282 vocabulary items, zero duplicate groups/removable items, 38 import batches, 125 review states, 203 review events, 1,486 creation facts, 2 AI runs, zero AI drafts and every checked invariant at zero.
+- Pinned `0006` SHA-256 `fefb5cd66916ac6303a83e250e5c9913fd82602113673c6fe5a9e11830624fe8` ran only after the zero-duplicate check. The unique index is present/unique, the old non-unique index is absent and the post-migration parity digest is `bf07d65b7345a2189deaa52634961eb014eefc8e0952013fcf82e39ae0d986f4`.
+- Authenticated Production Library shows `282 shown / 282 total`, four retained non-empty batch cards and no `Remove duplicates` action. Browser console logs are empty; the deployment's subsequent error and HTTP 500 scans are also empty.
+- Post-change encrypted archive `mimi-production-schema6-v2-1-20260724T101648Z-c3901cbf5e51.dump.age` is 180,803 bytes with SHA-256 `ac94d574778a72e848d28f02c215cc6ce03fe8b395a94c584edf935d5c7ead93`; evidence SHA-256 is `66a84e60c746b6b8a8abb1008f39fd4a446c78b7af154e03202b68c7feb492f2`. File permission is `0600`; isolated restore verified the 282-item/zero-duplicate state and no temporary restore directory remains.
+- No AI/TTS provider call, Basic Auth change, credential rotation, billing change, semantic merge or cross-person cleanup occurred.

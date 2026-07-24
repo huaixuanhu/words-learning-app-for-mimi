@@ -21,13 +21,13 @@
 
 V2 已在 Production 正式上线。每日学习、独立 Active 三种练习、手机端与 Dashboard、付费 AI enrichment（AI 词汇补充）、Google Cloud Standard-C TTS 与 V2-only 性能优化都已进入正式版本。Neon `main` 已从 Schema 5 原子迁移为 Schema 6；迁移前后的 1,854 行 core data 完整 parity，1,486 个词条、125 个复习状态与 203 条复习事件保持不变。正式 Gemini 与 TTS 的真实调用、Cache、Replay、费用账本和零 in-flight 检查均通过。整个 V2 不包含 SSO（Single Sign-On，单点登录）或 confidential per-person authorization（个人机密授权隔离）。
 
-V2.1 的重复导入修复已在 `v2.1` 分支完成并通过 protected Preview 人工验收：新增、编辑和 batch import 使用同一 selected-person normalized identity（当前人物下的规范化词条身份），Library 提供确认后的一键去重。Staging 已演练 fail-closed `0006` 唯一索引并清理合成测试人物。Production 发布 gate 正在执行，当前线上程序、真实数据与索引仍保持原 V2 状态。
+V2.1 的重复导入修复已经正式上线：新增、编辑和 batch import 使用同一 selected-person normalized identity（当前人物下的规范化词条身份），Library 提供确认后的一键去重。用户确认的 Production 清理删除了 75 组中的 1,204 条重复副本，保留 282 个唯一词条、125 个复习状态、203 条复习事件和全部 38 条导入审计记录；`0006` 数据库唯一索引已经生效。变更前后均有通过隔离恢复验证的加密备份。
 
 ## 正式版本
 
 - 访问地址：[words-learning-app-for-mimi.vercel.app](https://words-learning-app-for-mimi.vercel.app)
-- 当前线上状态：V2 `live`；Vercel Production `main` + Neon Schema 6
-- 当前发布分支：`main`；PF-001、PF-002 与 PF-003 均已关闭
+- 当前线上状态：V2.1 `live`；Vercel Production `main` + Neon Schema 6
+- 当前发布分支：`main`；V2.1 重复修复、PF-001、PF-002 与 PF-003 均已关闭
 - 访问方式：私人 Basic Auth（基础认证）；账号信息不会存放在仓库中
 - 正式数据：Neon Postgres（关系型数据库）
 
@@ -36,7 +36,7 @@ V2.1 的重复导入修复已在 `v2.1` 分支完成并通过 protected Preview 
 - 通过单词表单或 Batch JSON（批量 JSON）录入词汇。
 - 为每个词保存多个中文释义、多个例句、标签和学习轨道。
 - 在词库中搜索、筛选、编辑、归档、恢复和删除词汇。
-- V2.1 本地候选可阻止重复新增/导入，并在显示受影响词条、复习历史和 AI 草稿数量后，一键删除重复副本、每组保留一份。
+- V2.1 可阻止重复新增/导入，并在显示受影响词条、复习历史和 AI 草稿数量后，一键删除重复副本、每组保留一份；数据库唯一索引提供最终保护。
 - 使用四档自评完成 Recognition Vocabulary（阅读词汇）复习。
 - 使用 FSRS-6（Free Spaced Repetition Scheduler 6，自由间隔重复调度器第 6 版）安排跨日复习。
 - 当选择“完全忘记了”或“有点忘记了”时，在当前复习局内重新出现该词。
