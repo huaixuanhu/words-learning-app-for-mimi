@@ -45,7 +45,7 @@ Exit criteria:
 - The uniqueness migration fails closed while duplicates exist and succeeds only after zero-duplicate verification.
 - Focused tests, full tests, lint, typecheck, backup dry-runs, build, governance preflight and diff checks pass.
 
-Status: Accepted and implemented locally on 2026-07-24. The user explicitly approved this plan after the Approval Stop. Local `v2.1` remains based on commit `b6cf50f3422a69dbea9f59e998677f3c0bc49e8e`; no Production rollout is included.
+Status: Accepted and implemented locally on 2026-07-24. The user explicitly approved this plan after the Approval Stop. Preview human acceptance and its post-cleanup read-only check passed. The separately derived Production release gate is `plan_docs/PLAN_V2_1_PRODUCTION_DUPLICATE_REPAIR_RELEASE.md`; its approval does not rewrite this plan's historical local-only boundary.
 
 ## Read-Only Audit Result
 
@@ -286,6 +286,11 @@ Local completion on `v2.1` does not authorize Production repair. A later Product
 6. read-only zero-duplicate verification;
 7. `0006` Production migration and post-migration verification;
 8. final encrypted backup and rollback record.
+
+That proposal is now the accepted
+`plan_docs/PLAN_V2_1_PRODUCTION_DUPLICATE_REPAIR_RELEASE.md`. Its Staging
+rehearsal and Production read-only baseline are recorded there; Production
+cleanup and `0006` remain at the plan's exact-count Approval Stop.
 
 ## Local Implementation Record
 

@@ -56,6 +56,11 @@
     "v2:8-3:backup:identity": "node scripts/v2-stage8-3-backup.mjs create-identity --i-confirm-v2-8-3-create-backup-identity",
     "v2:8-3:backup:synthetic": "node scripts/v2-stage8-3-backup.mjs synthetic --i-confirm-v2-8-3-synthetic-backup-rehearsal",
     "v2:8-3:backup:production": "node scripts/v2-stage8-3-backup.mjs production --i-confirm-v2-8-3-production-encrypted-backup",
+    "v2:1:db:inventory:staging": "node scripts/v2-1-production-db.mjs inventory --target staging --i-confirm-v2-1-read-only-inventory",
+    "v2:1:db:migrate:staging": "node scripts/v2-1-production-db.mjs migrate --target staging --i-confirm-v2-1-staging-migration",
+    "v2:1:db:inventory:production": "node scripts/v2-1-production-db.mjs inventory --target production-main --i-confirm-v2-1-read-only-inventory",
+    "v2:1:db:migrate:production": "node scripts/v2-1-production-db.mjs migrate --target production-main --i-confirm-v2-1-production-migration",
+    "v2:1:backup:production": "node scripts/v2-1-production-backup.mjs production --i-confirm-v2-1-production-encrypted-backup",
     "db:inspect:schema5:prod": "STAGE6B_DATABASE_TARGET=production MIMI_PRODUCTION_DATABASE_ACTION=inspect VERCEL_ENV=production node scripts/inspect-database-schema5-production.mjs --i-confirm-production-read",
     "governance:preflight": "python3 governance/preflight.py --tier 3 --strict-side-effects --require-skill-marker"
   },

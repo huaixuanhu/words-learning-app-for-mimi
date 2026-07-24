@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## 2026-07-24 19:40 AEST
+
+- Began the separately approved V2.1 Production duplicate-repair release gate after protected Preview human acceptance.
+- Added the derived Production plan plus source-pinned Neon `main`/`staging` discovery, pinned `0006` command guards, aggregate duplicate inventory and Schema 6 encrypted backup/restore tooling. The completed one-time Staging fixture deletion command was removed from the release candidate; credentials and connection URIs remain in Keychain/process memory and outside output/Git.
+- Applied pinned `0006` to long-lived Staging after confirming zero duplicates. The unique index is present, the prior non-unique index is absent and the fixed synthetic test person plus all checked person-scoped rows were removed.
+- Final Staging evidence is 1 person / 8 items / 1 import batch / 8 review states / 14 review events, zero duplicate groups and zero submitted/in-flight AI/TTS work.
+- Production read-only inventory reports 1 person / 1,486 items / 38 import batches / 125 review states / 203 review events, 75 duplicate groups and 1,204 removable copies. Structural, reference, profile and provider invariants are zero.
+- Local release validation passes 96 test files / 588 tests with the existing Postgres integration file/test skipped; lint, TypeScript, all three backup dry-runs, Production build and Production dependency audit with 0 vulnerabilities also pass.
+- Safety checkpoint: no Production write, cleanup, migration, deployment, provider call, Basic Auth change or credential rotation has occurred. The gate next requires the new encrypted pre-change backup and isolated restore.
+- Reason: carry the accepted Preview repair into a recoverable, exact-target Production release while retaining a separate human decision over the final real-data deletion counts.
+
 ## 2026-07-24 14:30 AEST
 
 - Implemented the user-approved V2.1 duplicate repair locally on branch `v2.1`.

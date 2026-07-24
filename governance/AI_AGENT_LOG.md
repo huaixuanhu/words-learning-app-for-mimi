@@ -1,5 +1,20 @@
 # AI Agent Log
 
+## 2026-07-24 19:40 AEST
+
+- Task: execute the user-approved V2.1 Production duplicate-repair release gate after Preview acceptance.
+- Plan agreed: yes. The derived plan explicitly includes guarded Staging rehearsal/fixture cleanup, Production encrypted backup/restore, `main` deployment, an exact-count stop before real cleanup, zero-duplicate verification, `0006` and a post-change backup.
+- Working tier: Tier 3 because this gate reads and will later delete real study data, changes the Production database index and deploys the private live application.
+- Preview result: the user's cleanup left 3 items and one visible import batch; the duplicate action disappeared and the browser console had no error.
+- Guard implementation: added source-pinned Neon target discovery using the existing Keychain API key and a Keychain-only raw project id whose SHA-256 matches the existing source pin. Official `GET connection_uri` output stays in process memory. Added pinned migration, Staging fixture, Production backup and exact confirmation guards.
+- Staging result: zero duplicates before migration; pinned `0006` SHA-256 `fefb5cd66916ac6303a83e250e5c9913fd82602113673c6fe5a9e11830624fe8` applied; the unique index replaced the old non-unique index. The exact synthetic person and all checked person-scoped rows were deleted. Retained Staging is 1 person / 8 items / 14 review events with zero duplicate and provider in-flight state.
+- Production read-only result: Schema 6 / 22 tables / 1 person / 1,486 vocabulary items / 38 import batches / 125 review states / 203 review events. There are 75 duplicate identities, 1,279 grouped items and 1,204 removable copies. All duplicates belong to one person. The pre-V2.1 non-unique index remains and every checked invariant is zero.
+- Changed files: derived/parent V2.1 plans; Architecture, README, AGENTS, Changelog and this governance record; package commands; source-pinned Neon target guard; pinned migration/fixture database runner; encrypted Schema 6 backup/isolated-restore runner; and focused guard tests.
+- Validation: focused V2.1 release/deduplication tests pass 6 files / 36 tests. Full Vitest passes 96 files / 588 tests with the existing Postgres integration file/test skipped; lint, TypeScript, all three backup dry-runs, Production build, script syntax, targeted script ESLint, Production dependency audit with 0 vulnerabilities and `git diff --check` pass.
+- Side-effect review: the one-time Staging synthetic-person deletion was exact-targeted, transactional and verified across every checked person-scoped table. Its first foreign-key failure rolled back safely; the corrected execution passed. The completed deletion command was then removed from the release candidate, so this runner has no Production cleanup command and retains only inventory plus gated migration.
+- Safety notes: no Production row, schema, deployment, provider, Basic Auth or existing credential changed. No raw project id, connection URI, API key, private age identity, learner text or person id entered source/output. Production remains at the pre-backup Approval Stop.
+- Reason: move the accepted Preview repair toward Production while preserving a fresh recoverable baseline and keeping exact real-data deletion counts human-owned.
+
 ## 2026-07-24 14:30 AEST
 
 - Task: execute the explicitly approved V2.1 duplicate-import repair and one-click selected-person cleanup.

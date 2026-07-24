@@ -584,7 +584,10 @@ V2.1 duplicate repair:
 - Library builds a deterministic selected-person cleanup plan. It keeps the item with the strongest review/content evidence, displays exact destructive counts and binds confirmation to the current keeper/loser fingerprint. Postgres recomputes that plan inside the deleting transaction.
 - Loser items use existing hard-delete propagation: review state/events and item-scoped AI records are removed, AI run source references become `null`, and historical creation facts remain. Independent FSRS histories are not merged.
 - Empty import-batch audit rows remain in storage/backups but are hidden from normal Library history after they own no retained item.
-- The implementation is local on `v2.1`. Production inventory, cleanup, migration and deployment still require the separate future gate.
+- The implementation is on branch `v2.1` and has passed protected Preview human acceptance. The separately accepted Production gate is `plan_docs/PLAN_V2_1_PRODUCTION_DUPLICATE_REPAIR_RELEASE.md`.
+- That gate adds source-pinned Neon target discovery, Schema 6 encrypted backup/isolated restore evidence, aggregate duplicate inventory and exact `0006` migration guards. The connection URI, API key and private backup identity stay outside output and Git.
+- Long-lived Staging has applied the pinned `0006`, verified the unique index and removed only the fixed V2.1 synthetic person. Its retained baseline is 1 person / 8 items / 14 review events with zero duplicate groups.
+- Production is still unchanged at the pre-backup checkpoint. Read-only inventory reports 75 duplicate identities and 1,204 removable copies among 1,486 items; real cleanup remains human-owned after exact destructive counts are shown.
 
 ### Backup Format
 

@@ -21,7 +21,7 @@
 
 V2 已在 Production 正式上线。每日学习、独立 Active 三种练习、手机端与 Dashboard、付费 AI enrichment（AI 词汇补充）、Google Cloud Standard-C TTS 与 V2-only 性能优化都已进入正式版本。Neon `main` 已从 Schema 5 原子迁移为 Schema 6；迁移前后的 1,854 行 core data 完整 parity，1,486 个词条、125 个复习状态与 203 条复习事件保持不变。正式 Gemini 与 TTS 的真实调用、Cache、Replay、费用账本和零 in-flight 检查均通过。整个 V2 不包含 SSO（Single Sign-On，单点登录）或 confidential per-person authorization（个人机密授权隔离）。
 
-V2.1 的重复导入修复已在本地 `v2.1` 分支完成：新增、编辑和 batch import 使用同一 selected-person normalized identity（当前人物下的规范化词条身份），Library 提供确认后的一键去重。该分支尚未部署，也没有读取或修改 Production 学习数据；线上仍是当前 V2。
+V2.1 的重复导入修复已在 `v2.1` 分支完成并通过 protected Preview 人工验收：新增、编辑和 batch import 使用同一 selected-person normalized identity（当前人物下的规范化词条身份），Library 提供确认后的一键去重。Staging 已演练 fail-closed `0006` 唯一索引并清理合成测试人物。Production 发布 gate 正在执行，当前线上程序、真实数据与索引仍保持原 V2 状态。
 
 ## 正式版本
 
