@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## 2026-07-25 01:05 AEST
+
+- Rewrote the root README as a user-facing product landing page on `main`.
+- Replaced the long release chronology, migration detail, provider accounting and plan-by-plan index with the product purpose, daily learner journey, Recognition/Active experiences, AI/TTS behavior, data control, privacy boundary and concise current-version status.
+- Kept the private-access boundary explicit and retained a compact developer Quick Start plus links to the canonical Architecture, V2/V2.1 plans, Changelog and governance record.
+- Updated the Architecture documentation-responsibility contract so technical release evidence remains on its canonical surfaces instead of returning to the root landing page.
+- No application code, runtime behavior, learner data, database, credential, provider, deployment or Production state changed.
+- Reason: help a first-time repository visitor understand what the product is for and how it feels to use before encountering its internal engineering history.
+
 ## 2026-07-24 20:18 AEST
 
 - Completed the separately approved V2.1 Production duplicate-repair release. Exact application commit `c3901cbf5e51f6b4e28700b3c0507cf31fe6c76d` is Ready on deployment `dpl_HFofXrqvEQpEHWfcBGDGZ5jZykBC` in `syd1`; canonical aliases, Basic Auth ordering, authenticated Library load, build logs and runtime error/HTTP 500 scans pass.

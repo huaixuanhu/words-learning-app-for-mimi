@@ -1,5 +1,19 @@
 # AI Agent Log
 
+## 2026-07-25 01:05 AEST
+
+- Task: rewrite the `main` branch root README from a technical release manual into a user-facing product landing page.
+- Plan agreed: yes. The user accepted a Chinese-first structure centered on product purpose, daily use, learner capabilities, private access and a compact developer/documentation footer.
+- Working tier: Tier 3 documentation-only; the live private app remains unchanged.
+- Product framing: retained the existing cat identity and described the calm, customizable, ADHD-friendly daily experience; explained Recognition and Active in learner terms; presented AI/TTS as reviewable assistance; and stated export, microphone and account-isolation boundaries plainly.
+- Removed from the README body: stage-by-stage release chronology, migration/version evidence, deployment identities, quota/cost accounting, branch governance detail and the exhaustive child-plan index. Their canonical source documents remain unchanged and linked from the concise documentation section.
+- Changed files: `README.md`, the Architecture documentation-responsibility contract, `CHANGELOG.md` and `governance/AI_AGENT_LOG.md`.
+- Validation: all 8 local README links resolve, `git diff --check` passes, Tier 3 governance preflight passes and the final file inventory contains only the four intended documentation surfaces.
+- Safety notes: this is a repository-documentation rewrite only. It exposes no credential or learner record, changes no access control, and does not authorize a Git push, Vercel deployment or any Production/data mutation.
+- Side-effect review: no application code, dependency, route, user-facing runtime copy, learner data, database, credential, provider, Git history, deployment or Production setting changed.
+- Residual boundary: the README keeps the Production link because it is the real product entry, while explicitly stating that access is private and there is no public registration. Commit/push remains separately approval-gated.
+- Reason: make the repository understandable to a first-time visitor without weakening the detailed Architecture, release and governance records.
+
 ## 2026-07-24 20:18 AEST
 
 - Task: complete the exact-count Approval Stop after the user explicitly confirmed deletion, then apply Production `0006`, verify runtime health and close the V2.1 release.

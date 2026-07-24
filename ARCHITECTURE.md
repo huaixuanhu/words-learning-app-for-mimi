@@ -814,7 +814,7 @@ V2-8-2.2 supersedes only the current suite-count and forward-migration details: 
 
 ## Documentation Responsibility
 
-- `README.md` is the human-facing repository entrance. It explains the product, intended users, current V1 capabilities, accepted V2 direction, basic local setup, major boundaries, and later direction in a form suitable for someone seeing the repository for the first time.
+- `README.md` is the user-facing repository entrance. It leads with the product purpose, intended learners, daily experience, current V2.1 capabilities, private-access/privacy boundary and data control in a form suitable for someone seeing the repository for the first time. Internal release chronology, migration evidence, provider accounting, deployment identities and exhaustive plan indexes stay in their canonical technical records. README keeps only a compact developer Quick Start and documentation map.
 - `ARCHITECTURE.md` owns system structure, data models, runtime boundaries, edge cases, and validation expectations.
 - `plan_docs/` owns stage scope, decisions, execution gates, and detailed release evidence. `plan_docs/PLAN_V2_STAGE1_PRODUCT_METRIC_DATA_CONTRACT.md` is the canonical source for the completed isolated V2-1 contract; later stage documents must cite it under `Derived from` rather than redefining its rules as peer plans.
 - `CHANGELOG.md` owns chronological change history.
