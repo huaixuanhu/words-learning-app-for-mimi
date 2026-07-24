@@ -65,6 +65,17 @@ describe("V2.1 Production release guard", () => {
     expect(() => assertPinnedV21Migration("changed")).toThrow(/pinned digest/u);
   });
 
+  it("keeps backup binary streams as buffers and detaches pg_ctl stdio", async () => {
+    const runner = await readFile(
+      resolve(process.cwd(), "scripts/v2-1-production-backup.mjs"),
+      "utf8",
+    );
+    expect(runner).toContain(
+      'encoding: options.encoding === undefined ? "utf8" : options.encoding',
+    );
+    expect(runner.match(/stdio: "ignore"/gu)).toHaveLength(3);
+  });
+
   it("requires one exact target and command confirmation", () => {
     expect(parseTarget(["--target", "staging"])).toBe("staging");
     expect(() => parseTarget(["--target", "other"])).toThrow(/staging or production-main/u);

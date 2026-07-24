@@ -67,7 +67,7 @@ function postgresTool(name) {
 
 function command(bin, args, options = {}) {
   const result = spawnSync(bin, args, {
-    encoding: options.encoding ?? "utf8",
+    encoding: options.encoding === undefined ? "utf8" : options.encoding,
     env: options.env,
     input: options.input,
     maxBuffer: MAX_CAPTURE_BYTES,
