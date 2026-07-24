@@ -71,6 +71,7 @@ function command(bin, args, options = {}) {
     env: options.env,
     input: options.input,
     maxBuffer: MAX_CAPTURE_BYTES,
+    stdio: options.stdio,
   });
   if (result.error || result.status !== 0) {
     reject(
@@ -525,7 +526,10 @@ async function run() {
         "-w",
         "start",
       ],
-      { failureMessage: "The isolated PostgreSQL cluster could not start" },
+      {
+        failureMessage: "The isolated PostgreSQL cluster could not start",
+        stdio: "ignore",
+      },
     );
     localStarted = true;
     const localAdminEnv = {
@@ -584,7 +588,10 @@ async function run() {
     command(
       postgresTool("pg_ctl"),
       ["-D", pgData, "-m", "fast", "-w", "stop"],
-      { failureMessage: "The isolated PostgreSQL cluster could not stop" },
+      {
+        failureMessage: "The isolated PostgreSQL cluster could not stop",
+        stdio: "ignore",
+      },
     );
     localStarted = false;
     await rm(tempRoot, { recursive: true });
@@ -654,7 +661,7 @@ async function run() {
       spawnSync(
         postgresTool("pg_ctl"),
         ["-D", pgData, "-m", "fast", "-w", "stop"],
-        { encoding: "utf8", maxBuffer: MAX_CAPTURE_BYTES },
+        { stdio: "ignore" },
       );
     }
     if (tempRoot) {
