@@ -8,6 +8,7 @@ const repositoryMocks = vi.hoisted(() => ({
   getPostgresVocabularyDataSnapshot: vi.fn(),
 }));
 const repositoryMethodMocks = vi.hoisted(() => ({
+  deduplicateItems: vi.fn(),
   deleteItem: vi.fn(),
   rollbackImportBatch: vi.fn(),
   startFreshInTrack: vi.fn(),
@@ -110,6 +111,7 @@ describe("/api/storage/data runtime contract", () => {
     repositoryMocks.createPostgresRepository.mockReset();
     repositoryMocks.getPostgresVocabularyDataSnapshot.mockReset();
     repositoryMethodMocks.deleteItem.mockReset();
+    repositoryMethodMocks.deduplicateItems.mockReset();
     repositoryMethodMocks.rollbackImportBatch.mockReset();
     repositoryMethodMocks.startFreshInTrack.mockReset();
     repositoryMethodMocks.resetToday.mockReset();
@@ -119,6 +121,7 @@ describe("/api/storage/data runtime contract", () => {
         listPeople: vi.fn(),
       },
       vocabulary: {
+        deduplicateItems: repositoryMethodMocks.deduplicateItems,
         deleteItem: repositoryMethodMocks.deleteItem,
         rollbackImportBatch: repositoryMethodMocks.rollbackImportBatch,
         startFreshInTrack: repositoryMethodMocks.startFreshInTrack,
@@ -347,6 +350,46 @@ describe("/api/storage/data runtime contract", () => {
         timezone: "Australia/Melbourne",
       },
       "22222222-2222-4222-8222-222222222222",
+    );
+  });
+
+  it("routes a count-bound duplicate cleanup confirmation through Postgres", async () => {
+    setRuntimeEnv({
+      MIMI_STORAGE_RUNTIME: "postgres-production",
+      VERCEL_ENV: "production",
+      NODE_ENV: "production",
+    });
+    const confirmation = {
+      fingerprint: "vocabulary-deduplication-v1:test",
+      duplicateGroupsCount: 2,
+      deletedItemsCount: 3,
+      deletedReviewStatesCount: 1,
+      deletedReviewEventsCount: 4,
+      deletedAiDraftsCount: 1,
+      deletedVocabularyRelationsCount: 2,
+      detachedAiRunsCount: 1,
+      affectedImportBatchesCount: 2,
+      groupsWithMultipleHistoriesCount: 1,
+    };
+    const { POST } = await import("./route");
+    const response = await POST(dataPostRequest({
+      selectedPersonId: personId,
+      mutation: {
+        type: "vocabulary.deduplicate",
+        confirmation,
+        now: "2026-07-24T00:00:00.000Z",
+        timezone: "Australia/Melbourne",
+      },
+    }));
+
+    expect(response.status).toBe(200);
+    expect(repositoryMethodMocks.deduplicateItems).toHaveBeenCalledWith(
+      {
+        personId,
+        now: "2026-07-24T00:00:00.000Z",
+        timezone: "Australia/Melbourne",
+      },
+      confirmation,
     );
   });
 

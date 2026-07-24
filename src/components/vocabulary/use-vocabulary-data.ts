@@ -34,6 +34,7 @@ import {
   writeVocabularyData,
 } from "@/lib/vocabulary/local-storage-repository";
 import { v2ClientContractHeaders } from "@/lib/security/v2-client-contract";
+import type { VocabularyDeduplicationConfirmation } from "@/lib/vocabulary/deduplication";
 
 export type ClientStorageRuntime = "loading" | StorageRuntimeMode;
 
@@ -83,6 +84,12 @@ export type VocabularyStorageMutation =
   | {
       type: "vocabulary.delete";
       vocabularyItemId: string;
+      now: string;
+      timezone: string;
+    }
+  | {
+      type: "vocabulary.deduplicate";
+      confirmation: VocabularyDeduplicationConfirmation;
       now: string;
       timezone: string;
     }

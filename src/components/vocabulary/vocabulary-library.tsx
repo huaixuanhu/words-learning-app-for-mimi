@@ -41,6 +41,12 @@ import {
   buildVocabularyExamplePairs,
   findIncompleteVocabularyExampleIndexes,
 } from "@/lib/vocabulary/example-pairs";
+import {
+  buildVocabularyDeduplicationPlan,
+  deduplicateVocabularyItems,
+  getVocabularyDeduplicationConfirmation,
+  type VocabularyDeduplicationConfirmation,
+} from "@/lib/vocabulary/deduplication";
 
 type LibraryFilter =
   | "all"
@@ -70,6 +76,10 @@ type PendingLibraryAction =
       label: string;
       sourceTrack: VocabularyItem["learningTrack"];
       targetTrack: VocabularyItem["learningTrack"];
+    }
+  | {
+      type: "deduplicate";
+      confirmation: VocabularyDeduplicationConfirmation;
     };
 
 type EditDraft = Pick<
@@ -264,8 +274,13 @@ export function VocabularyLibrary() {
           batch,
           remainingItems: allItems.filter((item) => item.importBatchId === batch.id).length,
         }))
+        .filter(({ remainingItems }) => remainingItems > 0)
         .sort((a, b) => b.batch.createdAt.localeCompare(a.batch.createdAt)),
     [allItems, data.importBatches, selectedPersonId],
+  );
+  const deduplicationPlan = useMemo(
+    () => buildVocabularyDeduplicationPlan(data),
+    [data],
   );
 
   const visibleItems = useMemo(() => {
@@ -456,6 +471,34 @@ export function VocabularyLibrary() {
     }
   };
 
+  const removeDuplicates = async (
+    confirmation: VocabularyDeduplicationConfirmation,
+  ) => {
+    const now = new Date().toISOString();
+
+    try {
+      const result = deduplicateVocabularyItems(data, confirmation, now);
+
+      await commit(result.data, {
+        type: "vocabulary.deduplicate",
+        confirmation,
+        now,
+        timezone: detectTimezone(),
+      });
+      setEditingId(null);
+      setDraft(null);
+      setMessage(
+        `Removed ${result.deletedItemsCount} duplicate ${
+          result.deletedItemsCount === 1 ? "entry" : "entries"
+        }.`,
+      );
+    } catch (error) {
+      setMessage(
+        error instanceof Error ? error.message : "Could not remove duplicate entries",
+      );
+    }
+  };
+
   const confirmPendingAction = async () => {
     if (!pendingAction) {
       return;
@@ -472,6 +515,11 @@ export function VocabularyLibrary() {
 
     if (action.type === "startFresh") {
       await startFreshInTrack(action.itemId, action.targetTrack);
+      return;
+    }
+
+    if (action.type === "deduplicate") {
+      await removeDuplicates(action.confirmation);
       return;
     }
 
@@ -521,6 +569,22 @@ export function VocabularyLibrary() {
               <Download aria-hidden="true" className="size-4" />
               Backup
             </Link>
+            {deduplicationPlan.duplicateGroupsCount > 0 ? (
+              <PressableButton
+                type="button"
+                onClick={() =>
+                  setPendingAction({
+                    type: "deduplicate",
+                    confirmation:
+                      getVocabularyDeduplicationConfirmation(deduplicationPlan),
+                  })
+                }
+                className="mimi-button-secondary mimi-focus-ring inline-flex items-center gap-2 px-3 text-sm font-semibold"
+              >
+                <Trash2 aria-hidden="true" className="size-4" />
+                Remove duplicates
+              </PressableButton>
+            ) : null}
           </div>
 
           {batchSummaries.length ? (
@@ -922,6 +986,8 @@ export function VocabularyLibrary() {
               <Trash2 aria-hidden="true" className="mx-auto size-9 text-[#8a4d21]" />
             ) : pendingAction.type === "startFresh" ? (
               <ArrowRightLeft aria-hidden="true" className="mx-auto size-9 text-[var(--mimi-primary)]" />
+            ) : pendingAction.type === "deduplicate" ? (
+              <Trash2 aria-hidden="true" className="mx-auto size-9 text-[#8a4d21]" />
             ) : (
               <RotateCcw aria-hidden="true" className="mx-auto size-9 text-[var(--mimi-primary)]" />
             )}
@@ -937,6 +1003,8 @@ export function VocabularyLibrary() {
                 ? "确认删除这个词条？"
                 : pendingAction.type === "startFresh"
                   ? `Start fresh in ${pendingAction.targetTrack === "active" ? "Active" : "Recognition"}?`
+                  : pendingAction.type === "deduplicate"
+                    ? "确认一键去重？"
                   : "确认撤销这批导入？"}
             </h2>
             <p id="library-confirm-description" className="mt-2 text-sm leading-6 text-[var(--mimi-text-soft)]">
@@ -944,6 +1012,8 @@ export function VocabularyLibrary() {
                 ? `将删除 ${pendingAction.label} 和它的复习记录。`
                 : pendingAction.type === "startFresh"
                   ? `${pendingAction.label} will start with no progress in the new Track. Its ${pendingAction.sourceTrack === "active" ? "Active" : "Recognition"} history will stay read-only and will not be copied.`
+                  : pendingAction.type === "deduplicate"
+                    ? `发现 ${pendingAction.confirmation.duplicateGroupsCount} 组重复词条，涉及 ${pendingAction.confirmation.affectedImportBatchesCount} 个导入批次。将直接删除 ${pendingAction.confirmation.deletedItemsCount} 份副本，只保留每组中按既定规则选出的一份；同时删除 ${pendingAction.confirmation.deletedReviewStatesCount} 条复习状态、${pendingAction.confirmation.deletedReviewEventsCount} 条复习事件、${pendingAction.confirmation.deletedAiDraftsCount} 份 AI 草稿和 ${pendingAction.confirmation.deletedVocabularyRelationsCount} 条词汇关联，并断开 ${pendingAction.confirmation.detachedAiRunsCount} 条 AI 运行记录的来源引用。${pendingAction.confirmation.groupsWithMultipleHistoriesCount > 0 ? `其中 ${pendingAction.confirmation.groupsWithMultipleHistoriesCount} 组的多个副本都有学习历史，这些历史不会合并。` : ""} 导入批次审计记录仍会保留。`
                   : `将删除 ${pendingAction.remainingItems} 个仍在词库中的词条，并移除相关复习记录。`}
             </p>
             <div className="mt-5 grid grid-cols-2 gap-3">

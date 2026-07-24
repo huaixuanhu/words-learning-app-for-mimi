@@ -576,6 +576,16 @@ Responsibilities:
 
 Current route: `/export`. It can download a complete schema version 5 JSON backup with metadata（元数据）, download a vocabulary CSV that includes `learningTrack`, `tags`, `meaningsZh`, and `examples`, parse JSON backup files locally, show restore counts, and restore schema version 2 / 3 / 4 / 5 data after explicit confirmation when runtime is browser-local. JSON restore rejects malformed files, unsupported backup shapes, incomplete required fields, invalid review references, unsupported track / tag values, invalid multi-meaning / multi-example fields, missing metadata counts, and V1-impossible Active Vocabulary review state / review event records before mutating local browser storage. In `postgres-preview`, UI restore is disabled and formal backup import uses the guarded Stage 5M script path.
 
+V2.1 duplicate repair:
+
+- `plan_docs/PLAN_V2_1_DUPLICATE_IMPORT_DEDUPLICATION.md` is the accepted local child plan for repeated vocabulary and `Batch imported` rows.
+- Preview remains parse-only. Duplicate and invalid Preview rows cannot be selected, the save action has an immediate pending lock, and local/Postgres import commits recompute status against the current selected-person snapshot. Zero-new imports create no batch.
+- Manual add, surface-text edit and import share the identity `(person_id, normalized_text)`. Postgres rechecks that identity inside serialized transactions; the forward-only `0006_v2_1_vocabulary_unique_normalized_text.sql` adds the final unique index only after a zero-duplicate precheck.
+- Library builds a deterministic selected-person cleanup plan. It keeps the item with the strongest review/content evidence, displays exact destructive counts and binds confirmation to the current keeper/loser fingerprint. Postgres recomputes that plan inside the deleting transaction.
+- Loser items use existing hard-delete propagation: review state/events and item-scoped AI records are removed, AI run source references become `null`, and historical creation facts remain. Independent FSRS histories are not merged.
+- Empty import-batch audit rows remain in storage/backups but are hidden from normal Library history after they own no retained item.
+- The implementation is local on `v2.1`. Production inventory, cleanup, migration and deployment still require the separate future gate.
+
 ### Backup Format
 
 Stage 5A uses a local backup envelope:

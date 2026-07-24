@@ -21,6 +21,7 @@ import type {
   UpdateVocabularyInput,
 } from "@/lib/vocabulary/types";
 import type { DurableRepositoryPort, TimestampedPersonContext } from "@/lib/storage/durable-repository-contract";
+import type { VocabularyDeduplicationConfirmation } from "@/lib/vocabulary/deduplication";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -76,6 +77,12 @@ type StorageUiMutation =
   | {
       type: "vocabulary.delete";
       vocabularyItemId: string;
+      now: string;
+      timezone: string;
+    }
+  | {
+      type: "vocabulary.deduplicate";
+      confirmation: VocabularyDeduplicationConfirmation;
       now: string;
       timezone: string;
     }
@@ -151,6 +158,65 @@ function optionalSelectedPersonId(value: unknown) {
   return typeof value === "string" && value.trim() ? value : null;
 }
 
+function requiredNonNegativeInteger(value: unknown, label: string) {
+  if (!Number.isSafeInteger(value) || Number(value) < 0) {
+    throw new Error(`${label} must be a non-negative integer`);
+  }
+
+  return Number(value);
+}
+
+function parseDeduplicationConfirmation(
+  value: unknown,
+): VocabularyDeduplicationConfirmation {
+  if (!isRecord(value)) {
+    throw new Error("mutation.confirmation is required");
+  }
+
+  return {
+    fingerprint: requiredString(
+      value.fingerprint,
+      "mutation.confirmation.fingerprint",
+    ),
+    duplicateGroupsCount: requiredNonNegativeInteger(
+      value.duplicateGroupsCount,
+      "mutation.confirmation.duplicateGroupsCount",
+    ),
+    deletedItemsCount: requiredNonNegativeInteger(
+      value.deletedItemsCount,
+      "mutation.confirmation.deletedItemsCount",
+    ),
+    deletedReviewStatesCount: requiredNonNegativeInteger(
+      value.deletedReviewStatesCount,
+      "mutation.confirmation.deletedReviewStatesCount",
+    ),
+    deletedReviewEventsCount: requiredNonNegativeInteger(
+      value.deletedReviewEventsCount,
+      "mutation.confirmation.deletedReviewEventsCount",
+    ),
+    deletedAiDraftsCount: requiredNonNegativeInteger(
+      value.deletedAiDraftsCount,
+      "mutation.confirmation.deletedAiDraftsCount",
+    ),
+    deletedVocabularyRelationsCount: requiredNonNegativeInteger(
+      value.deletedVocabularyRelationsCount,
+      "mutation.confirmation.deletedVocabularyRelationsCount",
+    ),
+    detachedAiRunsCount: requiredNonNegativeInteger(
+      value.detachedAiRunsCount,
+      "mutation.confirmation.detachedAiRunsCount",
+    ),
+    affectedImportBatchesCount: requiredNonNegativeInteger(
+      value.affectedImportBatchesCount,
+      "mutation.confirmation.affectedImportBatchesCount",
+    ),
+    groupsWithMultipleHistoriesCount: requiredNonNegativeInteger(
+      value.groupsWithMultipleHistoriesCount,
+      "mutation.confirmation.groupsWithMultipleHistoriesCount",
+    ),
+  };
+}
+
 function parseMutation(value: unknown): StorageUiMutation {
   if (!isRecord(value)) {
     throw new Error("mutation is required");
@@ -211,6 +277,13 @@ function parseMutation(value: unknown): StorageUiMutation {
     case "review.rollbackEvent":
     case "reviewSettings.update":
       return value as StorageUiMutation;
+    case "vocabulary.deduplicate":
+      return {
+        type,
+        confirmation: parseDeduplicationConfirmation(value.confirmation),
+        now: requiredString(value.now, "mutation.now"),
+        timezone: requiredString(value.timezone, "mutation.timezone"),
+      };
     default:
       throw new Error(`Unsupported storage mutation: ${type}`);
   }
@@ -467,6 +540,22 @@ export async function POST(request: NextRequest) {
           );
 
           await repository.vocabulary.deleteItem(context, mutation.vocabularyItemId);
+          nextSelectedPersonId = context.personId;
+        }
+        break;
+      case "vocabulary.deduplicate":
+        {
+          const context = await mutationContext(
+            repository,
+            selectedPersonId,
+            mutation.now,
+            mutation.timezone,
+          );
+
+          await repository.vocabulary.deduplicateItems(
+            context,
+            mutation.confirmation,
+          );
           nextSelectedPersonId = context.personId;
         }
         break;

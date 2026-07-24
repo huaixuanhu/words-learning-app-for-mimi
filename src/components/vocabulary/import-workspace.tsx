@@ -2,7 +2,7 @@
 
 import { Save, Upload } from "lucide-react";
 import type { FormEvent } from "react";
-import { useMemo, useState, useSyncExternalStore } from "react";
+import { useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { ImportCandidate, ImportSourceType, LearningTrack, VocabularyTag } from "@/lib/vocabulary/types";
 import {
   parseJsonImport,
@@ -113,13 +113,31 @@ export function ImportWorkspace() {
   const [sourceType, setSourceType] = useState<ImportSourceType>("json_paste");
   const [candidates, setCandidates] = useState<ImportCandidate[]>([]);
   const [acceptedIds, setAcceptedIds] = useState<Set<string>>(new Set());
+  const [isSavingImport, setIsSavingImport] = useState(false);
   const [message, setMessage] = useState("");
+  const importSaveLockRef = useRef(false);
   const desktopPreview = useSyncExternalStore(
     subscribeToDesktopPreview,
     getDesktopPreviewSnapshot,
     getServerDesktopPreviewSnapshot,
   );
   const summary = useMemo(() => summarizeImportCandidates(candidates), [candidates]);
+
+  const keepOnlySelectableIds = (nextCandidates: ImportCandidate[]) => {
+    const selectableIds = new Set(
+      nextCandidates
+        .filter((candidate) => candidate.status === "new")
+        .map((candidate) => candidate.tempId),
+    );
+
+    setAcceptedIds((current) => {
+      const next = new Set(
+        [...current].filter((tempId) => selectableIds.has(tempId)),
+      );
+
+      return next.size === current.size ? current : next;
+    });
+  };
 
   const parseInput = (text = jsonText, nextSourceType = sourceType, nextFileName = fileName) => {
     const parsed = parseJsonImport(text, {
@@ -147,16 +165,16 @@ export function ImportWorkspace() {
   };
 
   const updateCandidate = (tempId: string, patch: Partial<ImportCandidate>) => {
-    setCandidates((current) => {
-      const patched = current.map((candidate) =>
-        candidate.tempId === tempId ? { ...candidate, ...patch } : candidate,
-      );
-
-      return recomputeImportCandidates(patched, {
-        existingNormalizedTexts: getExistingNormalizedTexts(data),
-        requireMeaningAndExample: true,
-      });
+    const patched = candidates.map((candidate) =>
+      candidate.tempId === tempId ? { ...candidate, ...patch } : candidate,
+    );
+    const nextCandidates = recomputeImportCandidates(patched, {
+      existingNormalizedTexts: getExistingNormalizedTexts(data),
+      requireMeaningAndExample: true,
     });
+
+    setCandidates(nextCandidates);
+    keepOnlySelectableIds(nextCandidates);
   };
 
   const toggleAccepted = (tempId: string, checked: boolean) => {
@@ -224,6 +242,12 @@ export function ImportWorkspace() {
   };
 
   const saveImport = async () => {
+    if (importSaveLockRef.current) {
+      return;
+    }
+
+    importSaveLockRef.current = true;
+    setIsSavingImport(true);
     const now = new Date().toISOString();
     const timezone = detectTimezone();
     const batchInput = {
@@ -231,16 +255,16 @@ export function ImportWorkspace() {
       fileName,
     };
     const acceptedTempIds = Array.from(acceptedIds);
-    const result = commitImportCandidates(
-      data,
-      batchInput,
-      candidates,
-      acceptedIds,
-      timezone,
-      now,
-    );
-
     try {
+      const result = commitImportCandidates(
+        data,
+        batchInput,
+        candidates,
+        acceptedIds,
+        timezone,
+        now,
+      );
+
       await commit(result.data, {
         type: "import.commitCandidates",
         batchInput,
@@ -256,6 +280,9 @@ export function ImportWorkspace() {
       setSourceType("json_paste");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Could not save this batch");
+    } finally {
+      importSaveLockRef.current = false;
+      setIsSavingImport(false);
     }
   };
 
@@ -452,12 +479,12 @@ export function ImportWorkspace() {
               <h2 className="mimi-display-title text-xl text-[#203229]">Preview</h2>
               <PressableButton
                 type="button"
-                disabled={!acceptedIds.size}
+                disabled={!acceptedIds.size || isSavingImport}
                 onClick={() => void saveImport()}
                 className="mimi-button mimi-focus-ring inline-flex items-center justify-center gap-2 px-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Save aria-hidden="true" className="size-4" />
-                Save selected
+                {isSavingImport ? "Saving…" : "Save selected"}
               </PressableButton>
             </div>
 
@@ -485,7 +512,7 @@ export function ImportWorkspace() {
                           <input
                             type="checkbox"
                             checked={acceptedIds.has(candidate.tempId)}
-                            disabled={candidate.status === "invalid"}
+                            disabled={candidate.status !== "new"}
                             onChange={(event) => toggleAccepted(candidate.tempId, event.target.checked)}
                             className="size-5 accent-[#5f7d66]"
                           />
@@ -634,7 +661,7 @@ export function ImportWorkspace() {
                           <input
                             type="checkbox"
                             checked={acceptedIds.has(candidate.tempId)}
-                            disabled={candidate.status === "invalid"}
+                            disabled={candidate.status !== "new"}
                             onChange={(event) => toggleAccepted(candidate.tempId, event.target.checked)}
                             className="size-4 accent-[#5f7d66]"
                           />

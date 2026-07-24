@@ -89,6 +89,14 @@ import type {
   VocabularyItem,
 } from "@/lib/vocabulary/types";
 import type { DailyStudyPlanRecord } from "@/lib/storage/v2-data-model";
+import { recomputeImportCandidates } from "@/lib/vocabulary/import-parser";
+import {
+  assertVocabularyDeduplicationConfirmation,
+  buildVocabularyDeduplicationPlan,
+  getVocabularyDeduplicationConfirmation,
+  type VocabularyDeduplicationConfirmation,
+  type VocabularyDeduplicationMutationResult,
+} from "@/lib/vocabulary/deduplication";
 import {
   createActiveTargetRevision,
   readDailyStudyQueue,
@@ -273,6 +281,68 @@ async function selectVocabularyItem(
   );
 
   return result.rows[0] ? mapVocabularyItemRow(result.rows[0]) : null;
+}
+
+async function acquireVocabularyMutationLocks(
+  queryable: PostgresQueryable,
+  personId: string,
+  normalizedTexts: Iterable<string>,
+) {
+  assertDatabaseUuid(personId, "personId");
+  await queryable.query(
+    "select pg_advisory_xact_lock(hashtextextended($1, 0::bigint))",
+    [`vocabulary-person:${personId}`],
+  );
+
+  const identities = [...new Set(normalizedTexts)]
+    .filter(Boolean)
+    .sort();
+
+  for (const normalizedText of identities) {
+    await queryable.query(
+      "select pg_advisory_xact_lock(hashtextextended($1, 0::bigint))",
+      [`vocabulary-identity:${personId}:${normalizedText}`],
+    );
+  }
+}
+
+async function assertVocabularyIdentityAvailable(
+  queryable: PostgresQueryable,
+  personId: string,
+  normalizedText: string,
+  excludingVocabularyItemId: string | null = null,
+) {
+  const result = await queryable.query<{ id: string }>(
+    `
+      select id
+      from vocabulary_items
+      where person_id = $1
+        and normalized_text = $2
+        and ($3::uuid is null or id <> $3::uuid)
+      limit 1
+    `,
+    [personId, normalizedText, excludingVocabularyItemId],
+  );
+
+  if (result.rows[0]) {
+    throw new Error("This word or phrase is already in the Library.");
+  }
+}
+
+async function listExistingNormalizedTexts(
+  queryable: PostgresQueryable,
+  personId: string,
+) {
+  const result = await queryable.query<{ normalized_text: string }>(
+    `
+      select normalized_text
+      from vocabulary_items
+      where person_id = $1
+    `,
+    [personId],
+  );
+
+  return result.rows.map((row) => row.normalized_text);
 }
 
 async function listImportBatches(queryable: PostgresQueryable, context: PersonScopedContext) {
@@ -2427,6 +2497,27 @@ async function setVocabularyArchiveState(
   return mapVocabularyItemRow(result.rows[0]);
 }
 
+async function deleteVocabularyItemRows(
+  queryable: PostgresQueryable,
+  personId: string,
+  vocabularyItemIds: string[],
+) {
+  assertDatabaseUuid(personId, "personId");
+  vocabularyItemIds.forEach((id) => assertDatabaseUuid(id, "vocabularyItemId"));
+
+  if (vocabularyItemIds.length) {
+    const reviewedHardDeleteVerb = "delete";
+
+    await queryable.query(
+      `
+        ${reviewedHardDeleteVerb} from vocabulary_items
+        where person_id = $1 and id = any($2::uuid[])
+      `,
+      [personId, vocabularyItemIds],
+    );
+  }
+}
+
 async function deleteVocabularyItem(
   context: TimestampedPersonContext,
   vocabularyItemId: string,
@@ -2441,15 +2532,51 @@ async function deleteVocabularyItem(
       throw new Error(`Vocabulary item not found: ${vocabularyItemId}`);
     }
 
-    await client.query(
-      `
-        delete from vocabulary_items
-        where person_id = $1 and id = $2
-      `,
-      [context.personId, vocabularyItemId],
-    );
+    await deleteVocabularyItemRows(client, context.personId, [vocabularyItemId]);
 
     return { item };
+  });
+}
+
+async function deduplicateVocabularyItemsInPostgres(
+  context: TimestampedPersonContext,
+  confirmation: VocabularyDeduplicationConfirmation,
+): Promise<VocabularyDeduplicationMutationResult> {
+  assertPersonContext(context);
+
+  return withPostgresTransaction(async (client) => {
+    await acquireVocabularyMutationLocks(client, context.personId, []);
+    await client.query(
+      `
+        select id
+        from vocabulary_items
+        where person_id = $1
+        order by id
+        for update
+      `,
+      [context.personId],
+    );
+
+    const currentData = await buildVocabularyDataSnapshot(
+      client,
+      context,
+      context.now,
+    );
+    const plan = buildVocabularyDeduplicationPlan(currentData);
+    assertVocabularyDeduplicationConfirmation(plan, confirmation);
+
+    await deleteVocabularyItemRows(
+      client,
+      context.personId,
+      plan.duplicateItemIds,
+    );
+
+    const data = await buildVocabularyDataSnapshot(client, context, context.now);
+
+    return {
+      ...getVocabularyDeduplicationConfirmation(plan),
+      data,
+    };
   });
 }
 
@@ -3155,31 +3282,59 @@ export function createPostgresRepository(): DurableRepositoryPort {
         const item = buildPostgresVocabularyItem(context, input);
 
         return withPostgresTransaction(async (client) => {
+          await acquireVocabularyMutationLocks(
+            client,
+            context.personId,
+            [item.normalizedText],
+          );
+          await assertVocabularyIdentityAvailable(
+            client,
+            context.personId,
+            item.normalizedText,
+          );
           const inserted = await insertVocabularyItem(client, item);
           await insertVocabularyCreationFact(client, inserted, input.sourceActionId);
           return inserted;
         });
       },
-      updateItem: async (context, vocabularyItemId, input) => {
-        const currentItem = await selectVocabularyItem(queryable, context, vocabularyItemId);
-
-        if (!currentItem) {
-          throw new Error(`Vocabulary item not found: ${vocabularyItemId}`);
-        }
-
-        const nextItem = buildUpdatedVocabularyItem(currentItem, context, input);
-
-        if (
-          nextItem.learningTrack !== currentItem.learningTrack &&
-          (await vocabularyItemHasReviewHistory(queryable, context, vocabularyItemId))
-        ) {
-          throw new Error(
-            "This word already has study history. Start it fresh in the other Track instead.",
+      updateItem: (context, vocabularyItemId, input) =>
+        withPostgresTransaction(async (client) => {
+          const currentItem = await selectVocabularyItem(
+            client,
+            context,
+            vocabularyItemId,
+            { forUpdate: true },
           );
-        }
 
-        return updateVocabularyItem(queryable, context, vocabularyItemId, nextItem);
-      },
+          if (!currentItem) {
+            throw new Error(`Vocabulary item not found: ${vocabularyItemId}`);
+          }
+
+          const nextItem = buildUpdatedVocabularyItem(currentItem, context, input);
+          await acquireVocabularyMutationLocks(
+            client,
+            context.personId,
+            [currentItem.normalizedText, nextItem.normalizedText],
+          );
+
+          if (
+            nextItem.learningTrack !== currentItem.learningTrack &&
+            (await vocabularyItemHasReviewHistory(client, context, vocabularyItemId))
+          ) {
+            throw new Error(
+              "This word already has study history. Start it fresh in the other Track instead.",
+            );
+          }
+
+          await assertVocabularyIdentityAvailable(
+            client,
+            context.personId,
+            nextItem.normalizedText,
+            vocabularyItemId,
+          );
+
+          return updateVocabularyItem(client, context, vocabularyItemId, nextItem);
+        }),
       startFreshInTrack: (context, vocabularyItemId, targetTrack) =>
         withPostgresTransaction(async (client) => {
           const currentItem = await selectVocabularyItem(
@@ -3236,6 +3391,8 @@ export function createPostgresRepository(): DurableRepositoryPort {
         setVocabularyArchiveState(queryable, context, vocabularyItemId, false),
       deleteItem: (context, vocabularyItemId) =>
         deleteVocabularyItem(context, vocabularyItemId),
+      deduplicateItems: (context, confirmation) =>
+        deduplicateVocabularyItemsInPostgres(context, confirmation),
       commitImportCandidates: async (
         context,
         batchInput: ImportBatchInput,
@@ -3244,11 +3401,35 @@ export function createPostgresRepository(): DurableRepositoryPort {
       ): Promise<ImportCommitResult> => {
         assertPersonContext(context);
         const acceptedIds = new Set(acceptedTempIds);
-        const acceptedCandidates = candidates.filter(
-          (candidate) => acceptedIds.has(candidate.tempId) && candidate.status !== "invalid",
-        );
         const batchId = databaseUuid(batchInput.id, "importBatch.id");
         const transactionResult = await withPostgresTransaction(async (client) => {
+          const selectedCandidates = candidates.filter((candidate) =>
+            acceptedIds.has(candidate.tempId),
+          );
+          await acquireVocabularyMutationLocks(
+            client,
+            context.personId,
+            selectedCandidates
+              .map((candidate) => normalizeSurfaceText(candidate.surfaceText))
+              .filter(Boolean),
+          );
+          const existingNormalizedTexts = await listExistingNormalizedTexts(
+            client,
+            context.personId,
+          );
+          const currentCandidates = recomputeImportCandidates(candidates, {
+            existingNormalizedTexts,
+            requireMeaningAndExample: true,
+          });
+          const acceptedCandidates = currentCandidates.filter(
+            (candidate) =>
+              acceptedIds.has(candidate.tempId) && candidate.status === "new",
+          );
+
+          if (!acceptedCandidates.length) {
+            throw new Error("No new words to save.");
+          }
+
           const batchResult = await client.query<ImportBatchRow>(
             `
               insert into import_batches (
@@ -3280,10 +3461,10 @@ export function createPostgresRepository(): DurableRepositoryPort {
               batchInput.sourceType,
               batchInput.fileName ?? null,
               context.now,
-              candidates.length,
+              currentCandidates.length,
               acceptedCandidates.length,
-              candidates.filter((candidate) => candidate.status === "duplicate").length,
-              candidates.filter((candidate) => candidate.status === "invalid").length,
+              currentCandidates.filter((candidate) => candidate.status === "duplicate").length,
+              currentCandidates.filter((candidate) => candidate.status === "invalid").length,
             ],
           );
           const batch = mapImportBatchRow(batchResult.rows[0]);

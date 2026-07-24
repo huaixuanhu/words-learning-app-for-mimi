@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { recordReview } from "@/lib/review/repository";
-import { parseJsonImport, parseTextImport } from "./import-parser";
+import { parseJsonImport } from "./import-parser";
 import {
   addVocabularyItem,
   archiveVocabularyItem,
@@ -101,11 +101,41 @@ describe("vocabulary repository", () => {
   });
 
   it("commits accepted import candidates and records batch counts", () => {
-    const candidates = parseTextImport("coherent - 连贯的\n\nallocate", {
-      existingNormalizedTexts: ["allocate"],
-    });
-    const result = commitImportCandidates(
+    const existing = addVocabularyItem(
       createEmptyVocabularyData(),
+      {
+        id: "vocab-existing",
+        surfaceText: "allocate",
+        source: "manual",
+        timezone: "Australia/Melbourne",
+      },
+      "2026-07-04T00:04:00.000Z",
+    );
+    const candidates = parseJsonImport(
+      JSON.stringify({
+        items: [
+          {
+            word: "coherent",
+            track: "recognition",
+            meaningsZh: ["连贯的"],
+            examples: ["Write a coherent paragraph."],
+            exampleTranslationsZh: ["写一个连贯的段落。"],
+          },
+          {
+            word: "Allocate",
+            track: "recognition",
+            meaningsZh: ["分配"],
+            examples: ["Allocate time wisely."],
+            exampleTranslationsZh: ["合理分配时间。"],
+          },
+        ],
+      }),
+      {
+        existingNormalizedTexts: ["allocate"],
+      },
+    );
+    const result = commitImportCandidates(
+      existing.data,
       { id: "batch-1", sourceType: "pasted_text", fileName: null },
       candidates,
       candidates.map((candidate) => candidate.tempId),
@@ -115,14 +145,190 @@ describe("vocabulary repository", () => {
 
     expect(result.batch).toMatchObject({
       id: "batch-1",
-      totalRows: 3,
-      acceptedRows: 2,
+      totalRows: 2,
+      acceptedRows: 1,
       duplicateRows: 1,
-      invalidRows: 1,
+      invalidRows: 0,
     });
-    expect(result.items.map((item) => item.surfaceText)).toEqual(["coherent", "allocate"]);
+    expect(result.items.map((item) => item.surfaceText)).toEqual(["coherent"]);
     expect(result.items[0]?.meaningsZh).toEqual(["连贯的"]);
     expect(result.data.importBatches).toHaveLength(1);
+  });
+
+  it("blocks duplicate identities on manual add and edit", () => {
+    const first = addVocabularyItem(
+      createEmptyVocabularyData(),
+      {
+        id: "vocab-allocate",
+        surfaceText: "Allocate",
+        source: "manual",
+        timezone: "Australia/Melbourne",
+      },
+      "2026-07-04T00:01:00.000Z",
+    );
+    const second = addVocabularyItem(
+      first.data,
+      {
+        id: "vocab-coherent",
+        surfaceText: "coherent",
+        source: "manual",
+        timezone: "Australia/Melbourne",
+      },
+      "2026-07-04T00:02:00.000Z",
+    );
+
+    expect(() =>
+      addVocabularyItem(
+        second.data,
+        {
+          surfaceText: "  allocate  ",
+          source: "manual",
+          timezone: "Australia/Melbourne",
+        },
+        "2026-07-04T00:03:00.000Z",
+      ),
+    ).toThrow("already in the Library");
+    expect(() =>
+      updateVocabularyItem(
+        second.data,
+        "vocab-coherent",
+        { surfaceText: "ALLOCATE" },
+        "2026-07-04T00:04:00.000Z",
+      ),
+    ).toThrow("already in the Library");
+  });
+
+  it("does not create an empty batch when every selected candidate is a duplicate", () => {
+    const existing = addVocabularyItem(
+      createEmptyVocabularyData(),
+      {
+        id: "vocab-existing",
+        surfaceText: "allocate",
+        source: "manual",
+        timezone: "Australia/Melbourne",
+      },
+      "2026-07-04T00:01:00.000Z",
+    );
+    const candidates = parseJsonImport(
+      JSON.stringify({
+        items: [
+          {
+            word: "Allocate",
+            track: "recognition",
+            meaningsZh: ["分配"],
+            examples: ["Allocate time wisely."],
+            exampleTranslationsZh: ["合理分配时间。"],
+          },
+        ],
+      }),
+    );
+
+    expect(() =>
+      commitImportCandidates(
+        existing.data,
+        { id: "batch-empty", sourceType: "json_paste", fileName: null },
+        candidates,
+        candidates.map((candidate) => candidate.tempId),
+        "Australia/Melbourne",
+        "2026-07-04T00:02:00.000Z",
+      ),
+    ).toThrow("No new words to save");
+    expect(existing.data.importBatches).toHaveLength(0);
+  });
+
+  it("commits only one item for same-batch duplicates and rejects a repeated stale save", () => {
+    const data = createEmptyVocabularyData();
+    const candidates = parseJsonImport(
+      JSON.stringify({
+        items: [
+          {
+            word: "Allocate",
+            track: "recognition",
+            meaningsZh: ["分配"],
+            examples: ["Allocate time wisely."],
+            exampleTranslationsZh: ["合理分配时间。"],
+          },
+          {
+            word: " allocate ",
+            track: "active",
+            meaningsZh: ["配置"],
+            examples: ["Allocate the budget."],
+            exampleTranslationsZh: ["分配预算。"],
+          },
+        ],
+      }),
+    );
+    const acceptedTempIds = candidates.map((candidate) => candidate.tempId);
+    const first = commitImportCandidates(
+      data,
+      { id: "batch-first", sourceType: "json_paste", fileName: null },
+      candidates,
+      acceptedTempIds,
+      "Australia/Melbourne",
+      "2026-07-04T00:01:00.000Z",
+    );
+
+    expect(first.batch).toMatchObject({
+      acceptedRows: 1,
+      duplicateRows: 1,
+    });
+    expect(first.items).toHaveLength(1);
+    expect(() =>
+      commitImportCandidates(
+        first.data,
+        { id: "batch-repeat", sourceType: "json_paste", fileName: null },
+        candidates.map((candidate) => ({ ...candidate, status: "new" })),
+        acceptedTempIds,
+        "Australia/Melbourne",
+        "2026-07-04T00:02:00.000Z",
+      ),
+    ).toThrow("No new words to save");
+    expect(first.data.importBatches.map((batch) => batch.id)).toEqual([
+      "batch-first",
+    ]);
+  });
+
+  it("allows the same normalized identity for a different person", () => {
+    const initial = createEmptyVocabularyData();
+    const first = addVocabularyItem(
+      initial,
+      {
+        id: "vocab-mimi",
+        surfaceText: "Allocate",
+        source: "manual",
+        timezone: "Australia/Melbourne",
+      },
+      "2026-07-04T00:01:00.000Z",
+    );
+    const friendId = "person_friend";
+    const friendData = {
+      ...first.data,
+      people: [
+        ...first.data.people,
+        {
+          id: friendId,
+          displayName: "Friend",
+          slug: "friend",
+          isActive: true,
+          createdAt: "2026-07-04T00:00:00.000Z",
+          updatedAt: "2026-07-04T00:00:00.000Z",
+        },
+      ],
+      selectedPersonId: friendId,
+    };
+    const friend = addVocabularyItem(
+      friendData,
+      {
+        id: "vocab-friend",
+        surfaceText: "allocate",
+        source: "manual",
+        timezone: "Australia/Melbourne",
+      },
+      "2026-07-04T00:02:00.000Z",
+    );
+
+    expect(friend.data.items).toHaveLength(2);
+    expect(friend.item.personId).toBe(friendId);
   });
 
   it("hard-deletes a vocabulary item and its review history", () => {
@@ -280,24 +486,21 @@ describe("vocabulary repository", () => {
     ).toBe(false);
   });
 
-  it("removes an empty import batch without inventing a reversal fact", () => {
-    const committed = commitImportCandidates(
-      createEmptyVocabularyData("2026-07-04T00:00:00.000Z"),
-      { id: "empty-batch", sourceType: "pasted_text", fileName: null },
-      [],
-      [],
-      "Australia/Melbourne",
-      "2026-07-04T00:01:00.000Z",
-    );
+  it("rejects an empty import without inventing a batch", () => {
+    const data = createEmptyVocabularyData("2026-07-04T00:00:00.000Z");
 
-    const rolledBack = rollbackImportBatch(
-      committed.data,
-      "empty-batch",
-      "2026-07-04T00:02:00.000Z",
-    );
-
-    expect(rolledBack.deletedItemsCount).toBe(0);
-    expect(rolledBack.data.vocabularyCreationFacts).toHaveLength(0);
-    expect(rolledBack.data.vocabularyCreationReversals).toHaveLength(0);
+    expect(() =>
+      commitImportCandidates(
+        data,
+        { id: "empty-batch", sourceType: "pasted_text", fileName: null },
+        [],
+        [],
+        "Australia/Melbourne",
+        "2026-07-04T00:01:00.000Z",
+      ),
+    ).toThrow("No new words to save");
+    expect(data.importBatches).toHaveLength(0);
+    expect(data.vocabularyCreationFacts).toHaveLength(0);
+    expect(data.vocabularyCreationReversals).toHaveLength(0);
   });
 });

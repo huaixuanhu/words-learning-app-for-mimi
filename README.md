@@ -21,6 +21,8 @@
 
 V2 已在 Production 正式上线。每日学习、独立 Active 三种练习、手机端与 Dashboard、付费 AI enrichment（AI 词汇补充）、Google Cloud Standard-C TTS 与 V2-only 性能优化都已进入正式版本。Neon `main` 已从 Schema 5 原子迁移为 Schema 6；迁移前后的 1,854 行 core data 完整 parity，1,486 个词条、125 个复习状态与 203 条复习事件保持不变。正式 Gemini 与 TTS 的真实调用、Cache、Replay、费用账本和零 in-flight 检查均通过。整个 V2 不包含 SSO（Single Sign-On，单点登录）或 confidential per-person authorization（个人机密授权隔离）。
 
+V2.1 的重复导入修复已在本地 `v2.1` 分支完成：新增、编辑和 batch import 使用同一 selected-person normalized identity（当前人物下的规范化词条身份），Library 提供确认后的一键去重。该分支尚未部署，也没有读取或修改 Production 学习数据；线上仍是当前 V2。
+
 ## 正式版本
 
 - 访问地址：[words-learning-app-for-mimi.vercel.app](https://words-learning-app-for-mimi.vercel.app)
@@ -34,6 +36,7 @@ V2 已在 Production 正式上线。每日学习、独立 Active 三种练习、
 - 通过单词表单或 Batch JSON（批量 JSON）录入词汇。
 - 为每个词保存多个中文释义、多个例句、标签和学习轨道。
 - 在词库中搜索、筛选、编辑、归档、恢复和删除词汇。
+- V2.1 本地候选可阻止重复新增/导入，并在显示受影响词条、复习历史和 AI 草稿数量后，一键删除重复副本、每组保留一份。
 - 使用四档自评完成 Recognition Vocabulary（阅读词汇）复习。
 - 使用 FSRS-6（Free Spaced Repetition Scheduler 6，自由间隔重复调度器第 6 版）安排跨日复习。
 - 当选择“完全忘记了”或“有点忘记了”时，在当前复习局内重新出现该词。

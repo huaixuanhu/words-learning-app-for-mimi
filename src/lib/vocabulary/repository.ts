@@ -30,6 +30,7 @@ import {
   buildVocabularyExamplePairs,
   splitVocabularyExamplePairs,
 } from "./example-pairs";
+import { recomputeImportCandidates } from "./import-parser";
 
 export const VOCABULARY_SCHEMA_VERSION = 6;
 
@@ -211,6 +212,17 @@ export function addVocabularyItem(
 ) {
   const personId = input.personId ?? getSelectedPersonId(data);
   const item = buildVocabularyItem({ ...input, personId }, now);
+
+  if (
+    data.items.some(
+      (candidate) =>
+        candidate.personId === personId &&
+        candidate.normalizedText === item.normalizedText,
+    )
+  ) {
+    throw new Error("This word or phrase is already in the Library.");
+  }
+
   const creationFact = buildVocabularyCreationRecord(item, input);
 
   return {
@@ -305,6 +317,18 @@ export function updateVocabularyItem(
     timezone: input.timezone ?? currentItem.timezone,
     updatedAt: now,
   };
+
+  if (
+    data.items.some(
+      (item) =>
+        item.personId === selectedPersonId &&
+        item.id !== id &&
+        item.normalizedText === updatedItem.normalizedText,
+    )
+  ) {
+    throw new Error("This word or phrase is already in the Library.");
+  }
+
   const items = data.items.map((item) => (item.id === id ? updatedItem : item));
 
   return {
@@ -579,19 +603,30 @@ export function commitImportCandidates(
 ): ImportCommitResult {
   const personId = batchInput.personId ?? getSelectedPersonId(data);
   const acceptedIds = new Set(acceptedTempIds);
-  const acceptedCandidates = candidates.filter(
-    (candidate) => acceptedIds.has(candidate.tempId) && candidate.status !== "invalid",
+  const currentCandidates = recomputeImportCandidates(candidates, {
+    existingNormalizedTexts: data.items
+      .filter((item) => item.personId === personId)
+      .map((item) => item.normalizedText),
+    requireMeaningAndExample: true,
+  });
+  const acceptedCandidates = currentCandidates.filter(
+    (candidate) => acceptedIds.has(candidate.tempId) && candidate.status === "new",
   );
+
+  if (!acceptedCandidates.length) {
+    throw new Error("No new words to save.");
+  }
+
   const batch: ImportBatch = {
     id: batchInput.id ?? makeId("batch"),
     personId,
     sourceType: batchInput.sourceType,
     fileName: batchInput.fileName ?? null,
     createdAt: now,
-    totalRows: candidates.length,
+    totalRows: currentCandidates.length,
     acceptedRows: acceptedCandidates.length,
-    duplicateRows: candidates.filter((candidate) => candidate.status === "duplicate").length,
-    invalidRows: candidates.filter((candidate) => candidate.status === "invalid").length,
+    duplicateRows: currentCandidates.filter((candidate) => candidate.status === "duplicate").length,
+    invalidRows: currentCandidates.filter((candidate) => candidate.status === "invalid").length,
   };
   const items = acceptedCandidates.map((candidate) =>
     buildVocabularyItem(

@@ -14,6 +14,10 @@ import type {
   ReviewRating,
   ReviewState,
 } from "@/lib/review/types";
+import type {
+  VocabularyDeduplicationConfirmation,
+  VocabularyDeduplicationMutationResult,
+} from "@/lib/vocabulary/deduplication";
 
 export type StorageAdapterKind = "localStorage" | "postgres";
 
@@ -142,6 +146,10 @@ export type VocabularyRepositoryPort = Readonly<{
     context: TimestampedPersonContext,
     vocabularyItemId: string,
   ): Promise<VocabularyDeleteResult>;
+  deduplicateItems(
+    context: TimestampedPersonContext,
+    confirmation: VocabularyDeduplicationConfirmation,
+  ): Promise<VocabularyDeduplicationMutationResult>;
   commitImportCandidates(
     context: TimestampedPersonContext,
     batchInput: ImportBatchInput,

@@ -25,6 +25,7 @@ describe("Postgres repository parity source", () => {
 
   it("implements destructive and repair operations behind repository methods", () => {
     expect(repositorySource).toContain("deleteItem: (context, vocabularyItemId)");
+    expect(repositorySource).toContain("deduplicateItems: (context, confirmation)");
     expect(repositorySource).toContain("rollbackImportBatch: (context, importBatchId)");
     expect(repositorySource).toContain("resetToday: (context) => resetTodayReview(context)");
     expect(repositorySource).toContain("rollbackEvent: (context, reviewEventId) => rollbackReviewEvent(context, reviewEventId)");
@@ -32,6 +33,24 @@ describe("Postgres repository parity source", () => {
     expect(repositorySource).toContain("delete from import_batches");
     expect(repositorySource).toContain("delete from review_events");
     expect(repositorySource).toContain("delete from review_states");
+  });
+
+  it("revalidates vocabulary identity inside serialized Postgres transactions", () => {
+    expect(repositorySource).toContain("acquireVocabularyMutationLocks");
+    expect(repositorySource).toContain("pg_advisory_xact_lock");
+    expect(repositorySource).toContain("assertVocabularyIdentityAvailable");
+    expect(repositorySource).toContain("listExistingNormalizedTexts");
+    expect(repositorySource).toContain("recomputeImportCandidates(candidates");
+    expect(repositorySource).toContain('candidate.status === "new"');
+    expect(repositorySource).toContain("No new words to save.");
+  });
+
+  it("rechecks the exact duplicate cleanup plan before hard deletion", () => {
+    expect(repositorySource).toContain("deduplicateVocabularyItemsInPostgres");
+    expect(repositorySource).toContain("buildVocabularyDeduplicationPlan");
+    expect(repositorySource).toContain("assertVocabularyDeduplicationConfirmation");
+    expect(repositorySource).toContain("id = any($2::uuid[])");
+    expect(repositorySource).toContain("for update");
   });
 
   it("rebuilds review state from remaining events with local natural-day semantics", () => {

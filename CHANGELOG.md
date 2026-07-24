@@ -1,5 +1,26 @@
 # CHANGELOG
 
+## 2026-07-24 14:30 AEST
+
+- Implemented the user-approved V2.1 duplicate repair locally on branch `v2.1`.
+- Kept Preview parse-only, disabled duplicate/invalid selection, added a visible in-flight save lock and made local/Postgres import commits revalidate current normalized identity before writing. Duplicate-only, stale and repeated saves now create neither item nor batch.
+- Applied the same selected-person identity rule to manual add and surface-text edit. Postgres uses transaction advisory locks and current-row checks so browser status is never write authority.
+- Added a confirmation-gated `Remove duplicates` Library action with deterministic keeper selection, exact deletion/history/AI counts and a stale-plan fingerprint. Loser review/AI data follows existing hard-delete behavior; creation facts and import-batch audit rows remain.
+- Hid batch history rows with zero remaining Library items while keeping those audit records in storage and backups.
+- Added fail-closed migration `0006_v2_1_vocabulary_unique_normalized_text.sql`; it refuses dirty data and creates a unique `(person_id, normalized_text)` index without auto-deleting records. It was not run against any remote database.
+- Validation: full Vitest passes 95 files / 583 tests with the existing Postgres integration file/test skipped; ESLint, TypeScript, three backup dry-runs, Production build, Tier 3 governance preflight and diff checks pass.
+- Safety: no Production data read/write, database connection, migration, deployment, secret access, external provider call, GitHub push or PR occurred.
+- Reason: prevent confirmed duplicate-creation paths and provide one deterministic, reviewable cleanup without converting local approval into Production authority.
+
+## 2026-07-24 14:03 AEST
+
+- Created local branch `v2.1` from clean `main` commit `b6cf50f3422a69dbea9f59e998677f3c0bc49e8e`.
+- Added the Proposed `PLAN_V2_1_DUPLICATE_IMPORT_DEDUPLICATION.md` child plan after a local read-only audit of import UI, repositories, database constraints, tests and Git history.
+- Confirmed that Preview has remained a parse-only action in the audited history. Identified current duplicate risks in selected duplicate candidates, client-trusted Postgres status, unlocked repeated save, stale Preview state and the absence of a unique selected-person normalized-text constraint.
+- Proposed a selected-person one-click cleanup with explicit destructive confirmation, deterministic keeper selection, local/Postgres parity and a later forward-only uniqueness migration.
+- Kept Production data, credentials, deployment, migration, external services and GitHub actions outside this planning checkpoint.
+- Reason: define the data-loss boundary and obtain human agreement before implementing a repair that can delete persistent learning records.
+
 ## 2026-07-24 01:14 AEST
 
 - Completed the V2 Production cutover and replaced the canonical V1 application with exact Git `main` in Vercel `syd1`.

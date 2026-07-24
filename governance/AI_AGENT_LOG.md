@@ -1,5 +1,35 @@
 # AI Agent Log
 
+## 2026-07-24 14:30 AEST
+
+- Task: execute the explicitly approved V2.1 duplicate-import repair and one-click selected-person cleanup.
+- Plan agreed: the user accepted the child plan, normalized identity, keeper order, possible loser-history/AI deletion, retained-but-hidden empty batch rows and local-only branch boundary.
+- Working tier: Tier 3 because the feature changes persistent-data write validation and introduces a confirmation-gated destructive cleanup, while Production remains separately gated.
+- Implemented prevention: Preview stays parse-only; duplicate/invalid rows are unselectable; batch save has an immediate in-flight lock; local and Postgres commits recompute candidates against current rows and write no zero-new batch; manual add/edit use the same selected-person normalized identity.
+- Implemented concurrency boundary: Postgres add/edit/import acquire deterministic transaction advisory locks, recheck current identities and treat client candidate status only as display data. `0006` adds a later unique index but refuses to run while duplicates remain.
+- Implemented cleanup: one shared deterministic plan selects the keeper, counts loser-linked review/AI data and import batches, fingerprints keeper/loser ids, and hard-deletes only after exact confirmation. Postgres locks and rereads inside the transaction; stale plans fail before deletion. Creation facts and batch audit rows remain.
+- UI behavior: Library shows `Remove duplicates` only for a non-empty selected-person plan, uses an explicit Chinese destructive warning and hides batch rows that no longer own an item.
+- Data compatibility: Schema Version 6 and JSON backup Version 4 stay unchanged. Existing hard-delete foreign keys remove loser review/draft/relation/cache rows and detach surviving AI runs; independent FSRS histories are not merged.
+- Changed files: V2.1 plan/governance/project docs; shared duplicate detector/tests; local and Postgres repositories/contracts; storage API/client mutation; Import and Library UI/contracts; and fail-closed `0006` migration/static test.
+- Validation: focused V2.1 contracts pass, and full Vitest passes 95 files / 583 tests with the existing Postgres integration file/test skipped. ESLint, TypeScript, all three backup dry-runs, Production build, Tier 3 governance preflight and final diff checks pass.
+- Safety notes: no `.env` value or credential was inspected; no Production learner row, database connection, migration, deployment, external service, provider, billing, GitHub push/PR or other remote mutation occurred.
+- Residual boundary: Production repair still requires a new approval for encrypted backup, read-only duplicate inventory, synthetic Preview/Staging rehearsal, human-confirmed cleanup, zero-duplicate verification, `0006` migration and post-change backup/rollback evidence.
+- Reason: close every confirmed duplicate-creation path and make cleanup deterministic/auditable without claiming the user’s original Preview hypothesis as proven or broadening local approval into Production authority.
+
+## 2026-07-24 14:03 AEST
+
+- Task: create a V2.1 repair branch, investigate repeated vocabulary/import history and plan duplicate prevention plus one-click cleanup.
+- Plan agreed: branch creation and read-only investigation were explicitly requested. Destructive keeper/history rules and implementation remain at an Approval Stop pending human agreement.
+- Working tier: Tier 3 because the proposed feature can hard-delete persistent study data and later requires a Production backup/migration/deployment gate.
+- Branch result: created local `v2.1` from clean `main` commit `b6cf50f3422a69dbea9f59e998677f3c0bc49e8e`.
+- Read-only evidence: repository history back to the first import implementation keeps Preview parse-only and save explicit. Current code can accept a checked duplicate, Postgres trusts client candidate status, save has no pending lock, stale/concurrent submissions are not revalidated against current rows, and the database index on `(person_id, normalized_text)` is non-unique.
+- Proposed data rule: group within the selected person by existing normalized text; retain the deterministic item with the strongest study/content evidence; show deletion counts; hard-delete other copies under current propagation; keep creation facts; hide zero-remaining batch rows from the normal Library panel while retaining audit data.
+- Changed files: Proposed V2.1 child plan, Architecture pointer/boundary, Changelog and this governance record.
+- Validation: focused existing parser/repository tests pass 2 files / 13 tests. Governance preflight initially failed because the new material plan lacked Architecture/Changelog/log synchronization; those required records were then added. Final preflight and diff checks follow.
+- Safety notes: no `.env`, credential, Production learner row, database connection, remote API, deployment, migration, provider call, GitHub action or persistent-data mutation occurred.
+- Residual boundary: implementation begins only after the user accepts the duplicate identity, keeper rule, possible discarded-copy history loss, retained-but-hidden empty batch audit rows and local-only branch scope.
+- Reason: turn the reported symptom into a bounded repair contract without treating an unproven Preview hypothesis as fact or deleting study data before human agreement.
+
 ## 2026-07-24 00:14 AEST
 
 - Task: execute the user's explicit instruction to continue from Gate 4 until V2 is fully live; this record covers Gate 5 through Production Schema 6 parity.
