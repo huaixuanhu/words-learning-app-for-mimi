@@ -1,5 +1,17 @@
 # AI Agent Log
 
+## 2026-07-26 23:32 AEST
+
+- Task: migrate this repository from the installed `human-ai-governance v0.3.0` contract to the project-adapted `v0.4.0` contract.
+- Plan agreed: yes. The user confirmed the read-only migration plan before any project file was edited.
+- Working tier: Tier 3 project; this slice changes only local governance instructions, validation code/tests, command routing and current documentation claims. It introduces no application, persistence, provider or Production authority.
+- Changed files: `AGENTS.md`, `ARCHITECTURE.md`, `plan_docs/PLAN_V1_MASTER.md`, `governance/preflight.py`, `governance/test_preflight.py`, `package.json`, `CHANGELOG.md`, and this log.
+- Governance result: the active marker and preflight are v0.4.0; project Tier remains 3. `AGENTS.md` is reduced from 40,940 to 13,525 bytes while retaining permanent Product, Production, credential, data, AI/TTS, environment and approval boundaries.
+- Preflight result: materiality now excludes README, ordinary docs, tests, Architecture-only edits and lockfile-only churn while preserving working-tree plus staged-index secret scanning. Architecture sync is tied to runtime/tool topology and every `db/migrations/` change; rename/copy source paths remain visible and deleted child plans do not produce false lineage failures.
+- Validation: Python AST parsing passed; aggregate `npm run governance:check` passed the Tier 3 v0.4.0 preflight and all 12 governance regression tests; `git diff --check` passed. Application Vitest, backup dry-runs and Production build were not rerun because no runtime, dependency, schema, backup shape or deployment contract changed.
+- Safety notes: no `.env` value, credential, learner record, remote database, provider account, Vercel setting, GitHub remote, deployment or Production data was read or changed. Existing historical v0.2.0/v0.3.0 records remain intact.
+- Reason: apply v0.4.0's proportional decision rules and lower mechanical false positives while preserving the repository's proven fail-closed secret and added-line side-effect review.
+
 ## 2026-07-25 01:05 AEST
 
 - Task: rewrite the `main` branch root README from a technical release manual into a user-facing product landing page.

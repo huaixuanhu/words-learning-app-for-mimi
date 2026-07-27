@@ -50,7 +50,7 @@ This is the parent product and implementation plan. Child plans must cite this f
 
 ## Governance Baseline
 
-- Historical bootstrap used Tier 1 for the local scaffold. The launched private Production app now has current operational tier, target capability tier, and working tier all set to Tier 3 under `human-ai-governance v0.3.0`.
+- Historical bootstrap used Tier 1 for the local scaffold. The launched private Production app remains project Tier 3 under `human-ai-governance v0.4.0`; material tasks derive their working tier from the higher current/target authority on the affected surface.
 - Keep explicit human approval for credentials, Production services, external data sharing, migrations, deployment, and destructive persistent-data operations.
 - Keep `AGENTS.md`, `ARCHITECTURE.md`, `CHANGELOG.md`, and `governance/AI_AGENT_LOG.md` updated when project boundaries change.
 

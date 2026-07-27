@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## 2026-07-26 23:32 AEST
+
+- Migrated the repository governance contract from `human-ai-governance v0.3.0` to the project-adapted `v0.4.0` while retaining Tier 3 and every existing Production, credential, provider, personal-data and remote-action approval boundary.
+- Reduced `AGENTS.md` from 40,940 bytes to 13,525 bytes by replacing duplicated stage, deployment and test-count history with canonical Architecture/plan/Changelog/AI-log routing. Unique safety and runtime invariants remain in the instruction file.
+- Updated the project-specific preflight so README, ordinary docs, tests, Architecture-only edits and lockfile-only churn are not automatically material; every changed readable file remains secret-scanned.
+- Narrowed automatic Architecture synchronization to added/deleted/renamed/copied runtime or operational modules and all `db/migrations/` changes. Existing-file runtime edits remain material without being treated as topology changes.
+- Added root/master-plan exemption, instruction-size advisories, tuned `db/migrations/`/`scripts/`/`src/` risk paths, twelve deterministic governance regression tests, and the aggregate `npm run governance:check` command.
+- Made secret scanning inspect both working-tree and staged-index content, preserved both sides of rename/copy status, and allowed deleted child plans without treating their missing working-tree body as malformed lineage.
+- Updated current-version claims in Architecture and the V1 master plan. Historical v0.2.0/v0.3.0 records remain unchanged.
+- No application runtime, schema, learner data, credential, provider, database, Git remote, deployment or Production state changed.
+- Reason: adopt the v0.4.0 proportional-governance rules without replacing this mature repository's stronger secret and added-line side-effect controls.
+
 ## 2026-07-25 01:05 AEST
 
 - Rewrote the root README as a user-facing product landing page on `main`.

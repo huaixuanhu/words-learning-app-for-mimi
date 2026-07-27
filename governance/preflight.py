@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Risk-scaled governance preflight for this repository.
 
-Generated/adapted from human-ai-governance v0.3.0.
+Generated/adapted from human-ai-governance v0.4.0.
 
 The repository runs this gate explicitly at Tier 3. Strict side-effect scanning
 remains opt-in at the script level and is enabled by the project npm command.
@@ -15,7 +15,7 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
-SKILL_VERSION = "0.3.0"
+SKILL_VERSION = "0.4.0"
 SKILL_MARKER_RE = re.compile(
     r"Generated/adapted from human-ai-governance v(?P<version>\d+\.\d+\.\d+)"
 )
@@ -76,28 +76,61 @@ IGNORED_SUFFIXES = {
     ".webp",
 }
 
-STRUCTURE_SENSITIVE_EXACT = {
+# Project-tuned materiality. Ordinary documentation, contract-preserving tests,
+# and lockfile-only churn stay non-material, while secret scanning still covers
+# every changed readable file.
+MATERIAL_EXACT = {
+    ".gitignore",
     "AGENTS.md",
-    "README.md",
+    "eslint.config.mjs",
+    "next.config.ts",
     "package.json",
-    "package-lock.json",
-    "pnpm-lock.yaml",
+    "postcss.config.mjs",
     "pyproject.toml",
     "requirements.txt",
     "tsconfig.json",
-    "uv.lock",
+    "vercel.json",
+    "vitest.config.ts",
 }
-STRUCTURE_SENSITIVE_PREFIXES = (
-    "app/",
-    "components/",
-    "docs/",
+MATERIAL_PREFIXES = (
+    ".github/workflows/",
+    "db/migrations/",
     "governance/",
-    "lib/",
-    "pages/",
     "plan_docs/",
-    "server/",
+    "scripts/",
     "src/",
-    "tests/",
+)
+
+# Architecture synchronization is mechanical only for module/tool topology and
+# migrations. Semantic responsibility changes remain a review-time judgment.
+STRUCTURE_TOPOLOGY_PREFIXES = (
+    "scripts/",
+    "src/",
+)
+STRUCTURE_ALWAYS_PREFIXES = (
+    "db/migrations/",
+)
+
+ROOT_PLAN_NAME_PATTERNS = (
+    re.compile(r"(?:^|/)PLAN\.md$", re.IGNORECASE),
+    re.compile(r"(?:^|/)MASTER_PLAN\.md$", re.IGNORECASE),
+    re.compile(r"(?:^|/)PLAN_[^/]*_MASTER\.md$", re.IGNORECASE),
+)
+ROOT_PLAN_CONTENT_RE = re.compile(
+    r"(?im)^(?:plan role|document nature|文档性质)\s*[:：].*(?:root plan|master plan|主计划)"
+)
+
+AGENTS_CANDIDATES = ("AGENTS.md", "AGENTS.override.md")
+AGENTS_ADVISORY_BYTES = 24 * 1024
+AGENTS_COMMON_LIMIT_BYTES = 32 * 1024
+
+# Strict scanning stays limited to executable runtime/operational paths. The
+# npm command enables it because this repository contains guarded remote and
+# Production-capable scripts.
+RISK_SCAN_PREFIXES = (
+    "db/migrations/",
+    "scripts/",
+    "src/",
 )
 
 RISKY_SIDE_EFFECT_PATTERNS = (
@@ -165,7 +198,11 @@ def parse_status(output: str) -> list[StatusEntry]:
         status = line[:2].strip()
         payload = line[3:]
         if " -> " in payload:
-            payload = payload.split(" -> ", 1)[1]
+            source, target = payload.split(" -> ", 1)
+            for path in (strip_git_quotes(source.strip()), strip_git_quotes(target.strip())):
+                if path:
+                    entries.append(StatusEntry(status=status, path=path))
+            continue
         path = strip_git_quotes(payload.strip())
         if path:
             entries.append(StatusEntry(status=status, path=path))
@@ -203,6 +240,37 @@ def read_changed_text(root: Path, relative_path: str) -> str | None:
         return path.read_text(encoding="utf-8")
     except UnicodeDecodeError:
         return None
+
+
+def read_index_text(root: Path, relative_path: str) -> str | None:
+    """Return the prospective committed content for a path when it exists in the index."""
+    if Path(relative_path).suffix.lower() in IGNORED_SUFFIXES:
+        return None
+    result = subprocess.run(
+        ["git", "show", f":{relative_path}"],
+        cwd=root,
+        check=False,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    if result.returncode != 0:
+        return None
+    try:
+        return result.stdout.decode("utf-8")
+    except UnicodeDecodeError:
+        return None
+
+
+def read_changed_text_variants(root: Path, relative_path: str) -> list[str]:
+    """Return distinct working-tree and staged-index text for secret scanning."""
+    texts: list[str] = []
+    for text in (
+        read_changed_text(root, relative_path),
+        read_index_text(root, relative_path),
+    ):
+        if text is not None and text not in texts:
+            texts.append(text)
+    return texts
 
 
 def read_added_text(root: Path, relative_path: str) -> str | None:
@@ -272,8 +340,26 @@ def validate_ai_log(text: str) -> list[str]:
     return issues
 
 
+def is_test_path(path: str) -> bool:
+    file_name = Path(path).name
+    parts = path.split("/")
+    return (
+        "tests" in parts
+        or "__tests__" in parts
+        or file_name.startswith("test_")
+        or ".test." in file_name
+        or ".spec." in file_name
+    )
+
+
 def is_material_path(path: str) -> bool:
-    return path not in {CHANGELOG, AI_AGENT_LOG}
+    if path in {CHANGELOG, AI_AGENT_LOG, *ARCHITECTURE_CANDIDATES}:
+        return False
+    if is_test_path(path):
+        return False
+    if path in MATERIAL_EXACT:
+        return True
+    return any(path.startswith(prefix) for prefix in MATERIAL_PREFIXES)
 
 
 def architecture_changed(paths: set[str]) -> bool:
@@ -284,13 +370,19 @@ def architecture_exists(root: Path) -> bool:
     return any((root / path).exists() for path in ARCHITECTURE_CANDIDATES)
 
 
-def has_structure_sensitive_change(paths: set[str]) -> bool:
-    for path in paths:
-        if path in ARCHITECTURE_CANDIDATES:
+def is_topology_status(status: str) -> bool:
+    return status == "??" or any(flag in status for flag in ("A", "D", "R", "C"))
+
+
+def has_structure_sensitive_change(entries: list[StatusEntry]) -> bool:
+    for entry in entries:
+        if is_test_path(entry.path):
             continue
-        if path in STRUCTURE_SENSITIVE_EXACT:
+        if any(entry.path.startswith(prefix) for prefix in STRUCTURE_ALWAYS_PREFIXES):
             return True
-        if any(path.startswith(prefix) for prefix in STRUCTURE_SENSITIVE_PREFIXES):
+        if is_topology_status(entry.status) and any(
+            entry.path.startswith(prefix) for prefix in STRUCTURE_TOPOLOGY_PREFIXES
+        ):
             return True
     return False
 
@@ -299,9 +391,20 @@ def is_plan_doc(path: str) -> bool:
     return path.endswith(".md") and any(path.startswith(prefix) for prefix in PLAN_DOC_PREFIXES)
 
 
+def is_root_plan_doc(root: Path, path: str) -> bool:
+    if any(pattern.search(path) for pattern in ROOT_PLAN_NAME_PATTERNS):
+        return True
+    head = "\n".join(read_text(root, path).splitlines()[:80])
+    return bool(ROOT_PLAN_CONTENT_RE.search(head))
+
+
 def validate_plan_parent_markers(root: Path, paths: set[str]) -> list[str]:
     issues: list[str] = []
     for path in sorted(p for p in paths if is_plan_doc(p)):
+        if not (root / path).is_file():
+            continue
+        if is_root_plan_doc(root, path):
+            continue
         head = "\n".join(read_text(root, path).splitlines()[:80])
         has_source = any(marker in head for marker in ("Source plan:", "来源计划", "Parent plan:"))
         has_derived = any(marker in head for marker in ("Derived from:", "衍生自", "Document nature:", "文档性质"))
@@ -342,20 +445,28 @@ def scan_for_secrets(root: Path, paths: set[str]) -> list[str]:
     issues: list[str] = []
     for path in sorted(paths):
         if is_forbidden_env_path(path):
-            issues.append(f"{path} must not be committed or tracked")
+            if (root / path).exists() or read_index_text(root, path) is not None:
+                issues.append(f"{path} must not be committed or tracked")
             continue
-        text = read_changed_text(root, path)
-        if text is None:
-            continue
-        for pattern in SECRET_TOKEN_PATTERNS:
-            if pattern.search(text):
+        for text in read_changed_text_variants(root, path):
+            if any(pattern.search(text) for pattern in SECRET_TOKEN_PATTERNS):
                 issues.append(f"{path} contains a token/private-key pattern")
                 break
-        for match in SECRET_ASSIGNMENT_RE.finditer(text):
-            key_name = match.group(1)
-            value = normalized_secret_value(match.group(2))
-            if not is_placeholder_secret(value) and len(value) >= 8:
-                issues.append(f"{path} may contain a real secret assignment for {key_name}")
+            secret_assignment = next(
+                (
+                    match.group(1)
+                    for match in SECRET_ASSIGNMENT_RE.finditer(text)
+                    if not is_placeholder_secret(match.group(2)) and len(
+                        normalized_secret_value(match.group(2))
+                    )
+                    >= 8
+                ),
+                None,
+            )
+            if secret_assignment is not None:
+                issues.append(
+                    f"{path} may contain a real secret assignment for {secret_assignment}"
+                )
                 break
     return issues
 
@@ -363,10 +474,12 @@ def scan_for_secrets(root: Path, paths: set[str]) -> list[str]:
 def scan_risky_side_effects(root: Path, paths: set[str]) -> list[str]:
     issues: list[str] = []
     for path in sorted(paths):
+        if not any(path.startswith(prefix) for prefix in RISK_SCAN_PREFIXES):
+            continue
         file_path = Path(path)
         if file_path.suffix.lower() not in EXECUTABLE_SIDE_EFFECT_SUFFIXES:
             continue
-        if path == "governance/preflight.py" or ".test." in file_path.name:
+        if path == "governance/preflight.py" or is_test_path(path):
             continue
         text = read_added_text(root, path)
         if text is None:
@@ -379,6 +492,28 @@ def scan_risky_side_effects(root: Path, paths: set[str]) -> list[str]:
     return issues
 
 
+def instruction_size_warnings(root: Path, changed_paths: set[str]) -> list[str]:
+    warnings: list[str] = []
+    for relative_path in AGENTS_CANDIDATES:
+        if relative_path not in changed_paths:
+            continue
+        path = root / relative_path
+        if not path.exists() or not path.is_file():
+            continue
+        size = path.stat().st_size
+        if size > AGENTS_COMMON_LIMIT_BYTES:
+            warnings.append(
+                f"{relative_path} is {size} bytes; it exceeds the common 32 KiB project-doc "
+                "budget, so move history or transient status to canonical linked docs"
+            )
+        elif size > AGENTS_ADVISORY_BYTES:
+            warnings.append(
+                f"{relative_path} is {size} bytes; review it before it approaches the common "
+                "32 KiB project-doc budget"
+            )
+    return warnings
+
+
 def marker_versions(root: Path) -> set[str]:
     versions: set[str] = set()
     for path in ("AGENTS.md", AI_AGENT_LOG, "README.md"):
@@ -386,6 +521,14 @@ def marker_versions(root: Path) -> set[str]:
         for match in SKILL_MARKER_RE.finditer(text):
             versions.add(match.group("version"))
     return versions
+
+
+def print_warnings(warnings: list[str]) -> None:
+    if not warnings:
+        return
+    print("WARN: governance preflight advisories:")
+    for warning in warnings:
+        print(f"- {warning}")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -397,24 +540,32 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     root = resolve_repo_root(args.repo_root)
-    _entries, paths = git_changed_paths(root)
+    entries, paths = git_changed_paths(root)
 
     print(f"human-ai-governance preflight v{SKILL_VERSION}")
     print(f"repo_root: {root}")
     print(f"tier: {args.tier}")
 
-    issues: list[str] = []
+    marker_issues: list[str] = []
+    warnings = instruction_size_warnings(root, paths)
     if args.require_skill_marker:
         versions = marker_versions(root)
-        if SKILL_VERSION not in versions:
-            issues.append(
-                f"expected Generated/adapted from human-ai-governance v{SKILL_VERSION} marker"
+        if not versions:
+            marker_issues.append(
+                "no Generated/adapted from human-ai-governance vX.Y.Z marker found; "
+                f"expected v{SKILL_VERSION}"
+            )
+        elif SKILL_VERSION not in versions:
+            found = ", ".join(sorted(versions))
+            marker_issues.append(
+                f"skill marker is stale: found {found}; expected {SKILL_VERSION}"
             )
 
     if not paths:
-        if issues:
+        print_warnings(warnings)
+        if marker_issues:
             print("FAIL: governance preflight found issues:")
-            for issue in issues:
+            for issue in marker_issues:
                 print(f"- {issue}")
             return 1
         print("PASS: no working tree changes detected.")
@@ -425,6 +576,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"- {path}")
 
     material_paths = {path for path in paths if is_material_path(path)}
+    issues: list[str] = list(marker_issues)
 
     if args.tier >= 2 and material_paths and (root / CHANGELOG).exists():
         if CHANGELOG not in paths:
@@ -432,32 +584,36 @@ def main(argv: list[str] | None = None) -> int:
         else:
             issues.extend(validate_changelog(read_text(root, CHANGELOG)))
 
-    if args.tier >= 3 and material_paths:
-        if (root / AI_AGENT_LOG).exists():
-            if AI_AGENT_LOG not in paths:
-                issues.append(f"material changes detected, but {AI_AGENT_LOG} was not updated")
-            else:
-                issues.extend(validate_ai_log(read_text(root, AI_AGENT_LOG)))
-        else:
-            issues.append(f"Tier {args.tier} expects {AI_AGENT_LOG} or equivalent")
-
-        if has_structure_sensitive_change(material_paths) and not architecture_changed(paths):
-            if architecture_exists(root):
-                issues.append(
-                    "structure-sensitive changes detected, but no architecture/project map doc was updated"
-                )
-            else:
-                issues.append(
-                    "structure-sensitive changes detected, but no architecture/project map doc exists"
-                )
-
+    if args.tier >= 3:
         issues.extend(validate_plan_parent_markers(root, paths))
+
+        if material_paths:
+            if (root / AI_AGENT_LOG).exists():
+                if AI_AGENT_LOG not in paths:
+                    issues.append(f"material changes detected, but {AI_AGENT_LOG} was not updated")
+                else:
+                    issues.extend(validate_ai_log(read_text(root, AI_AGENT_LOG)))
+            else:
+                issues.append(f"Tier {args.tier} expects {AI_AGENT_LOG} or equivalent")
+
+            if has_structure_sensitive_change(entries) and not architecture_changed(paths):
+                if architecture_exists(root):
+                    issues.append(
+                        "module-topology or migration changes detected, but no "
+                        "architecture/project map doc was updated"
+                    )
+                else:
+                    issues.append(
+                        "module-topology or migration changes detected, but no "
+                        "architecture/project map doc exists"
+                    )
 
     issues.extend(scan_for_secrets(root, paths))
 
     if args.strict_side_effects:
         issues.extend(scan_risky_side_effects(root, material_paths))
 
+    print_warnings(warnings)
     if issues:
         print("FAIL: governance preflight found issues:")
         for issue in issues:
