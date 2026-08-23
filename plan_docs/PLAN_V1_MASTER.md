@@ -1,7 +1,7 @@
 # Words Learning App For Mimi PLAN V1 Master
 
 Created: 2026-07-02 23:30 AEST
-Last updated: 2026-07-11 20:54 AEST
+Last updated: 2026-08-23 23:43 AEST
 
 Source plan:
 
@@ -50,7 +50,8 @@ This is the parent product and implementation plan. Child plans must cite this f
 
 ## Governance Baseline
 
-- Historical bootstrap used Tier 1 for the local scaffold. The launched private Production app remains project Tier 3 under `human-ai-governance v0.4.0`; material tasks derive their working tier from the higher current/target authority on the affected surface.
+- Historical bootstrap used Tier 1 for the local scaffold. The launched private Production app remains project Tier 3 under `human-ai-governance v0.7.1`; material tasks derive their working tier from the higher current/target authority on the affected surface.
+- Tier 1-5 remains the only governance classification. Validation and safeguards bind to affected claims and credible failure modes; unchanged evidence may be reused only while its relevant subject, inputs, contract, verifier, acceptance rule and environment remain unchanged.
 - Keep explicit human approval for credentials, Production services, external data sharing, migrations, deployment, and destructive persistent-data operations.
 - Keep `AGENTS.md`, `ARCHITECTURE.md`, `CHANGELOG.md`, and `governance/AI_AGENT_LOG.md` updated when project boundaries change.
 

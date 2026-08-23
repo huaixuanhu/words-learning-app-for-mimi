@@ -1,5 +1,17 @@
 # AI Agent Log
 
+## 2026-08-23 23:43 AEST
+
+- Task: migrate this repository from its project-adapted `human-ai-governance v0.4.0` contract to the installed canonical `v0.7.1` contract.
+- Plan agreed: yes. The user reviewed the read-only audit and explicitly confirmed complete execution of Stage 1.3-1.4 before any project file was edited.
+- Working tier: Tier 3 project; this slice changes local governance instructions, validation code/tests and current documentation claims. It introduces no application, persistence, provider, account or Production authority.
+- Changed files: `AGENTS.md`, `ARCHITECTURE.md`, `plan_docs/PLAN_V1_MASTER.md`, `governance/preflight.py`, `governance/test_preflight.py`, `CHANGELOG.md`, and this log. `package.json` and its aggregate command remain unchanged.
+- Governance result: the active marker and current Architecture/master-plan claims are v0.7.1; Tier 1-5 remains the sole classification; proportional assurance, writing-mode routing and reasoning-mode routing remain contextual decisions rather than new script tiers or style/model gates.
+- Preflight result: Git repository/status/snapshot inspection now fails closed; exact NUL-delimited paths, rename origins and separate staged-index/working-tree content are retained. The existing project-specific materiality, topology, secret, executable-path and added-line side-effect behavior remains in force, with current-diff acknowledgement separated from runtime authorization.
+- Validation: the first focused-test load failed before running any test because an inserted assertion had incorrect indentation at `governance/test_preflight.py:399`; the insertion was corrected and the focused suite then passed 22/22. Final `npm run governance:check` passed the Tier 3 v0.7.1 preflight and all 22 governance tests; `git diff --check` passed. Application Vitest, lint, typecheck, backup dry-runs and Production build were not rerun because no application runtime, dependency, schema, backup or deployment contract changed.
+- Safety notes: the clean `v2.2` checkout and `main` were verified at the same `047dfd8` commit before editing, and no branch switch occurred. No `.env` value, credential, learner record, remote database, provider account, Vercel setting, GitHub remote, deployment or Production data was read or changed. Commit and push remain separately approval-gated.
+- Reason: adopt v0.7.1's evidence-calibrated governance and writing boundaries together with the intervening exact Git-inspection hardening while preserving the repository's proven Tier 3 controls.
+
 ## 2026-07-26 23:32 AEST
 
 - Task: migrate this repository from the installed `human-ai-governance v0.3.0` contract to the project-adapted `v0.4.0` contract.

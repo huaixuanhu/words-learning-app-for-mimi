@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## 2026-08-23 23:43 AEST
+
+- Migrated the repository governance contract from the project-adapted `human-ai-governance v0.4.0` baseline to `v0.7.1` while retaining Tier 3 and every existing Production, credential, provider, personal-data and remote-action approval boundary.
+- Updated `AGENTS.md` for proportional assurance, claim-scoped evidence reuse and invalidation, boundary-owned controls, platform-capability versus project-authorization separation, reasoning-mode guidance, and content-unit writing-mode routing without mechanical style gates.
+- Hardened the project-specific preflight with fail-closed Git inspection, NUL-delimited exact status parsing, separate staged-index and working-tree snapshots, snapshot-specific marker/document validation, and current-diff side-effect acknowledgement that does not authorize runtime action.
+- Preserved the repository's tuned materiality, topology, secret scanning, executable-path filtering and added-line-only side-effect review. Risk-reducing `cancel_order` naming no longer triggers the generic order-action pattern.
+- Expanded deterministic governance regression coverage from 12 to 22 tests for Git inspection failure, Unicode and trailing-space paths, staged/worktree divergence, retained/deleted snapshots, rename source ownership, plan lineage, stale markers, governance-record validation and reviewed side effects.
+- Updated the current governance-version claims in Architecture and the V1 master plan and replaced the drifting checked-out-branch claim with a stable default-branch rule. No new peer plan was created.
+- No application runtime, dependency, schema, learner data, credential, provider, database, Git remote, deployment or Production state changed.
+- Reason: adopt the v0.7.1 governance model and the intervening exact Git-inspection hardening without replacing this repository's mature Tier 3 controls or widening task authority.
+
 ## 2026-07-26 23:32 AEST
 
 - Migrated the repository governance contract from `human-ai-governance v0.3.0` to the project-adapted `v0.4.0` while retaining Tier 3 and every existing Production, credential, provider, personal-data and remote-action approval boundary.

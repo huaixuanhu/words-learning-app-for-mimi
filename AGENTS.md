@@ -1,6 +1,6 @@
 # AGENTS.md
 
-<!-- Generated/adapted from human-ai-governance v0.4.0 -->
+<!-- Generated/adapted from human-ai-governance v0.7.1 -->
 
 ## Collaboration
 
@@ -10,15 +10,19 @@
 - Keep changes focused, protect user-owned work, and never revert unrelated changes without explicit approval.
 - Update a document when its current claim would otherwise become false, incomplete, or misleading. Prefer one canonical owner plus links over repeated status history.
 - Child or branch plans must declare `Source plan`, `Derived from`, `Scope`, `Non-Scope`, and `Exit criteria` near the top.
+- Treat platform sandbox, approval, connector, and access settings as technical capability boundaries. They do not expand the accepted task scope or this project's authorization boundaries.
+- Keep engineering-governance writing for plans, Architecture, specifications, runbooks, evidence and approval records. Route audience-facing expression by the purpose of each content unit; expression may change prose and organization while facts, uncertainty, evidence ceilings, disclosures, safety controls, authority, approval and validation remain exact.
+- Treat repeated contrast, punctuation and list patterns as semantic revision signals. Do not use phrase counts, regular-expression style checks, punctuation quotas or AI-detector scores as acceptance gates.
+- For important main-workspace tasks, use `xhigh` for bounded direct work, Max for deep coupled reasoning, and Ultra when adaptive separable work materially improves coverage. Reasoning mode remains separate from Tier, authorization and evidence, and must not become a preflight rule.
 - Prefer Chinese for planning and handoff documents while preserving English technical terms with a Chinese explanation on first mention when useful.
 - Ordinary product UI should use short, natural English for immersion. Chinese or bilingual copy remains appropriate for irreversible actions, privacy, credentials, backup replacement, and external AI data transmission.
-- Reduce repetitive contrast phrasing and use common technical language. Add one short plain-language explanation when a narrower term is necessary.
+- Use common technical language and add one short plain-language explanation when a narrower term is necessary.
 
 ## Project Map
 
 - Project root: `/Users/anoria/Documents/python_coding/small_project/learningWordsformimi`
 - User-provided GitHub repository: `https://github.com/huaixuanhu/words-learning-app-for-mimi.git`
-- Current local branch: `main`.
+- Default Git branch: `main`; verify the checked-out branch from Git before branch-sensitive work.
 - Architecture and current runtime: `ARCHITECTURE.md`.
 - Canonical V2 product plan: `plan_docs/PLAN_V2_MASTER.md`.
 - Canonical V2 Production cutover: `plan_docs/PLAN_V2_STAGE8_3_PRODUCTION_BACKUP_MIGRATION_CUTOVER.md`.
@@ -56,6 +60,7 @@
 
 ## Governance Classification
 
+- Tier 1-5 is the only governance classification. Complexity, data volume, cloud use and validation cost inform the work and evidence without creating another tier, score or level.
 - Project tier: Tier 3. The live private web app has ordinary credentials, confidential study data, Production hosting, a cloud database, and bounded paid providers without material economic or high-consequence account authority.
 - Tier rationale: credible risks are confidential-data exposure, credential mishandling, environment crossover, bounded paid-provider abuse, and recoverable study-data loss. The app has no trading, transfer, payment, bulk account action, or comparable authority.
 - For material work, record the current authority on the affected surface, the target capability tier, and the working tier when they affect the decision. Use the higher current/target authority for that surface.
@@ -134,14 +139,17 @@ During implementation:
 - Update canonical docs only when their current claims would otherwise become stale.
 - Keep child/branch plan lineage explicit and avoid creating a peer plan for a bounded single-session change.
 - Preserve project-specific guards and tests before adapting generic templates.
+- Place each control at the trust, authority, representation, persistence or irreversibility boundary that owns its failure mode. Prefer one canonical owner inside a boundary while retaining independent layers that control distinct failures.
+- Before building a complex shared, security-sensitive or maintenance-heavy capability, inspect suitable project, platform, standard-library or maintained open-source options and choose by fit and lifecycle risk.
 
 Before handoff:
 
 1. Update the Tier 3 Changelog/AI log when the change is material.
 2. Run the smallest meaningful validation that covers changed behavior and relevant safety invariants.
-3. Run an aggregate gate once when it already includes the relevant child checks; rerun a child only for diagnosis or distinct evidence.
-4. Review the diff and file inventory.
-5. Report outcome, validation, safety notes, residual risk, and the next required decision.
+3. Reuse passing evidence only while its subject, relevant inputs, contract, verifier, acceptance rule and environment remain unchanged; invalidate the affected claims rather than unrelated evidence.
+4. Run an aggregate gate once when it already includes the relevant child checks; rerun a child only for diagnosis or distinct evidence. Stop when every affected acceptance claim and permanent safety invariant has current sufficient evidence.
+5. Review the diff and file inventory.
+6. Report outcome, validation, safety notes, residual risk, and the next required decision.
 
 ## Validation
 
