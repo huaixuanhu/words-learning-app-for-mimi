@@ -15,6 +15,7 @@ import {
   V2_2_MIGRATION_SHA256,
 } from "./v2-2-production-contract.mjs";
 import { selectTargetMetadata } from "./v2-1-neon-target.mjs";
+import { V2_STAGE8_3_TARGETS } from "./v2-stage8-3-contract.mjs";
 
 function constraints(generation) {
   const ids =
@@ -118,6 +119,7 @@ describe("V2.2 Production release guard", () => {
   });
 
   it("permits only V2.2 to wake an exact archived Staging branch", () => {
+    expect(V2_STAGE8_3_TARGETS.STAGING).toBe("staging");
     const projectId = "approved-project";
     const mainId = "br-main";
     const stagingId = "br-staging";

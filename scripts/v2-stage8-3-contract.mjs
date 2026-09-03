@@ -21,6 +21,7 @@ export const V2_STAGE8_3_APPROVED_PRODUCTION_PROJECT_ID_SHA256 =
 export const V2_STAGE8_3_TARGETS = Object.freeze({
   CLONE: "production-clone",
   MAIN: "production-main",
+  STAGING: "staging",
 });
 
 export const V2_STAGE8_3_COMMANDS = Object.freeze({

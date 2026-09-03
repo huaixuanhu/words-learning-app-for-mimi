@@ -12,12 +12,14 @@
   - `scripts/v2-2-production-db.mjs`
   - `scripts/v2-1-neon-target.mjs`
   - `scripts/v2-stage8-3-db-core.mjs`
+  - `scripts/v2-stage8-3-contract.mjs`
   - `package.json`
   - `package-lock.json`
   - current Architecture, master plan, V2.2 plan and Changelog claims
 - Reason: prepare a recoverable, evidence-bound release path so Production constraints become V2-compatible before the V2.2 application can write new Parameter Set identifiers.
 - Handling: pin `0007` to SHA-256 `ad518068b59c41f8c71c8ea4e00d8e582cb4d5d2bb7f2a4400005b15f4a2efe4`; require a clean exact commit; rehearse Staging first; create and restore-verify a pre-change encrypted Production backup; migrate Production constraints before application activation; then bind GitHub, Vercel, database, TTS and logs to the same release evidence.
 - Staging preflight: candidate commit `30da08cda128479147bc76af3a2be7c1bf1c618a` was clean and remote `main` remained `047dfd8ee0363d26eec6572df568b438063de6c7`. The first Staging inventory failed closed before database connection because `staging` was `archived`, not `ready`. A temporary credential-safe control-plane diagnostic showed the same direct `main` parent, existing endpoint and `aws-ap-southeast-2` region; it printed only names, states and hashed ids, then was removed. Official Neon documentation confirms that access automatically unarchives an inactive branch. The repaired guard allows this only for exact Staging, opens its existing endpoint, then polls for the same identity in `ready`; Production still refuses any non-ready `main`.
+- Staging inventory retry: exact candidate `7a9ca59b66dc23ccfbccbe8bc7d7fd574f1e2308` automatically unarchived and connected to Staging, then the read-only inventory failed closed because the historical safe-artifact target allowlist contained only `production-main` and `production-clone`. The artifact allowlist now adds `staging`; every historical write command still has its own unchanged explicit clone/main target array, so this does not grant a new mutation route.
 - Validation:
   - Passed: focused 2 files / 13 tests covering the new release contract and retained Schema 6 database core.
   - Passed: `npm run lint`.
@@ -26,7 +28,7 @@
   - Release audit initially found 30 current findings, including 3 in the Production dependency tree. Official advisory floors required PostCSS `8.5.23` and Nano ID `3.3.18`; the compatible refresh resolves PostCSS `8.5.27`, Nano ID `3.3.18`, and patched development transitive packages. Final full and `--omit=dev` npm audits both report 0 vulnerabilities.
   - Passed after the dependency refresh: full Vitest 98 files / 606 tests with the existing Postgres integration file/test skipped; ESLint; TypeScript; all three backup-import dry-runs; Next.js 16.2.11 Production build; Tier 3 governance preflight and 22 governance tests.
   - Passed after the archived-Staging repair: focused 3 files / 20 tests; full Vitest 98 files / 607 tests with the existing integration test skipped; ESLint; TypeScript; Tier 3 governance; and diff checks.
-- Safety notes: Neon control-plane metadata was read once through the source-pinned Keychain identity, but no Staging/Production database connection, SQL query, migration, backup, real provider request, Git push or deployment occurred in this checkpoint. No `.env` value, credential, connection URI, raw learner row, provider body or backup identity was printed or added to Git.
+- Safety notes: Neon control-plane metadata was read through the source-pinned Keychain identity. The second Staging attempt made one authenticated connection and ran only the repeatable-read inventory before failing on local artifact labeling; no migration or other SQL write, Production database connection, backup, real provider request, Git push or deployment occurred. No `.env` value, credential, connection URI, raw learner row, provider body or backup identity was printed or added to Git.
 
 ## 2026-09-03 19:22 AEST
 
