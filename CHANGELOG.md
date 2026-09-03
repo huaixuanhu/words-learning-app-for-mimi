@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## 2026-09-04 00:19 AEST
+
+- Released V2.2 candidate `727a7089acbaa51fb00820dea7d39fc7aaa543d1` to Production after the user-authorized migration-first sequence. GitHub `v2.2` and `main` matched the candidate at application activation; Vercel deployment `dpl_CzhB6hqAxeXXpYHRpcB9a2GHPyHW` became Ready, Current and Production in `syd1`.
+- Applied SHA-256-pinned, constraint-only `0007_v2_2_fsrs_parameter_sets.sql` once to retained Staging and once to Production. Both environments now accept only matching Recognition/Active V1 or V2 Parameter Set identifiers. All checked invariants are zero and every 22-table digest remained unchanged during each migration.
+- Created encrypted Production recovery points before and after release. Both external archives and ignored evidence use permission `0600` and passed isolated PostgreSQL 17 restore equality; exact archive/evidence hashes are recorded in `plan_docs/PLAN_V2_2_PRODUCTION_RELEASE.md`.
+- Verified anonymous Basic Auth `401`, authenticated Home/Settings/Library, 282 Recognition/Library entries, storage-health `200`, 22 `syd1` Functions, an empty browser console error/warning list, zero Warning/Error/Fatal runtime entries and no HTTP 5xx in the release window.
+- The authenticated check crossed the Australia/Melbourne day boundary and changed only `daily_study_plans` from 14 to 16 rows. One `/api/study` request and the timing indicate normal daily-plan materialization, but that cause remains an inference. Vocabulary, review, settings, AI and TTS table digests stayed unchanged; no cleanup write followed.
+- Did not send the newly planned exact-text `review` TTS request: the authenticated browser session could not issue that exact POST without reading Basic Auth credentials, while the Settings preview uses different text. `/api/tts` is deployed in `syd1`, local source-routing tests pass, historical Production TTS evidence remains, and current accounting stayed at one historical success with zero active work. This is an explicit evidence gap.
+- Synchronized the V2.2 child/release plans, V2 master, Architecture, README, AGENTS and governance record with the active Production state. The final documentation-only commit retains identical application/migration bytes and receives its own exact Git/Vercel verification after push.
+- Reason: complete the accepted V2.2 Production release with migration parity, recoverable before/after states and honest runtime evidence while preserving the exact credential and provider-request boundary.
+
 ## 2026-09-03 23:51 AEST
 
 - Accepted the user-authorized V2.2 Production release and added the derived migration-first plan `plan_docs/PLAN_V2_2_PRODUCTION_RELEASE.md`.

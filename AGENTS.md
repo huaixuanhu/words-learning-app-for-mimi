@@ -30,6 +30,7 @@
 - Canonical V2 product plan: `plan_docs/PLAN_V2_MASTER.md`.
 - Canonical V2 Production cutover: `plan_docs/PLAN_V2_STAGE8_3_PRODUCTION_BACKUP_MIGRATION_CUTOVER.md`.
 - Canonical V2.1 repair and release: `plan_docs/PLAN_V2_1_DUPLICATE_IMPORT_DEDUPLICATION.md` and `plan_docs/PLAN_V2_1_PRODUCTION_DUPLICATE_REPAIR_RELEASE.md`.
+- Canonical V2.2 product and release: `plan_docs/PLAN_V2_2_REVIEW_CADENCE_CARD_AUDIO.md` and `plan_docs/PLAN_V2_2_PRODUCTION_RELEASE.md`.
 - Canonical V1 launch record: `plan_docs/PLAN_V1_STAGE6B_P1_G_C_5_LIVE_PRODUCTION_EXECUTION.md`.
 - Active data lifecycle policy: `plan_docs/PLAN_V1_STAGE8_5_DATA_LIFECYCLE_ENVIRONMENT_STRATEGY.md`.
 - Version hold for SSO（Single Sign-On，单点登录）and confidential per-person isolation: `plan_docs/PLAN_VERSION_HOLD_MULTI_USER_CONFIDENTIAL_ISOLATION.md`.
@@ -39,9 +40,9 @@
 
 ## Current Product And Runtime
 
-- V2.1 is live on the canonical Production domain behind Basic Auth（基础认证）. Vercel Production runs the `main` application in `syd1`.
+- V2.2 is live on the canonical Production domain behind Basic Auth（基础认证）. Vercel Production runs the `main` application in `syd1`.
 - Neon `main` is Production Schema Version 6 with the unique `(person_id, normalized_text)` vocabulary identity. Neon `staging` is the Development / protected Preview baseline at Schema 6.
-- Production and non-production credentials are distinct. The retained Schema 5 recovery point and encrypted backups remain governed by the V2-8-3 and V2.1 release records.
+- Production and non-production credentials are distinct. The retained recovery points and encrypted backups remain governed by the V2-8-3, V2.1 and V2.2 release records.
 - Gemini enrichment and Google Cloud Standard-C TTS are enabled under independent Production guards. Their exact active contracts are owned by the V2 master/cutover plans and must not be relaxed through incidental work.
 - Current stack: Next.js App Router, TypeScript, Tailwind CSS, ESLint, Vitest, npm, `@neondatabase/serverless`, `dotenv-cli`, `ts-fsrs`, Neon Postgres, and browser `localStorage` as the local fallback.
 - Shared Basic Auth protects the trusted group. Browser-selected `person_id` separates learning data but is not authentication, authorization, or confidential tenant isolation.
@@ -53,7 +54,7 @@
 - A history-bearing Track change requires `Start fresh in the other Track`; old history remains read-only and no state or event is copied.
 - Daily queue requests bind server-owned plan/version evidence. Whole-day reset retains its two visible gates and transactional Idempotency Key（幂等键）record outside user backups.
 - V2.1 duplicate identity is `(person_id, normalized_text)`. Cleanup must preserve deterministic keeper selection, independent FSRS histories, creation facts, and import-batch audit rows.
-- Schema Version 6, JSON backup Version 4, bilingual example-pair rules, migration pins, and recovery boundaries remain owned by the canonical V2/V2.1 plans.
+- Schema Version 6, JSON backup Version 4, bilingual example-pair rules, migration pins, V2.2 V1/V2 Parameter Set constraints, and recovery boundaries remain owned by the canonical V2/V2.1/V2.2 plans.
 - Every newly written English example requires an aligned non-empty Chinese translation. Legacy gaps remain explicit through `Needs translation`.
 - AI drafts remain editable and require explicit human acceptance before saved learning data changes. Production AI stays Gemini-only and cannot silently fail over to another provider.
 - Provider disclosure must state limited provider safety / abuse / legal retention and must never claim Zero Retention（零保留）.
@@ -181,4 +182,4 @@ npm run build
 
 The legacy `db:inspect:dev` and `db:inspect:schema5:dev` commands apply only when `.env.local` intentionally targets their older Schema 3/5 Development baselines. They are not a current-schema gate against Schema 6 `staging`. V2-8-2 Staging inspection uses `npm run v2:8-2:db:inspect` with its exact guarded non-Production identity variables.
 
-Never run a remote-capable `v2:8-3:db:*`, V2.1 Production database, backup, provider, or deployment command without its separately approved gate and exact evidence packet.
+Never run a remote-capable `v2:8-3:db:*`, V2.1/V2.2 Production database, backup, provider, or deployment command without its separately approved gate and exact evidence packet.

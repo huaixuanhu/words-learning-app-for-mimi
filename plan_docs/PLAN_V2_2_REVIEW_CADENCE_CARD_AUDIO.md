@@ -1,7 +1,7 @@
 # Words Learning App For Mimi V2.2 Review Cadence, Card And Audio Plan
 
 Created: 2026-09-03 AEST
-Last updated: 2026-09-03 AEST
+Last updated: 2026-09-04 AEST
 
 Source plan:
 - `plan_docs/PLAN_V2_MASTER.md`
@@ -32,7 +32,7 @@ Authority and safety:
 - Cloud autoplay may send the newly shown English entry to the already selected Google Cloud TTS route and consume the existing global TTS quota. The Settings disclosure must state this behavior.
 
 Status:
-- `Complete locally; Production release in progress` on 2026-09-03. Remote execution state is recorded only in the derived Production release plan.
+- `Active in Production; one fresh TTS acceptance request remains unexecuted` on 2026-09-04. Exact migration, backup, Git, deployment and runtime evidence is owned by the derived Production release plan.
 
 ## Stage 2.2.1 Plan And Compatibility Boundary
 
@@ -87,7 +87,8 @@ Exit criteria:
 
 - Recognition current parameters are `recognition-fsrs-v2` / `0.929`; Active current parameters are `active-fsrs-v2` / `0.93`. V1 adapters remain pinned to `0.90` and `0.92` for retained history.
 - New ratings write V2 identifiers. Event replay, Dashboard Retrievability, JSON restore, and backup-import planning accept only matching V1/V2 identifiers and reject unknown or cross-profile values.
-- `0007_v2_2_fsrs_parameter_sets.sql` is present, transaction-wrapped, constraint-only, and unexecuted.
+- `0007_v2_2_fsrs_parameter_sets.sql` is transaction-wrapped and constraint-only. The pinned file completed once on Staging and once on Production with unchanged migration-time table digests and zero checked invariants.
 - The full muted Recognition surface now owns the guarded pointer handlers. Recognition and Active Dictation use one shared autoplay/replay hook; Say/Spell remain silent before reveal.
 - Source routing tests prove Cloud requests `/api/tts`, device speech makes no Cloud request, and switching to device cancels an earlier Cloud request. Browser `NotAllowedError` is reported without source fallback.
-- Focused validation passed 12 files / 80 tests. Full Vitest passed 97 files / 599 tests with the existing Postgres integration file/test skipped. ESLint, TypeScript, three backup dry-runs, and the Next.js Production build passed. The Tier 3 governance gate and final diff review are recorded in `governance/AI_AGENT_LOG.md`.
+- Focused product validation passed 12 files / 80 tests; release guards passed 4 files / 58 tests across their final candidate runs. Full Vitest passed 98 files / 607 tests with the existing Postgres integration file/test skipped. ESLint, TypeScript, three backup dry-runs, the Next.js Production build, Tier 3 governance, diff checks and full/Production npm audits with zero findings passed.
+- Candidate `727a7089acbaa51fb00820dea7d39fc7aaa543d1` became the Ready/Current Production application in `syd1`. Basic Auth, authenticated Home/Settings/Library, storage health, build/runtime logs and post-release isolated backup restore passed. The release did not issue a fresh exact-text `review` TTS request because doing so from the available authenticated browser session would have required credential access; this is recorded as an evidence gap without changing voice settings, credentials or the provider boundary.

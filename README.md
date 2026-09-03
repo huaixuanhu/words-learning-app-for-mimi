@@ -70,14 +70,14 @@
 
 ## 当前版本
 
-V2.1 已在 Production 正式运行。
+V2.2 已在 Production 正式运行。
 
 - 访问地址：[words-learning-app-for-mimi.vercel.app](https://words-learning-app-for-mimi.vercel.app)
-- 当前版本：V2.1
+- 当前版本：V2.2
 - 使用方式：私人 Basic Auth（基础认证），仅供受邀使用者访问
 - 数据位置：Neon Postgres
 
-V2.1 统一了新增、编辑和批量导入时的重复判断，并在数据库中增加最终的唯一性保护。现有重复资料已经完成一次确认后清理；复习历史、导入记录和备份能力继续保留。
+V2.2 缩短了之后新产生的复习间隔，保留新单词第一次“模糊记得”在下一天复习；复习卡外围区域现在也能翻面。Recognition 和 Active Dictation 的新卡会自动播放一次读音，声音按钮继续保留；`Cloud voice` 与 `Use device voice` 也会按各自选项使用云端或设备声音。V2.1 的重复资料保护、复习历史、导入记录和备份能力继续保留。
 
 这个项目目前没有公开注册功能。界面中的人物切换用于分开学习资料，不等同于每个人拥有独立、安全的账户权限。
 
@@ -110,6 +110,8 @@ npm run dev
 - [V2 Master Plan](./plan_docs/PLAN_V2_MASTER.md)：V2 产品方向与阶段设计
 - [V2.1 Duplicate Repair](./plan_docs/PLAN_V2_1_DUPLICATE_IMPORT_DEDUPLICATION.md)：重复资料修复的产品与数据规则
 - [V2.1 Production Release](./plan_docs/PLAN_V2_1_PRODUCTION_DUPLICATE_REPAIR_RELEASE.md)：V2.1 正式发布与恢复记录
+- [V2.2 Product Plan](./plan_docs/PLAN_V2_2_REVIEW_CADENCE_CARD_AUDIO.md)：复习周期、卡片点击与读音改造
+- [V2.2 Production Release](./plan_docs/PLAN_V2_2_PRODUCTION_RELEASE.md)：V2.2 正式发布、迁移与恢复记录
 - [Changelog](./CHANGELOG.md)：重要版本变化
 - [AI Agent Log](./governance/AI_AGENT_LOG.md)：人机协作、验证和安全记录
 
