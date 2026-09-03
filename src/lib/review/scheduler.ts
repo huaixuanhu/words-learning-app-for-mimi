@@ -1,4 +1,12 @@
-import type { ReviewRating, ReviewState } from "./types";
+import {
+  ACTIVE_PARAMETER_SET_ID,
+  RECOGNITION_PARAMETER_SET_ID,
+  isActiveParameterSetId,
+  isRecognitionParameterSetId,
+  type RecognitionParameterSetId,
+  type ReviewRating,
+  type ReviewState,
+} from "./types";
 import type { VocabularyData, VocabularyItem } from "@/lib/vocabulary/types";
 import { State } from "ts-fsrs";
 import { getSelectedReviewSettings, normalizeSessionLimit } from "./settings";
@@ -41,9 +49,15 @@ export function scheduleNextReview(
   previousState: ReviewState | undefined,
   rating: ReviewRating,
   reviewedAt = new Date().toISOString(),
+  parameterSetId: RecognitionParameterSetId = RECOGNITION_PARAMETER_SET_ID,
 ): ScheduledReview {
   const card = createRecognitionFsrsCardFromReviewState(previousState, reviewedAt);
-  const outcome = applyRecognitionFsrsRating(card, rating, reviewedAt);
+  const outcome = applyRecognitionFsrsRating(
+    card,
+    rating,
+    reviewedAt,
+    parameterSetId,
+  );
 
   return {
     status: toReviewStateStatus(outcome.state),
@@ -62,17 +76,39 @@ export function scheduleNextReviewForProfile(
   previousState: ReviewState | undefined,
   rating: ReviewRating,
   reviewedAt = new Date().toISOString(),
+  parameterSetId: string =
+    reviewProfile === "recognition"
+      ? RECOGNITION_PARAMETER_SET_ID
+      : ACTIVE_PARAMETER_SET_ID,
 ): ScheduledReview {
   if (previousState && previousState.reviewProfile !== reviewProfile) {
     throw new Error("Review Profile state does not match the requested scheduler");
   }
 
   if (reviewProfile === "recognition") {
-    return scheduleNextReview(previousState, rating, reviewedAt);
+    if (!isRecognitionParameterSetId(parameterSetId)) {
+      throw new Error("Recognition scheduler received an unsupported Parameter Set");
+    }
+
+    return scheduleNextReview(
+      previousState,
+      rating,
+      reviewedAt,
+      parameterSetId,
+    );
+  }
+
+  if (!isActiveParameterSetId(parameterSetId)) {
+    throw new Error("Active scheduler received an unsupported Parameter Set");
   }
 
   const card = createActiveFsrsCardFromReviewState(previousState, reviewedAt);
-  const outcome = applyActiveFsrsRating(card, rating, reviewedAt);
+  const outcome = applyActiveFsrsRating(
+    card,
+    rating,
+    reviewedAt,
+    parameterSetId,
+  );
 
   return {
     status: toReviewStateStatus(outcome.state),

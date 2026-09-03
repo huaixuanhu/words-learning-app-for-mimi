@@ -51,8 +51,7 @@ import {
 } from "@/lib/review/daily-episode";
 import { rebuildReviewProfileStateFromEvents } from "@/lib/review/repository";
 import {
-  ACTIVE_PARAMETER_SET_ID,
-  RECOGNITION_PARAMETER_SET_ID,
+  currentParameterSetIdForProfile,
   type ReviewActivityType,
   type ReviewAnswerOutcome,
   type PersonReviewSettings,
@@ -1509,12 +1508,6 @@ type StudyReviewCommand = RecordReviewCommand &
     targetRevision: string | null;
   }>;
 
-function parameterSetIdForProfile(reviewProfile: ReviewProfile) {
-  return reviewProfile === "recognition"
-    ? RECOGNITION_PARAMETER_SET_ID
-    : ACTIVE_PARAMETER_SET_ID;
-}
-
 async function recordStudyReviewInTransaction(
   queryable: PostgresQueryable,
   command: StudyReviewCommand,
@@ -1584,7 +1577,7 @@ async function recordStudyReviewInTransaction(
           personId: command.personId,
           vocabularyItemId: command.vocabularyItemId,
           reviewProfile: command.reviewProfile,
-          parameterSetId: parameterSetIdForProfile(command.reviewProfile),
+          parameterSetId: currentParameterSetIdForProfile(command.reviewProfile),
           firstRatedAt:
             previousState?.historyOrigin === "legacy_unknown"
               ? null
@@ -1657,7 +1650,7 @@ async function recordStudyReviewInTransaction(
       command.answerOutcome,
       command.answerNormalizationVersion,
       command.targetRevision,
-      parameterSetIdForProfile(command.reviewProfile),
+      currentParameterSetIdForProfile(command.reviewProfile),
       command.reviewedAt,
       command.rating,
       previousState?.dueAt ?? null,

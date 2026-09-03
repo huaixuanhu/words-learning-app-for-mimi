@@ -26,6 +26,11 @@ const VOCABULARY_TAGS = new Set(["PTE", "IELTS", "Listening", "Writing", "Spelli
 const REVIEW_STATUSES = new Set(["learning", "review"]);
 const REVIEW_RATINGS = new Set(["forgot", "hard", "vague", "remembered"]);
 const REVIEW_ACTIVITY_TYPES = new Set(["recognition_card", "say", "spell", "dictation"]);
+const RECOGNITION_PARAMETER_SET_IDS = new Set([
+  "recognition-fsrs-v1",
+  "recognition-fsrs-v2",
+]);
+const ACTIVE_PARAMETER_SET_IDS = new Set(["active-fsrs-v1", "active-fsrs-v2"]);
 const ANSWER_OUTCOMES = new Set([
   "self_rated",
   "exact",
@@ -404,8 +409,10 @@ function validateReviewState(
       errors.push(`${label}.firstRatedAt does not match historyOrigin`);
     }
     if (
-      (state.reviewProfile === "recognition" && state.parameterSetId !== "recognition-fsrs-v1") ||
-      (state.reviewProfile === "active" && state.parameterSetId === "recognition-fsrs-v1")
+      (state.reviewProfile === "recognition" &&
+        !RECOGNITION_PARAMETER_SET_IDS.has(String(state.parameterSetId))) ||
+      (state.reviewProfile === "active" &&
+        !ACTIVE_PARAMETER_SET_IDS.has(String(state.parameterSetId)))
     ) {
       errors.push(`${label}.parameterSetId does not match reviewProfile`);
     }
@@ -496,7 +503,7 @@ function validateReviewEvent(
       event.answerOutcome === "self_rated" &&
       event.answerNormalizationVersion === null &&
       event.targetRevision === null &&
-      event.parameterSetId === "recognition-fsrs-v1";
+      RECOGNITION_PARAMETER_SET_IDS.has(String(event.parameterSetId));
     const isActiveSayEvidence =
       event.reviewProfile === "active" &&
       event.activityType === "say" &&
@@ -504,7 +511,7 @@ function validateReviewEvent(
       event.answerNormalizationVersion === null &&
       isString(event.targetRevision) &&
       Boolean(event.targetRevision.trim()) &&
-      event.parameterSetId !== "recognition-fsrs-v1";
+      ACTIVE_PARAMETER_SET_IDS.has(String(event.parameterSetId));
     const isActiveTypedEvidence =
       event.reviewProfile === "active" &&
       (event.activityType === "spell" || event.activityType === "dictation") &&
@@ -513,7 +520,7 @@ function validateReviewEvent(
       event.answerNormalizationVersion === "active-answer-v1" &&
       isString(event.targetRevision) &&
       Boolean(event.targetRevision.trim()) &&
-      event.parameterSetId !== "recognition-fsrs-v1";
+      ACTIVE_PARAMETER_SET_IDS.has(String(event.parameterSetId));
 
     if (!isRecognitionEvidence && !isActiveSayEvidence && !isActiveTypedEvidence) {
       errors.push(`${label} evidence fields are inconsistent`);

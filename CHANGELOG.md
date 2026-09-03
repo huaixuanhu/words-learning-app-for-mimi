@@ -1,5 +1,29 @@
 # CHANGELOG
 
+## 2026-09-03 23:51 AEST
+
+- Accepted the user-authorized V2.2 Production release and added the derived migration-first plan `plan_docs/PLAN_V2_2_PRODUCTION_RELEASE.md`.
+- Added a SHA-256-pinned `0007` runner for exact Neon `staging` / `main` targets, complete V1→V2 constraint checks, full-table before/after row digests, no-blind-retry reconciliation, private ignored evidence, exact clean-commit binding, and Staging plus encrypted-backup evidence gates before Production migration.
+- Updated the retained Schema 6 health inventory to accept only matching Recognition/Active V1 or V2 Parameter Set identifiers, preventing V2 records from being misreported as invalid after activation.
+- Reused the mature Schema 6 `age` backup and isolated PostgreSQL 17 restore runner; no backup format or secret-handling path was replaced.
+- The release audit newly reported vulnerable `postcss@8.5.16`, `nanoid@3.3.15` and development-tool transitive packages. Verified the current patched floors, raised the PostCSS override to `8.5.27`, and refreshed only compatible lockfile packages including Nano ID `3.3.18`, Vitest `4.1.11`, Vite `8.2.2`, ESLint `9.39.5`, Browserslist `4.28.8`, JS-YAML `4.3.2`, and patched Brace Expansion branches. Full and Production-only npm audits now report zero findings.
+- Focused V2.2 product tests passed 12 files / 80 tests and focused release-guard tests passed 2 files / 13 tests. With the security-refreshed lockfile, full Vitest passed 98 files / 606 tests with the existing Postgres integration file/test skipped; ESLint, TypeScript, all three backup dry-runs, Next.js Production build, Tier 3 governance checks, full/Production npm audits and diff checks pass. Remote Staging/Production migration, backup, provider request, Git push and Vercel activation remain pending the ordered execution checkpoints in the release plan.
+- Reason: prepare a recoverable, evidence-bound release path so database constraints become V2-compatible before the V2.2 application can write its new Parameter Set identifiers.
+
+## 2026-09-03 19:22 AEST
+
+- Completed the user-approved V2.2 review-cadence, Recognition card-click, and pronunciation changes locally on branch `v2.2`.
+- Added current `recognition-fsrs-v2` / `active-fsrs-v2` parameter sets with `request_retention` `0.929` / `0.93`. New ratings use V2 while V1 `0.90` / `0.92` schedulers remain available for historical event replay and Dashboard Retrievability.
+- Kept the first new-word `vague` result at the next local-day boundary. Added constraint-only, data-preserving `0007_v2_2_fsrs_parameter_sets.sql`; it accepts only matching V1/V2 profile identifiers and has not been run against a remote database.
+- Expanded Recognition reveal/hide tapping from the inner white card to the full muted surrounding card area while retaining button, link, editable-control, text-selection, drag, and pointer-cancel protections.
+- Added one automatic pronunciation request for each newly active Recognition card and Active Dictation card. Active Say/Spell remain silent before reveal, and all existing manual sound buttons remain.
+- Kept source labels and routing exact: `Cloud voice` requests `/api/tts`; `Use device voice` uses browser speech and makes no Cloud request. New playback and source changes cancel older Cloud/device playback; a browser autoplay block is visible and does not trigger a silent fallback.
+- Updated the bilingual Cloud disclosure because automatically shown eligible English entries can now be sent to the existing Google Cloud TTS route and use its existing global quota.
+- Updated backup/restore, Postgres/local rebuild, Dashboard, plan, Architecture, and import documentation for explicit V1/V2 compatibility.
+- Validation: focused tests passed 12 files / 80 tests; full Vitest passed 97 files / 599 tests with the existing Postgres integration file/test skipped; ESLint, TypeScript, all three backup dry-runs, Next.js Production build, Tier 3 governance checks, and diff checks passed.
+- No `.env` value or credential was inspected; no real provider request, learner-data rewrite, remote database action, Production migration, deployment, Git commit, merge, pull request, or push occurred. A future V2.2 release must apply `0007` before activating code that writes V2 parameter identifiers.
+- Reason: shorten future review spacing, make the intended card area easier to click, pronounce each eligible card as it appears, and make the selected voice source reliable without changing provider or data-safety boundaries.
+
 ## 2026-09-03 18:56 AEST
 
 - Migrated the repository governance contract from the project-adapted `human-ai-governance v0.7.1` baseline to `v0.7.5` while retaining Tier 3 and every existing Production, credential, provider, personal-data and remote-action approval boundary.

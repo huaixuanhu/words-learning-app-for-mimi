@@ -15,6 +15,7 @@ import {
 } from "@/components/study/use-daily-study";
 import { PressableButton } from "@/components/ui/motion-primitives";
 import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
+import { useWordPronunciation } from "@/components/use-word-pronunciation";
 import type { StudyZone } from "@/lib/daily-study/types";
 import { getSelectedPersonId } from "@/lib/people/repository";
 import { getNextAnswerRevealState } from "@/lib/review/answer-reveal";
@@ -38,7 +39,6 @@ import {
 } from "@/lib/review/session-queue";
 import { reviewRatings } from "@/lib/stage-two-data";
 import { playReviewCompleteSound } from "@/lib/ui/sound-player";
-import { cancelEnglishSpeech, speakEnglishText } from "@/lib/ui/speech-synthesis";
 import { buildVocabularyExamplePairs } from "@/lib/vocabulary/example-pairs";
 import { getRecognitionVocabularyItems } from "@/lib/vocabulary/repository";
 
@@ -141,7 +141,6 @@ export function ReviewSession({ zone }: ReviewSessionProps) {
   const [submittedItemId, setSubmittedItemId] = useState<string | null>(null);
   const [isSessionLoading, setIsSessionLoading] = useState(false);
   const [isPromptRefreshing, setIsPromptRefreshing] = useState(false);
-  const [isListening, setIsListening] = useState(false);
   const [ratingSelection, setRatingSelection] = useState<RatingSelection | null>(null);
   const [message, setMessage] = useState("");
   const submittedItemIdRef = useRef<string | null>(null);
@@ -248,8 +247,19 @@ export function ReviewSession({ zone }: ReviewSessionProps) {
     currentItem && ratingSelection?.vocabularyItemId === currentItem.id
       ? ratingSelection.index
       : null;
-
-  useEffect(() => () => cancelEnglishSpeech(), [currentItem?.id]);
+  const pronunciationActivationKey =
+    currentItem && sessionPlan
+      ? `${sessionPlan.planId}:${currentItem.id}:${completedReviews.length}`
+      : null;
+  const { isPlaying: isListening, play: listenToCurrentItem } =
+    useWordPronunciation({
+      text: currentItem?.surfaceText ?? null,
+      purpose: "recognition",
+      activationKey: pronunciationActivationKey,
+      autoPlay: true,
+      unsupportedMessage: "Speech is not available in this browser.",
+      onMessage: setMessage,
+    });
 
   useEffect(() => {
     const promptToken = currentItem ? promptTokens[currentItem.id] : null;
@@ -345,25 +355,6 @@ export function ReviewSession({ zone }: ReviewSessionProps) {
 
     if (!next.showBack) {
       setRatingSelection(null);
-    }
-  };
-
-  const listenToCurrentItem = async () => {
-    if (!currentItem || isListening) {
-      return;
-    }
-    setIsListening(true);
-    try {
-      const result = await speakEnglishText(currentItem.surfaceText, "recognition");
-      if (result.status === "unsupported") {
-        setMessage("Speech is not available in this browser.");
-      } else if (result.status === "unavailable") {
-        setMessage(result.message);
-      } else if (result.status === "spoken" && result.source === "local-fixture") {
-        setMessage("Local preview audio played.");
-      }
-    } finally {
-      setIsListening(false);
     }
   };
 
@@ -670,7 +661,51 @@ export function ReviewSession({ zone }: ReviewSessionProps) {
             />
           </div>
 
-          <div className="grid min-h-[22rem] place-items-center rounded-md border border-[var(--mimi-border)] bg-[var(--mimi-surface-muted)] p-4 text-center sm:p-8">
+          <div
+            data-review-card-toggle-surface="true"
+            onPointerDown={(event) => {
+              if (
+                !currentItem ||
+                event.button !== 0 ||
+                shouldIgnoreCardToggle(event.target)
+              ) {
+                cardPointerStartRef.current = null;
+                return;
+              }
+
+              cardPointerStartRef.current = {
+                pointerId: event.pointerId,
+                clientX: event.clientX,
+                clientY: event.clientY,
+              };
+            }}
+            onPointerUp={(event) => {
+              const start = cardPointerStartRef.current;
+              cardPointerStartRef.current = null;
+
+              if (
+                !currentItem ||
+                event.button !== 0 ||
+                !start ||
+                start.pointerId !== event.pointerId ||
+                Math.hypot(
+                  event.clientX - start.clientX,
+                  event.clientY - start.clientY,
+                ) > 8 ||
+                shouldIgnoreCardToggle(event.target)
+              ) {
+                return;
+              }
+
+              toggleAnswer(event.timeStamp);
+            }}
+            onPointerCancel={() => {
+              cardPointerStartRef.current = null;
+            }}
+            className={`grid min-h-[22rem] place-items-center rounded-md border border-[var(--mimi-border)] bg-[var(--mimi-surface-muted)] p-4 text-center sm:p-8 ${
+              currentItem ? "cursor-pointer" : ""
+            }`}
+          >
             {currentItem ? (
               <div className="grid w-full max-w-2xl gap-5">
                 <motion.div
@@ -681,41 +716,7 @@ export function ReviewSession({ zone }: ReviewSessionProps) {
                     duration: reduceMotion ? 0.12 : 0.34,
                     ease: [0.22, 1, 0.36, 1],
                   }}
-                  onPointerDown={(event) => {
-                    if (event.button !== 0 || shouldIgnoreCardToggle(event.target)) {
-                      cardPointerStartRef.current = null;
-                      return;
-                    }
-
-                    cardPointerStartRef.current = {
-                      pointerId: event.pointerId,
-                      clientX: event.clientX,
-                      clientY: event.clientY,
-                    };
-                  }}
-                  onPointerUp={(event) => {
-                    const start = cardPointerStartRef.current;
-                    cardPointerStartRef.current = null;
-
-                    if (
-                      event.button !== 0 ||
-                      !start ||
-                      start.pointerId !== event.pointerId ||
-                      Math.hypot(
-                        event.clientX - start.clientX,
-                        event.clientY - start.clientY,
-                      ) > 8 ||
-                      shouldIgnoreCardToggle(event.target)
-                    ) {
-                      return;
-                    }
-
-                    toggleAnswer(event.timeStamp);
-                  }}
-                  onPointerCancel={() => {
-                    cardPointerStartRef.current = null;
-                  }}
-                  className="mimi-card cursor-pointer bg-[var(--mimi-surface)] p-5 sm:p-8"
+                  className="mimi-card bg-[var(--mimi-surface)] p-5 sm:p-8"
                 >
                   <div className="flex items-start justify-center gap-3">
                     <p className="mimi-word-serif min-w-0 break-words text-4xl text-[var(--mimi-text)] sm:text-6xl">
@@ -733,7 +734,7 @@ export function ReviewSession({ zone }: ReviewSessionProps) {
                     </PressableButton>
                   </div>
                   <p className="mt-4 text-sm leading-6 text-[var(--mimi-text-soft)]">
-                    {showBack ? "Tap again to hide." : "Tap the card to reveal."}
+                    {showBack ? "Tap again to hide." : "Tap anywhere here to reveal."}
                   </p>
 
                   <AnimatePresence mode="wait">

@@ -7,14 +7,18 @@ import {
   previewActiveFsrsOutcomes,
 } from "./fsrs-active";
 import { getRecognitionFsrsParameterSnapshot } from "./fsrs-recognition";
-import type { ReviewState } from "./types";
+import {
+  ACTIVE_PARAMETER_SET_ID,
+  LEGACY_ACTIVE_PARAMETER_SET_ID,
+  type ReviewState,
+} from "./types";
 
 const REVIEWED_AT = "2026-07-15T08:00:00.000Z";
 
 describe("Active FSRS adapter", () => {
   it("owns a parameter snapshot independent from Recognition", () => {
     expect(getActiveFsrsParameterSnapshot()).toEqual({
-      requestRetention: 0.92,
+      requestRetention: 0.93,
       maximumInterval: 36500,
       enableFuzz: false,
       enableShortTerm: false,
@@ -24,6 +28,10 @@ describe("Active FSRS adapter", () => {
     expect(getActiveFsrsParameterSnapshot()).not.toEqual(
       getRecognitionFsrsParameterSnapshot(),
     );
+    expect(
+      getActiveFsrsParameterSnapshot(LEGACY_ACTIVE_PARAMETER_SET_ID)
+        .requestRetention,
+    ).toBe(0.92);
   });
 
   it("produces deterministic first-card intervals with the installed package", () => {
@@ -35,7 +43,14 @@ describe("Active FSRS adapter", () => {
     expect(outcomes.forgot.scheduledDays).toBe(1);
     expect(outcomes.hard.scheduledDays).toBe(2);
     expect(outcomes.vague.scheduledDays).toBe(3);
-    expect(outcomes.remembered.scheduledDays).toBe(6);
+    expect(outcomes.remembered.scheduledDays).toBe(5);
+    expect(
+      previewActiveFsrsOutcomes(
+        createActiveFsrsCard(REVIEWED_AT),
+        REVIEWED_AT,
+        LEGACY_ACTIVE_PARAMETER_SET_ID,
+      ).remembered.scheduledDays,
+    ).toBe(6);
   });
 
   it("rejects Recognition state instead of silently reusing it", () => {
@@ -69,7 +84,7 @@ describe("Active FSRS adapter", () => {
       personId: "person-mimi",
       vocabularyItemId: "active-one",
       reviewProfile: "active",
-      parameterSetId: "active-fsrs-v1",
+      parameterSetId: ACTIVE_PARAMETER_SET_ID,
       firstRatedAt: REVIEWED_AT,
       historyOrigin: "recorded",
       status: "review",
@@ -87,5 +102,11 @@ describe("Active FSRS adapter", () => {
       .toBeGreaterThan(0);
     expect(getActiveFsrsRetrievability(state, "2026-07-16T08:00:00.000Z"))
       .toBeLessThanOrEqual(1);
+    expect(() =>
+      getActiveFsrsRetrievability(
+        { ...state, parameterSetId: "active-fsrs-unknown" },
+        "2026-07-16T08:00:00.000Z",
+      ),
+    ).toThrow("unsupported Parameter Set");
   });
 });

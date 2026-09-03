@@ -30,8 +30,13 @@ describe("V2-8-2.2 learner interaction contract", () => {
     expect(settings).toContain("Preview");
     expect(settings).toContain("Cloud voice");
     expect(settings).toContain("Use device voice");
+    expect(settings).toContain("cancelEnglishSpeech();");
+    expect(settings).toContain("each eligible new card");
     expect(speech).toContain("SPEECH_VOICE_STORAGE_KEY");
     expect(speech).toContain('fetchImpl("/api/tts"');
+    expect(speech.indexOf("cancelEnglishSpeech();")).toBeLessThan(
+      speech.indexOf('if (sourcePreference === "device")'),
+    );
     expect(speech).toContain('DEFAULT_SPEECH_SOURCE_PREFERENCE: SpeechSourcePreference = "cloud"');
   });
 

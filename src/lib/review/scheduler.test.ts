@@ -35,11 +35,11 @@ describe("review scheduler", () => {
       status: "review",
     });
     expect(scheduleNextReview(undefined, "remembered", reviewedAt)).toMatchObject({
-      dueAt: "2026-07-12T00:00:00.000Z",
-      intervalMinutes: 11520,
+      dueAt: "2026-07-09T00:00:00.000Z",
+      intervalMinutes: 7200,
       lapseCount: 0,
       reviewCount: 1,
-      scheduledDays: 8,
+      scheduledDays: 5,
       status: "review",
     });
   });

@@ -61,6 +61,11 @@
     "v2:1:db:inventory:production": "node scripts/v2-1-production-db.mjs inventory --target production-main --i-confirm-v2-1-read-only-inventory",
     "v2:1:db:migrate:production": "node scripts/v2-1-production-db.mjs migrate --target production-main --i-confirm-v2-1-production-migration",
     "v2:1:backup:production": "node scripts/v2-1-production-backup.mjs production --i-confirm-v2-1-production-encrypted-backup",
+    "v2:2:db:inventory:staging": "node scripts/v2-2-production-db.mjs inventory --target staging --i-confirm-v2-2-read-only-inventory",
+    "v2:2:db:migrate:staging": "node scripts/v2-2-production-db.mjs migrate --target staging --i-confirm-v2-2-staging-migration",
+    "v2:2:db:inventory:production": "node scripts/v2-2-production-db.mjs inventory --target production-main --i-confirm-v2-2-read-only-inventory",
+    "v2:2:db:migrate:production": "node scripts/v2-2-production-db.mjs migrate --target production-main --i-confirm-v2-2-production-migration",
+    "v2:2:backup:production": "node scripts/v2-1-production-backup.mjs production --i-confirm-v2-1-production-encrypted-backup",
     "db:inspect:schema5:prod": "STAGE6B_DATABASE_TARGET=production MIMI_PRODUCTION_DATABASE_ACTION=inspect VERCEL_ENV=production node scripts/inspect-database-schema5-production.mjs --i-confirm-production-read",
     "governance:preflight": "python3 governance/preflight.py --tier 3 --strict-side-effects --require-skill-marker",
     "governance:test": "python3 -B -m unittest governance.test_preflight",
@@ -90,7 +95,7 @@
     "vitest": "^4.1.9"
   },
   "overrides": {
-    "postcss": "8.5.16",
+    "postcss": "8.5.27",
     "sharp": "0.35.3"
   }
 }

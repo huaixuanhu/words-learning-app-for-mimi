@@ -9,10 +9,26 @@ import {
   State,
   type FSRSParameters,
 } from "ts-fsrs";
-import type { ReviewRating, ReviewState } from "./types";
+import {
+  LEGACY_RECOGNITION_PARAMETER_SET_ID,
+  RECOGNITION_PARAMETER_SET_ID,
+  type RecognitionParameterSetId,
+  type ReviewRating,
+  type ReviewState,
+} from "./types";
+
+export const LEGACY_RECOGNITION_FSRS_PARAMETERS: FSRSParameters =
+  generatorParameters({
+    request_retention: 0.9,
+    maximum_interval: 36500,
+    enable_fuzz: false,
+    enable_short_term: false,
+    learning_steps: [],
+    relearning_steps: [],
+  });
 
 export const RECOGNITION_FSRS_PARAMETERS: FSRSParameters = generatorParameters({
-  request_retention: 0.9,
+  request_retention: 0.929,
   maximum_interval: 36500,
   enable_fuzz: false,
   enable_short_term: false,
@@ -20,7 +36,24 @@ export const RECOGNITION_FSRS_PARAMETERS: FSRSParameters = generatorParameters({
   relearning_steps: [],
 });
 
+const legacyRecognitionScheduler = fsrs(LEGACY_RECOGNITION_FSRS_PARAMETERS);
 const recognitionScheduler = fsrs(RECOGNITION_FSRS_PARAMETERS);
+
+function recognitionSchedulerForParameterSetId(
+  parameterSetId: RecognitionParameterSetId,
+) {
+  return parameterSetId === LEGACY_RECOGNITION_PARAMETER_SET_ID
+    ? legacyRecognitionScheduler
+    : recognitionScheduler;
+}
+
+function recognitionParametersForParameterSetId(
+  parameterSetId: RecognitionParameterSetId,
+) {
+  return parameterSetId === LEGACY_RECOGNITION_PARAMETER_SET_ID
+    ? LEGACY_RECOGNITION_FSRS_PARAMETERS
+    : RECOGNITION_FSRS_PARAMETERS;
+}
 
 export type RecognitionFsrsOutcome = {
   rating: ReviewRating;
@@ -124,15 +157,27 @@ export function applyRecognitionFsrsRating(
   card: Card,
   rating: ReviewRating,
   reviewedAt: string | Date,
+  parameterSetId: RecognitionParameterSetId = RECOGNITION_PARAMETER_SET_ID,
 ) {
   const fsrsRating = mapReviewRatingToFsrsRating(rating);
-  const result = recognitionScheduler.next(card, reviewedAt, fsrsRating);
+  const result = recognitionSchedulerForParameterSetId(parameterSetId).next(
+    card,
+    reviewedAt,
+    fsrsRating,
+  );
 
   return toRecognitionOutcome(rating, fsrsRating, result);
 }
 
-export function previewRecognitionFsrsOutcomes(card: Card, reviewedAt: string | Date) {
-  const preview = recognitionScheduler.repeat(card, reviewedAt);
+export function previewRecognitionFsrsOutcomes(
+  card: Card,
+  reviewedAt: string | Date,
+  parameterSetId: RecognitionParameterSetId = RECOGNITION_PARAMETER_SET_ID,
+) {
+  const preview = recognitionSchedulerForParameterSetId(parameterSetId).repeat(
+    card,
+    reviewedAt,
+  );
 
   return {
     forgot: toRecognitionOutcome("forgot", Rating.Again, preview[Rating.Again]),
@@ -150,20 +195,32 @@ export function getRecognitionFsrsRetrievability(
     throw new Error("Recognition FSRS cannot consume another Review Profile state");
   }
 
-  return recognitionScheduler.get_retrievability(
+  if (
+    state.parameterSetId !== LEGACY_RECOGNITION_PARAMETER_SET_ID &&
+    state.parameterSetId !== RECOGNITION_PARAMETER_SET_ID
+  ) {
+    throw new Error("Recognition state uses an unsupported Parameter Set");
+  }
+
+  return recognitionSchedulerForParameterSetId(
+    state.parameterSetId,
+  ).get_retrievability(
     createRecognitionFsrsCardFromReviewState(state, now),
     now,
     false,
   );
 }
 
-export function getRecognitionFsrsParameterSnapshot() {
+export function getRecognitionFsrsParameterSnapshot(
+  parameterSetId: RecognitionParameterSetId = RECOGNITION_PARAMETER_SET_ID,
+) {
+  const parameters = recognitionParametersForParameterSetId(parameterSetId);
   return {
-    requestRetention: RECOGNITION_FSRS_PARAMETERS.request_retention,
-    maximumInterval: RECOGNITION_FSRS_PARAMETERS.maximum_interval,
-    enableFuzz: RECOGNITION_FSRS_PARAMETERS.enable_fuzz,
-    enableShortTerm: RECOGNITION_FSRS_PARAMETERS.enable_short_term,
-    learningSteps: [...RECOGNITION_FSRS_PARAMETERS.learning_steps],
-    relearningSteps: [...RECOGNITION_FSRS_PARAMETERS.relearning_steps],
+    requestRetention: parameters.request_retention,
+    maximumInterval: parameters.maximum_interval,
+    enableFuzz: parameters.enable_fuzz,
+    enableShortTerm: parameters.enable_short_term,
+    learningSteps: [...parameters.learning_steps],
+    relearningSteps: [...parameters.relearning_steps],
   };
 }

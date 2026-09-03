@@ -451,8 +451,17 @@ async function schema6Invariants(client) {
           select count(*)::integer
           from review_states
           where
-            (review_profile = 'recognition' and parameter_set_id <> 'recognition-fsrs-v1')
-            or (review_profile = 'active' and parameter_set_id = 'recognition-fsrs-v1')
+            (
+              review_profile = 'recognition'
+              and parameter_set_id not in (
+                'recognition-fsrs-v1',
+                'recognition-fsrs-v2'
+              )
+            )
+            or (
+              review_profile = 'active'
+              and parameter_set_id not in ('active-fsrs-v1', 'active-fsrs-v2')
+            )
             or (history_origin = 'recorded' and first_rated_at is null)
             or (history_origin = 'legacy_unknown' and first_rated_at is not null)
         ) as invalid_review_states,
@@ -472,8 +481,17 @@ async function schema6Invariants(client) {
           from review_events
           where
             (review_profile = 'recognition' and activity_type <> 'recognition_card')
-            or (review_profile = 'recognition' and parameter_set_id <> 'recognition-fsrs-v1')
-            or (review_profile = 'active' and parameter_set_id = 'recognition-fsrs-v1')
+            or (
+              review_profile = 'recognition'
+              and parameter_set_id not in (
+                'recognition-fsrs-v1',
+                'recognition-fsrs-v2'
+              )
+            )
+            or (
+              review_profile = 'active'
+              and parameter_set_id not in ('active-fsrs-v1', 'active-fsrs-v2')
+            )
         ) as invalid_review_events,
         (
           select count(*)::integer

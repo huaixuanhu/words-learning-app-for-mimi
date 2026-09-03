@@ -1,6 +1,6 @@
 import {
-  ACTIVE_PARAMETER_SET_ID,
   RECOGNITION_PARAMETER_SET_ID,
+  currentParameterSetIdForProfile,
   type ReviewActivityType,
   type ReviewAnswerOutcome,
   type ReviewEvent,
@@ -88,12 +88,6 @@ function sortReviewEventsByReviewedAt(a: ReviewEvent, b: ReviewEvent) {
   return a.id.localeCompare(b.id);
 }
 
-function parameterSetIdForProfile(reviewProfile: ReviewProfile) {
-  return reviewProfile === "recognition"
-    ? RECOGNITION_PARAMETER_SET_ID
-    : ACTIVE_PARAMETER_SET_ID;
-}
-
 export function rebuildReviewProfileStateFromEvents(
   personId: string,
   vocabularyItemId: string,
@@ -143,12 +137,14 @@ export function rebuildReviewProfileStateFromEvents(
           rating: event.rating,
           reviewedAt: event.reviewedAt,
           plan,
+          parameterSetId: event.parameterSetId,
         }).schedule
       : scheduleNextReviewForProfile(
           reviewProfile,
           state,
           event.rating,
           event.reviewedAt,
+          event.parameterSetId,
         );
 
     state = {
@@ -159,7 +155,7 @@ export function rebuildReviewProfileStateFromEvents(
       personId,
       vocabularyItemId,
       reviewProfile,
-      parameterSetId: parameterSetIdForProfile(reviewProfile),
+      parameterSetId: event.parameterSetId,
       firstRatedAt:
         previousState?.historyOrigin === "legacy_unknown"
           ? null
@@ -570,7 +566,7 @@ export function recordDailyStudyReview(
         personId,
         vocabularyItemId: input.vocabularyItemId,
         reviewProfile: input.plan.reviewProfile,
-        parameterSetId: parameterSetIdForProfile(input.plan.reviewProfile),
+        parameterSetId: currentParameterSetIdForProfile(input.plan.reviewProfile),
         firstRatedAt:
           previousState?.historyOrigin === "legacy_unknown"
             ? null
@@ -600,7 +596,7 @@ export function recordDailyStudyReview(
     answerOutcome: input.answerOutcome,
     answerNormalizationVersion: input.answerNormalizationVersion,
     targetRevision: input.targetRevision,
-    parameterSetId: parameterSetIdForProfile(input.plan.reviewProfile),
+    parameterSetId: currentParameterSetIdForProfile(input.plan.reviewProfile),
     reviewedAt: now,
     rating: input.rating,
     previousDueAt: previousState?.dueAt ?? null,

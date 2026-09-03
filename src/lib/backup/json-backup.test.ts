@@ -165,6 +165,28 @@ describe("JSON vocabulary backup", () => {
     expect(parsed.counts).toEqual(summarizeVocabularyData(data));
   });
 
+  it("accepts matching V2.2 parameter sets and rejects unknown ones", () => {
+    const data = createSampleData();
+    data.reviewStates[0].parameterSetId = "recognition-fsrs-v2";
+    data.reviewEvents[0].parameterSetId = "recognition-fsrs-v2";
+    const backup = createVocabularyBackup(data, {
+      exportedAt: "2026-09-03T09:00:00.000Z",
+      timezone: "Australia/Melbourne",
+    });
+
+    expect(parseVocabularyBackupText(JSON.stringify(backup)).ok).toBe(true);
+
+    backup.data.reviewEvents[0].parameterSetId = "recognition-fsrs-unknown";
+    const rejected = parseVocabularyBackupText(JSON.stringify(backup));
+
+    expect(rejected.ok).toBe(false);
+    if (!rejected.ok) {
+      expect(rejected.errors).toContain(
+        "reviewEvents[0] evidence fields are inconsistent",
+      );
+    }
+  });
+
   it("round-trips Active vocabulary without review state or review events", () => {
     const added = addVocabularyItem(
       createEmptyVocabularyData("2026-07-05T00:00:00.000Z"),

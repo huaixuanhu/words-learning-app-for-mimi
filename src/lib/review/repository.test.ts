@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { getReviewQueue, recordReview, resetTodayReviewTask, rollbackReviewEvent } from "./repository";
+import {
+  getReviewQueue,
+  rebuildReviewProfileStateFromEvents,
+  recordReview,
+  resetTodayReviewTask,
+  rollbackReviewEvent,
+} from "./repository";
+import type { ReviewEvent } from "./types";
 import {
   addPerson,
   addVocabularyItem,
@@ -61,6 +68,7 @@ describe("review repository", () => {
       previousIntervalMinutes: null,
       nextIntervalMinutes: 4320,
       elapsedMs: 12345,
+      parameterSetId: "recognition-fsrs-v2",
     });
     expect(result.state).toMatchObject({
       personId: "person_mimi",
@@ -70,11 +78,72 @@ describe("review repository", () => {
       reviewCount: 1,
       lapseCount: 0,
       intervalMinutes: 4320,
+      parameterSetId: "recognition-fsrs-v2",
     });
     expect(result.state.difficulty).toBeCloseTo(2.11810397, 6);
     expect(result.state.stability).toBeCloseTo(2.3065, 6);
     expect(result.data.reviewEvents).toHaveLength(1);
     expect(result.data.reviewStates).toHaveLength(1);
+  });
+
+  it("replays each event with its recorded parameter set", () => {
+    const event = (input: {
+      id: string;
+      parameterSetId: string;
+      reviewedAt: string;
+    }): ReviewEvent => ({
+      id: input.id,
+      promptId: null,
+      personId: "person_mimi",
+      vocabularyItemId: "vocab-1",
+      reviewProfile: "recognition",
+      activityType: "recognition_card",
+      answerOutcome: "self_rated",
+      answerNormalizationVersion: null,
+      targetRevision: null,
+      parameterSetId: input.parameterSetId,
+      reviewedAt: input.reviewedAt,
+      rating: "remembered",
+      previousDueAt: null,
+      nextDueAt: input.reviewedAt,
+      previousIntervalMinutes: null,
+      nextIntervalMinutes: 1,
+      elapsedMs: 1,
+    });
+    const firstAt = "2026-07-04T01:00:00.000Z";
+    const secondAt = "2026-07-12T01:00:00.000Z";
+    const legacy = rebuildReviewProfileStateFromEvents(
+      "person_mimi",
+      "vocab-1",
+      "recognition",
+      [event({ id: "legacy", parameterSetId: "recognition-fsrs-v1", reviewedAt: firstAt })],
+      undefined,
+    );
+    const mixed = rebuildReviewProfileStateFromEvents(
+      "person_mimi",
+      "vocab-1",
+      "recognition",
+      [
+        event({ id: "legacy", parameterSetId: "recognition-fsrs-v1", reviewedAt: firstAt }),
+        event({ id: "current", parameterSetId: "recognition-fsrs-v2", reviewedAt: secondAt }),
+      ],
+      undefined,
+    );
+
+    expect(legacy).toMatchObject({
+      parameterSetId: "recognition-fsrs-v1",
+      dueAt: "2026-07-12T01:00:00.000Z",
+    });
+    expect(mixed?.parameterSetId).toBe("recognition-fsrs-v2");
+    expect(() =>
+      rebuildReviewProfileStateFromEvents(
+        "person_mimi",
+        "vocab-1",
+        "recognition",
+        [event({ id: "wrong", parameterSetId: "active-fsrs-v1", reviewedAt: firstAt })],
+        undefined,
+      ),
+    ).toThrow("unsupported Parameter Set");
   });
 
   it("updates the existing review state on later reviews", () => {

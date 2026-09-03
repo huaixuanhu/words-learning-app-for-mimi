@@ -30,6 +30,11 @@ const REVIEW_STATUSES = new Set(["learning", "review"]);
 const REVIEW_RATINGS = new Set(["forgot", "hard", "vague", "remembered"]);
 const REVIEW_PROFILES = new Set(["recognition", "active"]);
 const REVIEW_ACTIVITY_TYPES = new Set(["recognition_card", "say", "spell", "dictation"]);
+const RECOGNITION_PARAMETER_SET_IDS = new Set([
+  "recognition-fsrs-v1",
+  "recognition-fsrs-v2",
+]);
+const ACTIVE_PARAMETER_SET_IDS = new Set(["active-fsrs-v1", "active-fsrs-v2"]);
 const ANSWER_OUTCOMES = new Set([
   "self_rated",
   "exact",
@@ -413,8 +418,10 @@ function validateReviewState(
     }
 
     if (
-      (value.reviewProfile === "recognition" && value.parameterSetId !== "recognition-fsrs-v1") ||
-      (value.reviewProfile === "active" && value.parameterSetId === "recognition-fsrs-v1")
+      (value.reviewProfile === "recognition" &&
+        !RECOGNITION_PARAMETER_SET_IDS.has(String(value.parameterSetId))) ||
+      (value.reviewProfile === "active" &&
+        !ACTIVE_PARAMETER_SET_IDS.has(String(value.parameterSetId)))
     ) {
       errors.push(`reviewStates[${index}].parameterSetId does not match reviewProfile`);
     }
@@ -495,7 +502,7 @@ function validateReviewEvent(
       value.answerOutcome === "self_rated" &&
       value.answerNormalizationVersion === null &&
       value.targetRevision === null &&
-      value.parameterSetId === "recognition-fsrs-v1";
+      RECOGNITION_PARAMETER_SET_IDS.has(String(value.parameterSetId));
     const activeSayEvidence =
       value.reviewProfile === "active" &&
       value.activityType === "say" &&
@@ -503,7 +510,7 @@ function validateReviewEvent(
       value.answerNormalizationVersion === null &&
       isString(value.targetRevision) &&
       Boolean(value.targetRevision.trim()) &&
-      value.parameterSetId !== "recognition-fsrs-v1";
+      ACTIVE_PARAMETER_SET_IDS.has(String(value.parameterSetId));
     const activeTypedEvidence =
       value.reviewProfile === "active" &&
       (value.activityType === "spell" || value.activityType === "dictation") &&
@@ -512,7 +519,7 @@ function validateReviewEvent(
       value.answerNormalizationVersion === "active-answer-v1" &&
       isString(value.targetRevision) &&
       Boolean(value.targetRevision.trim()) &&
-      value.parameterSetId !== "recognition-fsrs-v1";
+      ACTIVE_PARAMETER_SET_IDS.has(String(value.parameterSetId));
 
     if (!recognitionEvidence && !activeSayEvidence && !activeTypedEvidence) {
       errors.push(`reviewEvents[${index}] evidence fields are inconsistent`);

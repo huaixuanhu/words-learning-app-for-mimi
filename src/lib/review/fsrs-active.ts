@@ -9,9 +9,15 @@ import {
   State,
   type FSRSParameters,
 } from "ts-fsrs";
-import type { ReviewRating, ReviewState } from "./types";
+import {
+  ACTIVE_PARAMETER_SET_ID,
+  LEGACY_ACTIVE_PARAMETER_SET_ID,
+  type ActiveParameterSetId,
+  type ReviewRating,
+  type ReviewState,
+} from "./types";
 
-export const ACTIVE_FSRS_PARAMETERS: FSRSParameters = generatorParameters({
+export const LEGACY_ACTIVE_FSRS_PARAMETERS: FSRSParameters = generatorParameters({
   request_retention: 0.92,
   maximum_interval: 36500,
   enable_fuzz: false,
@@ -20,7 +26,29 @@ export const ACTIVE_FSRS_PARAMETERS: FSRSParameters = generatorParameters({
   relearning_steps: [],
 });
 
+export const ACTIVE_FSRS_PARAMETERS: FSRSParameters = generatorParameters({
+  request_retention: 0.93,
+  maximum_interval: 36500,
+  enable_fuzz: false,
+  enable_short_term: false,
+  learning_steps: [],
+  relearning_steps: [],
+});
+
+const legacyActiveScheduler = fsrs(LEGACY_ACTIVE_FSRS_PARAMETERS);
 const activeScheduler = fsrs(ACTIVE_FSRS_PARAMETERS);
+
+function activeSchedulerForParameterSetId(parameterSetId: ActiveParameterSetId) {
+  return parameterSetId === LEGACY_ACTIVE_PARAMETER_SET_ID
+    ? legacyActiveScheduler
+    : activeScheduler;
+}
+
+function activeParametersForParameterSetId(parameterSetId: ActiveParameterSetId) {
+  return parameterSetId === LEGACY_ACTIVE_PARAMETER_SET_ID
+    ? LEGACY_ACTIVE_FSRS_PARAMETERS
+    : ACTIVE_FSRS_PARAMETERS;
+}
 
 export type ActiveFsrsOutcome = {
   rating: ReviewRating;
@@ -125,15 +153,27 @@ export function applyActiveFsrsRating(
   card: Card,
   rating: ReviewRating,
   reviewedAt: string | Date,
+  parameterSetId: ActiveParameterSetId = ACTIVE_PARAMETER_SET_ID,
 ) {
   const fsrsRating = mapActiveRatingToFsrsRating(rating);
-  const result = activeScheduler.next(card, reviewedAt, fsrsRating);
+  const result = activeSchedulerForParameterSetId(parameterSetId).next(
+    card,
+    reviewedAt,
+    fsrsRating,
+  );
 
   return toActiveOutcome(rating, fsrsRating, result);
 }
 
-export function previewActiveFsrsOutcomes(card: Card, reviewedAt: string | Date) {
-  const preview = activeScheduler.repeat(card, reviewedAt);
+export function previewActiveFsrsOutcomes(
+  card: Card,
+  reviewedAt: string | Date,
+  parameterSetId: ActiveParameterSetId = ACTIVE_PARAMETER_SET_ID,
+) {
+  const preview = activeSchedulerForParameterSetId(parameterSetId).repeat(
+    card,
+    reviewedAt,
+  );
 
   return {
     forgot: toActiveOutcome("forgot", Rating.Again, preview[Rating.Again]),
@@ -151,20 +191,30 @@ export function getActiveFsrsRetrievability(
     throw new Error("Active FSRS cannot consume another Review Profile state");
   }
 
-  return activeScheduler.get_retrievability(
+  if (
+    state.parameterSetId !== LEGACY_ACTIVE_PARAMETER_SET_ID &&
+    state.parameterSetId !== ACTIVE_PARAMETER_SET_ID
+  ) {
+    throw new Error("Active state uses an unsupported Parameter Set");
+  }
+
+  return activeSchedulerForParameterSetId(state.parameterSetId).get_retrievability(
     createActiveFsrsCardFromReviewState(state, now),
     now,
     false,
   );
 }
 
-export function getActiveFsrsParameterSnapshot() {
+export function getActiveFsrsParameterSnapshot(
+  parameterSetId: ActiveParameterSetId = ACTIVE_PARAMETER_SET_ID,
+) {
+  const parameters = activeParametersForParameterSetId(parameterSetId);
   return {
-    requestRetention: ACTIVE_FSRS_PARAMETERS.request_retention,
-    maximumInterval: ACTIVE_FSRS_PARAMETERS.maximum_interval,
-    enableFuzz: ACTIVE_FSRS_PARAMETERS.enable_fuzz,
-    enableShortTerm: ACTIVE_FSRS_PARAMETERS.enable_short_term,
-    learningSteps: [...ACTIVE_FSRS_PARAMETERS.learning_steps],
-    relearningSteps: [...ACTIVE_FSRS_PARAMETERS.relearning_steps],
+    requestRetention: parameters.request_retention,
+    maximumInterval: parameters.maximum_interval,
+    enableFuzz: parameters.enable_fuzz,
+    enableShortTerm: parameters.enable_short_term,
+    learningSteps: [...parameters.learning_steps],
+    relearningSteps: [...parameters.relearning_steps],
   };
 }

@@ -77,16 +77,17 @@ Implementation Outcome:
 
 Current Versions:
 
-- Next.js 16.2.10
+- Next.js 16.2.11
 - React 19.2.4
 - TypeScript 5.9.3
 - Tailwind CSS 4.3.2
-- ESLint 9.39.4
+- ESLint 9.39.5
+- Vitest 4.1.11
 - lucide-react 0.562.0
-- PostCSS 8.5.16 via npm `overrides`
+- PostCSS 8.5.27 via npm `overrides`
 
 Security Outcome:
 
-- The previous `next -> postcss` moderate audit finding was fixed with a root npm `overrides` entry for `postcss: 8.5.16`.
+- The original `next -> postcss` audit finding was fixed with a root npm override; the V2.2 release refresh raises it to `postcss: 8.5.27` and resolves Nano ID to `3.3.18` for the current advisory floors.
 - `npm audit --json` now reports 0 vulnerabilities.
-- `next@latest` remains 16.2.10 and still declares `postcss: 8.4.31`; `next@canary` declares a patched PostCSS version, but the scaffold stays on stable Next.js and uses npm override instead.
+- The application remains on its validated Next.js 16.2.11 line; the override isolates the required PostCSS security patch without a framework upgrade.

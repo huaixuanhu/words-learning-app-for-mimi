@@ -248,6 +248,27 @@ describe("Stage 5L backup import plan", () => {
     expect(plan.rows).not.toHaveProperty("studyCommandIdempotency");
   });
 
+  it("imports matching V2.2 parameter sets and rejects cross-profile identifiers", () => {
+    const backup = createV2Stage3Schema6FixtureBackup();
+    backup.data.reviewStates[0].parameterSetId = "recognition-fsrs-v2";
+    backup.data.reviewEvents[0].parameterSetId = "recognition-fsrs-v2";
+    backup.data.reviewStates[1].parameterSetId = "active-fsrs-v2";
+    backup.data.reviewEvents[1].parameterSetId = "active-fsrs-v2";
+
+    const plan = buildBackupImportPlan(backup, {
+      uuidFactory: createUuidFactory(),
+    });
+    expect(plan.rows.reviewStates.map((row) => row.parameterSetId)).toEqual([
+      "recognition-fsrs-v2",
+      "active-fsrs-v2",
+    ]);
+
+    backup.data.reviewEvents[1].parameterSetId = "recognition-fsrs-v2";
+    expect(() =>
+      buildBackupImportPlan(backup, { uuidFactory: createUuidFactory() }),
+    ).toThrow(BackupImportPlanError);
+  });
+
   it("restores historical accepted content after the source absorbs it", () => {
     const backup = createV2Stage3Schema6FixtureBackup();
     const source = backup.data.items.find(

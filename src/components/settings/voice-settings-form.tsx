@@ -6,6 +6,7 @@ import { PressableButton } from "@/components/ui/motion-primitives";
 import {
   DEFAULT_SPEECH_VOICE_PREFERENCE,
   DEFAULT_SPEECH_SOURCE_PREFERENCE,
+  cancelEnglishSpeech,
   getBrowserEnglishSpeechVoices,
   readSpeechSourcePreference,
   readSpeechVoicePreference,
@@ -115,6 +116,7 @@ export function VoiceSettingsForm() {
   const selectSource = (value: string) => {
     const nextSource: SpeechSourcePreference =
       value === "device" ? "device" : "cloud";
+    cancelEnglishSpeech();
     writeSpeechSourcePreference(nextSource);
     setSource(nextSource);
     setStatus(
@@ -202,7 +204,7 @@ export function VoiceSettingsForm() {
           </label>
         ) : (
           <p className="mt-3 text-xs leading-5 text-[var(--mimi-text-muted)]">
-            Cloud voice sends only the English text you play to Google Cloud. / 云端朗读只发送你点击播放的英文内容。
+            Cloud voice sends the English entry shown on each eligible new card, plus anything you replay, to Google Cloud. / 云端朗读会把每张适用新卡片显示的英文词条，以及你手动重播的内容，发送给 Google Cloud。
           </p>
         )}
       </div>

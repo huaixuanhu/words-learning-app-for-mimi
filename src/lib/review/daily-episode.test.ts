@@ -101,8 +101,8 @@ describe("daily Recognition episode scheduling", () => {
       plan: PLAN,
     });
 
-    expect(result.schedule.dueAt).toBe("2026-07-22T10:00:00.000Z");
-    expect(result.schedule.intervalMinutes).toBe(11_520);
+    expect(result.schedule.dueAt).toBe("2026-07-19T10:00:00.000Z");
+    expect(result.schedule.intervalMinutes).toBe(7_200);
   });
 
   it("keeps a mature direct vague rating on its normal FSRS interval", () => {

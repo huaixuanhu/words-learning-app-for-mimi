@@ -17,12 +17,21 @@ const globalCss = readFileSync(
 
 describe("V2 Stage 3.1 review interaction UI contract", () => {
   it("keeps card tapping guarded while retaining the explicit answer button", () => {
+    expect(reviewSource).toContain('data-review-card-toggle-surface="true"');
     expect(reviewSource).toContain("onPointerDown");
     expect(reviewSource).toContain("onPointerUp");
     expect(reviewSource).toContain("Math.hypot");
     expect(reviewSource).toContain("shouldIgnoreCardToggle");
     expect(reviewSource).toContain("getNextAnswerRevealState");
     expect(reviewSource).toContain('"Hide answer" : "Show answer"');
+    expect(reviewSource).toContain('currentItem ? "cursor-pointer" : ""');
+  });
+
+  it("autoplays each newly active Recognition card while retaining replay", () => {
+    expect(reviewSource).toContain("useWordPronunciation");
+    expect(reviewSource).toContain("autoPlay: true");
+    expect(reviewSource).toContain("completedReviews.length");
+    expect(reviewSource).toContain("onClick={() => void listenToCurrentItem()}");
   });
 
   it("renders all four existing ratings through calm named color classes", () => {

@@ -6,8 +6,7 @@ import { getLocalDateKey } from "@/lib/review/scheduler";
 import { getSelectedReviewSettings } from "@/lib/review/settings";
 import { isPassingSessionRating } from "@/lib/review/session-queue";
 import {
-  ACTIVE_PARAMETER_SET_ID,
-  RECOGNITION_PARAMETER_SET_ID,
+  isParameterSetIdForProfile,
   type ReviewProfile,
   type ReviewState,
 } from "@/lib/review/types";
@@ -61,12 +60,6 @@ export type DashboardInsightsSnapshot = Readonly<{
 function timestamp(value: string) {
   const result = new Date(value).getTime();
   return Number.isFinite(result) ? result : null;
-}
-
-function expectedParameterSetId(reviewProfile: ReviewProfile) {
-  return reviewProfile === "recognition"
-    ? RECOGNITION_PARAMETER_SET_ID
-    : ACTIVE_PARAMETER_SET_ID;
 }
 
 function buildLearningRhythm(
@@ -138,14 +131,13 @@ function currentTrackStates(
       )
       .map((item) => item.id),
   );
-  const parameterSetId = expectedParameterSetId(reviewProfile);
   const newestByItem = new Map<string, ReviewState>();
   const states = data.reviewStates
     .filter(
       (state) =>
         state.personId === personId &&
         state.reviewProfile === reviewProfile &&
-        state.parameterSetId === parameterSetId &&
+        isParameterSetIdForProfile(reviewProfile, state.parameterSetId) &&
         currentItemIds.has(state.vocabularyItemId),
     )
     .sort(

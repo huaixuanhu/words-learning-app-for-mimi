@@ -361,6 +361,19 @@ async function errorMessage(response: Response) {
   }
 }
 
+function playbackUnavailableMessage(error: unknown) {
+  if (
+    error &&
+    typeof error === "object" &&
+    "name" in error &&
+    error.name === "NotAllowedError"
+  ) {
+    return "Autoplay was blocked · Tap the sound button";
+  }
+
+  return "Voice unavailable · Try again";
+}
+
 export async function speakEnglishText(
   text: string,
   purpose: TtsPurpose,
@@ -373,6 +386,7 @@ export async function speakEnglishText(
     return { status: "empty" as const, spokenText: "" };
   }
 
+  cancelEnglishSpeech();
   const sourcePreference =
     dependencies.sourcePreference ?? readSpeechSourcePreference();
   if (sourcePreference === "device") {
@@ -389,7 +403,6 @@ export async function speakEnglishText(
     };
   }
 
-  cancelEnglishSpeech();
   const generation = activePlaybackGeneration;
   const playAudioBlob = dependencies.playAudioBlob ?? browserPlayAudioBlob;
   const memoryKey = currentCloudVoiceContract
@@ -405,12 +418,12 @@ export async function speakEnglishText(
         source: "cloud-memory" as const,
         cacheStatus: "memory" as const,
       };
-    } catch {
+    } catch (error) {
       return {
         status: "unavailable" as const,
         spokenText,
         source: "cloud" as const,
-        message: "Voice unavailable · Try again",
+        message: playbackUnavailableMessage(error),
       };
     }
   }
@@ -463,7 +476,7 @@ export async function speakEnglishText(
           : ("cloud" as const),
       cacheStatus: response.headers.get("x-mimi-tts-cache") ?? "unknown",
     };
-  } catch {
+  } catch (error) {
     if (controller.signal.aborted || generation !== activePlaybackGeneration) {
       return { status: "cancelled" as const, spokenText };
     }
@@ -471,7 +484,7 @@ export async function speakEnglishText(
       status: "unavailable" as const,
       spokenText,
       source: "cloud" as const,
-      message: "Voice unavailable · Try again",
+      message: playbackUnavailableMessage(error),
     };
   } finally {
     if (activeCloudRequest === controller) activeCloudRequest = null;

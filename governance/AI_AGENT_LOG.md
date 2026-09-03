@@ -1,5 +1,48 @@
 # AI Agent Log
 
+## 2026-09-03 23:51 AEST
+
+- Task: continue the accepted V2.2 changes through Production release.
+- Plan agreed: yes. The user explicitly confirmed the change and instructed Codex to continue until Production release. The accepted child plan is `plan_docs/PLAN_V2_2_PRODUCTION_RELEASE.md`.
+- Current affected authority: Tier 3 Production database constraints, external encrypted backup, GitHub branches and Vercel Production application; the working tier remains Tier 3.
+- Changed files:
+  - `plan_docs/PLAN_V2_2_PRODUCTION_RELEASE.md`
+  - `scripts/v2-2-production-contract.mjs`
+  - `scripts/v2-2-production-contract.test.mjs`
+  - `scripts/v2-2-production-db.mjs`
+  - `scripts/v2-stage8-3-db-core.mjs`
+  - `package.json`
+  - `package-lock.json`
+  - current Architecture, master plan, V2.2 plan and Changelog claims
+- Reason: prepare a recoverable, evidence-bound release path so Production constraints become V2-compatible before the V2.2 application can write new Parameter Set identifiers.
+- Handling: pin `0007` to SHA-256 `ad518068b59c41f8c71c8ea4e00d8e582cb4d5d2bb7f2a4400005b15f4a2efe4`; require a clean exact commit; rehearse Staging first; create and restore-verify a pre-change encrypted Production backup; migrate Production constraints before application activation; then bind GitHub, Vercel, database, TTS and logs to the same release evidence.
+- Validation:
+  - Passed: focused 2 files / 13 tests covering the new release contract and retained Schema 6 database core.
+  - Passed: `npm run lint`.
+  - Passed: `npm run typecheck`.
+  - Passed: `git diff --check`.
+  - Release audit initially found 30 current findings, including 3 in the Production dependency tree. Official advisory floors required PostCSS `8.5.23` and Nano ID `3.3.18`; the compatible refresh resolves PostCSS `8.5.27`, Nano ID `3.3.18`, and patched development transitive packages. Final full and `--omit=dev` npm audits both report 0 vulnerabilities.
+  - Passed after the dependency refresh: full Vitest 98 files / 606 tests with the existing Postgres integration file/test skipped; ESLint; TypeScript; all three backup-import dry-runs; Next.js 16.2.11 Production build; Tier 3 governance preflight and 22 governance tests.
+- Safety notes: no remote database call, migration, backup, real provider request, Git push or deployment occurred in this preparation checkpoint. No `.env` value, credential, connection URI, learner row, provider body or backup identity was printed or added to Git.
+
+## 2026-09-03 19:22 AEST
+
+- Task: implement the confirmed V2.2 combined plan for shorter Recognition/Active review intervals, a full-surface Recognition card toggle, automatic pronunciation, and reliable Cloud/device voice selection, including local migration `0007`.
+- Plan agreed: yes. The user first fixed Recognition `request_retention = 0.929`, kept the first new-word `模糊记得` checkpoint at one local day, set Active to `0.93`, added the pronunciation/source repairs, then explicitly confirmed the merged plan and `0007` on 2026-09-03.
+- Working tier: Tier 3. The accepted authority covers local application code, tests, documentation and an unexecuted forward migration. Credentials, real provider use, remote database work, Production migration/deployment and Git remote actions remain separately approval-gated.
+- Plan lineage: added `plan_docs/PLAN_V2_2_REVIEW_CADENCE_CARD_AUDIO.md`, derived from the V2 master and Architecture, with explicit Scope, Non-Scope, authority, exit criteria and migration-first release boundary.
+- Scheduling result: current parameter identifiers are `recognition-fsrs-v2` and `active-fsrs-v2`, with `request_retention` `0.929` and `0.93`. Historical V1 schedulers remain pinned to `0.90` and `0.92`; rebuild uses each event's recorded identifier, Dashboard uses each state's matching scheduler, and new ratings alone move current state to V2. Daily Episode next-day capping for a first new-word `vague` result is unchanged.
+- Persistence result: `0007_v2_2_fsrs_parameter_sets.sql` checks retained identifiers, then replaces only the two profile/parameter constraints. It allows the four explicit matching V1/V2 identifiers, refuses unknown values, contains no review-data rewrite and remains unexecuted. JSON restore and the backup-import planner apply the same allowlist; schema 3–5 normalization still records Recognition V1.
+- Interaction result: the guarded pointer handlers now belong to the full muted Recognition card surround. Left-button, movement-distance, protected control, text-selection and pointer-cancel checks remain; the inner card and surrounding gap both reach the same reveal state.
+- Pronunciation result: one shared React hook owns cancellation, in-flight state, Strict Mode-safe one-shot activation and replay. Recognition always autoplays once per active-card activation; Active autoplays only Dictation so Say/Spell do not reveal the answer. A returning card receives a new activation key; ordinary rerenders do not replay it. Manual buttons remain.
+- Source result: code inspection confirmed the option labels were already mapped to their intended routes. The observed reversal could occur when an earlier Cloud request/audio remained alive after selecting device. `speakEnglishText` now cancels prior Cloud audio/request and device speech before either branch, Settings also cancels on source change, and tests prove Cloud calls `/api/tts`, device calls browser speech without Cloud, and device selection aborts an in-flight Cloud request. `NotAllowedError` shows a retry prompt without changing source.
+- Documentation result: synchronized the child/master plans, Architecture, backup-to-Postgres mapping, Changelog and this log. The Cloud disclosure now includes automatic eligible-card text and manual replay under the unchanged provider/quota boundary.
+- Validation: the first full run found two stale V1 expectations while 597 tests passed; those expectations were updated to the accepted 5-day current Easy interval and `active-fsrs-v2`. The first governance preflight then found that this entry used `Changed surfaces` instead of its required `Changed files` field; the record was corrected. Final focused tests passed 12 files / 80 tests. Final full Vitest passed 97 files / 599 tests with the existing Postgres integration file/test skipped. ESLint, TypeScript, three backup dry-runs, Next.js Production build, `npm run governance:check`, and `git diff --check` passed.
+- Changed files: FSRS adapters/types/scheduler/rebuild; local and Postgres repositories; Dashboard; JSON backup and import planner; `0007` plus static contract; Recognition/Active/Settings components and the shared pronunciation hook; focused contracts; child/master/Architecture/import documentation; Changelog and this log.
+- Safety notes: the initial worktree was clean and existing governance commits `da894e8` and `dc68fa5` were preserved. No `.env` value, secret, real provider, learner record, remote database, Production environment, Vercel deployment, GitHub state or Git history was read or changed. The build used the repository's normal local Next.js command without manual environment inspection.
+- Residual boundary: the local candidate is complete but uncommitted and unpushed. Any Staging/Production `0007` execution, deployment, provider smoke or V2.2 activation requires a new migration-first release plan and explicit approval; old V2-8 database inspection scripts remain historical release tools and are not V2.2 release authority.
+- Reason: deliver the four accepted learner-facing improvements while keeping historical scheduling explainable, persistent data recoverable, provider choice explicit and Production unchanged.
+
 ## 2026-09-03 18:56 AEST
 
 - Task: migrate this repository from its project-adapted `human-ai-governance v0.7.1` contract to the installed canonical `v0.7.5` contract and commit the validated result to the current `v2.2` branch.

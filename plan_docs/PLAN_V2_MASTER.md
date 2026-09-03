@@ -1,7 +1,7 @@
 # Words Learning App For Mimi V2 Master Plan
 
 Created: 2026-07-13 00:16 AEST
-Last updated: 2026-07-23 AEST
+Last updated: 2026-09-03 AEST
 
 Source plan:
 - `plan_docs/PLAN_V1_MASTER.md`
@@ -40,11 +40,12 @@ Consumer / next stage:
 - `plan_docs/PLAN_V2_STAGE8_2_2_REVIEW_AUDIO_BILINGUAL_EXAMPLES.md`
 - `plan_docs/PLAN_V2_STAGE8_2_3_PREVIEW_FEEDBACK_STABILISATION.md`
 - `plan_docs/PLAN_V2_STAGE8_3_PRODUCTION_BACKUP_MIGRATION_CUTOVER.md`
+- `plan_docs/PLAN_V2_2_REVIEW_CADENCE_CARD_AUDIO.md`
 - Future derived V2 child plans created in the order defined by this document.
 - `plan_docs/PLAN_VERSION_HOLD_MULTI_USER_CONFIDENTIAL_ISOLATION.md`
 
 Document nature:
-This is the canonical V2 product and engineering master plan. It is derived from the completed V1 plan and current Production architecture. V2-1 through V2-8-2.3 completed the product, scheduling, Active, AI, mobile, Dashboard, performance, audio, bilingual-example and Preview feedback layers. PF-001 is `High / Closed`; PF-002 and PF-003 are `Normal / Closed by explicit acceptance`. V2-8-3 Gates 0B–6 then completed the guarded Production release: two non-empty clone migrations, independent encrypted recovery, old V1 credential revocation, atomic `0003 -> 0004 -> 0005` migration, full core-data parity, exact `main` deployment, real Gemini/TTS smoke and steady-state accounting. V2 now serves the canonical Production domain. Gate 7 post-launch stability observation remains open until the next Australia/Melbourne day boundary and a real learning run by both users can be recorded; this operational follow-up does not keep V1 live.
+This is the canonical V2 product and engineering master plan. It is derived from the completed V1 plan and current Production architecture. V2-1 through V2-8-2.3 completed the product, scheduling, Active, AI, mobile, Dashboard, performance, audio, bilingual-example and Preview feedback layers. PF-001 is `High / Closed`; PF-002 and PF-003 are `Normal / Closed by explicit acceptance`. V2-8-3 Gates 0B–6 then completed the guarded Production release: two non-empty clone migrations, independent encrypted recovery, old V1 credential revocation, atomic `0003 -> 0004 -> 0005` migration, full core-data parity, exact `main` deployment, real Gemini/TTS smoke and steady-state accounting. V2 now serves the canonical Production domain. Gate 7 post-launch stability observation remains open until the next Australia/Melbourne day boundary and a real learning run by both users can be recorded; this operational follow-up does not keep V1 live. The V2.2 child plan now owns a locally implemented review-cadence, card-click and pronunciation candidate; it has not changed the live V2.1 Production state.
 
 Current operational tier: Tier 3.
 
@@ -52,7 +53,7 @@ Target capability tier: Tier 3. V2 adds a bounded paid AI API（人工智能接�
 
 Working tier: Tier 3.
 
-Status: V2 is fully live in Production. V2-0 through V2-8-2.3 and V2-8-3 Gates 0B–6 are complete. `main` is Schema Version 6 with JSON backup Version 4; Google Cloud Standard pins `en-AU-Standard-C` at `0.9` speaking rate, `0` pitch and MP3; paid `gemini-3.1-flash-lite` runs behind the accepted disclosure and global cost guards. The canonical deployment is in `syd1`, Basic Auth remains active, and existing core data retained exact parity. The retained `staging` Schema 5 checkpoint, Production Schema 5 recovery branch, protected Preview, previous V1 artifact and encrypted backups remain available through Gate 7 stability closeout. The whole V2 release excludes SSO and confidential per-person authorization.
+Status: V2.1 is fully live in Production. V2-0 through V2-8-2.3 and V2-8-3 Gates 0B–6 are complete. `main` is Schema Version 6 with JSON backup Version 4; Google Cloud Standard pins `en-AU-Standard-C` at `0.9` speaking rate, `0` pitch and MP3; paid `gemini-3.1-flash-lite` runs behind the accepted disclosure and global cost guards. The canonical deployment is in `syd1`, Basic Auth remains active, and existing core data retained exact parity. The retained `staging` Schema 5 checkpoint, Production Schema 5 recovery branch, protected Preview, previous V1 artifact and encrypted backups remain available through Gate 7 stability closeout. V2.2 is implemented only as a local candidate on branch `v2.2`: it requires migration `0007` before a future runtime activation and has not been committed, pushed, migrated or deployed. The whole V2 release excludes SSO and confidential per-person authorization.
 
 ## Scope
 
@@ -63,7 +64,7 @@ Status: V2 is fully live in Production. V2-0 through V2-8-2.3 and V2-8-3 Gates 0
 - Move a newly saved entry from `New` to `In review` only after the first valid memory rating for that Track / Review Profile（复习配置）.
 - Keep Recognition and Active on the same FSRS-6（Free Spaced Repetition Scheduler 6，自由间隔重复调度器第 6 版）algorithm family while separating parameters, state, events, rebuild behavior, and tests.
 - Add Active `Say it`, `Spell it`, and `Dictation` modes.
-- Add a user-triggered pronunciation button for Recognition cards; PF-001 upgrades the target default from browser SpeechSynthesis（浏览器文字转语音）to Google Cloud Text-to-Speech Standard with explicit device fallback.
+- Keep a user-triggered pronunciation button for Recognition cards; V2.2 also requests one automatic playback when each Recognition card becomes active. PF-001 uses Google Cloud Text-to-Speech Standard by default with explicit browser SpeechSynthesis（浏览器文字转语音）selection.
 - Add the first Production-capable AI enrichment flow for extra Chinese meanings, examples, similar words, and confusable words.
 - Use a pinned paid Gemini model to generate a compact draft, then require strict local validation and human review because V2 no longer depends on an external lexical candidate or dictionary service.
 - Require editable preview and explicit human acceptance before AI-derived content enters formal learning data.
@@ -209,8 +210,8 @@ Accepted reset scope:
 ### Recognition Vocabulary
 
 - Keeps the V1 four memory ratings and same-session repeat behavior unless a later child plan explicitly changes them.
-- Keeps Recognition-specific FSRS parameters and event replay.
-- Adds a visible, accessible `Listen` / speaker button on the Recognition card.
+- Keeps Recognition-specific FSRS parameters and event replay. V2.2 makes `recognition-fsrs-v2` (`request_retention = 0.929`) current for new ratings while retaining `recognition-fsrs-v1` (`0.90`) for historical replay.
+- Adds a visible, accessible `Listen` / speaker button on the Recognition card and automatically requests one playback per newly active card without repeating on ordinary rerenders.
 - The PF-001 local candidate invokes the shared Google Cloud Standard route for the entry's word, phrase, or fixed collocation. Browser SpeechSynthesis remains an explicit user-selected fallback.
 - Playback does not create a review event, change a rating, alter FSRS state, or count as `Learned today` / `Reviewed today`.
 - The user may replay pronunciation; Cache hits do not consume a provider attempt, and no playback uses the Gemini AI quota.
@@ -223,7 +224,7 @@ V2 includes three first-generation modes:
 | --- | --- | --- | --- |
 | `Say it` | Show Chinese meaning | Say the English word / phrase aloud | Reveal the answer, then self-rate. No microphone capture or automated pronunciation score. |
 | `Spell it` | Show Chinese meaning | Type the English word / phrase in the card | Normalize and compare the answer, reveal the target, then record the accepted memory rating. |
-| `Dictation` | Initially show no lexical text | The shared Google Cloud Standard route reads the target; explicit device fallback remains available | Reveal English plus Chinese after submission, then record the accepted memory rating. |
+| `Dictation` | Initially show no lexical text | The selected Cloud or device route reads each newly active target once; the replay button remains available | Reveal English plus Chinese after submission, then record the accepted memory rating. |
 
 Exam writing and speaking question types remain outside V2. `Say it` is word / phrase recall, not exam-speaking assessment.
 
@@ -234,6 +235,7 @@ Exam writing and speaking question types remain outside V2. `Say it` is word / p
 - Active must never import, copy, or fall back to Recognition parameters.
 - The minimum future state identity is `(person_id, vocabulary_item_id, review_profile)`.
 - Existing V1 review states and events migrate explicitly to `review_profile = recognition`.
+- V2.2 new ratings use `recognition-fsrs-v2` or `active-fsrs-v2`; rebuild and Dashboard calculations select V1 or V2 from each retained event/state identifier. Unknown and cross-profile identifiers fail closed.
 - Active events record `activity_type = say | spell | dictation`.
 - Accepted V2 behavior: the three Active modes share one Active Review Profile while retaining their activity type on each event. Splitting them into three independent profiles is outside the accepted V2 baseline and would require a later evidence-backed decision.
 - Accepted history-bearing Track transition: the user must choose `Start fresh in the other Track`; old history remains read-only under its original profile, the target profile starts empty, and no parameter, state, or event is copied or reinterpreted. Direct silent state reuse is forbidden.
@@ -649,6 +651,8 @@ Status: V2-7A completed locally on 2026-07-16. Canonical child plan and outcome:
 - `V2-8-3` is recorded in `plan_docs/PLAN_V2_STAGE8_3_PRODUCTION_BACKUP_MIGRATION_CUTOVER.md`. Gates 0B–6 are complete. The fixed migration sequence `0003 -> 0004 -> 0005` ran once on Production `main` after clone rehearsal, independent backup/restore and write-free checks. Schema 6 retained all 1,854 core rows and clean invariants.
 - V2-8-3 Production AI uses the independent `v2-8-3-production` scope. The initial four-attempt ceiling passed one enrichment and one context explanation; Replay did not add a call, the draft was rejected without modifying vocabulary, accounting returned to zero in-flight, and the accepted steady-state configuration now retains the global 300-attempt/day, token, cost, concurrency, Cache, Idempotency and Kill Switch guards.
 - V2-8-3 replaced the deployed V1 program without deleting existing vocabulary, review history, settings or user data. The prior V1 artifact, a no-compute Schema 5 recovery point, pre-cutover Schema 5 archive and verified post-cutover Schema 6 archive remain through Gate 7 stability observation.
+- V2.2 completed local product acceptance on 2026-09-03 under `plan_docs/PLAN_V2_2_REVIEW_CADENCE_CARD_AUDIO.md`. New ratings use versioned `recognition-fsrs-v2` / `active-fsrs-v2` parameters, V1 history remains replayable, the first new-word `vague` checkpoint remains the next local day, the full muted Recognition surface toggles the card, and newly active Recognition/Dictation cards request one playback while manual buttons remain.
+- The user separately accepted the migration-first V2.2 Production sequence in `plan_docs/PLAN_V2_2_PRODUCTION_RELEASE.md`. That child plan owns the pinned `0007` Staging rehearsal, Production encrypted recovery point, constraint-only Production migration, exact Git/Vercel activation, bounded synthetic TTS check and release closeout.
 - Approval of one V2-8 slice does not authorize the later remote slice.
 
 ## Validation Plan
@@ -673,7 +677,7 @@ npm run backup:dry-run:schema6-fixture
 npm run build
 ```
 
-The completed local V2-8-3 Gate 1 implementation adds focused contracts for cutover-mode fail-closed behavior, Basic-Auth ordering, the `v2-schema6` mutation marker, exact clone/main/project guards, migration-digest drift, non-empty parity, secret-free evidence, paired rollback, Production-only AI activation and the four-attempt ceiling. V2-8-2.2 extends those contracts with independent `0004` pinning and partial-migration refusal. The current repository validation passes 80 files / 506 tests, with the existing Postgres integration file/test skipped. Dormant database commands are not remote evidence.
+The completed local V2-8-3 Gate 1 implementation adds focused contracts for cutover-mode fail-closed behavior, Basic-Auth ordering, the `v2-schema6` mutation marker, exact clone/main/project guards, migration-digest drift, non-empty parity, secret-free evidence, paired rollback, Production-only AI activation and the four-attempt ceiling. V2-8-2.2 extends those contracts with independent `0004` pinning and partial-migration refusal. V2.2 adds current/legacy FSRS scheduling and replay tests, `0007` constraint tests, V1/V2 backup-import checks, whole-surface card interaction checks, autoplay/source-routing checks, and browser-blocked playback handling. The current repository validation passes 97 files / 599 tests, with the existing Postgres integration file/test skipped. Dormant database commands and the unexecuted `0007` file are not remote evidence.
 
 Gate 0B adds independent protected Preview evidence for exact commit `2e6145386d018968f61a1bee1b6f897feebff627`: READY Preview on source ref `V2`, Vercel Authentication, `SYD1` Functions, 10-run navigation median/p95 `44.5/53ms`, data-ready median/p95 `52/62ms`, zero transition full-data GET, exactly one first queue POST, successful Recognition rating/rollback and zero AI provider call. Neon Console also reconfirmed the retained no-compute Schema 5 checkpoint and unchanged expiry. This evidence does not authorize Gate 2 or Production.
 
@@ -731,4 +735,4 @@ Stop the relevant child stage if:
 
 ## Documentation Result
 
-This master plan records the completed V2 release. The first AI-enabled product version, independent Active practice, daily planning, mobile refinement, bilingual examples, Standard-C audio and evidence-based Dashboard now run in Production. V1 remains only as paired recovery evidence; Gate 7 owns the honest natural-day/two-user stability observation and later cleanup.
+This master plan records the completed V2.1 Production release and the accepted V2.2 migration-first Production release sequence. The first AI-enabled product version, independent Active practice, daily planning, mobile refinement, bilingual examples, Standard-C audio and evidence-based Dashboard run in Production. V2.2 review cadence, whole-surface card interaction and autoplay/source repair move through the exact state transitions owned by `plan_docs/PLAN_V2_2_PRODUCTION_RELEASE.md`. V1 remains paired recovery evidence; Gate 7 owns the honest natural-day/two-user stability observation and later cleanup.

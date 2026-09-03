@@ -157,6 +157,7 @@ Schema version 3–5 backup import must not create review state or review event 
   - `historyOrigin` -> `history_origin`
   - uniqueness is enforced by `(person_id, vocabulary_item_id, review_profile)`
   - schema version 3–5 rows normalize to Recognition with `recognition-fsrs-v1`; earliest retained evidence supplies `firstRatedAt`, otherwise origin remains `legacy_unknown`
+  - schema version 6 accepts only `recognition-fsrs-v1|v2` for Recognition and `active-fsrs-v1|v2` for Active; unknown or cross-profile identifiers fail validation
 
 ### review_events
 
@@ -169,6 +170,7 @@ Schema version 3–5 backup import must not create review state or review event 
   - rating and interval values must pass database checks
   - `promptId`, `reviewProfile`, `activityType`, `answerOutcome`, `answerNormalizationVersion`, `targetRevision`, and `parameterSetId` map to their snake_case evidence columns
   - schema version 3–5 rows normalize to Recognition `recognition_card` / `self_rated` evidence and reject review rows targeting Active items
+  - schema version 6 requires the same explicit matching-profile V1/V2 Parameter Set identifiers as `review_states`
 
 ### review_settings
 

@@ -4,7 +4,7 @@ import {
   createEmptyVocabularyData,
 } from "./repository";
 import { normalizeReviewSettings } from "@/lib/review/settings";
-import { RECOGNITION_PARAMETER_SET_ID } from "@/lib/review/types";
+import { LEGACY_RECOGNITION_PARAMETER_SET_ID } from "@/lib/review/types";
 import {
   normalizeLearningTrack,
   normalizeOptionalText,
@@ -109,7 +109,7 @@ function migrateReviewEvent(value: unknown, personId: string) {
     parameterSetId:
       typeof value.parameterSetId === "string" && value.parameterSetId.trim()
         ? value.parameterSetId
-        : RECOGNITION_PARAMETER_SET_ID,
+        : LEGACY_RECOGNITION_PARAMETER_SET_ID,
   };
 }
 
@@ -154,7 +154,7 @@ function migrateReviewState(
     parameterSetId:
       typeof value.parameterSetId === "string" && value.parameterSetId.trim()
         ? value.parameterSetId
-        : RECOGNITION_PARAMETER_SET_ID,
+        : LEGACY_RECOGNITION_PARAMETER_SET_ID,
     firstRatedAt,
     historyOrigin: firstRatedAt ? "recorded" : "legacy_unknown",
   };

@@ -14,6 +14,7 @@ import {
 } from "@/components/study/use-daily-study";
 import { PressableButton } from "@/components/ui/motion-primitives";
 import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
+import { useWordPronunciation } from "@/components/use-word-pronunciation";
 import {
   ACTIVE_ANSWER_NORMALIZATION_VERSION,
   compareActiveTypedAnswer,
@@ -46,7 +47,6 @@ import {
 } from "@/lib/review/session-queue";
 import { reviewRatings } from "@/lib/stage-two-data";
 import { playReviewCompleteSound } from "@/lib/ui/sound-player";
-import { cancelEnglishSpeech, speakEnglishText } from "@/lib/ui/speech-synthesis";
 import { getActiveTrackVocabularyItems } from "@/lib/vocabulary/repository";
 
 export type ActivePracticeMode = Extract<
@@ -162,7 +162,6 @@ export function ActivePracticeSession({ zone, mode }: Props) {
   const [submittedItemId, setSubmittedItemId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [isListening, setIsListening] = useState(false);
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [message, setMessage] = useState("");
   const requestKeyRef = useRef("");
@@ -236,8 +235,19 @@ export function ActivePracticeSession({ zone, mode }: Props) {
   const currentItem = sessionIds?.length
     ? activeItems.find((item) => item.id === sessionIds[0]) ?? null
     : null;
-
-  useEffect(() => () => cancelEnglishSpeech(), [currentItem?.id]);
+  const pronunciationActivationKey =
+    currentItem && sessionPlan
+      ? `${sessionPlan.planId}:${currentItem.id}:${completedAttempts.length}:${mode}`
+      : null;
+  const { isPlaying: isListening, play: listen } = useWordPronunciation({
+    text: currentItem?.surfaceText ?? null,
+    purpose: mode === "dictation" ? "active-dictation" : "active-answer",
+    activationKey: pronunciationActivationKey,
+    autoPlay: mode === "dictation",
+    unsupportedMessage:
+      "Speech is not available in this browser. You can reveal the answer and continue.",
+    onMessage: setMessage,
+  });
   const currentMeanings = currentItem ? meaningsFor(currentItem) : [];
   const sessionTotal = completedCount + (sessionIds?.length ?? 0);
   const progressPercent = sessionTotal
@@ -312,28 +322,6 @@ export function ActivePracticeSession({ zone, mode }: Props) {
       cancelled = true;
     };
   }, [completedAttempts.length, currentItem, promptTokens, sessionPlan]);
-
-  const listen = async () => {
-    if (!currentItem || isListening) {
-      return;
-    }
-    setIsListening(true);
-    try {
-      const result = await speakEnglishText(
-        currentItem.surfaceText,
-        mode === "dictation" ? "active-dictation" : "active-answer",
-      );
-      if (result.status === "unsupported") {
-        setMessage("Speech is not available in this browser. You can reveal the answer and continue.");
-      } else if (result.status === "unavailable") {
-        setMessage(result.message);
-      } else if (result.status === "spoken" && result.source === "local-fixture") {
-        setMessage("Local preview audio played.");
-      }
-    } finally {
-      setIsListening(false);
-    }
-  };
 
   const revealSay = () => {
     if (revealed) {

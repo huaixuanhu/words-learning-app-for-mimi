@@ -280,7 +280,7 @@ describe("daily study runtime engine", () => {
     expect(recovered.data.reviewEvents).toHaveLength(2);
     expect(recovered.state).toMatchObject({
       reviewProfile: "active",
-      parameterSetId: "active-fsrs-v1",
+      parameterSetId: "active-fsrs-v2",
       dueAt: first.state.dueAt,
       lastReviewedAt: first.state.lastReviewedAt,
       reviewCount: first.state.reviewCount,

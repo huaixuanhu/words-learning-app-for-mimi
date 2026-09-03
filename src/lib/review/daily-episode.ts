@@ -211,6 +211,7 @@ export function scheduleDailyEpisodeAttempt(input: {
   rating: ReviewRating;
   reviewedAt: string;
   plan: DailyStudyPlanRecord;
+  parameterSetId?: string;
 }) {
   assertReviewPlan(input.plan);
   const reviewedAt = timestamp(input.reviewedAt, "reviewedAt");
@@ -250,6 +251,7 @@ export function scheduleDailyEpisodeAttempt(input: {
     input.previousState,
     effectiveRating,
     input.reviewedAt,
+    input.parameterSetId,
   );
   const requiresNextDayCheckpoint =
     failedAnchor || (wasNewAtPlanStart && input.rating === "vague");

@@ -35,7 +35,11 @@ describe("Stage 6 Active practice UI contract", () => {
   });
 
   it("retains speech fallback and guarded keyboard controls", () => {
-    expect(sessionSource).toContain("speakEnglishText");
+    expect(sessionSource).toContain("useWordPronunciation");
+    expect(sessionSource).toContain('autoPlay: mode === "dictation"');
+    expect(sessionSource).toContain('purpose: mode === "dictation"');
+    expect(sessionSource).toContain("completedAttempts.length");
+    expect(sessionSource).toContain("onClick={() => void listen()}");
     expect(sessionSource).toContain("Speech is not available in this browser");
     expect(sessionSource).toContain("isReviewRatingArrowKey");
     expect(sessionSource).toContain("event.isComposing");
