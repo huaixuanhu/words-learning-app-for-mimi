@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Risk-scaled governance preflight for this repository.
 
-Generated/adapted from human-ai-governance v0.7.1.
+Generated/adapted from human-ai-governance v0.7.5.
 
 The repository runs this gate explicitly at Tier 3. Strict side-effect scanning
 remains opt-in at the script level and is enabled by the project npm command.
@@ -20,7 +20,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
-SKILL_VERSION = "0.7.1"
+SKILL_VERSION = "0.7.5"
 SKILL_MARKER_RE = re.compile(
     r"Generated/adapted from human-ai-governance v(?P<version>\d+\.\d+\.\d+)"
 )

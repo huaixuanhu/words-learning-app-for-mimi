@@ -18,7 +18,7 @@ class TemporaryGitRepository:
     def __init__(
         self,
         *,
-        marker_version: str = "0.7.1",
+        marker_version: str = "0.7.5",
         source_text: str = "export const baseline = true;\n",
     ) -> None:
         self._temporary_directory = tempfile.TemporaryDirectory(
@@ -111,13 +111,13 @@ class TemporaryGitRepository:
         return result
 
 
-class PreflightV071ContractTests(unittest.TestCase):
+class PreflightV075ContractTests(unittest.TestCase):
     maxDiff = None
 
     def make_repository(
         self,
         *,
-        marker_version: str = "0.7.1",
+        marker_version: str = "0.7.5",
         source_text: str = "export const baseline = true;\n",
     ) -> TemporaryGitRepository:
         repository = TemporaryGitRepository(
@@ -164,7 +164,7 @@ class PreflightV071ContractTests(unittest.TestCase):
             (
                 "## 2026-07-26 10:15 AEST\n\n"
                 f"- Covered `{changed_path}` in the test fixture.\n"
-                "- Reason: Verify the v0.7.1 preflight contract.\n"
+                "- Reason: Verify the v0.7.5 preflight contract.\n"
             ),
         )
         repository.write(
@@ -174,7 +174,7 @@ class PreflightV071ContractTests(unittest.TestCase):
                 "- Task: Exercise a material-change fixture.\n"
                 "- Plan agreed: Yes; bounded local test.\n"
                 f"- Changed files: {changed_path} and governance records.\n"
-                "- Reason: Verify the v0.7.1 preflight contract.\n"
+                "- Reason: Verify the v0.7.5 preflight contract.\n"
                 "- Validation: The current unittest owns the assertion.\n"
                 "- Safety notes: Temporary local Git repository; no remote access.\n"
             ),
@@ -204,7 +204,7 @@ class PreflightV071ContractTests(unittest.TestCase):
 
         self.assertEqual(1, result.returncode, output)
         self.assertIn("FAIL:", output)
-        self.assertIn("v0.7.1", output)
+        self.assertIn("v0.7.5", output)
 
     def test_non_repository_fails_closed(self) -> None:
         with tempfile.TemporaryDirectory(prefix="governance-not-repository-") as temp:
@@ -362,7 +362,7 @@ class PreflightV071ContractTests(unittest.TestCase):
         repository.stage("AGENTS.md")
         repository.write(
             "AGENTS.md",
-            "<!-- Generated/adapted from human-ai-governance v0.7.1 -->\n",
+            "<!-- Generated/adapted from human-ai-governance v0.7.5 -->\n",
         )
         self.record_material_change(repository, "AGENTS.md")
 

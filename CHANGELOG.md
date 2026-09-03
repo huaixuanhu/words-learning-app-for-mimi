@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## 2026-09-03 18:56 AEST
+
+- Migrated the repository governance contract from the project-adapted `human-ai-governance v0.7.1` baseline to `v0.7.5` while retaining Tier 3 and every existing Production, credential, provider, personal-data and remote-action approval boundary.
+- Updated `AGENTS.md` with compact decision-complete engineering communication, subject-grounded problem reporting, the standing `plain` technical-language preference, consequence-routed persistent recovery and plan-context routing through the existing Project Map.
+- Kept the existing Project Map as the current routing entrypoint and did not add a separate `PLAN_INDEX`: the canonical current plans and retained historical sources are already identified there, while any later index remains a routing read model without authority.
+- Updated only the `preflight` version marker and matching regression fixtures because the upstream `v0.7.5` generic gate has no behavioral change from `v0.7.1`; the repository's stronger fail-closed Git inspection, exact snapshot handling, secret scan and side-effect review remain intact.
+- Synchronized the current governance-version claims in Architecture and the V1 master plan. No new peer or child plan was created for this bounded migration.
+- No application runtime, dependency, schema, learner data, credential, provider, database, Git remote, deployment or Production state changed.
+- Reason: adopt the `v0.7.2` through `v0.7.5` communication, terminology, plan-routing and recovery guidance without weakening the mature project-specific Tier 3 controls or adding mechanical style gates.
+
 ## 2026-08-23 23:43 AEST
 
 - Migrated the repository governance contract from the project-adapted `human-ai-governance v0.4.0` baseline to `v0.7.1` while retaining Tier 3 and every existing Production, credential, provider, personal-data and remote-action approval boundary.

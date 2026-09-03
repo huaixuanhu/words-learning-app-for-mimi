@@ -1,22 +1,25 @@
 # AGENTS.md
 
-<!-- Generated/adapted from human-ai-governance v0.7.1 -->
+<!-- Generated/adapted from human-ai-governance v0.7.5 -->
 
 ## Collaboration
 
 - Use strict low-hallucination mode. Verify uncertain or drift-prone claims from the relevant source before treating them as current.
 - Plan before material changes. One accepted plan covers safe local implementation inside its declared scope.
 - Pause again only for a material scope expansion, consequential external action, unresolved material choice, or an explicit approval gate in this file.
+- When the user explicitly requests completion persistence, keep the accepted outcome and safe in-scope diagnosis, repair, validation and preparation active across failed attempts. Route retries by credible single and cumulative consequence; pause only at the next consequence-bearing action outside the accepted envelope or another existing approval boundary.
 - Keep changes focused, protect user-owned work, and never revert unrelated changes without explicit approval.
 - Update a document when its current claim would otherwise become false, incomplete, or misleading. Prefer one canonical owner plus links over repeated status history.
 - Child or branch plans must declare `Source plan`, `Derived from`, `Scope`, `Non-Scope`, and `Exit criteria` near the top.
+- Default user-facing engineering plans, progress, evidence, results and handoffs to compact, decision-complete communication. Lead with the conclusion or current state, retain the evidence, material risk or uncertainty, required decision and next action that affect review, and distinguish inspected, changed, validated, committed, pushed, deployed and activated states.
+- When introducing a problem or switching between problems, name the affected feature, component, file, service or operation, describe the observed behavior, and state the current handling. Name the actor or approver when known without inventing an owner, cause or completion state.
 - Treat platform sandbox, approval, connector, and access settings as technical capability boundaries. They do not expand the accepted task scope or this project's authorization boundaries.
 - Keep engineering-governance writing for plans, Architecture, specifications, runbooks, evidence and approval records. Route audience-facing expression by the purpose of each content unit; expression may change prose and organization while facts, uncertainty, evidence ceilings, disclosures, safety controls, authority, approval and validation remain exact.
 - Treat repeated contrast, punctuation and list patterns as semantic revision signals. Do not use phrase counts, regular-expression style checks, punctuation quotas or AI-detector scores as acceptance gates.
 - For important main-workspace tasks, use `xhigh` for bounded direct work, Max for deep coupled reasoning, and Ultra when adaptive separable work materially improves coverage. Reasoning mode remains separate from Tier, authorization and evidence, and must not become a preflight rule.
 - Prefer Chinese for planning and handoff documents while preserving English technical terms with a Chinese explanation on first mention when useful.
 - Ordinary product UI should use short, natural English for immersion. Chinese or bilingual copy remains appropriate for irreversible actions, privacy, credentials, backup replacement, and external AI data transmission.
-- Use common technical language and add one short plain-language explanation when a narrower term is necessary.
+- Treat technical-language choice as separate from writing mode and review density. The standing project preference selects `plain` for user-facing technical explanations: use common language and add one short explanation when a narrower term is necessary, while preserving exact engineering work, evidence, identifiers, safety controls and authorization boundaries.
 
 ## Project Map
 
@@ -32,6 +35,7 @@
 - Version hold for SSO（Single Sign-On，单点登录）and confidential per-person isolation: `plan_docs/PLAN_VERSION_HOLD_MULTI_USER_CONFIDENTIAL_ISOLATION.md`.
 - Change history and execution evidence: `CHANGELOG.md` and `governance/AI_AGENT_LOG.md`.
 - Governance gate: `npm run governance:check`.
+- Plan routing entrypoint: this Project Map. Keep one clear plan direct; if nested or parallel plans, multi-session continuation or retained history makes the current entry ambiguous, add a compact `PLAN_INDEX.md` or `PLAN_INDEX.yaml` as a routing read model. It cannot grant scope, authority, approval or completion; load only the matched current plan, necessary parents, status owner and relevant evidence. If an index is adopted, keep `lifecycle_status`, `authority_state` and `load_policy` separate and synchronize mutable header mirrors at closeout.
 
 ## Current Product And Runtime
 

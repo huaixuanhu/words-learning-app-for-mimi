@@ -1,5 +1,17 @@
 # AI Agent Log
 
+## 2026-09-03 18:56 AEST
+
+- Task: migrate this repository from its project-adapted `human-ai-governance v0.7.1` contract to the installed canonical `v0.7.5` contract and commit the validated result to the current `v2.2` branch.
+- Plan agreed: yes. The user reviewed the read-only audit, explicitly confirmed complete execution of Stage 1.3-1.4, and authorized a direct commit to the current branch.
+- Working tier: Tier 3 project; current and target authority on the affected surface are limited to local governance instructions, validation markers/tests and current documentation claims. This slice introduces no application, persistence, provider, account or Production authority.
+- Changed files: `AGENTS.md`, `ARCHITECTURE.md`, `plan_docs/PLAN_V1_MASTER.md`, `governance/preflight.py`, `governance/test_preflight.py`, `CHANGELOG.md`, and this log. `package.json` and its aggregate command remain unchanged.
+- Governance result: the active marker and current Architecture/master-plan claims are v0.7.5. Compact review density, subject-grounded issue descriptions, the standing `plain` terminology choice, plan-context routing and persistent safe recovery are contextual collaboration decisions; they do not create script style gates, another tier or broader authority.
+- Preflight result: upstream behavior is unchanged from v0.7.1 apart from the version marker, so the proven project adapter remains in place. Fail-closed Git inspection, exact NUL-delimited status parsing, separate staged-index/working-tree snapshots, secret scanning and added-line side-effect review remain authoritative.
+- Validation: `npm run governance:check` passed the Tier 3 v0.7.5 preflight and all 22 governance regression tests; `git diff --check` passed. Application Vitest, lint, typecheck, backup dry-runs and Production build were not rerun because no application runtime, dependency, schema, backup or deployment contract changed.
+- Safety notes: the `v2.2` checkout was clean before editing. No `.env` value, credential, learner record, remote database, provider account, Vercel setting, GitHub remote, deployment or Production data was read or changed. Commit is authorized for this validated slice; push and merge remain separately approval-gated.
+- Reason: adopt v0.7.5's current collaboration routes while preserving the repository's proven Tier 3 enforcement and exact external-action boundaries.
+
 ## 2026-08-23 23:43 AEST
 
 - Task: migrate this repository from its project-adapted `human-ai-governance v0.4.0` contract to the installed canonical `v0.7.1` contract.
