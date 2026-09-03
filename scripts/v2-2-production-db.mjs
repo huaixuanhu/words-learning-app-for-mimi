@@ -18,7 +18,10 @@ import {
   V2_2_STATES_CONSTRAINT,
   V22ProductionGuardError,
 } from "./v2-2-production-contract.mjs";
-import { retrieveGuardedTarget } from "./v2-1-neon-target.mjs";
+import {
+  confirmGuardedTargetReady,
+  retrieveGuardedTarget,
+} from "./v2-1-neon-target.mjs";
 import {
   inspectPotentialInFlightWrites,
   inventorySchema6,
@@ -287,11 +290,19 @@ function dataParity(before, after) {
 }
 
 async function openTarget(target) {
-  const guardedTarget = await retrieveGuardedTarget(target);
+  let guardedTarget = await retrieveGuardedTarget(target, {
+    allowArchivedStaging: target === "staging",
+  });
   const pool = createPool(guardedTarget.connectionString);
   try {
     const client = await pool.connect();
     await client.query("set timezone to 'UTC'");
+    if (guardedTarget.branchState === "archived") {
+      guardedTarget = await confirmGuardedTargetReady(
+        target,
+        guardedTarget.safeIdentity.identityDigest,
+      );
+    }
     return { client, guardedTarget, pool };
   } catch (error) {
     await pool.end();

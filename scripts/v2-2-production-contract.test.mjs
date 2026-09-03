@@ -11,8 +11,10 @@ import {
   classifyConstraintGeneration,
   compareDataSnapshots,
   parseTarget,
+  sha256,
   V2_2_MIGRATION_SHA256,
 } from "./v2-2-production-contract.mjs";
+import { selectTargetMetadata } from "./v2-1-neon-target.mjs";
 
 function constraints(generation) {
   const ids =
@@ -113,6 +115,47 @@ describe("V2.2 Production release guard", () => {
       releaseCommitSha: "c".repeat(40),
       target: "production-main",
     });
+  });
+
+  it("permits only V2.2 to wake an exact archived Staging branch", () => {
+    const projectId = "approved-project";
+    const mainId = "br-main";
+    const stagingId = "br-staging";
+    const input = {
+      approvedProjectSha256: sha256(projectId),
+      branches: [
+        {
+          current_state: "ready",
+          id: mainId,
+          name: "main",
+          parent_id: null,
+          project_id: projectId,
+        },
+        {
+          current_state: "archived",
+          id: stagingId,
+          name: "staging",
+          parent_id: mainId,
+          project_id: projectId,
+        },
+      ],
+      endpoints: [
+        {
+          branch_id: stagingId,
+          id: "ep-staging",
+          project_id: projectId,
+          region_id: "aws-ap-southeast-2",
+          type: "read_write",
+        },
+      ],
+      projects: [{ id: projectId }],
+      target: "staging",
+    };
+    expect(() => selectTargetMetadata(input)).toThrow(/expected staging/u);
+    expect(
+      selectTargetMetadata({ ...input, allowArchivedStaging: true }).branch
+        .current_state,
+    ).toBe("archived");
   });
 
   it("classifies only complete v1 or v2 constraint pairs", () => {

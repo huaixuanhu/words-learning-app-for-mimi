@@ -1,7 +1,7 @@
 # Words Learning App For Mimi V2.2 Production Release
 
 Created: 2026-09-03 AEST
-Last updated: 2026-09-03 AEST
+Last updated: 2026-09-04 AEST
 
 Source plan:
 
@@ -48,7 +48,7 @@ Exit criteria:
 
 Status:
 
-- `Stage 2.2.6 candidate validation complete; remote execution pending` on 2026-09-03 AEST. The user explicitly confirmed the V2.2 change and asked Codex to continue through Production release. Full Vitest, ESLint, TypeScript, three backup dry-runs, Production build, governance and zero-finding full/Production npm audits pass on the prepared working tree.
+- `Stage 2.2.6 candidate validation complete; Staging execution pending` on 2026-09-04 AEST. The user explicitly confirmed the V2.2 change and asked Codex to continue through Production release. Full Vitest passes 98 files / 607 tests with the existing Postgres integration file/test skipped; ESLint, TypeScript, three backup dry-runs, Production build, governance and zero-finding full/Production npm audits pass on the prepared candidate.
 
 ## Stage 2.2.6 Candidate Freeze And Release Guards
 
@@ -64,10 +64,11 @@ Exit claim: one clean, validated, digest-pinned candidate exists, and no remote 
 ## Stage 2.2.7 Staging Rehearsal
 
 1. Resolve the source-pinned Neon project, ready `staging` child branch, exact Sydney read-write endpoint, database and role through the guarded control-plane lookup.
-2. Capture the read-only Schema 6, parameter-set constraint, aggregate count, invariant and table-digest inventory.
-3. Apply pinned `0007` once. If the result is ambiguous, run read-only reconciliation before considering any retry.
-4. Prove both constraints match the V2.2 contract and all before/after table digests match.
-5. Push the exact clean candidate to GitHub `v2.2` only after Staging is compatible.
+2. If the exact retained `staging` branch is automatically archived for inactivity, access its existing endpoint to let Neon unarchive it, then require the same branch/parent/endpoint identity and `ready` state. Do not create, restore, rename or delete a branch.
+3. Capture the read-only Schema 6, parameter-set constraint, aggregate count, invariant and table-digest inventory.
+4. Apply pinned `0007` once. If the result is ambiguous, run read-only reconciliation before considering any retry.
+5. Prove both constraints match the V2.2 contract and all before/after table digests match.
+6. Push the exact clean candidate to GitHub `v2.2` only after Staging is compatible.
 
 Exit claim: Staging accepts V1/V2 parameter identifiers without any study-data rewrite, and GitHub `v2.2` points to the rehearsed candidate.
 

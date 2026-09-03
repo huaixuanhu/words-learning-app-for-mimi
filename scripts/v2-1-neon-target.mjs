@@ -103,6 +103,7 @@ export function selectTargetMetadata({
   branches,
   endpoints,
   target,
+  allowArchivedStaging = false,
   approvedProjectSha256 =
     V2_STAGE8_3_APPROVED_PRODUCTION_PROJECT_ID_SHA256,
 }) {
@@ -131,9 +132,11 @@ export function selectTargetMetadata({
               candidate.project_id === project.id &&
               candidate.name === "staging" &&
               candidate.parent_id === main.id &&
-              candidate.current_state === "ready",
+              (candidate.current_state === "ready" ||
+                (allowArchivedStaging &&
+                  candidate.current_state === "archived")),
           ),
-          "The ready staging child branch was not resolved exactly once",
+          "The expected staging child branch was not resolved exactly once",
           "V2_1_NEON_STAGING_BRANCH_MISMATCH",
         );
   const endpoint = only(
@@ -212,7 +215,10 @@ export function validateConnectionUri(uri, metadata) {
   return parsed;
 }
 
-export async function retrieveGuardedTarget(target) {
+export async function retrieveGuardedTarget(
+  target,
+  { allowArchivedStaging = false } = {},
+) {
   const apiKey = keychainApiKey();
   const projectId = keychainProjectId();
   const [projectPayload, branchPayload, endpointPayload] = await Promise.all([
@@ -234,6 +240,7 @@ export async function retrieveGuardedTarget(target) {
       ? endpointPayload.endpoints
       : [],
     target,
+    allowArchivedStaging,
   });
   const query = new URLSearchParams({
     branch_id: metadata.branch.id,
@@ -248,10 +255,46 @@ export async function retrieveGuardedTarget(target) {
   );
   const parsed = validateConnectionUri(connectionPayload?.uri, metadata);
   return {
+    branchState: metadata.branch.current_state,
     connectionString: parsed.toString(),
     expectedDatabase: DATABASE_NAME,
     expectedRole: ROLE_NAME,
     metadata,
     safeIdentity: metadata.safeIdentity,
   };
+}
+
+function wait(milliseconds) {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
+export async function confirmGuardedTargetReady(
+  target,
+  expectedIdentityDigest,
+  { attempts = 10, intervalMs = 2_000 } = {},
+) {
+  let lastError;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      const guardedTarget = await retrieveGuardedTarget(target);
+      if (guardedTarget.safeIdentity.identityDigest !== expectedIdentityDigest) {
+        reject(
+          "The Neon target identity changed while becoming ready",
+          "V2_1_NEON_READY_IDENTITY_MISMATCH",
+        );
+      }
+      return guardedTarget;
+    } catch (error) {
+      lastError = error;
+      if (
+        target !== "staging" ||
+        error?.code !== "V2_1_NEON_STAGING_BRANCH_MISMATCH" ||
+        attempt === attempts
+      ) {
+        throw error;
+      }
+      await wait(intervalMs);
+    }
+  }
+  throw lastError;
 }
