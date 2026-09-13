@@ -72,6 +72,12 @@ describe("workspace read runtime boundary", () => {
     { ok: true, data },
     { ok: true, runtime: { mode: "local" }, data },
     { ok: true, runtime: { mode: "postgres-production" }, data: { items: [] } },
+    { ok: true, runtime: { mode: "postgres-production" }, data: { ...data, people: [null] } },
+    { ok: true, runtime: { mode: "postgres-production" }, data: { ...data, people: [{}] } },
+    { ok: true, runtime: { mode: "postgres-production" }, data: { ...data, selectedPersonId: "missing-learner" } },
+    { ok: true, runtime: { mode: "postgres-production" }, data: { ...data, items: [null] } },
+    { ok: true, runtime: { mode: "postgres-production" }, data: { ...data, items: [{ id: "incomplete-word" }] } },
+    { ok: true, runtime: { mode: "postgres-production" }, data: { ...data, reviewEvents: [null] } },
   ])("rejects a successful HTTP response with incomplete runtime or snapshot data", async (body) => {
     respond(body);
     await expect(readPostgresData(null)).resolves.toMatchObject({ status: "error" });

@@ -239,12 +239,32 @@ function isWorkspaceSnapshot(value: unknown): value is VocabularyData {
     return false;
   }
 
-  return [
+  const collections = [
     "people", "items", "importBatches", "reviewStates", "reviewEvents",
     "settingsByPerson", "dailyStudyDefaults", "dailyStudyPlans",
     "vocabularyCreationFacts", "vocabularyCreationReversals", "aiRuns",
     "aiEnrichmentDrafts", "vocabularyRelations",
-  ].every((key) => Array.isArray(value[key]));
+  ];
+  if (!collections.every((key) => Array.isArray(value[key]) && value[key].every(isRecord))) {
+    return false;
+  }
+
+  const people = value.people as Record<string, unknown>[];
+  if (!people.every((person) =>
+    typeof person.id === "string" && person.id.length > 0 &&
+    typeof person.displayName === "string" && typeof person.isActive === "boolean") ||
+    !people.some((person) => person.id === value.selectedPersonId && person.isActive === true)) {
+    return false;
+  }
+
+  return (value.items as Record<string, unknown>[]).every((item) =>
+    ["id", "personId", "surfaceText", "normalizedText", "meaningZh", "example", "notes", "createdAt", "timezone"]
+      .every((key) => typeof item[key] === "string") &&
+    ["meaningsZh", "examples"].every((key) =>
+      Array.isArray(item[key]) && item[key].every((entry) => typeof entry === "string")) &&
+    (item.exampleTranslationsZh === undefined ||
+      (Array.isArray(item.exampleTranslationsZh) &&
+        item.exampleTranslationsZh.every((entry) => typeof entry === "string"))));
 }
 
 export async function readPostgresData(selectedPersonId: string | null): Promise<WorkspaceReadResult> {
@@ -388,18 +408,35 @@ function useVocabularyDataStore(): VocabularyDataContextValue {
     const revisionAtStart = clientRevisionRef.current;
     setIsRefreshing(true);
     const request = (async () => {
-      const postgresData = await readPostgresData(getStoredSelectedPersonId());
+      const requestedPersonId = getStoredSelectedPersonId();
+      const postgresData = await readPostgresData(requestedPersonId);
 
       if (postgresData.status === "ready") {
         if (clientRevisionRef.current === revisionAtStart) {
-          installSnapshot(
-            postgresData.data,
-            postgresData.runtime,
-            postgresData.serverNow,
-          );
-          setLoadError(null);
-          if (activeMutationRevisionRef.current === null) {
-            clientSnapshotPatchesRef.current = [];
+          const latestStoredPersonId = getStoredSelectedPersonId();
+          const selectionChanged = latestStoredPersonId !== requestedPersonId;
+          if (selectionChanged && latestStoredPersonId &&
+            !postgresData.data.people.some((person) => person.id === latestStoredPersonId && person.isActive)) {
+            // A newer learner may have been added after this snapshot was read.
+            // Keep its preference until the pending storage-event refresh runs.
+            setLoadError("The selected learner changed while loading. Retry to open their saved words.");
+            return;
+          }
+
+          try {
+            installSnapshot(
+              selectionChanged && latestStoredPersonId
+                ? { ...postgresData.data, selectedPersonId: latestStoredPersonId }
+                : postgresData.data,
+              postgresData.runtime,
+              postgresData.serverNow,
+            );
+            setLoadError(null);
+            if (activeMutationRevisionRef.current === null) {
+              clientSnapshotPatchesRef.current = [];
+            }
+          } catch {
+            setLoadError(WORKSPACE_READ_ERROR);
           }
         }
 

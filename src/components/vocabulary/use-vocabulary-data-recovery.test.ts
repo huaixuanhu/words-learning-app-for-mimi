@@ -115,6 +115,56 @@ describe("workspace load recovery and storage preservation", () => {
     expect(getItem).not.toHaveBeenCalledWith(VOCABULARY_STORAGE_KEY);
   });
 
+  it.each([true, false])("preserves a newer cross-tab learner selection while an older GET finishes (learner already in response: %s)", async (newLearnerAlreadyIncluded) => {
+    const newerPersonId = "00000000-0000-4000-8000-000000000024";
+    const bothLearners = cloudSnapshot();
+    bothLearners.people.push({ ...bothLearners.people[0], id: newerPersonId, displayName: "Fixture second learner" });
+    let finishFirst!: (response: Response) => void;
+    const fetch = vi.fn()
+      .mockImplementationOnce(() => new Promise<Response>((resolve) => { finishFirst = resolve; }))
+      .mockResolvedValueOnce(Response.json({
+        ok: true, runtime: { mode: "postgres-production" },
+        data: { ...bothLearners, selectedPersonId: newerPersonId },
+      }));
+    vi.stubGlobal("fetch", fetch);
+    const initialRead = render().workspace.revalidateAfterMutation();
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+
+    // This write and refresh are the other tab's selection and its storage event.
+    storage.set(selectedKey, newerPersonId);
+    const storageEventRead = render().workspace.revalidateAfterMutation();
+    finishFirst(Response.json({
+      ok: true, runtime: { mode: "postgres-production" },
+      data: newLearnerAlreadyIncluded ? bothLearners : cloudSnapshot(),
+    }));
+    await Promise.all([initialRead, storageEventRead]);
+    const { workspace } = render();
+
+    expect(fetch.mock.calls.map(([url]) => url)).toEqual([
+      `/api/storage/data?selectedPersonId=${cloudPersonId}`,
+      `/api/storage/data?selectedPersonId=${newerPersonId}`,
+    ]);
+    expect(storage.get(selectedKey)).toBe(newerPersonId);
+    expect(workspace.data.selectedPersonId).toBe(newerPersonId);
+    expect(workspace.loadError).toBeNull();
+    expect(setItem.mock.calls.filter(([key]) => key === selectedKey).every(([, value]) => value === newerPersonId)).toBe(true);
+  });
+
+  it("shows recoverable failure for malformed nested cloud data without changing the saved learner", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({
+      ok: true, runtime: { mode: "postgres-production" },
+      data: { ...cloudSnapshot(), people: [null] },
+    })));
+    await render().workspace.revalidateAfterMutation();
+    const { workspace, visiblePages } = render();
+
+    expect(workspace.isLoaded).toBe(false);
+    expect(workspace.loadError).toBeTruthy();
+    expect(visiblePages).toBeNull();
+    expect(storage.get(selectedKey)).toBe(cloudPersonId);
+    expect(setItem).not.toHaveBeenCalled();
+  });
+
   it("keeps the accepted cloud snapshot visible after a failed refresh and reports stale data", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(readyResponse()).mockRejectedValueOnce(new Error("offline")));
     await render().workspace.revalidateAfterMutation();

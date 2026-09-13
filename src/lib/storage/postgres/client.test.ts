@@ -1,5 +1,12 @@
 import type { PoolClient } from "@neondatabase/serverless";
+import { EventEmitter } from "node:events";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+function createTransactionClient(query = vi.fn().mockResolvedValue({ rows: [] })) {
+  const release = vi.fn();
+  const client = Object.assign(new EventEmitter(), { query, release });
+  return { client: client as unknown as PoolClient, query, release };
+}
 
 describe("Postgres pool error handling", () => {
   beforeEach(() => {
@@ -40,6 +47,8 @@ describe("Postgres pool error handling", () => {
     expect(getPostgresPool()).toBe(first);
     expect(getPostgresPool()).toBe(first);
     expect(first.listenerCount("error")).toBe(1);
+    expect(first.listenerCount("release")).toBe(1);
+    expect(first.options.connectionTimeoutMillis).toBe(10_000);
   });
 
   it("keeps a failed request rejected without issuing another query", async () => {
@@ -54,9 +63,7 @@ describe("Postgres pool error handling", () => {
   it("rolls back a failed mutation without replaying the callback", async () => {
     const { getPostgresPool, withPostgresTransaction } = await import("./client");
     const failure = new Error("fixture mutation failed");
-    const query = vi.fn().mockResolvedValue({ rows: [] });
-    const release = vi.fn();
-    const client = { query, release } as unknown as PoolClient;
+    const { client, query, release } = createTransactionClient();
     const connect = vi.spyOn(getPostgresPool(), "connect").mockImplementation(() => Promise.resolve(client));
     const callback = vi.fn().mockRejectedValue(failure);
 
@@ -64,7 +71,8 @@ describe("Postgres pool error handling", () => {
     expect(connect).toHaveBeenCalledTimes(1);
     expect(callback).toHaveBeenCalledExactlyOnceWith(client);
     expect(query.mock.calls).toEqual([["begin"], ["rollback"]]);
-    expect(release).toHaveBeenCalledTimes(1);
+    expect(release).toHaveBeenCalledExactlyOnceWith(false);
+    expect(client.listenerCount("error")).toBe(0);
   });
 
   it("preserves an uncertain commit error even when rollback also fails", async () => {
@@ -74,8 +82,7 @@ describe("Postgres pool error handling", () => {
       .mockResolvedValueOnce({ rows: [] })
       .mockRejectedValueOnce(commitFailure)
       .mockRejectedValueOnce(new Error("fixture rollback failed"));
-    const release = vi.fn();
-    const client = { query, release } as unknown as PoolClient;
+    const { client, release } = createTransactionClient(query);
     const connect = vi.spyOn(getPostgresPool(), "connect").mockImplementation(() => Promise.resolve(client));
     const callback = vi.fn().mockResolvedValue("fixture saved");
 
@@ -83,7 +90,8 @@ describe("Postgres pool error handling", () => {
     expect(connect).toHaveBeenCalledTimes(1);
     expect(callback).toHaveBeenCalledExactlyOnceWith(client);
     expect(query.mock.calls).toEqual([["begin"], ["commit"], ["rollback"]]);
-    expect(release).toHaveBeenCalledTimes(1);
+    expect(release).toHaveBeenCalledExactlyOnceWith(true);
+    expect(client.listenerCount("error")).toBe(0);
   });
 
   it("does not run a mutation or retry when acquiring a connection fails", async () => {
@@ -95,5 +103,68 @@ describe("Postgres pool error handling", () => {
     await expect(withPostgresTransaction(callback)).rejects.toBe(failure);
     expect(connect).toHaveBeenCalledTimes(1);
     expect(callback).not.toHaveBeenCalled();
+  });
+
+  it("catches an asynchronous checked-out connection error and never commits or retries", async () => {
+    const { getPostgresPool, withPostgresTransaction } = await import("./client");
+    const failure = new Error("synthetic transport details that must stay private");
+    const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const { client, query, release } = createTransactionClient();
+    const connect = vi.spyOn(getPostgresPool(), "connect")
+      .mockImplementation(() => Promise.resolve(client));
+    const callback = vi.fn(async () => {
+      await new Promise<void>((resolve) => {
+        queueMicrotask(() => {
+          client.emit("error", failure);
+          resolve();
+        });
+      });
+      return "cannot claim saved";
+    });
+
+    await expect(withPostgresTransaction(callback)).rejects.toBe(failure);
+    expect(connect).toHaveBeenCalledTimes(1);
+    expect(callback).toHaveBeenCalledTimes(1);
+    expect(query.mock.calls).toEqual([["begin"]]);
+    expect(release).toHaveBeenCalledExactlyOnceWith(true);
+    expect(client.listenerCount("error")).toBe(0);
+    expect(log.mock.calls).toEqual([
+      ["POSTGRES_TRANSACTION_CONNECTION_ERROR: a checked-out connection failed."],
+    ]);
+  });
+
+  it("preserves the query rejection when the same transport failure also emits an event", async () => {
+    const { getPostgresPool, withPostgresTransaction } = await import("./client");
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const failure = new Error("fixture query disconnected");
+    const { client, query, release } = createTransactionClient();
+    query.mockImplementation(async () => {
+      client.emit("error", { privateMessage: "fixture private URL" });
+      throw failure;
+    });
+    vi.spyOn(getPostgresPool(), "connect").mockImplementation(() => Promise.resolve(client));
+    const callback = vi.fn();
+
+    await expect(withPostgresTransaction(callback)).rejects.toBe(failure);
+    expect(callback).not.toHaveBeenCalled();
+    expect(query).toHaveBeenCalledTimes(1);
+    expect(release).toHaveBeenCalledExactlyOnceWith(true);
+  });
+
+  it("keeps the connection handler through release and removes only its own listener", async () => {
+    const { getPostgresPool, withPostgresTransaction } = await import("./client");
+    const { client, query, release } = createTransactionClient();
+    const retainedListener = vi.fn();
+    client.on("error", retainedListener);
+    release.mockImplementation(() => {
+      expect(client.listenerCount("error")).toBe(2);
+    });
+    vi.spyOn(getPostgresPool(), "connect").mockImplementation(() => Promise.resolve(client));
+    const callback = vi.fn().mockResolvedValue("fixture saved");
+
+    await expect(withPostgresTransaction(callback)).resolves.toBe("fixture saved");
+    expect(query.mock.calls).toEqual([["begin"], ["commit"]]);
+    expect(release).toHaveBeenCalledExactlyOnceWith(false);
+    expect(client.listeners("error")).toEqual([retainedListener]);
   });
 });

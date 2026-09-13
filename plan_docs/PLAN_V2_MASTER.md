@@ -58,7 +58,7 @@ Status: V2.2 remains deployed in Production; the 2026-09-13 storage-read inciden
 
 ## V2.3 Current Local Work
 
-2026-09-13，用户要求建立 V2.3 分支，调查 Library 空白、将学习日改到明确选定的凌晨 06:00，并简化 Home Insight；Memory outlook 后续明确选择保留分组小图。唯一当前修复计划为 `plan_docs/PLAN_V2_3_STORAGE_STUDY_DAY_HOME.md`。当前线上仍是 V2.2，已有 storage GET 500 / health 503 的读取故障证据；本地修复完成与线上连接恢复、数据完整性核对、发布授权分别记录。此次没有扩大 provider、凭据、数据库或 GitHub 权限。
+2026-09-13，用户要求建立 V2.3 分支，调查 Library 空白、将学习日改到明确选定的凌晨 06:00，并简化 Home Insight；Memory outlook 后续明确选择保留分组小图。唯一当前修复计划为 `plan_docs/PLAN_V2_3_STORAGE_STUDY_DAY_HOME.md`。用户随后明确授权本地提交及读取现有连接凭据进行只读核查；初始修复已提交为 `0f242d5`。Neon 直接返回网络传输额度超限，当前 Free 项目本月已传出约 6.33 GB；记录数量仍被查询限制阻断。连接加固与传输放大风险分别记录。Production 仍运行 V2.2；套餐修改、数据库写入、GitHub 推送和部署均未授权。
 
 ## Scope
 

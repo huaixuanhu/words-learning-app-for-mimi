@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## 2026-09-13 AEST — V2.3 authorized connection diagnosis
+
+- User confirmed the local commit and existing credential access for read-only Production investigation. Saved the initial candidate as `0f242d5` on `codex/v2.3`.
+- Confirmed the immediate outage cause: Neon SQLSTATE `53000`, classified from the driver error as network-transfer-quota exhaustion. The source-pinned `main` identity matches the retained release; Free plan usage is 6,330,077,483 outbound bytes for September. The database still exists, but the first read-only transaction was rejected before count queries could execute.
+- Confirmed repeated whole-history reads for prompt refresh and rating, with additional full snapshots in other open tabs. No sustained ordinary single-learner Home polling loop was reproduced. Exact allocation of the month's transfer remains unavailable.
+- Added checked-out transaction connection error handling, discard on transport/rollback failure, a 10-second connection acquisition timeout and the already-installed Vercel pool lifecycle helper. Writes are not retried.
+- Hardened malformed snapshot recovery and preserved newer learner choices across overlapping tab requests. Separately recorded unimplemented local-corruption, uncertain-write-response and backup consistency risks in the V2.3 plan.
+- No credential values, learner rows or connection strings were retained or printed. No remote write, plan upgrade, deployment, push or provider request occurred. Final validation and recovery boundary are recorded in the V2.3 plan.
+
 ## 2026-09-13 AEST — V2.3 local repair
 
 - Created local branch `codex/v2.3` from clean `main`. The derived owner is `plan_docs/PLAN_V2_3_STORAGE_STUDY_DAY_HOME.md`.
