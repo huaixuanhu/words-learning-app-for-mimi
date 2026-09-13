@@ -1,6 +1,7 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { NextRequest } from "next/server";
 import type { VocabularyData } from "@/lib/vocabulary/types";
+import { V2_STORAGE_CLIENT_REVISION_HEADER, v2ClientContractHeaders } from "@/lib/security/v2-client-contract";
 
 const repositoryMocks = vi.hoisted(() => ({
   createPostgresPerson: vi.fn(),
@@ -106,6 +107,7 @@ function dataPostRequest(
     method: "POST",
     headers: {
       "content-type": "application/json",
+      ...v2ClientContractHeaders(),
       ...headers,
     },
     body: JSON.stringify(body),
@@ -148,6 +150,42 @@ describe("/api/storage/data runtime contract", () => {
 
   afterAll(() => {
     process.env = { ...originalEnv };
+  });
+
+  it.each([undefined, "v2.2", "unknown"])("rejects an incompatible storage client before any write or snapshot read (%s)", async (revision) => {
+    setRuntimeEnv({ MIMI_STORAGE_RUNTIME: "postgres-production", VERCEL_ENV: "production", NODE_ENV: "production" });
+    const request = dataPostRequest({ selectedPersonId: personId, mutation: {
+      type: "vocabulary.delete", vocabularyItemId: "22222222-2222-4222-8222-222222222222",
+      now: "2026-09-13T09:00:00.000Z", timezone: "Australia/Melbourne",
+    } });
+    if (revision === undefined) request.headers.delete(V2_STORAGE_CLIENT_REVISION_HEADER);
+    else request.headers.set(V2_STORAGE_CLIENT_REVISION_HEADER, revision);
+    const { POST } = await import("./route");
+    const response = await POST(request);
+    expect(response.status).toBe(428);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(await response.json()).toMatchObject({
+      ok: false, mutationOutcome: "rejected", reason: "storage-client-upgrade-required",
+      error: expect.stringContaining("reload this page"),
+    });
+    expect(repositoryMocks.createPostgresRepository).not.toHaveBeenCalled();
+    expect(repositoryMocks.createPostgresPerson).not.toHaveBeenCalled();
+    expect(repositoryMocks.getPostgresVocabularyDataSnapshot).not.toHaveBeenCalled();
+    expect(repositoryMethodMocks.deleteItem).not.toHaveBeenCalled();
+  });
+
+  it("keeps the same revision guard on enabled Preview writes", async () => {
+    setRuntimeEnv({ MIMI_STORAGE_RUNTIME: "postgres-preview", MIMI_ENABLE_STORAGE_UI_WRITES: "true", VERCEL_ENV: "preview", NODE_ENV: "production" });
+    const request = dataPostRequest({ selectedPersonId: personId, mutation: { type: "people.select", personId } }, {
+      "x-mimi-ui-storage-write": "allow-dev-preview-ui-write",
+    });
+    request.headers.delete(V2_STORAGE_CLIENT_REVISION_HEADER);
+    const { POST } = await import("./route");
+    const response = await POST(request);
+    expect(response.status).toBe(428);
+    expect(await response.json()).toMatchObject({ reason: "storage-client-upgrade-required" });
+    expect(repositoryMocks.createPostgresRepository).not.toHaveBeenCalled();
+    expect(repositoryMocks.getPostgresVocabularyDataSnapshot).not.toHaveBeenCalled();
   });
 
   it("reports a committed mutation when its following snapshot read fails", async () => {

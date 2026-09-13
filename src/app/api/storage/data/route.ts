@@ -23,6 +23,7 @@ import type {
 import type { DurableRepositoryPort, TimestampedPersonContext } from "@/lib/storage/durable-repository-contract";
 import type { VocabularyDeduplicationConfirmation } from "@/lib/vocabulary/deduplication";
 import { isPostgresMutationCommitted, isPostgresTransactionOutcomeUnknown } from "@/lib/storage/postgres/client";
+import { V2_STORAGE_CLIENT_REVISION, V2_STORAGE_CLIENT_REVISION_HEADER } from "@/lib/security/v2-client-contract";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -440,6 +441,20 @@ export async function POST(request: NextRequest) {
         { status: 428 },
       );
     }
+  }
+
+  // Older tabs treat a committed-needs-refresh acknowledgement as a failed save.
+  // Reject them before entering the repository so reloading cannot duplicate a write.
+  if (request.headers.get(V2_STORAGE_CLIENT_REVISION_HEADER) !== V2_STORAGE_CLIENT_REVISION) {
+    return addServerTiming(NextResponse.json({
+      ok: false,
+      status: "blocked",
+      reason: "storage-client-upgrade-required",
+      mutationOutcome: "rejected",
+      requestId,
+      runtime: runtimePayload(),
+      error: "Please reload this page before saving. Your change has not been saved.",
+    }, { status: 428, headers: { "cache-control": "no-store" } }), "mimi_storage", startedAt);
   }
 
   try {

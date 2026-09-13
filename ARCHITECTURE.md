@@ -31,7 +31,7 @@ This repository has accepted Stage 8 Review Memory Algorithm（复习记忆算�
 
 Current local stack:
 
-- Next.js 16.2.11
+- Next.js 16.3.3
 - React 19.2.4
 - TypeScript 5.9.3
 - Tailwind CSS 4.3.2

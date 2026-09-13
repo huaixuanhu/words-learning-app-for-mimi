@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## 2026-09-13 AEST — V2.3 Production release preparation
+
+- User explicitly authorized full push and deployment of V2.3 through the existing GitHub/Vercel project. Canonical V2.3 Stage 2.3.12 owns the exact release and post-deploy evidence; no database migration is required.
+- Blocked old storage clients before repository access with a separate V2.3 revision header while preserving the Schema 6 marker. This prevents an open V2.2 tab from treating a confirmed-save/failed-refresh response as an unsaved operation and inviting duplicate submission. Old tabs receive an explicit reload-before-saving response.
+- Updated the vendor's minimum fixed Next 16.3.3, matching eslint-config-next and sharp 0.35.4 override after the release audit found Next.js/sharp advisories. Fresh npm audit reports zero vulnerabilities; the existing React line and runtime contracts are retained.
+- Final release validation passed 763 tests with one existing remote integration test skipped, lint/typecheck, a credential-free Next 16.3.3 webpack build and native sharp smoke. Three unchanged backup fixture checks and 22 governance tests retain passing evidence. Exact activation state is recorded by the canonical release stage.
+
 ## 2026-09-13 AEST — Launch recovery and cloud-primary backup protection
 
 - User completed payment and Launch activation in the existing Vercel-managed Neon integration. A bounded read-only Production check confirmed Schema 6, 22 tables, 5,585 vocabulary items and 1,194 review events; checked duplicate/orphan counts were zero. Full historical completeness is not asserted.

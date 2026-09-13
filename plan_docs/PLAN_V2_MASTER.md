@@ -58,7 +58,7 @@ Status: V2.2 remains deployed in Production; database access recovered after the
 
 ## V2.3 Current Local Work
 
-2026-09-13，用户要求建立 V2.3 分支，调查 Library 空白、将学习日改到明确选定的凌晨 06:00，并简化 Home Insight；Memory outlook 后续明确选择保留分组小图。唯一当前修复计划为 `plan_docs/PLAN_V2_3_STORAGE_STUDY_DAY_HOME.md`。用户随后明确授权本地提交及读取现有连接凭据进行只读核查；初始修复已提交为 `0f242d5`。Neon 直接返回网络传输额度超限，当时 Free 项目本月已传出约 6.33 GB；用户完成 Launch 升级后，固定 Production 身份的只读核查恢复，确认 5,585 个词、1,194 条复习事件，所检重复/孤立关系为 0。连接加固与传输放大风险分别记录。用户随后授权按需读取、防重复保存、防查询循环、常态化加密备份及现有 Neon Launch 基础套餐升级；Launch 已生效，最新备份选择为 Neon 云端每日快照、本机每月独立加密副本，并设置 US$5 提醒。后续实施与激活状态由上述唯一 V2.3 计划 Stage 2.3.11 统一拥有。Production 仍运行 V2.2；数据库写入、GitHub 推送和部署仍未授权。
+2026-09-13，用户要求建立 V2.3 分支，调查 Library 空白、将学习日改到明确选定的凌晨 06:00，并简化 Home Insight；Memory outlook 后续明确选择保留分组小图。唯一当前修复计划为 `plan_docs/PLAN_V2_3_STORAGE_STUDY_DAY_HOME.md`。用户随后明确授权本地提交及读取现有连接凭据进行只读核查；初始修复已提交为 `0f242d5`。Neon 直接返回网络传输额度超限，当时 Free 项目本月已传出约 6.33 GB；用户完成 Launch 升级后，固定 Production 身份的只读核查恢复，确认 5,585 个词、1,194 条复习事件，所检重复/孤立关系为 0。连接加固与传输放大风险分别记录。用户随后授权按需读取、防重复保存、防查询循环、常态化加密备份及现有 Neon Launch 基础套餐升级；Launch 已生效，最新备份选择为 Neon 云端每日快照、本机每月独立加密副本，并设置 US$5 提醒。后续实施与激活状态由上述唯一 V2.3 计划 Stage 2.3.11 统一拥有。Production 当前仍运行 V2.2；用户最新请求已授权完整推送与部署，执行和验收状态由 V2.3 计划 Stage 2.3.12 拥有。数据库迁移、学习记录编辑和恢复不在此次发布范围。
 
 ## Scope
 

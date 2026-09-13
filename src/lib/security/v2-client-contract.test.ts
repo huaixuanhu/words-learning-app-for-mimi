@@ -5,15 +5,19 @@ import { describe, expect, it } from "vitest";
 import {
   V2_CLIENT_CONTRACT_HEADER,
   V2_CLIENT_CONTRACT_VERSION,
+  V2_STORAGE_CLIENT_REVISION_HEADER,
+  V2_STORAGE_CLIENT_REVISION,
   v2ClientContractHeaders,
 } from "./v2-client-contract";
 
 describe("V2 client contract marker", () => {
-  it("owns one exact Schema 6 mutation header", () => {
+  it("keeps the Schema 6 marker and independently identifies the storage save client", () => {
     expect(v2ClientContractHeaders()).toEqual({
       [V2_CLIENT_CONTRACT_HEADER]: V2_CLIENT_CONTRACT_VERSION,
+      [V2_STORAGE_CLIENT_REVISION_HEADER]: V2_STORAGE_CLIENT_REVISION,
     });
     expect(V2_CLIENT_CONTRACT_VERSION).toBe("v2-schema6");
+    expect(V2_STORAGE_CLIENT_REVISION).toBe("v2.3");
   });
 
   it.each([

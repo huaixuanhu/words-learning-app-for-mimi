@@ -1,5 +1,13 @@
 # AI Agent Log
 
+## 2026-09-13 AEST — authorized V2.3 push and Production deployment
+
+- Authority: user requested complete push and deployment. Existing project/repository, non-force V2.3/main Git updates, Production deployment and bounded verification are in scope; no schema migration, provider/configuration change, learner-data edit or database restore is needed. Tier 3 remains unchanged.
+- Independent release review found an old-tab/new-server save acknowledgement mismatch. Added a separate storage-client revision check before repository creation and updated its focused tests; retained Schema 6, authentication, cutover and Preview guards. GET, Study and provider contracts remain unchanged.
+- Entry remote main and local main both matched `3a64aa2`, with a clean `367a36e` candidate before the final compatibility fix. Vercel Console confirmed the existing GitHub link and Production main flow. The Vercel connector returned 403, so release observation uses the existing logged-in Console and GitHub statuses without permission/configuration changes.
+- The original candidate passed 759 tests, lint/typecheck and three backup fixture dry-runs. The compatibility fix passed 71 focused tests, targeted lint/typecheck and credential-free `next build --webpack`. Final full-suite/audit and exact Git/deployment outcomes are retained in V2.3 Stage 2.3.12. An initial governance preflight correctly requested this Changelog/AI log update; no remote push occurred before it was resolved.
+- Final compatibility-candidate suite passed 763 tests; audit then reported 1 critical Next.js and 1 high sharp package. Verified vendor advisories and npm registry patched floors, and performed the smallest compatible Next 16.3.3/eslint-config-next plus sharp 0.35.4 override update. Existing npm cache permissions required an isolated temporary npm cache; no user-wide ownership or settings were changed. The updated candidate passed the full 763-test suite (one existing remote test skipped), lint/typecheck, native sharp smoke and a credential-free Next 16.3.3 webpack build; npm audit reports zero vulnerabilities.
+
 ## 2026-09-13 AEST — cloud-primary backups and billing alert
 
 - Agreement: user completed Neon payment, requested a US$10 cap, then specified a US$5 alert and cloud-primary backups with infrequent local refresh. Monthly local cadence and three successful-month retention implement that bounded request; prior daily Mac configuration is superseded. Existing credential use, local commit and backup authority persists. Tier 3 is unchanged.
