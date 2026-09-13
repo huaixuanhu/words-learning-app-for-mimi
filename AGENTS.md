@@ -114,7 +114,7 @@ Forbidden without explicit approval:
 - Preserve exportability through JSON backup and CSV where semantically appropriate.
 - Before schema migration or destructive cleanup, plan and verify backup / restore behavior.
 - Production holds real learning data; Development / Staging / Preview use synthetic, fixture, or disposable data.
-- Follow the active lifecycle plan for weekly encrypted logical backups and an additional backup before high-risk Production data changes.
+- Follow the active lifecycle plan and its approved V2.3 Stage 2.3.11 override: native Neon daily snapshots, monthly independent encrypted local copies, and an additional verified backup before high-risk Production data changes. That stage owns retention, scheduling status and bounded failure handling; earlier weekly/manual cadence is historical.
 - Raw AI prompts and raw provider responses are not retained by default when structured accepted evidence is sufficient.
 - Speech Recognition and microphone audio are not collected or transmitted under the accepted baseline.
 

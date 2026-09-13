@@ -7,6 +7,7 @@
 - Activated native Neon daily main-branch snapshots at 21:00 UTC with 14-day retention, extended the project history window to seven days, and created the first cloud snapshot with a 14-day expiry. No Production restore was performed.
 - Replaced the planned daily Mac schedule with monthly independent encrypted backups retaining the latest three verified successful months in an owned directory. Existing release recovery archives remain outside rotation. Stage 2.3.11 in the canonical V2.3 plan owns first-run validation and actual monthly activation status.
 - First real local verification failed safely. An isolated PostgreSQL probe reproduced a too-long Unix socket path in the wrapper; use a short private temporary directory, retain only allowlisted error code/phase, and permit one explicit reviewed retry with the original failed receipt preserved. Forty focused tests cover the repaired wrapper and retention boundary; real retry result is recorded by Stage 2.3.11.
+- The one reviewed real retry passed isolated PostgreSQL 17 restore comparison on `2a1caa3`, producing a 1,498,231-byte encrypted monthly archive. Activated the existing `mimi` task for the first day of each month at 07:00 Australia/Melbourne. Original failed evidence and all historical release backups remain intact; no backup was rotated out during this run.
 - Local application safeguards remain on `codex/v2.3`; no push, deployment, migration or Production learner-data write occurred.
 
 ## 2026-09-13 AEST — V2.3 transfer and persistence safeguards
