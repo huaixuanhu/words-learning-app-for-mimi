@@ -1,5 +1,14 @@
 # AI Agent Log
 
+## 2026-09-13 AEST — cloud-primary backups and billing alert
+
+- Agreement: user completed Neon payment, requested a US$10 cap, then specified a US$5 alert and cloud-primary backups with infrequent local refresh. Monthly local cadence and three successful-month retention implement that bounded request; prior daily Mac configuration is superseded. Existing credential use, local commit and backup authority persists. Tier 3 is unchanged.
+- Verified Launch in Vercel and Neon. Set the Neon organization spending notification to US$5, verifying its explicit no-pause behavior. Official Vercel documentation excludes Marketplace charges from Spend Management; no Vercel upgrade or false hard-cap claim was made. Asked about an alternative resource quota because its consequence is automatic query suspension; no answer is assumed.
+- After quota recovery, executed one source-pinned read-only Production inventory: Schema 6, 22 tables, 5,585 words, 363 states, 1,194 review events, 39 import batches; duplicate word groups and checked state/event orphans zero. Only safe aggregates/identity metadata retained in ignored evidence; no learning rows or credentials printed.
+- Saved main-branch native daily snapshot schedule (21:00 UTC, 1,209,600-second retention) and project history (604,800 seconds), confirmed by Console and direct API readback. Created one 44,376,064-byte initial snapshot and set its expiry to 2026-09-27T11:52:19Z. Provider-managed recovery was not exercised against Production.
+- Updated existing heartbeat `mimi` to monthly and PAUSED pending validated first local run. Monthly backup code and restore validation evidence are owned by canonical V2.3 Stage 2.3.11. No duplicate scheduler, new provider, credential changes, Production data write/restore, remote Git action or application deployment.
+- Validation before first real monthly run: 31 focused backup tests passed; independent source review closed evidence-binding and symlink findings. Full lint and governance strict preflight/22 tests passed. The application runtime is unchanged from the prior 732-test candidate. Monthly rotation is restricted to owned, verified archives and only follows a persisted successful current backup receipt.
+
 ## 2026-09-13 AEST — follow-up reliability and upgrade authorization
 
 - Agreement: the user requested fixes for full-history card reads, sustained query loops and duplicate/uncertain saves; requested regular higher-frequency database backups; and decided to upgrade the existing Neon integration to the basic paid plan. Existing local-commit and read-only Production credential authority persists. Tier 3 is unchanged.

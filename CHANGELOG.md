@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 2026-09-13 AEST — Launch recovery and cloud-primary backup protection
+
+- User completed payment and Launch activation in the existing Vercel-managed Neon integration. A bounded read-only Production check confirmed Schema 6, 22 tables, 5,585 vocabulary items and 1,194 review events; checked duplicate/orphan counts were zero. Full historical completeness is not asserted.
+- Set the existing Neon organization's spending notification to US$5 (native 80% and 100% alerts). This is an alert only: Neon currently has no total-dollar hard cap, and Vercel Spend Management excludes Marketplace charges. Alternative compute/transfer suspension quotas remain a separate user choice.
+- Activated native Neon daily main-branch snapshots at 21:00 UTC with 14-day retention, extended the project history window to seven days, and created the first cloud snapshot with a 14-day expiry. No Production restore was performed.
+- Replaced the planned daily Mac schedule with monthly independent encrypted backups retaining the latest three verified successful months in an owned directory. Existing release recovery archives remain outside rotation. Stage 2.3.11 in the canonical V2.3 plan owns first-run validation and actual monthly activation status.
+- Local application safeguards remain on `codex/v2.3`; no push, deployment, migration or Production learner-data write occurred.
+
 ## 2026-09-13 AEST — V2.3 transfer and persistence safeguards
 
 - User explicitly requested on-demand card reads, bounded automatic refresh, duplicate-save protection and more frequent regular backups, and authorized upgrading the existing Vercel-managed Neon integration to Launch.

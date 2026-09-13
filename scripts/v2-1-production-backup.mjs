@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import {
   chmod,
   mkdir,
+  lstat,
   mkdtemp,
   readFile,
   rename,
@@ -26,6 +27,7 @@ const AGE_KEYGEN_BIN = "/opt/homebrew/bin/age-keygen";
 const SECURITY_BIN = "/usr/bin/security";
 const AGE_KEYCHAIN_SERVICE = "mimi-vocabulary-backup-age-identity-v1";
 const BACKUP_DIR = join(homedir(), "Documents", "Mimi Vocabulary Backups");
+const MONTHLY_NAMESPACE = "monthly-local-v1";
 const EVIDENCE_ROOT = resolve(
   process.cwd(),
   "local_artifacts",
@@ -415,6 +417,8 @@ async function run() {
   let archivePath;
   let partialPath;
   let archiveKeep = false;
+  const monthlyLocal = process.argv.includes("--monthly-local-archive");
+  const backupDirectory = monthlyLocal ? join(BACKUP_DIR, MONTHLY_NAMESPACE) : BACKUP_DIR;
   try {
     if (
       process.argv[2] !== "production" ||
@@ -444,11 +448,21 @@ async function run() {
     await writeFile(identityPath, `${identity}\n`, { mode: 0o600 });
     await chmod(identityPath, 0o600);
 
-    await mkdir(BACKUP_DIR, { mode: 0o700, recursive: true });
-    await chmod(BACKUP_DIR, 0o700);
+    if (monthlyLocal) {
+      await mkdir(BACKUP_DIR, { mode: 0o700, recursive: true });
+      if (!(await lstat(BACKUP_DIR)).isDirectory()) {
+        reject("The backup root must be an owned directory", "V2_1_BACKUP_DIRECTORY_INVALID");
+      }
+    }
+    await mkdir(backupDirectory, { mode: 0o700, recursive: true });
+    const directoryStat = await lstat(backupDirectory);
+    if (!directoryStat.isDirectory() || directoryStat.isSymbolicLink()) {
+      reject("The backup directory must be an owned directory", "V2_1_BACKUP_DIRECTORY_INVALID");
+    }
+    await chmod(backupDirectory, 0o700);
     const timestamp = timestampToken();
     archivePath = join(
-      BACKUP_DIR,
+      backupDirectory,
       `mimi-production-schema6-v2-1-${timestamp}-${commitSha.slice(0, 12)}.dump.age`,
     );
     partialPath = `${archivePath}.partial`;
@@ -602,6 +616,7 @@ async function run() {
       archive: {
         bytes: archiveStat.size,
         custody: "external-user-backup-directory",
+        ...(monthlyLocal ? { namespace: MONTHLY_NAMESPACE } : {}),
         encryption: "age",
         filename: basename(archivePath),
         sha256: await fileSha(archivePath),

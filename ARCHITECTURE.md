@@ -7,15 +7,15 @@ Last updated: 2026-09-13 AEST
 
 V2.2 is live on the canonical Production domain. The project remains Tier 3 under `human-ai-governance v0.7.5`; material tasks derive their working tier from the higher current/target authority on the affected surface. PF-001 is `High / Closed`; PF-002 and PF-003 are `Normal / Closed by explicit acceptance`. Vercel Production runs exact Git `main` in `syd1`; Neon `main` remains Schema Version 6 with the V2.1 unique `(person_id, normalized_text)` index and the V2.2 V1/V2 Parameter Set constraints from `0007`. The current release inventory retained 282 unique vocabulary items, 125 review states, 441 review events and all 38 import-batch audit rows. Independent Production Gemini and Google Cloud TTS identities continue under their long-term quota, Cache, Idempotency, accounting and Kill Switch guards. The prior recovery points plus independently restore-verified pre/post V2.2 encrypted backups remain available. The whole V2 release excludes SSO（Single Sign-On，单点登录）and confidential per-person authorization. `plan_docs/PLAN_V2_2_PRODUCTION_RELEASE.md` owns the exact committed, pushed, migrated, deployed and activated evidence, including the disclosed absence of a fresh exact-text TTS request.
 
-### V2.3 Local Repair And Open Production Incident
+### V2.3 Local Repair And Recovered Database Access
 
-2026-09-13 的只读页面及 Vercel 日志确认 Production Library 读取失败：`/api/storage/data` 返回 500，连接池空闲连接的 WebSocket 错误成为未捕获异常，进程退出码 129；健康检查返回 503。授权后的直接探测确认 Neon 以 SQLSTATE `53000` 拒绝查询，原因是当前 Free 项目网络传输额度超限；本月已传出 6,330,077,483 bytes。原项目/分支身份一致且仍存在，但计数查询被配额阻断，记录完整性尚未核实。旧前端把首次云端读取失败转为本地空词库，造成全零页面。V2.2 仍是当前部署；`plan_docs/PLAN_V2_3_STORAGE_STUDY_DAY_HOME.md` 拥有调查、修复和验证状态。
+2026-09-13 的只读页面及 Vercel 日志确认 Production Library 读取失败：`/api/storage/data` 返回 500，连接池空闲连接的 WebSocket 错误成为未捕获异常，进程退出码 129；健康检查返回 503。授权后的直接探测确认 Neon 以 SQLSTATE `53000` 拒绝查询，原因为当时 Free 项目网络传输额度超限；已传出 6,330,077,483 bytes。用户随后完成 Launch 升级，原项目/分支的只读查询恢复：Schema 6、22 张表、5,585 个词、363 条复习状态、1,194 条复习事件，重复词组与所检孤立记录均为 0。未逐条证明全部历史完整。旧前端把首次云端读取失败转为本地空词库，造成全零页面。V2.2 仍是当前部署；`plan_docs/PLAN_V2_3_STORAGE_STUDY_DAY_HOME.md` 拥有调查、修复和验证状态。
 
 V2.3 本地候选将云端成功、服务器明确指定的本地运行与加载失败分开。首次加载失败不安装本地数据、不覆盖学习者选择、不显示空词库，并阻止未就绪写入；后续刷新失败保留已加载内容并显示提醒。共享加载边界提供重试、15 秒超时和重新联网恢复；损坏响应和跨页学习者选择竞争也在此边界处理。数据库连接池具有 10 秒连接获取超时、Vercel 生命周期管理、空闲及事务连接错误处理；失败或回滚不确定的连接被丢弃，写入不自动重试。
 
 V2.3 后续候选将卡片提示刷新和评分缩小到当前词、当前配置和相关计划窗口的读取；跨页通知合并并限制自动重试。通用保存区分提交成功、明确拒绝与结果待核对，同一内容的并发保存合并，未确认操作阻止重复写入。浏览器损坏存档保留原文并锁住普通保存，仅明确本地运行下允许通过校验后的备份恢复。具体实现及验证由 V2.3 计划统一记录；线上 V2.2 仍使用旧读取路径。
 
-用户已授权现有 Neon 集成升级 Launch 和每日加密备份；当前升级流程等待用户在 Vercel 填写支付资料。备份复用既有固定 Production 身份、加密目的地和隔离 PostgreSQL 17 恢复验证，目标每天 07:00 Melbourne 一次；调度激活与首次真实备份结果由 V2.3 计划 Stage 2.3.8 记录。依赖本机可用及 Keychain，不视为全天候云端备份。
+Neon Launch 已生效。按用户最新选择，主备份由 Neon 云端执行：Production main 每天 21:00 UTC 创建快照并保留 14 天，项目历史恢复保留 7 天；首份云端快照已创建。Mac 仅承担每月一次的独立加密副本，保留最近三个成功月份，既有发布恢复点不参与轮换；月度脚本、首次恢复验证和任务激活证据由 V2.3 计划 Stage 2.3.11 记录。US$5 组织费用提醒已设置；平台未提供 US$10 总账单自动封顶，替代资源额度需按该计划记录实际生效状态。
 
 新的学习日使用学习者时区的 06:00 边界，AI/TTS 继续使用原自然日和月度额度。旧 Daily Plan（每日计划）的窗口和历史事件保持不变：尚未结束的旧计划继续使用，必要时创建一次通常为 30 小时的衔接计划，然后进入正常 06:00→06:00；夏令时与时区切换通过逐个本地边界解析处理。Home/Study 在存储窗口结束、回到页面或服务器时钟失效时刷新，并保留过期请求拒绝和 reset 的两次确认。
 
