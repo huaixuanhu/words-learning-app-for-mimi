@@ -1,11 +1,23 @@
 # Words Learning App For Mimi Architecture
 
 Created: 2026-07-02 23:30 AEST
-Last updated: 2026-09-04 AEST
+Last updated: 2026-09-13 AEST
 
 ## Current State
 
 V2.2 is live on the canonical Production domain. The project remains Tier 3 under `human-ai-governance v0.7.5`; material tasks derive their working tier from the higher current/target authority on the affected surface. PF-001 is `High / Closed`; PF-002 and PF-003 are `Normal / Closed by explicit acceptance`. Vercel Production runs exact Git `main` in `syd1`; Neon `main` remains Schema Version 6 with the V2.1 unique `(person_id, normalized_text)` index and the V2.2 V1/V2 Parameter Set constraints from `0007`. The current release inventory retained 282 unique vocabulary items, 125 review states, 441 review events and all 38 import-batch audit rows. Independent Production Gemini and Google Cloud TTS identities continue under their long-term quota, Cache, Idempotency, accounting and Kill Switch guards. The prior recovery points plus independently restore-verified pre/post V2.2 encrypted backups remain available. The whole V2 release excludes SSO（Single Sign-On，单点登录）and confidential per-person authorization. `plan_docs/PLAN_V2_2_PRODUCTION_RELEASE.md` owns the exact committed, pushed, migrated, deployed and activated evidence, including the disclosed absence of a fresh exact-text TTS request.
+
+### V2.3 Local Repair And Open Production Incident
+
+2026-09-13 的只读页面及 Vercel 日志确认 Production Library 读取失败：`/api/storage/data` 返回 500，连接池空闲连接的 WebSocket 错误成为未捕获异常，进程退出码 129；健康检查返回 503。旧前端把首次云端读取失败转为本地空词库，造成全零页面。当前数据库记录完整性与底层连接故障原因尚未确认，V2.2 部署仍是当前线上版本。`plan_docs/PLAN_V2_3_STORAGE_STUDY_DAY_HOME.md` 拥有调查、修复和验证状态。
+
+V2.3 本地候选将云端成功、服务器明确指定的本地运行与加载失败分开。首次加载失败不安装本地数据、不覆盖学习者选择、不显示空词库，并阻止未就绪写入；后续刷新失败保留已加载内容并显示提醒。共享加载边界提供重试、15 秒超时和重新联网恢复。数据库连接池注册只记录固定诊断标识的错误处理；失败查询及事务继续向上报告，写入不自动重试。
+
+新的学习日使用学习者时区的 06:00 边界，AI/TTS 继续使用原自然日和月度额度。旧 Daily Plan（每日计划）的窗口和历史事件保持不变：尚未结束的旧计划继续使用，必要时创建一次通常为 30 小时的衔接计划，然后进入正常 06:00→06:00；夏令时与时区切换通过逐个本地边界解析处理。Home/Study 在存储窗口结束、回到页面或服务器时钟失效时刷新，并保留过期请求拒绝和 reset 的两次确认。
+
+Home 的 Learning rhythm 分别显示新学和复习的成功词数，同词同学习日重复尝试不重复计数；历史记录优先采用保留计划的日期归属。Memory outlook 保留当前日程分组与回忆概率分组，使用服务器时钟和最新已加载数据计算，显示计算时间；读取失败的旧数据另有明确提醒。此本地候选保留 Schema 6、JSON backup Version 4、FSRS 参数及全部鉴权和服务额度，尚未部署。
+
+TTS 路由 `src/app/api/tts/route.ts` 只导出 Next.js 支持的路由字段；原有服务选择辅助函数独立放在同目录 `service-resolver.ts`，服务配置、额度、缓存与请求处理行为保持一致。
 
 ### Current Stack And Historical V1 Build Chronology
 

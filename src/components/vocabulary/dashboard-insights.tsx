@@ -14,6 +14,7 @@ import { MemoryOutlookCard } from "./memory-outlook-card";
 type DashboardInsightsProps = Readonly<{
   data: VocabularyData;
   isLoaded: boolean;
+  getRuntimeNow(): string | null;
 }>;
 
 type InsightsResult =
@@ -26,24 +27,31 @@ const trackLabels: Readonly<Record<ReviewProfile, string>> = {
   active: "Active",
 };
 
-export function DashboardInsights({ data, isLoaded }: DashboardInsightsProps) {
+export function DashboardInsights({ data, isLoaded, getRuntimeNow }: DashboardInsightsProps) {
   const [selectedTrack, setSelectedTrack] = useState<ReviewProfile>("recognition");
   const [period, setPeriod] = useState<7 | 14>(7);
-  const [clockTime, setClockTime] = useState(() => Date.now());
+  const [, setClockTick] = useState(0);
 
   useEffect(() => {
-    const intervalId = window.setInterval(() => {
-      setClockTime(Date.now());
-    }, 60_000);
+    const updateClock = () => setClockTick((tick) => tick + 1);
+    const intervalId = window.setInterval(updateClock, 60_000);
+    const onVisible = () => { if (document.visibilityState === "visible") updateClock(); };
+    window.addEventListener("focus", updateClock);
+    document.addEventListener("visibilitychange", onVisible);
 
-    return () => window.clearInterval(intervalId);
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener("focus", updateClock);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, []);
 
-  const calculatedAt = new Date(clockTime).toISOString();
+  const calculatedAt = getRuntimeNow();
   const result = useMemo<InsightsResult>(() => {
     if (!isLoaded) return { status: "loading", snapshot: null };
 
     try {
+      if (!calculatedAt) return { status: "unavailable", snapshot: null };
       return {
         status: "available",
         snapshot: buildDashboardInsights(data, calculatedAt),
@@ -82,13 +90,15 @@ export function DashboardInsights({ data, isLoaded }: DashboardInsightsProps) {
         </div>
 
         {result.status === "available" ? (
-          <div className="mt-4 grid gap-3 lg:grid-cols-[minmax(0,1.35fr)_minmax(17rem,0.65fr)]">
+          <div className="mt-5 grid gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(17rem,0.85fr)]">
             <LearningRhythmChart
               points={result.snapshot.tracks[selectedTrack].rhythm}
               period={period}
               onPeriodChange={setPeriod}
             />
             <MemoryOutlookCard
+              calculatedAt={result.snapshot.calculatedAt}
+              timezone={result.snapshot.timezone}
               reviewLoad={result.snapshot.tracks[selectedTrack].reviewLoad}
               retrievability={result.snapshot.tracks[selectedTrack].retrievability}
               retrievabilityEligibleCount={

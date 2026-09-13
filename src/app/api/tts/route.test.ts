@@ -8,7 +8,7 @@ import {
 } from "@/lib/tts/contract";
 import { handleTtsPost } from "@/lib/tts/route-handler";
 import { TtsService } from "@/lib/tts/service";
-import { createTtsServiceResolver } from "./route";
+import { createTtsServiceResolver } from "./service-resolver";
 
 function request(body: unknown, headers: Record<string, string> = {}) {
   return new Request("http://localhost:3000/api/tts", {

@@ -14,6 +14,7 @@ export function DailyStudyBoard() {
     isLoaded,
     today,
     isTodayLoading,
+    todayRefreshError,
     resolveToday,
     updateTodayGoals,
     resetToday,
@@ -68,6 +69,11 @@ export function DailyStudyBoard() {
 
   return (
     <div className="grid gap-4">
+      {todayRefreshError ? (
+        <p role="status" className="mimi-panel p-4 text-sm text-[var(--mimi-text-soft)]">
+          {todayRefreshError}
+        </p>
+      ) : null}
       <div className="mimi-panel flex flex-wrap items-center justify-between gap-3 p-4 sm:p-5">
         <div className="flex items-center gap-3">
           <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-md bg-[var(--mimi-primary-soft)] text-[var(--mimi-primary-deep)]">

@@ -8,6 +8,8 @@ type MemoryOutlookCardProps = Readonly<{
   reviewLoad: readonly ReviewLoadBucket[];
   retrievability: readonly RetrievabilityBucket[];
   retrievabilityEligibleCount: number;
+  calculatedAt: string;
+  timezone: string;
 }>;
 
 const retrievabilityTone = {
@@ -18,7 +20,7 @@ const retrievabilityTone = {
 
 function barHeight(value: number, maximum: number) {
   if (value <= 0 || maximum <= 0) return 0;
-  return Math.max(10, Math.round((value / maximum) * 100));
+  return (value / maximum) * 100;
 }
 
 function entryCountLabel(count: number) {
@@ -29,31 +31,30 @@ export const MemoryOutlookCard = memo(function MemoryOutlookCard({
   reviewLoad,
   retrievability,
   retrievabilityEligibleCount,
+  calculatedAt,
+  timezone,
 }: MemoryOutlookCardProps) {
   const reviewLoadTotal = reviewLoad.reduce((sum, bucket) => sum + bucket.count, 0);
   const reviewLoadMaximum = Math.max(1, ...reviewLoad.map((bucket) => bucket.count));
 
   return (
-    <section className="rounded-lg border border-[var(--mimi-border)] bg-[var(--mimi-surface)] p-3 sm:p-4" aria-labelledby="memory-outlook-title">
+    <section className="min-w-0 border-t border-[var(--mimi-border)] pt-5 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0" aria-labelledby="memory-outlook-title">
       <div className="flex flex-wrap items-center gap-2">
         <h3 id="memory-outlook-title" className="mimi-display-title text-lg text-[var(--mimi-text)]">
           Memory outlook
         </h3>
         <span className="mimi-pill-muted px-2 py-0.5 text-[0.68rem] font-semibold">FSRS estimate</span>
       </div>
-      <p className="mt-1 text-xs leading-5 text-[var(--mimi-text-soft)]">
-        Updates after study.
-      </p>
 
       <div className="mt-4">
         <div className="flex items-center justify-between gap-3">
           <p className="text-xs font-semibold text-[var(--mimi-text)]">Review load</p>
           <p className="text-xs text-[var(--mimi-text-soft)]">
-            {entryCountLabel(reviewLoadTotal)}
+            Current schedule
           </p>
         </div>
         {reviewLoadTotal > 0 ? (
-          <figure className="mt-2" aria-label="Estimated review load by current schedule bucket">
+          <figure className="mt-2" aria-label="Estimated words to review by study day; Today includes earlier due words">
             <div className="grid h-24 grid-cols-5 items-end gap-2 border-b border-[var(--mimi-border)] px-1">
               {reviewLoad.map((bucket) => (
                 <div
@@ -89,7 +90,7 @@ export const MemoryOutlookCard = memo(function MemoryOutlookCard({
         <div className="flex items-center justify-between gap-3">
           <p className="text-xs font-semibold text-[var(--mimi-text)]">Recall estimate</p>
           <p className="text-xs text-[var(--mimi-text-soft)]">
-            {retrievabilityEligibleCount} eligible
+            {retrievabilityEligibleCount} words
           </p>
         </div>
         {retrievabilityEligibleCount > 0 ? (
@@ -120,7 +121,7 @@ export const MemoryOutlookCard = memo(function MemoryOutlookCard({
                     {bucket.label}
                   </span>
                   <span className="font-semibold text-[var(--mimi-text)]">
-                    {bucket.count} · {bucket.share}%
+                    {bucket.count}
                   </span>
                 </div>
               ))}
@@ -132,6 +133,11 @@ export const MemoryOutlookCard = memo(function MemoryOutlookCard({
           </p>
         )}
       </div>
+      <p className="mt-3 text-[0.68rem] text-[var(--mimi-text-muted)]">
+        Updated <time dateTime={calculatedAt}>{new Intl.DateTimeFormat("en-AU", {
+          timeZone: timezone, hour: "2-digit", minute: "2-digit",
+        }).format(new Date(calculatedAt))}</time>
+      </p>
     </section>
   );
 });

@@ -1,8 +1,9 @@
-import { resolvePersonDayOffset } from "@/lib/daily-study/day-window";
+import { resolveStudyDay, resolveStudyDayOffset } from "@/lib/daily-study/day-window";
+import { resolveRetainedStudyWindow } from "@/lib/daily-study/runtime-engine";
 import { getSelectedPersonId } from "@/lib/people/repository";
+import { findDailyEpisodePlan } from "@/lib/review/daily-episode";
 import { getActiveFsrsRetrievability } from "@/lib/review/fsrs-active";
 import { getRecognitionFsrsRetrievability } from "@/lib/review/fsrs-recognition";
-import { getLocalDateKey } from "@/lib/review/scheduler";
 import { getSelectedReviewSettings } from "@/lib/review/settings";
 import { isPassingSessionRating } from "@/lib/review/session-queue";
 import {
@@ -16,8 +17,8 @@ const RHYTHM_DAY_COUNT = 14;
 
 export type LearningRhythmPoint = Readonly<{
   localDate: string;
-  entries: number;
-  attempts: number;
+  learned: number;
+  reviewed: number;
 }>;
 
 export type ReviewLoadBucketKey =
@@ -69,12 +70,24 @@ function buildLearningRhythm(
   timezone: string,
   now: string,
 ) {
+  const current = resolveRetainedStudyWindow(data, personId, timezone, now);
+  const lastInstant = new Date(Date.parse(current.dayEndsAt) - 1);
   const days = Array.from({ length: RHYTHM_DAY_COUNT }, (_, index) =>
-    resolvePersonDayOffset(now, timezone, index - (RHYTHM_DAY_COUNT - 1)),
+    resolveStudyDayOffset(lastInstant, timezone, index - (RHYTHM_DAY_COUNT - 1)),
   );
   const values = new Map(
-    days.map((day) => [day.localDate, { attempts: 0, entryIds: new Set<string>() }]),
+    days.map((day) => [day.localDate, { learnedIds: new Set<string>(), reviewedIds: new Set<string>() }]),
   );
+  const firstHistory = new Map<string, number>();
+  for (const state of data.reviewStates) {
+    if (state.personId !== personId || state.reviewProfile !== reviewProfile) continue;
+    const first = state.historyOrigin === "legacy_unknown"
+      ? Number.NEGATIVE_INFINITY
+      : state.firstRatedAt ? timestamp(state.firstRatedAt) : null;
+    if (first !== null) {
+      firstHistory.set(state.vocabularyItemId, Math.min(first, firstHistory.get(state.vocabularyItemId) ?? Infinity));
+    }
+  }
   const seenEventIds = new Set<string>();
   const events = data.reviewEvents
     .filter(
@@ -87,22 +100,29 @@ function buildLearningRhythm(
     );
 
   for (const event of events) {
-    if (seenEventIds.has(event.id) || timestamp(event.reviewedAt) === null) {
+    const time = timestamp(event.reviewedAt);
+    if (time !== null) {
+      firstHistory.set(event.vocabularyItemId, Math.min(time, firstHistory.get(event.vocabularyItemId) ?? Infinity));
+    }
+  }
+
+  for (const event of events) {
+    const reviewedAt = timestamp(event.reviewedAt);
+    if (seenEventIds.has(event.id) || reviewedAt === null || reviewedAt > Date.parse(now)) {
       continue;
     }
 
     seenEventIds.add(event.id);
-    const localDate = getLocalDateKey(event.reviewedAt, timezone);
-    const point = values.get(localDate);
+    const window = findDailyEpisodePlan(event, data.dailyStudyPlans)
+      ?? resolveStudyDay(event.reviewedAt, timezone);
+    const point = values.get(window.localDate);
 
-    if (!point) {
+    if (!point || !isPassingSessionRating(event.rating)) {
       continue;
     }
 
-    point.attempts += 1;
-    if (isPassingSessionRating(event.rating)) {
-      point.entryIds.add(event.vocabularyItemId);
-    }
+    const hadPriorHistory = (firstHistory.get(event.vocabularyItemId) ?? Infinity) < Date.parse(window.dayStartsAt);
+    (hadPriorHistory ? point.reviewedIds : point.learnedIds).add(event.vocabularyItemId);
   }
 
   return days.map((day) => {
@@ -110,8 +130,8 @@ function buildLearningRhythm(
 
     return {
       localDate: day.localDate,
-      entries: value?.entryIds.size ?? 0,
-      attempts: value?.attempts ?? 0,
+      learned: value?.learnedIds.size ?? 0,
+      reviewed: value?.reviewedIds.size ?? 0,
     } satisfies LearningRhythmPoint;
   });
 }
@@ -156,13 +176,16 @@ function currentTrackStates(
 
 function buildReviewLoad(
   states: readonly ReviewState[],
+  data: VocabularyData,
+  personId: string,
   timezone: string,
   now: string,
 ) {
-  const today = resolvePersonDayOffset(now, timezone, 0);
-  const dayTwo = resolvePersonDayOffset(now, timezone, 2);
-  const dayFour = resolvePersonDayOffset(now, timezone, 4);
-  const dayEight = resolvePersonDayOffset(now, timezone, 8);
+  const today = resolveRetainedStudyWindow(data, personId, timezone, now);
+  const lastInstant = new Date(Date.parse(today.dayEndsAt) - 1);
+  const dayTwo = resolveStudyDayOffset(lastInstant, timezone, 2);
+  const dayFour = resolveStudyDayOffset(lastInstant, timezone, 4);
+  const dayEight = resolveStudyDayOffset(lastInstant, timezone, 8);
   const currentDayEndsAt = timestamp(today.dayEndsAt);
   const dayTwoStartsAt = timestamp(dayTwo.dayStartsAt);
   const dayFourStartsAt = timestamp(dayFour.dayStartsAt);
@@ -200,7 +223,7 @@ function buildReviewLoad(
   }
 
   return [
-    { key: "ready", label: "Ready", count: counts.ready },
+    { key: "ready", label: "Today", count: counts.ready },
     { key: "tomorrow", label: "Tomorrow", count: counts.tomorrow },
     { key: "days_2_3", label: "2–3d", count: counts.days_2_3 },
     { key: "days_4_7", label: "4–7d", count: counts.days_4_7 },
@@ -299,7 +322,7 @@ function buildTrackInsights(
   return {
     reviewProfile,
     rhythm: buildLearningRhythm(data, personId, reviewProfile, timezone, now),
-    reviewLoad: buildReviewLoad(states, timezone, now),
+    reviewLoad: buildReviewLoad(states, data, personId, timezone, now),
     retrievability: retrievability.buckets,
     retrievabilityEligibleCount: retrievability.eligibleCount,
   };
@@ -321,7 +344,7 @@ export function buildDashboardInsights(
 
   // Resolve once before aggregating so an unsupported timezone fails visibly
   // instead of silently producing UTC-labelled study history.
-  resolvePersonDayOffset(calculatedAt, timezone, 0);
+  resolveStudyDay(calculatedAt, timezone);
 
   return {
     personId,

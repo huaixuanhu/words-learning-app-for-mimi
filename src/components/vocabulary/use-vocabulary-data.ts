@@ -35,6 +35,7 @@ import {
 } from "@/lib/vocabulary/local-storage-repository";
 import { v2ClientContractHeaders } from "@/lib/security/v2-client-contract";
 import type { VocabularyDeduplicationConfirmation } from "@/lib/vocabulary/deduplication";
+import { VocabularyDataStatus } from "./vocabulary-data-status";
 
 export type ClientStorageRuntime = "loading" | StorageRuntimeMode;
 
@@ -160,6 +161,8 @@ const WRITE_HTTP_METHOD = "P" + "OST";
 type VocabularyDataContextValue = Readonly<{
   data: VocabularyData;
   isLoaded: boolean;
+  loadError: string | null;
+  isRefreshing: boolean;
   storageRuntime: ClientStorageRuntime;
   commit(
     nextData: VocabularyData,
@@ -213,39 +216,92 @@ function readLocalData() {
   return readVocabularyData();
 }
 
-export async function readPostgresData(selectedPersonId: string | null) {
+type WorkspaceReadResult =
+  | {
+      status: "ready";
+      data: VocabularyData;
+      runtime: "postgres-production" | "postgres-preview";
+      serverNow: string;
+    }
+  | { status: "local" }
+  | { status: "error"; message: string };
+
+const WORKSPACE_READ_ERROR = "Check your connection, then retry to load your saved words.";
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isWorkspaceSnapshot(value: unknown): value is VocabularyData {
+  if (!isRecord(value) || value.schemaVersion !== 6 ||
+    typeof value.selectedPersonId !== "string" ||
+    typeof value.updatedAt !== "string" || !Number.isFinite(Date.parse(value.updatedAt))) {
+    return false;
+  }
+
+  return [
+    "people", "items", "importBatches", "reviewStates", "reviewEvents",
+    "settingsByPerson", "dailyStudyDefaults", "dailyStudyPlans",
+    "vocabularyCreationFacts", "vocabularyCreationReversals", "aiRuns",
+    "aiEnrichmentDrafts", "vocabularyRelations",
+  ].every((key) => Array.isArray(value[key]));
+}
+
+export async function readPostgresData(selectedPersonId: string | null): Promise<WorkspaceReadResult> {
   const params = new URLSearchParams();
 
   if (selectedPersonId) {
     params.set("selectedPersonId", selectedPersonId);
   }
 
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15_000);
+
   try {
     const response = await fetch(`/api/storage/data?${params.toString()}`, {
       cache: "no-store",
+      signal: controller.signal,
     });
 
-    if (!response.ok) {
-      return null;
+    if (response.status === 401) {
+      return {
+        status: "error",
+        message: "Refresh this page to sign in again, then retry to load your words.",
+      };
     }
 
-    const payload = (await response.json()) as StorageDataResponse;
+    const payload: unknown = await response.json();
 
-    if (!payload.ok || !payload.data) {
-      return null;
+    if (!isRecord(payload) || !isRecord(payload.runtime)) {
+      return { status: "error", message: WORKSPACE_READ_ERROR };
+    }
+
+    // Only this affirmative non-Production response enables browser-local data.
+    // A cloud outage, auth failure or disabled Production runtime never does.
+    if (response.status === 403 && payload.ok === false &&
+      payload.status === "disabled" && payload.reason === "postgres-runtime-not-enabled" &&
+      payload.runtime.mode === "local" &&
+      (payload.runtime.reason === "missing" || payload.runtime.reason === "valid")) {
+      return { status: "local" };
+    }
+
+    if (!response.ok || payload.ok !== true || !isWorkspaceSnapshot(payload.data) ||
+      (payload.runtime.mode !== "postgres-production" && payload.runtime.mode !== "postgres-preview")) {
+      return { status: "error", message: WORKSPACE_READ_ERROR };
     }
 
     return {
+      status: "ready",
       data: payload.data,
-      runtime: payload.runtime?.mode === "postgres-production" ? "postgres-production" : "postgres-preview",
-      serverNow: payload.serverNow ?? payload.data.updatedAt,
-    } satisfies {
-      data: VocabularyData;
-      runtime: ClientStorageRuntime;
-      serverNow: string;
+      runtime: payload.runtime.mode,
+      serverNow: typeof payload.serverNow === "string" && Number.isFinite(Date.parse(payload.serverNow))
+        ? payload.serverNow
+        : payload.data.updatedAt,
     };
   } catch {
-    return null;
+    return { status: "error", message: WORKSPACE_READ_ERROR };
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
@@ -277,6 +333,8 @@ async function writePostgresMutation(selectedPersonId: string, mutation: Vocabul
 function useVocabularyDataStore(): VocabularyDataContextValue {
   const [data, setData] = useState<VocabularyData>(() => createEmptyVocabularyData());
   const [isLoaded, setIsLoaded] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [storageRuntime, setStorageRuntime] = useState<ClientStorageRuntime>("loading");
   const dataRef = useRef(data);
   const isLoadedRef = useRef(isLoaded);
@@ -328,16 +386,18 @@ function useVocabularyDataStore(): VocabularyDataContextValue {
     }
 
     const revisionAtStart = clientRevisionRef.current;
+    setIsRefreshing(true);
     const request = (async () => {
       const postgresData = await readPostgresData(getStoredSelectedPersonId());
 
-      if (postgresData) {
+      if (postgresData.status === "ready") {
         if (clientRevisionRef.current === revisionAtStart) {
           installSnapshot(
             postgresData.data,
             postgresData.runtime,
             postgresData.serverNow,
           );
+          setLoadError(null);
           if (activeMutationRevisionRef.current === null) {
             clientSnapshotPatchesRef.current = [];
           }
@@ -346,23 +406,28 @@ function useVocabularyDataStore(): VocabularyDataContextValue {
         return;
       }
 
-      if (
-        isLoadedRef.current &&
-        isPostgresClientStorageRuntime(storageRuntimeRef.current)
-      ) {
+      if (clientRevisionRef.current !== revisionAtStart) {
         return;
       }
 
-      const localData = readLocalData();
-
-      if (clientRevisionRef.current === revisionAtStart) {
-        installSnapshot(localData, "local");
+      if (postgresData.status === "error" ||
+        isPostgresClientStorageRuntime(storageRuntimeRef.current)) {
+        setLoadError(postgresData.status === "error"
+          ? postgresData.message
+          : "The saved workspace is temporarily unavailable. Retry to reconnect.");
+        return;
       }
 
-      return;
+      try {
+        installSnapshot(readLocalData(), "local");
+        setLoadError(null);
+      } catch {
+        setLoadError("This browser could not open its saved words. Check browser storage access, then retry.");
+      }
     })().finally(() => {
       if (refreshInFlightRef.current === request) {
         refreshInFlightRef.current = null;
+        setIsRefreshing(false);
       }
     });
 
@@ -415,17 +480,26 @@ function useVocabularyDataStore(): VocabularyDataContextValue {
         void revalidateAfterMutation();
       }
     };
+    const handleOnline = () => {
+      void revalidateAfterMutation();
+    };
 
     window.addEventListener("storage", handleStorage);
+    window.addEventListener("online", handleOnline);
 
     return () => {
       window.clearTimeout(timer);
       window.removeEventListener("storage", handleStorage);
+      window.removeEventListener("online", handleOnline);
     };
   }, [refresh, revalidateAfterMutation]);
 
   const commit = useCallback(
     async (nextData: VocabularyData, mutation?: VocabularyStorageMutation) => {
+      if (!isLoadedRef.current || storageRuntimeRef.current === "loading") {
+        throw new Error("Load your saved words before making changes.");
+      }
+
       if (isPostgresClientStorageRuntime(storageRuntimeRef.current)) {
         if (!mutation) {
           throw new Error("Postgres storage commit requires mutation metadata");
@@ -483,6 +557,7 @@ function useVocabularyDataStore(): VocabularyDataContextValue {
               storageRuntimeRef.current,
               persisted.serverNow,
             );
+            setLoadError(null);
             clientSnapshotPatchesRef.current = [];
             signalPostgresDataChange();
             resolveMutation(installedData);
@@ -516,6 +591,10 @@ function useVocabularyDataStore(): VocabularyDataContextValue {
       updater: (current: VocabularyData) => VocabularyData,
       options: Readonly<{ broadcast?: boolean }> = {},
     ) => {
+      if (!isLoadedRef.current || storageRuntimeRef.current === "loading") {
+        throw new Error("Load your saved words before making changes.");
+      }
+
       const currentData = dataRef.current;
       const nextData = updater(currentData);
 
@@ -548,6 +627,8 @@ function useVocabularyDataStore(): VocabularyDataContextValue {
     () => ({
       data,
       isLoaded,
+      loadError,
+      isRefreshing,
       storageRuntime,
       commit,
       revalidateAfterMutation,
@@ -560,6 +641,8 @@ function useVocabularyDataStore(): VocabularyDataContextValue {
       data,
       getRuntimeNow,
       isLoaded,
+      loadError,
+      isRefreshing,
       revalidateAfterMutation,
       storageRuntime,
       updateServerClock,
@@ -574,7 +657,13 @@ export function VocabularyDataProvider({ children }: { children: ReactNode }) {
   return createElement(
     VocabularyDataContext.Provider,
     { value },
-    children,
+    createElement(VocabularyDataStatus, {
+      isLoaded: value.isLoaded,
+      loadError: value.loadError,
+      isRefreshing: value.isRefreshing,
+      onRetry: () => { void value.revalidateAfterMutation(); },
+    }),
+    value.isLoaded ? children : null,
   );
 }
 

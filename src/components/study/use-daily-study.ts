@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   isPostgresClientStorageRuntime,
   useVocabularyData,
@@ -53,6 +53,7 @@ import {
   applyRolledBackReviewToClientSnapshot,
 } from "@/lib/vocabulary/client-snapshot-updates";
 import { v2ClientContractHeaders } from "@/lib/security/v2-client-contract";
+import { watchStudyDayTurnover } from "@/lib/daily-study/day-turnover";
 
 type StudyApiResponse<T> = Readonly<{
   ok: boolean;
@@ -169,6 +170,7 @@ export function useDailyStudy() {
   const vocabulary = useVocabularyData();
   const [today, setToday] = useState<DailyStudyTodayResponse | null>(null);
   const [isTodayLoading, setIsTodayLoading] = useState(false);
+  const [todayRefreshError, setTodayRefreshError] = useState("");
   const {
     data,
     storageRuntime,
@@ -249,8 +251,22 @@ export function useDailyStudy() {
 
   const resolveToday = useCallback(async () => {
     const resolved = await resolveCurrent();
+    setTodayRefreshError("");
     return resolved.today;
   }, [resolveCurrent]);
+
+  useEffect(() => {
+    if (!vocabulary.isLoaded || !today || today.personId !== data.selectedPersonId) return;
+
+    return watchStudyDayTurnover({
+      dayEndsAt: today.dayEndsAt,
+      getNow: getRuntimeNow,
+      refresh: resolveToday,
+      onError: (error) => setTodayRefreshError(
+        error instanceof Error ? error.message : "Could not refresh today’s study plan",
+      ),
+    });
+  }, [data.selectedPersonId, getRuntimeNow, resolveToday, today, vocabulary.isLoaded]);
 
   const readQueue = useCallback(
     async (
@@ -777,6 +793,7 @@ export function useDailyStudy() {
     ...vocabulary,
     today,
     isTodayLoading,
+    todayRefreshError,
     resolveToday,
     readQueue,
     updateTodayGoals,

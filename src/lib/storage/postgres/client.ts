@@ -35,6 +35,11 @@ export function getPostgresPool() {
 
   if (!pool) {
     pool = new Pool({ connectionString: getPostgresDatabaseUrl() });
+    pool.on("error", () => {
+      // The driver already removes a failed idle client. Handle its background
+      // event without exposing connection details or retrying any request.
+      console.error("POSTGRES_POOL_IDLE_ERROR: an idle database connection was removed.");
+    });
   }
 
   return pool;

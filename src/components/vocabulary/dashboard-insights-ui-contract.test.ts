@@ -38,10 +38,11 @@ describe("V2-8-1 Dashboard Insights UI contract", () => {
     expect(insightsSource).toContain("MemoryOutlookCard");
     expect(rhythmSource).toContain("Learning rhythm");
     expect(rhythmSource).toContain("Actual");
-    expect(rhythmSource).toContain("Entries");
-    expect(rhythmSource).toContain("Attempts");
+    expect(rhythmSource).toContain("New words");
+    expect(rhythmSource).toContain("Reviewed");
     expect(outlookSource).toContain("FSRS estimate");
-    expect(outlookSource).toContain("Updates after study.");
+    expect(outlookSource).toContain("Updated");
+    expect(insightsSource).toContain("getRuntimeNow");
     expect(combinedInsightsSource).not.toContain("fetch(");
     expect(combinedInsightsSource).not.toContain("localStorage");
   });

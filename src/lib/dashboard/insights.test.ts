@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_PERSON_ID } from "@/lib/people/repository";
 import type { ReviewEvent, ReviewProfile, ReviewRating, ReviewState } from "@/lib/review/types";
+import type { DailyStudyPlanRecord } from "@/lib/storage/v2-data-model";
 import { createEmptyVocabularyData } from "@/lib/vocabulary/repository";
 import type { VocabularyData, VocabularyItem } from "@/lib/vocabulary/types";
 import { buildDashboardInsights } from "./insights";
@@ -120,8 +121,26 @@ function baseData(): VocabularyData {
   return data;
 }
 
-describe("V2-8-1 Dashboard insights", () => {
-  it("counts distinct passed entries and every attempt in 14 local-day buckets", () => {
+function plan(input: Pick<DailyStudyPlanRecord, "localDate" | "dayStartsAt" | "dayEndsAt"> &
+  Partial<DailyStudyPlanRecord>): DailyStudyPlanRecord {
+  return {
+    id: `plan-${input.localDate}`,
+    personId: DEFAULT_PERSON_ID,
+    reviewProfile: "recognition",
+    timezone: "Australia/Melbourne",
+    suggestedReview: 20,
+    reviewGoal: 20,
+    newWordGoal: 10,
+    planVersion: 1,
+    recommendationVersion: "daily-study-v1",
+    calculatedAt: input.dayStartsAt,
+    updatedAt: input.dayStartsAt,
+    ...input,
+  };
+}
+
+describe("V2.3 Dashboard insights", () => {
+  it("counts distinct successfully learned and reviewed words without counting repeated attempts", () => {
     const data = baseData();
     data.items = [item("take-into-account"), item("active-word", "active")];
     data.reviewEvents = [
@@ -163,7 +182,30 @@ describe("V2-8-1 Dashboard insights", () => {
         rating: "remembered",
         personId: "person-other",
       }),
+      event({
+        id: "only-forgot", vocabularyItemId: "unfinished",
+        reviewedAt: "2026-07-17T01:00:00.000Z", rating: "forgot",
+      }),
+      event({
+        id: "only-hard", vocabularyItemId: "unfinished",
+        reviewedAt: "2026-07-17T01:01:00.000Z", rating: "hard",
+      }),
+      event({
+        id: "old-forgot", vocabularyItemId: "old-word",
+        reviewedAt: "2026-07-17T01:00:00.000Z", rating: "forgot",
+      }),
+      event({
+        id: "old-pass", vocabularyItemId: "old-word",
+        reviewedAt: "2026-07-17T01:01:00.000Z", rating: "remembered",
+      }),
+      event({
+        id: "old-pass-again", vocabularyItemId: "old-word",
+        reviewedAt: "2026-07-17T01:02:00.000Z", rating: "vague",
+      }),
     ];
+    data.reviewStates = [state({
+      id: "old-state", vocabularyItemId: "old-word", dueAt: NOW,
+    })];
 
     const result = buildDashboardInsights(data, NOW);
     const recognition = result.tracks.recognition.rhythm;
@@ -173,13 +215,144 @@ describe("V2-8-1 Dashboard insights", () => {
     expect(recognition.at(-1)?.localDate).toBe("2026-07-18");
     expect(recognition.at(-2)).toEqual({
       localDate: "2026-07-17",
-      entries: 1,
-      attempts: 3,
+      learned: 1,
+      reviewed: 1,
     });
-    expect(active.at(-2)).toMatchObject({ entries: 1, attempts: 1 });
+    expect(active.at(-2)).toMatchObject({ learned: 1, reviewed: 0 });
   });
 
-  it("places current Track states into calm local-calendar review-load buckets", () => {
+  it("uses earlier retained events or firstRatedAt and treats unknown legacy history as reviewed", () => {
+    const data = baseData();
+    data.reviewStates = [
+      state({ id: "state-only", vocabularyItemId: "state-only", dueAt: NOW }),
+      state({ id: "legacy", vocabularyItemId: "legacy", dueAt: NOW, historyOrigin: "legacy_unknown" }),
+      { ...state({ id: "boundary", vocabularyItemId: "boundary", dueAt: NOW }), firstRatedAt: "2026-07-16T20:00:00.000Z" },
+    ];
+    data.reviewEvents = [
+      event({ id: "outside-chart", vocabularyItemId: "event-only", reviewedAt: "2026-06-01T00:00:00.000Z", rating: "forgot" }),
+      ...["event-only", "state-only", "legacy", "boundary"].map((id) =>
+        event({ id: `pass-${id}`, vocabularyItemId: id, reviewedAt: "2026-07-17T00:00:00.000Z", rating: "remembered" })),
+    ];
+
+    expect(buildDashboardInsights(data, NOW).tracks.recognition.rhythm.at(-2)).toEqual({
+      localDate: "2026-07-17", learned: 1, reviewed: 3,
+    });
+  });
+
+  it("keeps midnight attempts in one learning day and starts the next day exactly at 06:00", () => {
+    const data = baseData();
+    data.reviewEvents = [
+      event({ id: "late", vocabularyItemId: "night-word", reviewedAt: "2026-07-17T13:59:00.000Z", rating: "remembered" }),
+      event({ id: "midnight", vocabularyItemId: "night-word", reviewedAt: "2026-07-17T14:01:00.000Z", rating: "remembered" }),
+      event({ id: "before-six", vocabularyItemId: "before-six-word", reviewedAt: "2026-07-17T19:59:59.999Z", rating: "vague" }),
+      event({ id: "at-six-review", vocabularyItemId: "night-word", reviewedAt: "2026-07-17T20:00:00.000Z", rating: "remembered" }),
+      event({ id: "at-six-new", vocabularyItemId: "morning-word", reviewedAt: "2026-07-17T20:00:00.000Z", rating: "remembered" }),
+    ];
+
+    const before = buildDashboardInsights(data, "2026-07-17T19:59:59.999Z").tracks.recognition.rhythm;
+    expect(before.at(-1)).toEqual({ localDate: "2026-07-17", learned: 2, reviewed: 0 });
+    const after = buildDashboardInsights(data, "2026-07-17T20:00:00.000Z").tracks.recognition.rhythm;
+    expect(after.slice(-2)).toEqual([
+      { localDate: "2026-07-17", learned: 2, reviewed: 0 },
+      { localDate: "2026-07-18", learned: 1, reviewed: 1 },
+    ]);
+  });
+
+  it("isolates each learner and profile when deciding whether a word has previous history", () => {
+    const data = baseData();
+    data.items = [item("shared", "active"), item("other-history")];
+    data.reviewStates = [
+      {
+        ...state({ id: "other-legacy", vocabularyItemId: "other-history", dueAt: NOW, historyOrigin: "legacy_unknown" }),
+        personId: "person-other",
+      },
+      state({ id: "other-profile-legacy", vocabularyItemId: "other-history", dueAt: NOW, reviewProfile: "active", historyOrigin: "legacy_unknown" }),
+    ];
+    data.reviewEvents = [
+      event({ id: "past-recognition", vocabularyItemId: "shared", reviewedAt: "2026-07-01T00:00:00.000Z", rating: "forgot" }),
+      event({ id: "past-other-person", vocabularyItemId: "other-history", reviewedAt: "2026-07-01T00:00:00.000Z", rating: "remembered", personId: "person-other" }),
+      event({ id: "current-recognition", vocabularyItemId: "shared", reviewedAt: NOW, rating: "remembered" }),
+      event({ id: "current-active", vocabularyItemId: "shared", reviewedAt: NOW, rating: "remembered", reviewProfile: "active" }),
+      event({ id: "current-no-history", vocabularyItemId: "other-history", reviewedAt: NOW, rating: "remembered" }),
+      event({ id: "current-other-person", vocabularyItemId: "other-only", reviewedAt: NOW, rating: "remembered", personId: "person-other" }),
+    ];
+
+    const result = buildDashboardInsights(data, NOW);
+    expect(result.tracks.recognition.rhythm.at(-1)).toEqual({ localDate: "2026-07-18", learned: 1, reviewed: 1 });
+    expect(result.tracks.active.rhythm.at(-1)).toEqual({ localDate: "2026-07-18", learned: 1, reviewed: 0 });
+  });
+
+  it("preserves attribution to a retained midnight plan instead of relabelling its early morning history", () => {
+    const data = baseData();
+    data.dailyStudyPlans = [plan({
+      localDate: "2026-07-18",
+      dayStartsAt: "2026-07-17T14:00:00.000Z",
+      dayEndsAt: "2026-07-18T14:00:00.000Z",
+    })];
+    data.reviewEvents = [
+      event({ id: "before-midnight", vocabularyItemId: "old-word", reviewedAt: "2026-07-17T13:30:00.000Z", rating: "forgot" }),
+      event({ id: "after-midnight-review", vocabularyItemId: "old-word", reviewedAt: "2026-07-17T14:30:00.000Z", rating: "remembered" }),
+      event({ id: "after-midnight-new", vocabularyItemId: "new-word", reviewedAt: "2026-07-17T14:30:00.000Z", rating: "remembered" }),
+    ];
+    data.items = [item("before-legacy-end"), item("at-legacy-end")];
+    data.reviewStates = [
+      state({ id: "before-end", vocabularyItemId: "before-legacy-end", dueAt: "2026-07-18T13:59:59.999Z" }),
+      state({ id: "at-end", vocabularyItemId: "at-legacy-end", dueAt: "2026-07-18T14:00:00.000Z" }),
+    ];
+    const before = structuredClone(data);
+    const result = buildDashboardInsights(data, "2026-07-17T15:00:00.000Z");
+
+    expect(result.tracks.recognition.rhythm.slice(-2)).toEqual([
+      { localDate: "2026-07-17", learned: 0, reviewed: 0 },
+      { localDate: "2026-07-18", learned: 1, reviewed: 1 },
+    ]);
+    expect(result.tracks.recognition.reviewLoad.slice(0, 2)).toEqual([
+      { key: "ready", label: "Today", count: 1 },
+      { key: "tomorrow", label: "Tomorrow", count: 1 },
+    ]);
+    expect(data).toEqual(before);
+  });
+
+  it("uses a retained transition plan date for a 30-hour day crossing the old midnight boundary", () => {
+    const data = baseData();
+    data.dailyStudyPlans = [plan({
+      localDate: "2026-07-19",
+      dayStartsAt: "2026-07-18T14:00:00.000Z",
+      dayEndsAt: "2026-07-19T20:00:00.000Z",
+    })];
+    data.reviewEvents = [event({
+      id: "transition-event", vocabularyItemId: "transition-word",
+      reviewedAt: "2026-07-18T14:30:00.000Z", rating: "remembered",
+    })];
+    data.items = [item("transition-due"), item("next-day-due")];
+    data.reviewStates = [
+      state({ id: "transition-due", vocabularyItemId: "transition-due", dueAt: "2026-07-19T19:59:59.999Z" }),
+      state({ id: "next-day-due", vocabularyItemId: "next-day-due", dueAt: "2026-07-19T20:00:00.000Z" }),
+    ];
+
+    const result = buildDashboardInsights(data, "2026-07-18T15:00:00.000Z");
+    expect(result.tracks.recognition.rhythm.at(-1)).toEqual({ localDate: "2026-07-19", learned: 1, reviewed: 0 });
+    expect(result.tracks.recognition.reviewLoad.slice(0, 2)).toEqual([
+      { key: "ready", label: "Today", count: 1 },
+      { key: "tomorrow", label: "Tomorrow", count: 1 },
+    ]);
+  });
+
+  it("excludes future and invalid events, including later successes on the current study day", () => {
+    const data = baseData();
+    data.reviewEvents = [
+      event({ id: "at-now", vocabularyItemId: "now-word", reviewedAt: NOW, rating: "remembered" }),
+      event({ id: "future-same-day", vocabularyItemId: "later-word", reviewedAt: "2026-07-18T04:00:00.001Z", rating: "remembered" }),
+      event({ id: "future-next-day", vocabularyItemId: "tomorrow-word", reviewedAt: "2026-07-19T04:00:00.000Z", rating: "remembered" }),
+      event({ id: "invalid", vocabularyItemId: "invalid-word", reviewedAt: "not-a-date", rating: "remembered" }),
+    ];
+
+    const rhythm = buildDashboardInsights(data, NOW).tracks.recognition.rhythm;
+    expect(rhythm.at(-1)).toEqual({ localDate: "2026-07-18", learned: 1, reviewed: 0 });
+    expect(rhythm.reduce((total, day) => total + day.learned + day.reviewed, 0)).toBe(1);
+  });
+
+  it("places current Track states into study-day review-load buckets", () => {
     const data = baseData();
     data.items = [
       item("ready"),
@@ -216,6 +389,33 @@ describe("V2-8-1 Dashboard insights", () => {
         ["later", 1],
       ]);
     expect(result.tracks.active.reviewLoad[0]).toMatchObject({ key: "ready", count: 1 });
+  });
+
+  it("uses exact 06:00 review-load boundaries and labels the ready key Today", () => {
+    const data = baseData();
+    const dueDates = [
+      "2026-07-17T20:00:00.000Z", // Overdue.
+      "2026-07-18T19:59:59.999Z", // Today, just before next 06:00.
+      "2026-07-18T20:00:00.000Z", // Tomorrow starts.
+      "2026-07-19T19:59:59.999Z", // Tomorrow ends.
+      "2026-07-19T20:00:00.000Z", // Day 2 starts.
+      "2026-07-21T19:59:59.999Z", // Day 3 ends.
+      "2026-07-21T20:00:00.000Z", // Day 4 starts.
+      "2026-07-25T19:59:59.999Z", // Day 7 ends.
+      "2026-07-25T20:00:00.000Z", // Later starts.
+    ];
+    data.items = dueDates.map((_dueAt, index) => item(`due-${index}`));
+    data.reviewStates = dueDates.map((dueAt, index) => state({
+      id: `state-${index}`, vocabularyItemId: `due-${index}`, dueAt,
+    }));
+
+    expect(buildDashboardInsights(data, NOW).tracks.recognition.reviewLoad).toEqual([
+      { key: "ready", label: "Today", count: 2 },
+      { key: "tomorrow", label: "Tomorrow", count: 2 },
+      { key: "days_2_3", label: "2–3d", count: 2 },
+      { key: "days_4_7", label: "4–7d", count: 2 },
+      { key: "later", label: "Later", count: 1 },
+    ]);
   });
 
   it("keeps FSRS estimates profile-scoped and excludes incomplete or future states", () => {

@@ -29,6 +29,8 @@ export type ResolvedCalendarMonth = Readonly<{
 
 const formatterCache = new Map<string, Intl.DateTimeFormat>();
 
+export const STUDY_DAY_START_HOUR = 6;
+
 function getFormatter(timezone: string) {
   const normalized = timezone.trim();
 
@@ -97,8 +99,8 @@ function addCalendarDays(date: CalendarDate, days: number): CalendarDate {
   };
 }
 
-function localMidnightToUtc(date: CalendarDate, timezone: string) {
-  const targetAsUtc = Date.UTC(date.year, date.month - 1, date.day, 0, 0, 0);
+function localHourToUtc(date: CalendarDate, timezone: string, hour: number) {
+  const targetAsUtc = Date.UTC(date.year, date.month - 1, date.day, hour, 0, 0);
   let candidate = targetAsUtc;
 
   for (let attempt = 0; attempt < 8; attempt += 1) {
@@ -126,12 +128,12 @@ function localMidnightToUtc(date: CalendarDate, timezone: string) {
     finalParts.year !== date.year ||
     finalParts.month !== date.month ||
     finalParts.day !== date.day ||
-    finalParts.hour !== 0 ||
+    finalParts.hour !== hour ||
     finalParts.minute !== 0 ||
     finalParts.second !== 0
   ) {
     throw new DailyStudyContractError(
-      `Local midnight does not resolve safely for ${formatLocalDate(date)} in ${timezone}`,
+      `Local ${String(hour).padStart(2, "0")}:00 does not resolve safely for ${formatLocalDate(date)} in ${timezone}`,
     );
   }
 
@@ -176,11 +178,53 @@ export function resolvePersonDayOffset(
     calendarDayOffset,
   );
   const nextDate = addCalendarDays(date, 1);
-  const startsAt = localMidnightToUtc(date, normalizedTimezone);
-  const endsAt = localMidnightToUtc(nextDate, normalizedTimezone);
+  const startsAt = localHourToUtc(date, normalizedTimezone, 0);
+  const endsAt = localHourToUtc(nextDate, normalizedTimezone, 0);
 
   if (endsAt <= startsAt) {
     throw new DailyStudyContractError("Resolved person day must end after it starts");
+  }
+
+  return {
+    localDate: formatLocalDate(date),
+    timezone: normalizedTimezone,
+    dayStartsAt: new Date(startsAt).toISOString(),
+    dayEndsAt: new Date(endsAt).toISOString(),
+  };
+}
+
+/** Learning dates use local wall-clock 06:00. Provider budgets retain calendar days. */
+export function resolveStudyDay(now: string | Date, timezone: string): ResolvedPersonDay {
+  return resolveStudyDayOffset(now, timezone, 0);
+}
+
+export function resolveStudyDayOffset(
+  now: string | Date,
+  timezone: string,
+  calendarDayOffset: number,
+): ResolvedPersonDay {
+  if (!Number.isSafeInteger(calendarDayOffset) || Math.abs(calendarDayOffset) > 36_600) {
+    throw new DailyStudyContractError("calendarDayOffset must be a bounded whole number");
+  }
+
+  const normalizedTimezone = timezone.trim();
+  const calendarDate = getLocalCalendarDate(now, normalizedTimezone);
+  const instant = now instanceof Date ? now : new Date(now);
+  const parts = zonedParts(instant.getTime(), normalizedTimezone);
+  const date = addCalendarDays(
+    calendarDate,
+    calendarDayOffset + (parts.hour < STUDY_DAY_START_HOUR ? -1 : 0),
+  );
+  // Resolve each local boundary independently; DST days are not always 24 hours.
+  const startsAt = localHourToUtc(date, normalizedTimezone, STUDY_DAY_START_HOUR);
+  const endsAt = localHourToUtc(
+    addCalendarDays(date, 1),
+    normalizedTimezone,
+    STUDY_DAY_START_HOUR,
+  );
+
+  if (endsAt <= startsAt) {
+    throw new DailyStudyContractError("Resolved study day must end after it starts");
   }
 
   return {
@@ -201,8 +245,8 @@ export function resolveCalendarMonth(
   const next = date.month === 12
     ? { year: date.year + 1, month: 1, day: 1 }
     : { year: date.year, month: date.month + 1, day: 1 };
-  const startsAt = localMidnightToUtc(first, normalizedTimezone);
-  const endsAt = localMidnightToUtc(next, normalizedTimezone);
+  const startsAt = localHourToUtc(first, normalizedTimezone, 0);
+  const endsAt = localHourToUtc(next, normalizedTimezone, 0);
 
   if (endsAt <= startsAt) {
     throw new DailyStudyContractError("Resolved calendar month must end after it starts");

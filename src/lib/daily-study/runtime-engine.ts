@@ -7,7 +7,12 @@ import {
   validateResetTodayCommand,
   validateUpdateTodayGoalsCommand,
 } from "./contract";
-import { resolvePersonDay } from "./day-window";
+import {
+  resolvePersonDay,
+  resolveStudyDay,
+  resolveStudyDayOffset,
+  type ResolvedPersonDay,
+} from "./day-window";
 import type {
   DailyPlanWindow,
   DailyStudyTodayResponse,
@@ -282,6 +287,104 @@ function findPlan(
   );
 }
 
+export function resolveRetainedStudyWindow(
+  data: VocabularyData,
+  personId: string,
+  timezone: string,
+  now: string,
+): ResolvedPersonDay {
+  const plans = data.dailyStudyPlans.filter((plan) => plan.personId === personId);
+  const activePlans = plans.filter((plan) => isInWindow(now, plan));
+  const active = activePlans[0];
+
+  if (active) {
+    const pairedPlans = plans.filter((plan) => plan.localDate === active.localDate);
+
+    if ([...activePlans, ...pairedPlans].some((plan) => !sameWindow(active, plan))) {
+      throw new DailyStudyRuntimeError(
+        "plan_mismatch",
+        "The retained Track plans have conflicting daily windows",
+      );
+    }
+
+    // A stored window stays immutable, including the final pre-V2.3 midnight day.
+    return active;
+  }
+
+  const studyDay = resolveStudyDay(now, timezone);
+  const occupied = plans.filter((plan) => plan.localDate === studyDay.localDate);
+  const previous = occupied[0];
+  const latestClosed = plans
+    .filter((plan) => new Date(plan.dayEndsAt).getTime() <= new Date(now).getTime())
+    .sort((a, b) => new Date(b.dayEndsAt).getTime() - new Date(a.dayEndsAt).getTime())[0];
+  let proposed = studyDay;
+
+  if (previous) {
+    const transitionSource = latestClosed && latestClosed.timezone !== studyDay.timezone
+      ? latestClosed
+      : previous;
+    const sourcePlans = plans.filter((plan) => plan.localDate === transitionSource.localDate);
+    const previousEnd = new Date(transitionSource.dayEndsAt).getTime();
+    const isClosedOverlappingDate =
+      previousEnd <= new Date(now).getTime() &&
+      previousEnd > new Date(studyDay.dayStartsAt).getTime() &&
+      previousEnd <= new Date(studyDay.dayEndsAt).getTime() &&
+      occupied.every((plan) => sameWindow(previous, plan)) &&
+      sourcePlans.every((plan) => sameWindow(transitionSource, plan));
+
+    if (!isClosedOverlappingDate) {
+      throw new DailyStudyRuntimeError(
+        "plan_mismatch",
+        "The retained study date cannot be reused safely",
+      );
+    }
+
+    // A legacy midnight day or a timezone change can occupy the current date key.
+    // Bridge its stored end to 06:00 using the next unused learning-date key.
+    // This creates no gap, no overlap, and changes none of the retained history.
+    let offset = 1;
+    let successor = resolveStudyDayOffset(now, timezone, offset);
+    let successorPlans = plans.filter((plan) => plan.localDate === successor.localDate);
+
+    // A timezone move across the date line may have already used more than one
+    // local-date key. Only skip closed dates; a future saved plan remains a conflict.
+    while (
+      transitionSource.timezone !== studyDay.timezone &&
+      successorPlans.length > 0 &&
+      successorPlans.every((plan) => new Date(plan.dayEndsAt).getTime() <= previousEnd)
+    ) {
+      offset += 1;
+      successor = resolveStudyDayOffset(now, timezone, offset);
+      successorPlans = plans.filter((plan) => plan.localDate === successor.localDate);
+    }
+
+    proposed = { ...successor, dayStartsAt: transitionSource.dayEndsAt };
+  } else {
+    // Moving east can place the new timezone's 06:00 inside a retained old day.
+    // Start the successor at the latest closed boundary, never inside old history.
+    if (latestClosed && new Date(latestClosed.dayEndsAt) > new Date(proposed.dayStartsAt)) {
+      proposed = { ...proposed, dayStartsAt: latestClosed.dayEndsAt };
+    }
+  }
+
+  const startsAt = new Date(proposed.dayStartsAt).getTime();
+  const endsAt = new Date(proposed.dayEndsAt).getTime();
+  const conflicts = plans.some((plan) =>
+    plan.localDate === proposed.localDate ||
+    (new Date(plan.dayStartsAt).getTime() < endsAt &&
+      new Date(plan.dayEndsAt).getTime() > startsAt),
+  );
+
+  if (conflicts) {
+    throw new DailyStudyRuntimeError(
+      "plan_mismatch",
+      "The new study day overlaps a retained plan; no history was changed",
+    );
+  }
+
+  return proposed;
+}
+
 export function resolveDailyStudyToday(
   data: VocabularyData,
   now = new Date().toISOString(),
@@ -290,27 +393,7 @@ export function resolveDailyStudyToday(
   const calculatedAt = ensureNow(now);
   const personId = getSelectedPersonId(data);
   const settings = getReviewSettingsForPerson(data, personId);
-  const currentDay = resolvePersonDay(calculatedAt, settings.timezone);
-  const currentPlans = REVIEW_PROFILES.map((profile) =>
-    findPlan(data, personId, profile, currentDay.localDate),
-  ).filter((plan): plan is DailyStudyPlanRecord => Boolean(plan));
-  const anchor = currentPlans[0];
-
-  if (anchor && currentPlans.some((plan) => !sameWindow(anchor, plan))) {
-    throw new DailyStudyRuntimeError(
-      "plan_mismatch",
-      "The two Track plans do not share one daily window",
-    );
-  }
-
-  const personDay = anchor
-    ? {
-        localDate: anchor.localDate,
-        timezone: anchor.timezone,
-        dayStartsAt: anchor.dayStartsAt,
-        dayEndsAt: anchor.dayEndsAt,
-      }
-    : currentDay;
+  const personDay = resolveRetainedStudyWindow(data, personId, settings.timezone, calculatedAt);
   const defaultsByProfile = new Map(
     data.dailyStudyDefaults
       .filter((defaults) => defaults.personId === personId)
@@ -488,6 +571,10 @@ export function updateDailyStudyTodayGoals(
 
   if (plan.planVersion !== command.expectedPlanVersion) {
     throw new DailyStudyRuntimeError("stale_plan", "Today’s goals changed elsewhere. Reload and try again.");
+  }
+
+  if (!isInWindow(updatedAt, plan)) {
+    throw new DailyStudyRuntimeError("stale_plan", "This study day has ended. Reload today’s plan.");
   }
 
   if (plan.reviewGoal === command.reviewGoal && plan.newWordGoal === command.newWordGoal) {
@@ -969,6 +1056,10 @@ export function resetDailyStudyToday(
 
   if (!plan) {
     throw new DailyStudyRuntimeError("plan_not_found", "Today’s plan could not be found");
+  }
+
+  if (!isInWindow(updatedAt, plan)) {
+    throw new DailyStudyRuntimeError("stale_plan", "This study day has ended. Reload today’s plan.");
   }
 
   const pairedPlans = data.dailyStudyPlans.filter(

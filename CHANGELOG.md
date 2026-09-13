@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## 2026-09-13 AEST — V2.3 local repair
+
+- Created local branch `codex/v2.3` from clean `main`. The derived owner is `plan_docs/PLAN_V2_3_STORAGE_STUDY_DAY_HOME.md`.
+- Reproduced the empty Library display and confirmed Production storage GET 500, health 503 and an uncaught idle-Pool error with process exit 129 in Vercel logs. Database completeness and the underlying transport failure remain unverified.
+- Separated cloud read failure from intentional local storage. Added visible loading/error/retry, stale snapshot disclosure, a 15-second timeout, online recovery, learner preference preservation and guards against initial unresolved writes. Added a sanitized Pool error listener without automatic mutation replay.
+- Added timezone-owned 06:00 study days and Home/Study rollover/wake refresh. Retained all historical plans/events; a necessary legacy transition creates one normally 30-hour day before normal 06:00 windows. Provider accounting remains on calendar days.
+- Home now charts distinct successfully learned and reviewed words separately. Memory outlook retains the user-selected date/probability groups, displays current calculation time and uses the shared server clock. Simplified panel borders and labels; mobile 14-day labels use dates with an explicit range.
+- Fixed a pre-existing production-build error by moving the TTS service resolver verbatim into an adjacent module; route exports now follow Next.js conventions without changing provider/cache/accounting behavior.
+- Validation: full Vitest 102 files / 661 tests passed, existing Postgres integration file/test skipped; lint, typecheck, all three backup fixture dry-runs and credential-free `next build --webpack` passed. Detailed evidence is owned by the V2.3 plan.
+- No credential access, Production data repair/migration, GitHub push or deployment was performed. These local repairs do not establish Production recovery.
+
 ## 2026-09-04 00:19 AEST
 
 - Released V2.2 candidate `727a7089acbaa51fb00820dea7d39fc7aaa543d1` to Production after the user-authorized migration-first sequence. GitHub `v2.2` and `main` matched the candidate at application activation; Vercel deployment `dpl_CzhB6hqAxeXXpYHRpcB9a2GHPyHW` became Ready, Current and Production in `syd1`.

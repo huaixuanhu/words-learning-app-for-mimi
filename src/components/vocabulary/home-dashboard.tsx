@@ -31,7 +31,7 @@ function getFirstMeaning(item: { meaningsZh: string[]; meaningZh: string }) {
 }
 
 export function HomeDashboard() {
-  const { data, isLoaded, today, resolveToday } = useDailyStudy();
+  const { data, isLoaded, today, resolveToday, todayRefreshError, getRuntimeNow } = useDailyStudy();
   const [todayMessage, setTodayMessage] = useState("");
   const activeItems = getActiveVocabularyItems(data);
   const recognitionItems = getRecognitionVocabularyItems(data);
@@ -44,11 +44,15 @@ export function HomeDashboard() {
   const latestItems = activeItems.slice(0, 3);
 
   useEffect(() => {
+    let active = true;
     if (isLoaded) {
-      void resolveToday().catch((error) => {
-        setTodayMessage(error instanceof Error ? error.message : "Could not prepare today’s plan");
-      });
+      void resolveToday()
+        .then(() => { if (active) setTodayMessage(""); })
+        .catch((error) => {
+          if (active) setTodayMessage(error instanceof Error ? error.message : "Could not prepare today’s plan");
+        });
     }
+    return () => { active = false; };
   }, [isLoaded, resolveToday, selectedPerson.id]);
 
   return (
@@ -62,8 +66,8 @@ export function HomeDashboard() {
                 {selectedPerson.displayName}
               </div>
               <h2 className="mimi-display-title text-2xl text-[var(--mimi-text)]">Today’s plan</h2>
-              {todayMessage ? (
-                <p className="mt-2 text-xs leading-5 text-[var(--mimi-text-soft)]">{todayMessage}</p>
+              {todayMessage || todayRefreshError ? (
+                <p role="status" className="mt-2 text-xs leading-5 text-[var(--mimi-text-soft)]">{todayMessage || todayRefreshError}</p>
               ) : null}
             </div>
             <Link
@@ -115,7 +119,7 @@ export function HomeDashboard() {
         </section>
       </CalmEntrance>
 
-      <DashboardInsights data={data} isLoaded={isLoaded} />
+      <DashboardInsights data={data} isLoaded={isLoaded} getRuntimeNow={getRuntimeNow} />
 
       <div className="grid gap-4 lg:grid-cols-3">
         <section className="mimi-panel p-4">

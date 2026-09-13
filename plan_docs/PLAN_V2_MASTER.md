@@ -1,7 +1,7 @@
 # Words Learning App For Mimi V2 Master Plan
 
 Created: 2026-07-13 00:16 AEST
-Last updated: 2026-09-04 AEST
+Last updated: 2026-09-13 AEST
 
 Source plan:
 - `plan_docs/PLAN_V1_MASTER.md`
@@ -41,6 +41,7 @@ Consumer / next stage:
 - `plan_docs/PLAN_V2_STAGE8_2_3_PREVIEW_FEEDBACK_STABILISATION.md`
 - `plan_docs/PLAN_V2_STAGE8_3_PRODUCTION_BACKUP_MIGRATION_CUTOVER.md`
 - `plan_docs/PLAN_V2_2_REVIEW_CADENCE_CARD_AUDIO.md`
+- `plan_docs/PLAN_V2_3_STORAGE_STUDY_DAY_HOME.md`
 - Future derived V2 child plans created in the order defined by this document.
 - `plan_docs/PLAN_VERSION_HOLD_MULTI_USER_CONFIDENTIAL_ISOLATION.md`
 
@@ -53,7 +54,11 @@ Target capability tier: Tier 3. V2 adds a bounded paid AI API（人工智能接�
 
 Working tier: Tier 3.
 
-Status: V2.2 is fully live in Production. V2-0 through V2-8-2.3, V2-8-3 Gates 0B–6 and the V2.2 migration-first release are complete at application activation. `main` remains Schema Version 6 with JSON backup Version 4; `0007` now accepts only the matching V1/V2 Recognition and Active Parameter Set identifiers. Google Cloud Standard remains pinned to `en-AU-Standard-C` at `0.9` speaking rate, `0` pitch and MP3; paid `gemini-3.1-flash-lite` remains behind the accepted disclosure and global cost guards. The canonical deployment is in `syd1`, Basic Auth remains active, and migration-time study data retained exact parity. The retained recovery points and encrypted pre/post V2.2 backups remain available. The whole V2 release excludes SSO and confidential per-person authorization. The fresh exact-text V2.2 TTS acceptance request is explicitly unexecuted; historical Production TTS proof and current local source-routing coverage are retained.
+Status: V2.2 remains deployed in Production; the 2026-09-13 storage-read incident is open and the V2.3 child plan owns its current local repair status. V2-0 through V2-8-2.3, V2-8-3 Gates 0B–6 and the V2.2 migration-first release are complete at application activation. `main` remains Schema Version 6 with JSON backup Version 4; `0007` now accepts only the matching V1/V2 Recognition and Active Parameter Set identifiers. Google Cloud Standard remains pinned to `en-AU-Standard-C` at `0.9` speaking rate, `0` pitch and MP3; paid `gemini-3.1-flash-lite` remains behind the accepted disclosure and global cost guards. The canonical deployment is in `syd1`, Basic Auth remains active, and migration-time study data retained exact parity. The retained recovery points and encrypted pre/post V2.2 backups remain available. The whole V2 release excludes SSO and confidential per-person authorization. The fresh exact-text V2.2 TTS acceptance request is explicitly unexecuted; historical Production TTS proof and current local source-routing coverage are retained.
+
+## V2.3 Current Local Work
+
+2026-09-13，用户要求建立 V2.3 分支，调查 Library 空白、将学习日改到明确选定的凌晨 06:00，并简化 Home Insight；Memory outlook 后续明确选择保留分组小图。唯一当前修复计划为 `plan_docs/PLAN_V2_3_STORAGE_STUDY_DAY_HOME.md`。当前线上仍是 V2.2，已有 storage GET 500 / health 503 的读取故障证据；本地修复完成与线上连接恢复、数据完整性核对、发布授权分别记录。此次没有扩大 provider、凭据、数据库或 GitHub 权限。
 
 ## Scope
 
