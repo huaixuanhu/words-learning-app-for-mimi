@@ -1,9 +1,9 @@
 import { createHash } from "node:crypto";
-import { mkdtemp, mkdir, readFile, readdir, rm, symlink, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, readdir, rm, stat, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { backupDateKey, cleanRestoreDirectory, runBoundedProcess, runDailyProductionBackup, runMonthlyProductionBackup } from "./daily-production-backup.mjs";
+import { backupDateKey, cleanRestoreDirectory, createBackupWorkRoot, runBoundedProcess, runDailyProductionBackup, runMonthlyProductionBackup } from "./daily-production-backup.mjs";
 import { V2_STAGE8_3_APPROVED_PRODUCTION_PROJECT_ID_SHA256 } from "./v2-stage8-3-contract.mjs";
 
 const roots = [];
@@ -260,6 +260,58 @@ describe("monthly independent local archive retention", () => {
     expect(execute).not.toHaveBeenCalled();
   });
 
+  it.each([true, false])("permits one explicitly reviewed retry, preserves the failed receipt and never dispatches a third attempt (%s)", async (success) => {
+    const input = await monthlyFixture();
+    const now = new Date("2026-09-13T00:00:00Z");
+    const first = await runMonthlyProductionBackup({ ...input, now, execute: async () => ({ ok: false }) });
+    const originalBytes = await readFile(first.receiptPath);
+    const execute = vi.fn(() => success ? verifiedOutput(input, now) : { ok: false });
+    const retry = await runMonthlyProductionBackup({ ...input, now, reviewedRetry: true, execute });
+    const retryReceipt = JSON.parse(await readFile(retry.receiptPath, "utf8"));
+    expect(retryReceipt.reviewedRetry).toEqual({
+      originalReceipt: "2026-09.json", originalReceiptSha256: digest(originalBytes),
+      reason: "operator-reviewed-failure-and-approved-one-retry",
+    });
+    expect(await readFile(first.receiptPath)).toEqual(originalBytes);
+    expect((await runMonthlyProductionBackup({ ...input, now, reviewedRetry: true, execute })).status).toBe("already-attempted");
+    expect(await runMonthlyProductionBackup({ ...input, now, execute })).toMatchObject({ ok: success, status: "already-attempted", previousStatus: success ? "verified" : "failed" });
+    expect(execute).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(["running", "verified", "cleanup-required"])("refuses a reviewed retry for an original %s receipt", async (status) => {
+    const input = await monthlyFixture();
+    await mkdir(input.stateRoot, { recursive: true });
+    const original = JSON.stringify({ artifactKind: "monthly-production-backup-attempt-v1", date: "2026-09", status });
+    await writeFile(join(input.stateRoot, "2026-09.json"), original);
+    const execute = vi.fn();
+    expect((await runMonthlyProductionBackup({ ...input, reviewedRetry: true, execute })).status).toBe("reviewed-retry-not-allowed");
+    expect(execute).not.toHaveBeenCalled();
+    expect(await readFile(join(input.stateRoot, "2026-09.json"), "utf8")).toBe(original);
+  });
+
+  it("counts a successful reviewed retry as one verified month during rotation", async () => {
+    const input = await monthlyFixture();
+    for (const month of ["06", "07"]) await runMonth(input, month);
+    const now = new Date("2026-08-02T00:00:00Z");
+    vi.setSystemTime(now);
+    await runMonthlyProductionBackup({ ...input, now, execute: async () => ({ ok: false }) });
+    await runMonthlyProductionBackup({ ...input, now, reviewedRetry: true, execute: () => verifiedOutput(input, now) });
+    const result = await runMonth(input, "09");
+    expect(result.retention).toMatchObject({ keptVerified: 3, removed: [expect.stringContaining("20260602")] });
+    expect(await readdir(join(input.backupRoot, "monthly-local-v1"))).toEqual(expect.arrayContaining([expect.stringContaining("20260802")]));
+  });
+
+  it("stores only whitelisted failure code and phase in the monthly receipt", async () => {
+    const input = await monthlyFixture();
+    const result = await runMonthlyProductionBackup({ ...input, execute: async () => ({
+      ok: false, failure: { code: "V2_1_BACKUP_COMMAND_FAILED", phase: "isolated-restore", message: "private diagnostic", databaseCode: "XXXXX" },
+    }) });
+    const text = await readFile(result.receiptPath, "utf8");
+    expect(JSON.parse(text).failure).toEqual({ code: "V2_1_BACKUP_COMMAND_FAILED", phase: "isolated-restore" });
+    expect(text).not.toContain("private diagnostic");
+    expect(text).not.toContain("XXXXX");
+  });
+
   it("shares the existing global lock with a daily invocation", async () => {
     const input = await monthlyFixture();
     await mkdir(input.stateRoot, { recursive: true });
@@ -282,6 +334,24 @@ describe("monthly independent local archive retention", () => {
 });
 
 describe("bounded backup subprocess", () => {
+  it("uses a private short temporary directory whose nested restore socket fits macOS", async () => {
+    const root = await createBackupWorkRoot();
+    roots.push(root);
+    expect(root).not.toContain("/var/folders/");
+    expect((await stat(root)).mode & 0o777).toBe(0o700);
+    expect(Buffer.byteLength(join(root, "mimi-v2-1-schema6-backup-XXXXXX", "socket", ".s.PGSQL.55931"))).toBeLessThan(104);
+  });
+
+  it("discards raw stderr and retains only an allowed structured runner code and phase", async () => {
+    const output = "raw private connection detail\n" + JSON.stringify({
+      ok: false, error: { code: "V2_1_BACKUP_COMMAND_FAILED", phase: "isolated-restore", message: "private detail", databaseCode: "12345" },
+    }) + "\n";
+    const result = await runBoundedProcess(process.execPath, ["-e", "process.stderr.write(process.argv[1]);process.exitCode=1", output]);
+    expect(result).toEqual({ status: 1, stopped: false, stdout: "", safeError: { code: "V2_1_BACKUP_COMMAND_FAILED", phase: "isolated-restore" } });
+    expect(JSON.stringify(result)).not.toContain("private");
+    const unknown = await runBoundedProcess(process.execPath, ["-e", "process.stderr.write(process.argv[1]);process.exitCode=1", JSON.stringify({ ok: false, error: { code: "UNAPPROVED_PRIVATE_VALUE", phase: "isolated-restore" } })]);
+    expect(unknown.safeError).toBeUndefined();
+  });
   it("captures successful output and hides failed spawn details", async () => {
     expect(await runBoundedProcess(process.execPath, ["-e", "process.stdout.write('ok')"]))
       .toMatchObject({ status: 0, stdout: "ok", stopped: false });

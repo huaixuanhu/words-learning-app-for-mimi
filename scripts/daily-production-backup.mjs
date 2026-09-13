@@ -1,8 +1,8 @@
 import { spawn } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
 import { constants } from "node:fs";
-import { chmod, lstat, mkdir, mkdtemp, open, readFile, readdir, rename, rm, rmdir, stat, writeFile } from "node:fs/promises";
-import { homedir, tmpdir } from "node:os";
+import { chmod, lstat, mkdir, mkdtemp, open, readFile, readdir, realpath, rename, rm, rmdir, stat, writeFile } from "node:fs/promises";
+import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { V2_STAGE8_3_APPROVED_PRODUCTION_PROJECT_ID_SHA256 } from "./v2-stage8-3-contract.mjs";
@@ -18,6 +18,31 @@ const EVIDENCE_ROOT = join(REPO_ROOT, "local_artifacts", "v2-1-production");
 const ARCHIVE_NAME = /^mimi-production-schema6-v2-1-(\d{8}T\d{6}Z)-[a-f0-9]{12}\.dump\.age$/u;
 const SHA256 = /^[a-f0-9]{64}$/u;
 const PG_CTL = "/opt/homebrew/opt/postgresql@17/bin/pg_ctl";
+const SAFE_PHASES = new Set(["local-guard", "neon-target", "source-inventory-before", "encrypted-backup", "source-inventory-after", "isolated-restore"]);
+const SAFE_CODES = new Set([
+  "V2_1_PRODUCTION_OPERATION_FAILED",
+  ...["COMMAND_FAILED", "CONFIRMATION_REQUIRED", "DIRECTORY_INVALID", "GIT_DIRTY", "GIT_INVALID", "IDENTITY_INVALID", "RECIPIENT_INVALID", "RESTORE_MISMATCH", "SCHEMA_MISMATCH", "SNAPSHOT_INVALID", "SOURCE_CHANGED", "TOOL_VERSION_MISMATCH"].map((code) => `V2_1_BACKUP_${code}`),
+  ...["API_KEY_INVALID", "CONNECTION_INVALID", "CONNECTION_MISMATCH", "CONTROL_PLANE_INVALID", "CONTROL_PLANE_REJECTED", "CONTROL_PLANE_UNAVAILABLE", "ENDPOINT_MISMATCH", "KEYCHAIN_VALUE_UNAVAILABLE", "MAIN_BRANCH_MISMATCH", "PROJECT_MISMATCH", "READY_IDENTITY_MISMATCH", "STAGING_BRANCH_MISMATCH"].map((code) => `V2_1_NEON_${code}`),
+]);
+const RETRY_REVIEW_REASON = "operator-reviewed-failure-and-approved-one-retry";
+
+function safeRunnerFailure(value) {
+  return value && SAFE_CODES.has(value.code) && SAFE_PHASES.has(value.phase)
+    ? { code: value.code, phase: value.phase } : null;
+}
+
+export async function createBackupWorkRoot() {
+  // macOS's per-user TMPDIR makes the nested PostgreSQL socket exceed 104 bytes.
+  const base = await realpath("/tmp");
+  const root = await mkdtemp(join(base, "mimi-bak-"));
+  await chmod(root, 0o700);
+  const socket = join(root, "mimi-v2-1-schema6-backup-XXXXXX", "socket", ".s.PGSQL.55931");
+  if (Buffer.byteLength(socket) >= 104) {
+    await rmdir(root);
+    throw new Error("The isolated restore socket path is too long");
+  }
+  return root;
+}
 
 export function backupDateKey(now = new Date()) {
   const parts = new Intl.DateTimeFormat("en-CA", {
@@ -35,6 +60,8 @@ export function runBoundedProcess(command, args, {
   return new Promise((resolveResult) => {
     const child = spawn(command, args, { cwd, env, detached: true, stdio: ["ignore", "pipe", "pipe"] });
     let stdout = "";
+    let stderrLine = "";
+    let safeError = null;
     let outputBytes = 0;
     let stopping = false;
     let groupCleanupRequired = false;
@@ -48,7 +75,13 @@ export function runBoundedProcess(command, args, {
       clearTimeout(escalation);
       process.removeListener("SIGINT", stop);
       process.removeListener("SIGTERM", stop);
-      resolveResult(result);
+      resolveResult({ ...result, ...(safeError ? { safeError } : {}) });
+    };
+    const inspectErrorLine = (line) => {
+      try {
+        const value = JSON.parse(line);
+        if (value?.ok === false) safeError = safeRunnerFailure(value.error) ?? safeError;
+      } catch { /* Raw stderr is discarded, including unstructured driver errors. */ }
     };
     const signalGroup = (signal) => {
       if (!child.pid) return;
@@ -77,9 +110,18 @@ export function runBoundedProcess(command, args, {
     child.stderr.on("data", (chunk) => {
       outputBytes += chunk.length;
       if (outputBytes > maxOutputBytes) stop();
+      else {
+        stderrLine += chunk.toString("utf8");
+        let newline;
+        while ((newline = stderrLine.indexOf("\n")) >= 0) {
+          inspectErrorLine(stderrLine.slice(0, newline));
+          stderrLine = stderrLine.slice(newline + 1);
+        }
+      }
     });
     child.on("error", () => finish({ status: null, stopped: false, stdout: "" }));
     child.on("close", (status) => {
+      if (stderrLine) inspectErrorLine(stderrLine);
       if (!stopping) finish({ status, stopped: false, stdout });
     });
     process.once("SIGINT", stop);
@@ -122,8 +164,7 @@ export async function cleanRestoreDirectory(workRoot, {
 }
 
 async function executeExistingBackup({ monthly = false } = {}) {
-  const workRoot = await mkdtemp(join(tmpdir(), "mimi-daily-backup-"));
-  await chmod(workRoot, 0o700);
+  const workRoot = await createBackupWorkRoot();
   let result;
   try {
     result = await runBoundedProcess(process.execPath, [
@@ -136,8 +177,9 @@ async function executeExistingBackup({ monthly = false } = {}) {
     result = { status: null };
   }
   const tempCleaned = await cleanRestoreDirectory(workRoot, { interrupted: result.stopped === true });
-  if (!tempCleaned || result.cleanupRequired) return { ok: false, cleanupRequired: true };
-  if (result.status !== 0 || result.stopped) return { ok: false };
+  const failure = safeRunnerFailure(result.safeError);
+  if (!tempCleaned || result.cleanupRequired) return { ok: false, cleanupRequired: true, ...(failure ? { failure } : {}) };
+  if (result.status !== 0 || result.stopped) return { ok: false, ...(failure ? { failure } : {}) };
   try {
     const value = JSON.parse(result.stdout);
     return value?.ok === true && value.restoreVerified === true &&
@@ -227,12 +269,19 @@ async function verifiedMonthlyResult(result, { archiveRoot, evidenceRoot, attemp
 async function retainMonthlyArchives({ stateRoot, archiveRoot, evidenceRoot, currentMonth, currentArchive }) {
   const verified = [];
   for (const name of await readdir(stateRoot)) {
-    if (!/^\d{4}-\d{2}\.json$/u.test(name)) continue;
+    const match = name.match(/^(\d{4}-\d{2})(\.retry-1)?\.json$/u);
+    if (!match) continue;
     try {
       const receipt = JSON.parse((await regularFile(join(stateRoot, name))).toString("utf8"));
       if (receipt.artifactKind !== "monthly-production-backup-attempt-v1" ||
-        receipt.date !== name.slice(0, -5) || receipt.status !== "verified" || !receipt.archive ||
+        receipt.date !== match[1] || receipt.status !== "verified" || !receipt.archive ||
         backupDateKey(new Date(receipt.attemptedAt)).slice(0, 7) !== receipt.date) continue;
+      if (match[2]) {
+        const original = await regularFile(join(stateRoot, `${receipt.date}.json`));
+        if (receipt.reviewedRetry?.originalReceipt !== `${receipt.date}.json` ||
+          receipt.reviewedRetry?.originalReceiptSha256 !== digest(original) ||
+          JSON.parse(original.toString("utf8")).status !== "failed") continue;
+      }
       const boundArchive = await verifiedMonthlyResult({ ok: true, evidence: receipt.evidence }, {
         archiveRoot, evidenceRoot, attemptedAt: receipt.attemptedAt, completedAt: receipt.completedAt,
       });
@@ -245,9 +294,11 @@ async function retainMonthlyArchives({ stateRoot, archiveRoot, evidenceRoot, cur
   }
   verified.sort((left, right) => right.month.localeCompare(left.month));
   const names = new Set();
+  const months = new Set();
   const distinct = verified.filter((entry) => {
-    if (names.has(entry.archive.filename)) return false;
+    if (names.has(entry.archive.filename) || months.has(entry.month)) return false;
     names.add(entry.archive.filename);
+    months.add(entry.month);
     return true;
   });
   const removed = [];
@@ -265,9 +316,10 @@ async function retainMonthlyArchives({ stateRoot, archiveRoot, evidenceRoot, cur
 /** One attempt per local period; failed/unfinished attempts need human review. */
 export async function runDailyProductionBackup({
   now = new Date(), stateRoot = STATE_ROOT, execute,
-  cadence = "daily", backupRoot = BACKUP_ROOT, evidenceRoot = EVIDENCE_ROOT,
+  cadence = "daily", backupRoot = BACKUP_ROOT, evidenceRoot = EVIDENCE_ROOT, reviewedRetry = false,
 } = {}) {
   if (cadence !== "daily" && cadence !== "monthly") throw new Error("Unsupported backup cadence");
+  if (reviewedRetry && cadence !== "monthly") throw new Error("Reviewed retry is monthly only");
   const monthly = cadence === "monthly";
   const date = monthly ? backupDateKey(now).slice(0, 7) : backupDateKey(now);
   const archiveRoot = join(backupRoot, MONTHLY_NAMESPACE);
@@ -282,11 +334,39 @@ export async function runDailyProductionBackup({
     throw error;
   }
 
-  const receiptPath = join(stateRoot, `${date}.json`);
+  const originalReceiptName = `${date}.json`;
+  const originalReceiptPath = join(stateRoot, originalReceiptName);
+  const retryReceiptPath = join(stateRoot, `${date}.retry-1.json`);
+  const receiptPath = reviewedRetry ? retryReceiptPath : originalReceiptPath;
   let retainLock = false;
   try {
+    let retryReview;
+    if (reviewedRetry) {
+      const originalBytes = await regularFile(originalReceiptPath);
+      const original = JSON.parse(originalBytes.toString("utf8"));
+      if (original.artifactKind !== "monthly-production-backup-attempt-v1" ||
+        original.date !== date || original.status !== "failed") {
+        return { ok: false, status: "reviewed-retry-not-allowed", date };
+      }
+      retryReview = {
+        originalReceipt: originalReceiptName,
+        originalReceiptSha256: digest(originalBytes),
+        reason: RETRY_REVIEW_REASON,
+      };
+    }
     try {
-      const previous = JSON.parse((await regularFile(receiptPath)).toString("utf8"));
+      const previousBytes = await regularFile(receiptPath);
+      let previous = JSON.parse(previousBytes.toString("utf8"));
+      if (monthly && !reviewedRetry && previous.status === "failed") {
+        try {
+          const retry = JSON.parse((await regularFile(retryReceiptPath)).toString("utf8"));
+          if (retry.artifactKind !== "monthly-production-backup-attempt-v1" || retry.date !== date ||
+            retry.reviewedRetry?.originalReceipt !== originalReceiptName ||
+            retry.reviewedRetry?.originalReceiptSha256 !== digest(previousBytes)) throw new Error("Reviewed retry does not match the original receipt");
+          previous = retry;
+        }
+        catch (error) { if (error.code !== "ENOENT") throw error; }
+      }
       return {
         ok: previous.status === "verified" && previous.retention?.status !== "review-required",
         status: "already-attempted",
@@ -303,6 +383,7 @@ export async function runDailyProductionBackup({
       date,
       attemptedAt: now.toISOString(),
       status: "running",
+      ...(retryReview ? { reviewedRetry: retryReview } : {}),
     };
     // Record before any remote read, so a restart cannot repeatedly consume quota.
     await writeFile(receiptPath, `${JSON.stringify(receipt, null, 2)}\n`, { mode: 0o600, flag: "wx" });
@@ -331,6 +412,7 @@ export async function runDailyProductionBackup({
       completedAt,
       ...(verified && result.evidence ? { evidence: result.evidence } : {}),
       ...(archive ? { archive } : {}),
+      ...(safeRunnerFailure(result?.failure) ? { failure: safeRunnerFailure(result.failure) } : {}),
     };
     await updateReceipt(receiptPath, completed);
     let retention;
@@ -351,13 +433,14 @@ export function runMonthlyProductionBackup(options = {}) {
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  const monthly = process.argv.length === 4 && process.argv[2] === "--monthly" && process.argv[3] === MONTHLY_CONFIRMATION;
+  const reviewedRetry = process.argv.length === 5 && process.argv[4] === "--retry-reviewed-monthly-backup";
+  const monthly = (process.argv.length === 4 || reviewedRetry) && process.argv[2] === "--monthly" && process.argv[3] === MONTHLY_CONFIRMATION;
   if (!monthly && (process.argv.length !== 3 || process.argv[2] !== CONFIRMATION)) {
     console.error(JSON.stringify({ ok: false, code: "DAILY_BACKUP_CONFIRMATION_REQUIRED" }));
     process.exitCode = 1;
   } else {
     try {
-      const result = await runDailyProductionBackup({ cadence: monthly ? "monthly" : "daily" });
+      const result = await runDailyProductionBackup({ cadence: monthly ? "monthly" : "daily", reviewedRetry });
       console.log(JSON.stringify(result));
       if (!result.ok) process.exitCode = 1;
     } catch {

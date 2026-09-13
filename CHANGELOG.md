@@ -6,6 +6,7 @@
 - Set the existing Neon organization's spending notification to US$5 (native 80% and 100% alerts). This is an alert only: Neon currently has no total-dollar hard cap, and Vercel Spend Management excludes Marketplace charges. Alternative compute/transfer suspension quotas remain a separate user choice.
 - Activated native Neon daily main-branch snapshots at 21:00 UTC with 14-day retention, extended the project history window to seven days, and created the first cloud snapshot with a 14-day expiry. No Production restore was performed.
 - Replaced the planned daily Mac schedule with monthly independent encrypted backups retaining the latest three verified successful months in an owned directory. Existing release recovery archives remain outside rotation. Stage 2.3.11 in the canonical V2.3 plan owns first-run validation and actual monthly activation status.
+- First real local verification failed safely. An isolated PostgreSQL probe reproduced a too-long Unix socket path in the wrapper; use a short private temporary directory, retain only allowlisted error code/phase, and permit one explicit reviewed retry with the original failed receipt preserved. Forty focused tests cover the repaired wrapper and retention boundary; real retry result is recorded by Stage 2.3.11.
 - Local application safeguards remain on `codex/v2.3`; no push, deployment, migration or Production learner-data write occurred.
 
 ## 2026-09-13 AEST — V2.3 transfer and persistence safeguards
