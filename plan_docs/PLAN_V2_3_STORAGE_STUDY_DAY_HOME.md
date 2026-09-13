@@ -205,3 +205,9 @@ Exit criteria:
 - 版本检查补充后的完整测试为 763 项通过、既有远程集成 1 项跳过；独立复核未发现该补充的回归。随后当前 npm audit 报告 1 critical（Next.js）和 1 high（sharp），因此先修复依赖再推送。官方修复下限为 Next.js / eslint-config-next 16.3.3、sharp 0.35.4；保留 React 19.2.4、原 Node >=20.9 范围及其他依赖策略，更新原 sharp override（依赖版本约束）。不使用强制自动升级，不将公告解释成已发生入侵。
 - 官方依据：[Next.js Windows server advisory](https://github.com/vercel/next.js/security/advisories/GHSA-p293-qw3h-jr36)、[Next.js AVIF advisory](https://github.com/vercel/next.js/security/advisories/GHSA-2xp9-vwfh-vxw4)、[sharp/libheif advisory](https://github.com/lovell/sharp/security/advisories/GHSA-rgj7-g3m4-5g8c)。本次发布的恢复验证、核心数据与权限契约不因依赖修复扩大。
 - 最终代码与依赖候选：完整 763 项测试通过、既有远程集成 1 项跳过；lint、typecheck、原生 sharp 合成图片转换、无凭据 Next 16.3.3 `next build --webpack` 均通过，npm audit 为 0 项漏洞。三种未改变的备份 fixture dry-run 与 22 项治理测试保留原通过证据；当前文档和精确差异另行完成严格预检。远端默认构建由后续 Preview 验证，未声称本地 Turbopack 验证。
+
+- 发布候选 `2a84de53af62cb0ff7342d61c88d633e072ba38f` 已推送至 `codex/v2.3`，Preview `dpl_6vD5qV6eBZM27DQSskp3upupsC5H` 为 Ready；云端实际 `next build` 使用 Next 16.3.3 / Turbopack 并成功。唯一 npm 安装脚本提示涉及 `unrs-resolver` 未列入 allowScripts，没有构建失败，也没有为此放宽脚本许可。
+- `main` 已无强制快进并推送到同一提交；GitHub Production deployment `6421972834` 于 `2026-09-13T13:18:37Z` 报告成功，Vercel deployment 为 `dpl_A6BcGZWu5vS3rax2qVVqyQzvQkKk`。后续文档收尾提交不改变应用源码，最终 Git/域名身份另行核对并保存在忽略的发布回执。
+- 正式域名匿名请求为 401；既有已登录 Chrome 的 Home 与 Library 成功显示 5,585 个词。Home 新学/复习分图与 Memory outlook 日期/回忆分组、计算时间均可见；检查时浏览器 warning/error 列表为空。Library 的 DOM 读取一次超时，随后截图确认页面正常；没有将浏览器工具超时解释为服务器故障。
+- 本轮直接打开 `/api/storage/health` 的响应页被 Chrome 以 `ERR_BLOCKED_BY_CLIENT` 阻止显示；随后本次 deployment 的 Vercel 日志确认该请求在 `2026-09-13T13:19:44.889Z` 返回 200。`/api/storage/data` 同样返回 200；部署筛选后的 30 分钟窗口中 Warning / Error / Fatal 均为 0，没有 5xx，列表已到末尾。此结果只覆盖发布后的有界观察窗口。没有放宽浏览器保护或更改认证。未发送旧客户端真实 POST；其写入前 428 拒绝由当前路由测试覆盖。未进行评分、导入、备份恢复或付费提供方验收。
+- Vercel Console 已核对候选部署为 Ready / Production / Current，来源 `main` 的精确候选提交，正式域名 `words-learning-app-for-mimi.vercel.app` 已分配到该部署。

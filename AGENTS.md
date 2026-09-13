@@ -31,7 +31,7 @@
 - Canonical V2 Production cutover: `plan_docs/PLAN_V2_STAGE8_3_PRODUCTION_BACKUP_MIGRATION_CUTOVER.md`.
 - Canonical V2.1 repair and release: `plan_docs/PLAN_V2_1_DUPLICATE_IMPORT_DEDUPLICATION.md` and `plan_docs/PLAN_V2_1_PRODUCTION_DUPLICATE_REPAIR_RELEASE.md`.
 - Canonical V2.2 product and release: `plan_docs/PLAN_V2_2_REVIEW_CADENCE_CARD_AUDIO.md` and `plan_docs/PLAN_V2_2_PRODUCTION_RELEASE.md`.
-- Canonical V2.3 local storage, study-day and Home repair: `plan_docs/PLAN_V2_3_STORAGE_STUDY_DAY_HOME.md`.
+- Canonical V2.3 storage, study-day, Home and Production release: `plan_docs/PLAN_V2_3_STORAGE_STUDY_DAY_HOME.md`.
 - Canonical V1 launch record: `plan_docs/PLAN_V1_STAGE6B_P1_G_C_5_LIVE_PRODUCTION_EXECUTION.md`.
 - Active data lifecycle policy: `plan_docs/PLAN_V1_STAGE8_5_DATA_LIFECYCLE_ENVIRONMENT_STRATEGY.md`.
 - Version hold for SSO（Single Sign-On，单点登录）and confidential per-person isolation: `plan_docs/PLAN_VERSION_HOLD_MULTI_USER_CONFIDENTIAL_ISOLATION.md`.
@@ -41,9 +41,9 @@
 
 ## Current Product And Runtime
 
-- V2.2 is live on the canonical Production domain behind Basic Auth（基础认证）. Vercel Production runs the `main` application in `syd1`.
+- V2.3 is live on the canonical Production domain behind Basic Auth（基础认证）. Vercel Production runs the `main` application in `syd1`; `plan_docs/PLAN_V2_3_STORAGE_STUDY_DAY_HOME.md` Stage 2.3.12 owns the authorized release and exact deployment/acceptance evidence.
 - Neon `main` is Production Schema Version 6 with the unique `(person_id, normalized_text)` vocabulary identity. Neon `staging` is the Development / protected Preview baseline at Schema 6.
-- Production and non-production credentials are distinct. The retained recovery points and encrypted backups remain governed by the V2-8-3, V2.1 and V2.2 release records.
+- Production and non-production credentials are distinct. Historical recovery points remain governed by the V2-8-3, V2.1 and V2.2 release records; V2.3 Stage 2.3.11 owns the active cloud and independent local backup policy and evidence.
 - Gemini enrichment and Google Cloud Standard-C TTS are enabled under independent Production guards. Their exact active contracts are owned by the V2 master/cutover plans and must not be relaxed through incidental work.
 - Current stack: Next.js App Router, TypeScript, Tailwind CSS, ESLint, Vitest, npm, `@neondatabase/serverless`, `dotenv-cli`, `ts-fsrs`, Neon Postgres, and browser `localStorage` as the local fallback.
 - Shared Basic Auth protects the trusted group. Browser-selected `person_id` separates learning data but is not authentication, authorization, or confidential tenant isolation.
@@ -61,7 +61,7 @@
 - Provider disclosure must state limited provider safety / abuse / legal retention and must never claim Zero Retention（零保留）.
 - Current AI global guards remain 300 provider attempts/day, 600,000 input tokens/day, 210,000 output/thinking tokens/day, US$0.50 estimated cost/day, US$2/month, concurrency 2, Cache（缓存）, Idempotency, accounting, and Kill Switch（紧急关闭开关）. There is no per-person ceiling, and switching `person_id` cannot divide or reset the global boundary.
 - Current TTS uses `en-AU-Standard-C`, speaking rate `0.9`, pitch `0`, MP3, with 2,000 provider attempts/day, 100,000 characters/day, 1,000,000 characters/month, US$0.50/day, US$4/month, concurrency 4, Cache, accounting, and Kill Switch. There is no per-person ceiling; browser speech is an explicit device fallback.
-- Production accepts only cutover modes `maintenance`, `schema6-readiness`, and `live`; missing or unknown modes fail closed. Mutations require the code-owned `v2-schema6` client marker.
+- Production accepts only cutover modes `maintenance`, `schema6-readiness`, and `live`; missing or unknown modes fail closed. Mutations require the code-owned `v2-schema6` client marker. Generic `/api/storage/data` POST additionally requires `x-mimi-storage-client-revision: v2.3`; missing or incompatible revisions receive `428` before repository access.
 - Automated Speech Recognition（自动语音识别）, microphone upload, AI pronunciation scoring, public registration, confidential per-person authorization, external question banks, analytics, notifications, and automated backups remain outside the accepted baseline unless a later approved plan activates them.
 
 ## Governance Classification

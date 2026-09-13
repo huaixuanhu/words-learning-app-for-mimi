@@ -2,6 +2,8 @@
 
 ## 2026-09-13 AEST — authorized V2.3 push and Production deployment
 
+- Released candidate `2a84de5` through a Ready Preview and non-force main push; GitHub Production deployment 6421972834 succeeded at 2026-09-13T13:18:37Z. Verified canonical anonymous 401 and authenticated Home/Library with 5,585 words and revised Insights; browser warning/error lists were empty. Chrome blocked rendering of the health response; the deployment-filtered Vercel log independently confirms health GET 200 and storage-data GET 200. Warning/Error/Fatal counts and HTTP 5xx were zero in the bounded post-release scan. No real old-client POST is claimed. No learner editing, rating, import, restore or paid-provider smoke was performed.
+
 - Authority: user requested complete push and deployment. Existing project/repository, non-force V2.3/main Git updates, Production deployment and bounded verification are in scope; no schema migration, provider/configuration change, learner-data edit or database restore is needed. Tier 3 remains unchanged.
 - Independent release review found an old-tab/new-server save acknowledgement mismatch. Added a separate storage-client revision check before repository creation and updated its focused tests; retained Schema 6, authentication, cutover and Preview guards. GET, Study and provider contracts remain unchanged.
 - Entry remote main and local main both matched `3a64aa2`, with a clean `367a36e` candidate before the final compatibility fix. Vercel Console confirmed the existing GitHub link and Production main flow. The Vercel connector returned 403, so release observation uses the existing logged-in Console and GitHub statuses without permission/configuration changes.

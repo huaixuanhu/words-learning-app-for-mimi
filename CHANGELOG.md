@@ -1,6 +1,8 @@
 # CHANGELOG
 
-## 2026-09-13 AEST — V2.3 Production release preparation
+## 2026-09-13 AEST — V2.3 Production release
+
+- Pushed V2.3 candidate `2a84de5`, verified its Ready Preview, and fast-forwarded/pushed main. Git-linked Production deployment succeeded; authenticated Home/Library show 5,585 words and the revised Insights. Anonymous access remains 401. Canonical V2.3 Stage 2.3.12 records exact identities and the successful health/log checks and the old-client verification boundary.
 
 - User explicitly authorized full push and deployment of V2.3 through the existing GitHub/Vercel project. Canonical V2.3 Stage 2.3.12 owns the exact release and post-deploy evidence; no database migration is required.
 - Blocked old storage clients before repository access with a separate V2.3 revision header while preserving the Schema 6 marker. This prevents an open V2.2 tab from treating a confirmed-save/failed-refresh response as an unsaved operation and inviting duplicate submission. Old tabs receive an explicit reload-before-saving response.

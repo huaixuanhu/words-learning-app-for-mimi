@@ -65,19 +65,21 @@
 
 - 每个人物分别保存词汇、复习历史和每日目标。
 - 可下载完整 JSON backup（JSON 备份）和 vocabulary CSV（词汇表格）。
-- 正式学习资料保存在云端数据库，并在重要数据操作前后建立可恢复的加密备份。
+- 正式学习资料保存在云端数据库，保留每日云端快照和每月独立加密副本；重要数据操作前后另行建立可恢复的加密备份。
 - 普通学习页面使用简短英文；不可逆操作、隐私和外部 AI 数据传输会显示更明确的中文或双语提示。
 
 ## 当前版本
 
-V2.2 已在 Production 正式运行。
+V2.3 已在 Production 正式运行。
 
 - 访问地址：[words-learning-app-for-mimi.vercel.app](https://words-learning-app-for-mimi.vercel.app)
-- 当前版本：V2.2
+- 当前版本：V2.3
 - 使用方式：私人 Basic Auth（基础认证），仅供受邀使用者访问
 - 数据位置：Neon Postgres
 
-V2.2 缩短了之后新产生的复习间隔，保留新单词第一次“模糊记得”在下一天复习；复习卡外围区域现在也能翻面。Recognition 和 Active Dictation 的新卡会自动播放一次读音，声音按钮继续保留；`Cloud voice` 与 `Use device voice` 也会按各自选项使用云端或设备声音。V2.1 的重复资料保护、复习历史、导入记录和备份能力继续保留。
+V2.3 将学习日刷新改为凌晨 06:00，让跨午夜的学习继续计入同一个学习日。读取异常会明确提示并保留已加载内容；Home 更清楚地区分新学和复习词数，并显示最新的复习负担与回忆估计。重复保存保护和备份能力也得到加固。
+
+V2.2 的复习间隔与卡片交互继续保留：新单词第一次“模糊记得”在下一学习日复习，复习卡外围区域也能翻面。Recognition 和 Active Dictation 的新卡会自动播放一次读音，声音按钮继续保留；`Cloud voice` 与 `Use device voice` 也会按各自选项使用云端或设备声音。V2.1 的重复资料保护、复习历史、导入记录和备份能力继续保留。
 
 这个项目目前没有公开注册功能。界面中的人物切换用于分开学习资料，不等同于每个人拥有独立、安全的账户权限。
 
@@ -112,6 +114,7 @@ npm run dev
 - [V2.1 Production Release](./plan_docs/PLAN_V2_1_PRODUCTION_DUPLICATE_REPAIR_RELEASE.md)：V2.1 正式发布与恢复记录
 - [V2.2 Product Plan](./plan_docs/PLAN_V2_2_REVIEW_CADENCE_CARD_AUDIO.md)：复习周期、卡片点击与读音改造
 - [V2.2 Production Release](./plan_docs/PLAN_V2_2_PRODUCTION_RELEASE.md)：V2.2 正式发布、迁移与恢复记录
+- [V2.3 Repair And Release](./plan_docs/PLAN_V2_3_STORAGE_STUDY_DAY_HOME.md)：学习日、存储恢复、Home、备份与发布记录
 - [Changelog](./CHANGELOG.md)：重要版本变化
 - [AI Agent Log](./governance/AI_AGENT_LOG.md)：人机协作、验证和安全记录
 
