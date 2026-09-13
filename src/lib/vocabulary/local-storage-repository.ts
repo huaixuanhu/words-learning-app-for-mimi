@@ -19,6 +19,16 @@ import {
 } from "@/lib/people/repository";
 
 export const VOCABULARY_STORAGE_KEY = "mimi-pte-vocabulary-v1";
+export const VOCABULARY_RECOVERY_KEY_PREFIX = `${VOCABULARY_STORAGE_KEY}:recovery:`;
+
+export class LocalVocabularyReadError extends Error {
+  readonly code = "LOCAL_VOCABULARY_RECOVERY_REQUIRED";
+
+  constructor() {
+    super("Saved browser data could not be read safely. The original data is preserved. Restore a checked backup to continue.");
+    this.name = "LocalVocabularyReadError";
+  }
+}
 
 type LegacyVocabularyData = {
   schemaVersion?: unknown;
@@ -41,11 +51,54 @@ type LegacyVocabularyData = {
 };
 
 function isObject(value: unknown): value is Record<string, unknown> {
-  if (!value || typeof value !== "object") {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
     return false;
   }
 
   return true;
+}
+
+function assertStoredDataShape(value: unknown): asserts value is Record<string, unknown> {
+  if (!isObject(value) || ![1, 2, 3, 4, 5, 6].includes(value.schemaVersion as number)) {
+    throw new LocalVocabularyReadError();
+  }
+
+  const collections = [
+    "items", "importBatches", "reviewStates", "reviewEvents", "people",
+    "settingsByPerson", "dailyStudyDefaults", "dailyStudyPlans",
+    "vocabularyCreationFacts", "vocabularyCreationReversals", "aiRuns",
+    "aiEnrichmentDrafts", "vocabularyRelations",
+  ];
+  for (const key of collections) {
+    const entries = value[key];
+    // Older versions legitimately lack collections introduced by later versions.
+    if (entries === undefined && key !== "items" && value.schemaVersion !== 6) continue;
+    if (!Array.isArray(entries) || entries.some((entry) => !isObject(entry))) {
+      throw new LocalVocabularyReadError();
+    }
+  }
+  for (const key of ["items", "importBatches", "reviewStates", "reviewEvents", "people"]) {
+    const entries = value[key];
+    if (Array.isArray(entries) && entries.some((entry) =>
+      typeof entry.id !== "string" || !entry.id.trim(),
+    )) {
+      throw new LocalVocabularyReadError();
+    }
+  }
+  if ((value.items as Record<string, unknown>[]).some((item) =>
+    typeof item.surfaceText !== "string" || !item.surfaceText.trim() ||
+    typeof item.normalizedText !== "string" || !item.normalizedText.trim(),
+  )) {
+    throw new LocalVocabularyReadError();
+  }
+  if ((value.schemaVersion as number) >= 3 &&
+    (!Array.isArray(value.people) || value.people.length === 0)) {
+    throw new LocalVocabularyReadError();
+  }
+  if ((value.updatedAt !== undefined || value.schemaVersion === 6) &&
+    (typeof value.updatedAt !== "string" || !Number.isFinite(Date.parse(value.updatedAt)))) {
+    throw new LocalVocabularyReadError();
+  }
 }
 
 function migrateItem(value: unknown, personId: string) {
@@ -174,9 +227,7 @@ function createLegacyCreationFacts(items: VocabularyData["items"]) {
 }
 
 export function migrateVocabularyData(value: unknown, now = new Date().toISOString()): VocabularyData {
-  if (!isObject(value)) {
-    return createEmptyVocabularyData(now);
-  }
+  assertStoredDataShape(value);
 
   const maybeData = value as LegacyVocabularyData;
   const items = Array.isArray(maybeData.items) ? maybeData.items : [];
@@ -300,7 +351,16 @@ export function migrateVocabularyData(value: unknown, now = new Date().toISOStri
     };
   }
 
-  return createEmptyVocabularyData(now);
+  throw new LocalVocabularyReadError();
+}
+
+function parseStoredData(raw: string) {
+  try {
+    return migrateVocabularyData(JSON.parse(raw) as unknown);
+  } catch {
+    // Never turn an unreadable saved value into an empty writable workspace.
+    throw new LocalVocabularyReadError();
+  }
 }
 
 export function readVocabularyData() {
@@ -310,19 +370,11 @@ export function readVocabularyData() {
 
   const raw = window.localStorage.getItem(VOCABULARY_STORAGE_KEY);
 
-  if (!raw) {
+  if (raw === null) {
     return createEmptyVocabularyData();
   }
 
-  try {
-    const parsed: unknown = JSON.parse(raw);
-
-    return migrateVocabularyData(parsed);
-  } catch {
-    return createEmptyVocabularyData();
-  }
-
-  return createEmptyVocabularyData();
+  return parseStoredData(raw);
 }
 
 export function writeVocabularyData(data: VocabularyData) {
@@ -330,5 +382,29 @@ export function writeVocabularyData(data: VocabularyData) {
     return;
   }
 
+  const raw = window.localStorage.getItem(VOCABULARY_STORAGE_KEY);
+  if (raw !== null) parseStoredData(raw);
+  assertStoredDataShape(data);
   window.localStorage.setItem(VOCABULARY_STORAGE_KEY, JSON.stringify(data));
+}
+
+/** Call only after the existing backup preview and explicit replacement confirmation. */
+export function restoreVocabularyData(data: VocabularyData) {
+  if (typeof window === "undefined") {
+    throw new Error("Browser backup restore requires a browser workspace");
+  }
+
+  assertStoredDataShape(data);
+  const replacement = JSON.stringify(data);
+  const raw = window.localStorage.getItem(VOCABULARY_STORAGE_KEY);
+  const recoveryStorageKey = raw === null
+    ? null
+    : `${VOCABULARY_RECOVERY_KEY_PREFIX}${Date.now()}:${crypto.randomUUID()}`;
+
+  // Preserve exact bytes first. If browser storage is full, replacement must stop.
+  if (recoveryStorageKey !== null) {
+    window.localStorage.setItem(recoveryStorageKey, raw!);
+  }
+  window.localStorage.setItem(VOCABULARY_STORAGE_KEY, replacement);
+  return { recoveryStorageKey };
 }

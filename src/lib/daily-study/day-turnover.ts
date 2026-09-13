@@ -11,8 +11,10 @@ export function watchStudyDayTurnover(input: StudyDayTurnover) {
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
   let stopped = false;
   let refreshing = false;
+  let attempts = 0;
+  let retryNotBefore = 0;
 
-  const schedule = () => {
+  const schedule = (minimumDelay = 0) => {
     if (stopped) return;
     clearTimeout(timeoutId);
     const now = input.getNow();
@@ -21,7 +23,7 @@ export function watchStudyDayTurnover(input: StudyDayTurnover) {
     const delay = Number.isFinite(remaining)
       ? Math.max(1, Math.min(60_000, remaining))
       : 60_000;
-    timeoutId = setTimeout(checkBoundary, delay);
+    timeoutId = setTimeout(checkBoundary, Math.max(minimumDelay, delay));
   };
 
   const checkBoundary = () => {
@@ -30,13 +32,28 @@ export function watchStudyDayTurnover(input: StudyDayTurnover) {
     const now = input.getNow();
 
     if (now && Date.parse(now) < Date.parse(dayEndsAt)) {
+      attempts = 0;
+      retryNotBefore = 0;
       schedule();
+      return;
+    }
+
+    // Background tabs and repeated focus events must not keep the database awake.
+    // The timer can still check the local clock after automatic retries are spent.
+    if (document.visibilityState !== "visible" || attempts >= 3) {
+      schedule(60_000);
+      return;
+    }
+    if (Date.now() < retryNotBefore) {
+      schedule(retryNotBefore - Date.now());
       return;
     }
 
     // Sleep or a clock correction can invalidate the server-clock estimate.
     // Resolve through the server again instead of trusting the device date.
     refreshing = true;
+    attempts += 1;
+    retryNotBefore = Date.now() + 60_000;
     void input.refresh()
       .then((today) => {
         if (!stopped) dayEndsAt = today.dayEndsAt;
@@ -46,8 +63,15 @@ export function watchStudyDayTurnover(input: StudyDayTurnover) {
       })
       .finally(() => {
         refreshing = false;
-        // An unavailable server should not trigger a tight retry loop.
-        if (!stopped) timeoutId = setTimeout(checkBoundary, 60_000);
+        if (stopped) return;
+        const refreshedNow = input.getNow();
+        if (refreshedNow && Date.parse(refreshedNow) < Date.parse(dayEndsAt)) {
+          attempts = 0;
+          retryNotBefore = 0;
+        } else if (attempts >= 3) {
+          input.onError(new Error("Automatic study refresh paused. Reload this page to try again."));
+        }
+        schedule(60_000);
       });
   };
 

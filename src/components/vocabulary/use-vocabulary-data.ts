@@ -27,15 +27,19 @@ import {
   type ServerClockAnchor,
 } from "@/lib/performance/server-clock";
 import { waitForStableQueue } from "@/lib/performance/async-queue";
+import { createAutomaticRevalidator } from "@/lib/performance/automatic-revalidation";
 import { createEmptyVocabularyData } from "@/lib/vocabulary/repository";
 import {
   readVocabularyData,
+  LocalVocabularyReadError,
+  restoreVocabularyData,
   VOCABULARY_STORAGE_KEY,
   writeVocabularyData,
 } from "@/lib/vocabulary/local-storage-repository";
 import { v2ClientContractHeaders } from "@/lib/security/v2-client-contract";
 import type { VocabularyDeduplicationConfirmation } from "@/lib/vocabulary/deduplication";
 import { VocabularyDataStatus } from "./vocabulary-data-status";
+import { LocalBackupRecovery } from "./local-backup-recovery";
 
 export type ClientStorageRuntime = "loading" | StorageRuntimeMode;
 
@@ -150,6 +154,8 @@ type StorageDataResponse = {
   data?: VocabularyData;
   error?: string;
   reason?: string;
+  mutationOutcome?: "committed" | "rejected" | "unknown";
+  selectedPersonId?: string;
 };
 
 const SELECTED_PERSON_STORAGE_KEY = "mimi-pte-selected-person-id";
@@ -163,11 +169,13 @@ type VocabularyDataContextValue = Readonly<{
   isLoaded: boolean;
   loadError: string | null;
   isRefreshing: boolean;
+  localRecoveryRequired: boolean;
   storageRuntime: ClientStorageRuntime;
   commit(
     nextData: VocabularyData,
     mutation?: VocabularyStorageMutation,
   ): Promise<VocabularyData>;
+  restoreLocalBackup(data: VocabularyData): Promise<{ recoveryStorageKey: string | null }>;
   revalidateAfterMutation(
     options?: Readonly<{ broadcast?: boolean }>,
   ): Promise<void>;
@@ -325,29 +333,132 @@ export async function readPostgresData(selectedPersonId: string | null): Promise
   }
 }
 
-async function writePostgresMutation(selectedPersonId: string, mutation: VocabularyStorageMutation) {
-  const response = await fetch("/api/storage/data", {
-    method: WRITE_HTTP_METHOD,
-    headers: {
-      "content-type": "application/json",
-      [UI_WRITE_CONFIRMATION_HEADER]: UI_WRITE_CONFIRMATION_VALUE,
-      ...v2ClientContractHeaders(),
-    },
-    body: JSON.stringify({
-      selectedPersonId,
-      mutation,
-    }),
-  });
-  const payload = (await response.json()) as StorageDataResponse;
+const SAVE_REFRESH_ERROR = "Your change was saved. Retry to load the updated workspace before making another change.";
+const SAVE_UNKNOWN_ERROR = "The save could not be confirmed. Retry to check your saved data before making another change.";
+const MUTATION_FENCE_PREFIX = "mimi-pte-pending-storage-write-v1:";
+type MutationFence = {
+  requestId: string;
+  personId: string;
+  fingerprint: string;
+  committed: boolean;
+  mutation?: VocabularyStorageMutation;
+  expected?: VocabularyData;
+};
 
-  if (!response.ok || !payload.ok || !payload.data) {
-    throw new Error(payload.error ?? payload.reason ?? "Postgres storage write failed");
+function readMutationFence(runtime: ClientStorageRuntime): MutationFence | null {
+  const raw = window.localStorage.getItem(`${MUTATION_FENCE_PREFIX}${runtime}`);
+  if (!raw) return null;
+  const value: unknown = JSON.parse(raw);
+  if (!isRecord(value) || typeof value.requestId !== "string" || typeof value.personId !== "string" ||
+    typeof value.fingerprint !== "string" || typeof value.committed !== "boolean") {
+    throw new Error("The pending save status could not be read. Keep this browser's saved data while checking the last save.");
   }
+  return value as MutationFence;
+}
 
-  return {
-    data: payload.data,
-    serverNow: payload.serverNow ?? payload.data.updatedAt,
-  };
+function persistMutationFence(runtime: ClientStorageRuntime, fence: MutationFence) {
+  window.localStorage.setItem(`${MUTATION_FENCE_PREFIX}${runtime}`, JSON.stringify({
+    requestId: fence.requestId, personId: fence.personId,
+    fingerprint: fence.fingerprint, committed: fence.committed,
+  }));
+}
+
+function clearMutationFence(runtime: ClientStorageRuntime, fence: MutationFence) {
+  if (readMutationFence(runtime)?.requestId === fence.requestId) {
+    window.localStorage.removeItem(`${MUTATION_FENCE_PREFIX}${runtime}`);
+  }
+}
+
+async function mutationFingerprint(key: string) {
+  const bytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(key));
+  return Array.from(new Uint8Array(bytes), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+class StorageMutationError extends Error {
+  constructor(message: string, readonly outcome: "rejected" | "unknown") {
+    super(message);
+  }
+}
+
+function canonicalJson(value: unknown): string {
+  return JSON.stringify(value, (_key, entry: unknown) => isRecord(entry)
+    ? Object.fromEntries(Object.keys(entry).sort().map((key) => [key, entry[key]]))
+    : entry);
+}
+
+function mutationKey(personId: string, mutation: VocabularyStorageMutation) {
+  // Repeated ratings are separate events. Content saves clicked twice while
+  // pending share a flight even if their incidental click timestamps differ.
+  const content = mutation.type === "review.record" ? mutation : { ...mutation, now: undefined };
+  return canonicalJson({ personId, mutation: content });
+}
+
+function mutationStateMatches(
+  actual: VocabularyData,
+  expected: VocabularyData,
+  personId: string,
+  mutation: VocabularyStorageMutation,
+) {
+  if (mutation.type === "vocabulary.update") {
+    const current = actual.items.find((item) => item.id === mutation.vocabularyItemId && item.personId === personId);
+    const desired = expected.items.find((item) => item.id === mutation.vocabularyItemId && item.personId === personId);
+    if (!current || !desired) return false;
+    const keys = new Set<keyof UpdateVocabularyInput>(Object.keys(mutation.input) as (keyof UpdateVocabularyInput)[]);
+    if (keys.has("meaningZh") || keys.has("meaningsZh")) { keys.add("meaningZh"); keys.add("meaningsZh"); }
+    if (keys.has("example") || keys.has("examples") || keys.has("exampleTranslationsZh")) {
+      keys.add("example"); keys.add("examples"); keys.add("exampleTranslationsZh");
+    }
+    return [...keys].every((key) => canonicalJson(current[key]) === canonicalJson(desired[key]));
+  }
+  if (mutation.type === "reviewSettings.update") {
+    const current = actual.settingsByPerson.find((entry) => entry.personId === personId);
+    const desired = expected.settingsByPerson.find((entry) => entry.personId === personId);
+    return !!current && !!desired && Object.keys(mutation.input).every((key) =>
+      canonicalJson(current[key as keyof typeof current]) === canonicalJson(desired[key as keyof typeof desired]));
+  }
+  if (mutation.type === "vocabulary.archive" || mutation.type === "vocabulary.restore") {
+    const item = actual.items.find((entry) => entry.id === mutation.vocabularyItemId && entry.personId === personId);
+    return !!item && Boolean(item.archivedAt) === (mutation.type === "vocabulary.archive");
+  }
+  if (mutation.type === "vocabulary.delete") {
+    return !actual.items.some((entry) => entry.id === mutation.vocabularyItemId && entry.personId === personId);
+  }
+  return false;
+}
+
+async function writePostgresMutation(selectedPersonId: string, mutation: VocabularyStorageMutation, requestId: string) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15_000);
+  try {
+    const response = await fetch("/api/storage/data", {
+      method: WRITE_HTTP_METHOD,
+      signal: controller.signal,
+      headers: {
+        "content-type": "application/json",
+        "x-mimi-storage-request-id": requestId,
+        [UI_WRITE_CONFIRMATION_HEADER]: UI_WRITE_CONFIRMATION_VALUE,
+        ...v2ClientContractHeaders(),
+      },
+      body: JSON.stringify({ selectedPersonId, mutation }),
+    });
+    const payload = (await response.json()) as StorageDataResponse;
+    if (!isRecord(payload)) throw new StorageMutationError(SAVE_UNKNOWN_ERROR, "unknown");
+    if (response.ok && payload.ok === true && payload.mutationOutcome === "committed" &&
+      (payload.status === "committed-needs-refresh" || !isWorkspaceSnapshot(payload.data))) {
+      return { status: "committed" as const, selectedPersonId: payload.selectedPersonId };
+    }
+    if (!response.ok || payload.ok !== true) {
+      throw new StorageMutationError(payload.error ?? payload.reason ?? "Postgres storage write failed",
+        payload.mutationOutcome === "rejected" || [401, 403, 404, 428].includes(response.status) ? "rejected" : "unknown");
+    }
+    if (!isWorkspaceSnapshot(payload.data)) throw new StorageMutationError(SAVE_UNKNOWN_ERROR, "unknown");
+    return { status: "ready" as const, data: payload.data, serverNow: payload.serverNow ?? payload.data.updatedAt };
+  } catch (error) {
+    if (error instanceof StorageMutationError) throw error;
+    throw new StorageMutationError(SAVE_UNKNOWN_ERROR, "unknown");
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 function useVocabularyDataStore(): VocabularyDataContextValue {
@@ -355,12 +466,17 @@ function useVocabularyDataStore(): VocabularyDataContextValue {
   const [isLoaded, setIsLoaded] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [localRecoveryRequired, setLocalRecoveryRequired] = useState(false);
   const [storageRuntime, setStorageRuntime] = useState<ClientStorageRuntime>("loading");
   const dataRef = useRef(data);
   const isLoadedRef = useRef(isLoaded);
   const storageRuntimeRef = useRef<ClientStorageRuntime>(storageRuntime);
   const refreshInFlightRef = useRef<Promise<void> | null>(null);
+  const lastRefreshSucceededRef = useRef(false);
+  const automaticRevalidatorRef = useRef<ReturnType<typeof createAutomaticRevalidator> | null>(null);
   const mutationQueueRef = useRef<Promise<void>>(Promise.resolve());
+  const mutationFlightsRef = useRef(new Map<string, Promise<VocabularyData>>());
+  const pendingMutationRef = useRef<MutationFence | null>(null);
   const clientRevisionRef = useRef(0);
   const clientSnapshotPatchesRef = useRef<
     Array<{
@@ -406,6 +522,7 @@ function useVocabularyDataStore(): VocabularyDataContextValue {
     }
 
     const revisionAtStart = clientRevisionRef.current;
+    lastRefreshSucceededRef.current = false;
     setIsRefreshing(true);
     const request = (async () => {
       const requestedPersonId = getStoredSelectedPersonId();
@@ -424,6 +541,10 @@ function useVocabularyDataStore(): VocabularyDataContextValue {
           }
 
           try {
+            const storedFence = readMutationFence(postgresData.runtime);
+            if (storedFence?.requestId !== pendingMutationRef.current?.requestId) {
+              pendingMutationRef.current = storedFence;
+            }
             installSnapshot(
               selectionChanged && latestStoredPersonId
                 ? { ...postgresData.data, selectedPersonId: latestStoredPersonId }
@@ -431,7 +552,18 @@ function useVocabularyDataStore(): VocabularyDataContextValue {
               postgresData.runtime,
               postgresData.serverNow,
             );
-            setLoadError(null);
+            lastRefreshSucceededRef.current = true;
+            setLocalRecoveryRequired(false);
+            const pending = pendingMutationRef.current;
+            if (pending && !pending.committed &&
+              (!pending.expected || !pending.mutation ||
+                !mutationStateMatches(postgresData.data, pending.expected, pending.personId, pending.mutation))) {
+              setLoadError(SAVE_UNKNOWN_ERROR);
+            } else {
+              if (pending) clearMutationFence(postgresData.runtime, pending);
+              pendingMutationRef.current = null;
+              setLoadError(null);
+            }
             if (activeMutationRevisionRef.current === null) {
               clientSnapshotPatchesRef.current = [];
             }
@@ -455,10 +587,16 @@ function useVocabularyDataStore(): VocabularyDataContextValue {
         return;
       }
 
+      // A positively selected local runtime may recover its own corrupt backup.
+      storageRuntimeRef.current = "local";
+      setStorageRuntime("local");
       try {
         installSnapshot(readLocalData(), "local");
+        lastRefreshSucceededRef.current = true;
+        setLocalRecoveryRequired(false);
         setLoadError(null);
-      } catch {
+      } catch (error) {
+        setLocalRecoveryRequired(error instanceof LocalVocabularyReadError);
         setLoadError("This browser could not open its saved words. Check browser storage access, then retry.");
       }
     })().finally(() => {
@@ -473,7 +611,8 @@ function useVocabularyDataStore(): VocabularyDataContextValue {
   }, [installSnapshot]);
 
   const revalidateAfterMutation = useCallback(
-    async (options: Readonly<{ broadcast?: boolean }> = {}) => {
+    async (options: Readonly<{ broadcast?: boolean; automatic?: boolean }> = {}) => {
+      if (!options.automatic) automaticRevalidatorRef.current?.reset();
       await waitForStableQueue(() => mutationQueueRef.current);
       const inFlight = refreshInFlightRef.current;
 
@@ -505,6 +644,14 @@ function useVocabularyDataStore(): VocabularyDataContextValue {
   }, []);
 
   useEffect(() => {
+    const automatic = createAutomaticRevalidator({
+      run: async () => {
+        await revalidateAfterMutation({ automatic: true });
+        return lastRefreshSucceededRef.current;
+      },
+      isVisible: () => typeof document === "undefined" || document.visibilityState === "visible",
+    });
+    automaticRevalidatorRef.current = automatic;
     const timer = window.setTimeout(() => {
       void refresh();
     }, 0);
@@ -514,20 +661,25 @@ function useVocabularyDataStore(): VocabularyDataContextValue {
         event.key === SELECTED_PERSON_STORAGE_KEY ||
         event.key === VOCABULARY_SYNC_STORAGE_KEY
       ) {
-        void revalidateAfterMutation();
+        automatic.request();
       }
     };
     const handleOnline = () => {
-      void revalidateAfterMutation();
+      automatic.request();
     };
+    const handleVisibility = () => automatic.resume();
 
     window.addEventListener("storage", handleStorage);
     window.addEventListener("online", handleOnline);
+    document.addEventListener("visibilitychange", handleVisibility);
 
     return () => {
       window.clearTimeout(timer);
       window.removeEventListener("storage", handleStorage);
       window.removeEventListener("online", handleOnline);
+      document.removeEventListener("visibilitychange", handleVisibility);
+      automatic.dispose();
+      if (automaticRevalidatorRef.current === automatic) automaticRevalidatorRef.current = null;
     };
   }, [refresh, revalidateAfterMutation]);
 
@@ -558,18 +710,78 @@ function useVocabularyDataStore(): VocabularyDataContextValue {
         let resolveMutation!: (value: VocabularyData) => void;
         let rejectMutation!: (reason?: unknown) => void;
         const intendedPersonId = getSelectedPersonId(dataRef.current);
+        const key = mutationKey(intendedPersonId, mutation);
+        const existingFlight = mutationFlightsRef.current.get(key);
+        if (existingFlight) return existingFlight;
+        const requestId = crypto.randomUUID();
         const result = new Promise<VocabularyData>((resolve, reject) => {
           resolveMutation = resolve;
           rejectMutation = reject;
         });
         const runMutation = async () => {
           try {
+            const fingerprint = await mutationFingerprint(key);
+            const storedFence = readMutationFence(storageRuntimeRef.current);
+            const pending = pendingMutationRef.current ?? storedFence;
+            if (pending) {
+              if (!pending.committed && pending.personId === intendedPersonId && pending.fingerprint === fingerprint &&
+                mutationStateMatches(dataRef.current, nextData, intendedPersonId, mutation)) {
+                clearMutationFence(storageRuntimeRef.current, pending);
+                pendingMutationRef.current = null;
+                setLoadError(null);
+                resolveMutation(dataRef.current);
+                return;
+              }
+              throw new Error(pending.committed ? SAVE_REFRESH_ERROR : SAVE_UNKNOWN_ERROR);
+            }
+            if (mutationStateMatches(dataRef.current, nextData, intendedPersonId, mutation)) {
+              resolveMutation(dataRef.current);
+              return;
+            }
             const revisionAtStart = clientRevisionRef.current;
             activeMutationRevisionRef.current = revisionAtStart;
-            const persisted = await writePostgresMutation(
-              intendedPersonId,
-              mutation,
-            );
+            const fence: MutationFence = { requestId, personId: intendedPersonId, fingerprint, mutation, expected: nextData, committed: false };
+            // Persist only identity + digest before dispatch. Reloading cannot
+            // silently turn an in-flight/unknown operation into a fresh write.
+            persistMutationFence(storageRuntimeRef.current, fence);
+            let persisted: { data: VocabularyData; serverNow: string };
+            let written: Awaited<ReturnType<typeof writePostgresMutation>>;
+            try {
+              written = await writePostgresMutation(intendedPersonId, mutation, requestId);
+            } catch (error) {
+              if (!(error instanceof StorageMutationError) || error.outcome === "rejected") {
+                clearMutationFence(storageRuntimeRef.current, fence);
+                throw error;
+              }
+              pendingMutationRef.current = fence;
+              clientRevisionRef.current += 1;
+              setLoadError(SAVE_UNKNOWN_ERROR);
+              // One read can confirm a state save; it can never authorize an
+              // automatic second write after an ambiguous response.
+              const checked = await readPostgresData(getStoredSelectedPersonId());
+              if (checked.status !== "ready" || !mutationStateMatches(checked.data, nextData, intendedPersonId, mutation)) {
+                throw error;
+              }
+              pendingMutationRef.current = null;
+              written = { status: "ready", data: checked.data, serverNow: checked.serverNow };
+            }
+            if (written.status === "committed") {
+              fence.committed = true;
+              persistMutationFence(storageRuntimeRef.current, fence);
+              pendingMutationRef.current = fence;
+              clientRevisionRef.current += 1;
+              setLoadError(SAVE_REFRESH_ERROR);
+              const checked = await readPostgresData(written.selectedPersonId ?? getStoredSelectedPersonId());
+              if (checked.status !== "ready") {
+                signalPostgresDataChange();
+                resolveMutation(dataRef.current);
+                return;
+              }
+              pendingMutationRef.current = null;
+              persisted = { data: checked.data, serverNow: checked.serverNow };
+            } else {
+              persisted = written;
+            }
             const persistedData = clientSnapshotPatchesRef.current
               .filter((patch) => patch.revision > revisionAtStart)
               .reduce(
@@ -595,17 +807,20 @@ function useVocabularyDataStore(): VocabularyDataContextValue {
               persisted.serverNow,
             );
             setLoadError(null);
+            clearMutationFence(storageRuntimeRef.current, fence);
             clientSnapshotPatchesRef.current = [];
             signalPostgresDataChange();
             resolveMutation(installedData);
           } catch (error) {
             rejectMutation(error);
           } finally {
+            mutationFlightsRef.current.delete(key);
             activeMutationRevisionRef.current = null;
             clientSnapshotPatchesRef.current = [];
           }
         };
 
+        mutationFlightsRef.current.set(key, result);
         mutationQueueRef.current = mutationQueueRef.current.then(
           runMutation,
           runMutation,
@@ -622,6 +837,18 @@ function useVocabularyDataStore(): VocabularyDataContextValue {
     },
     [installSnapshot],
   );
+
+  const restoreLocalBackup = useCallback(async (backup: VocabularyData) => {
+    if (storageRuntimeRef.current !== "local") {
+      throw new Error("Local backup recovery is available only for this browser's local workspace.");
+    }
+    const restored = restoreVocabularyData(backup);
+    clientRevisionRef.current += 1;
+    installSnapshot(backup, "local");
+    setLocalRecoveryRequired(false);
+    setLoadError(null);
+    return restored;
+  }, [installSnapshot]);
 
   const updateClientSnapshot = useCallback(
     (
@@ -666,8 +893,10 @@ function useVocabularyDataStore(): VocabularyDataContextValue {
       isLoaded,
       loadError,
       isRefreshing,
+      localRecoveryRequired,
       storageRuntime,
       commit,
+      restoreLocalBackup,
       revalidateAfterMutation,
       getRuntimeNow,
       updateServerClock,
@@ -680,8 +909,10 @@ function useVocabularyDataStore(): VocabularyDataContextValue {
       isLoaded,
       loadError,
       isRefreshing,
+      localRecoveryRequired,
       revalidateAfterMutation,
       storageRuntime,
+      restoreLocalBackup,
       updateServerClock,
       updateClientSnapshot,
     ],
@@ -701,6 +932,9 @@ export function VocabularyDataProvider({ children }: { children: ReactNode }) {
       onRetry: () => { void value.revalidateAfterMutation(); },
     }),
     value.isLoaded ? children : null,
+    value.localRecoveryRequired
+      ? createElement(LocalBackupRecovery, { onRestore: value.restoreLocalBackup })
+      : null,
   );
 }
 

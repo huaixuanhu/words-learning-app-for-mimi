@@ -83,10 +83,12 @@ function ErrorList({ result }: { result: Extract<BackupParseResult, { ok: false 
 }
 
 export function ExportWorkspace() {
-  const { data, isLoaded, storageRuntime, commit } = useVocabularyData();
+  const { data, isLoaded, storageRuntime, restoreLocalBackup } = useVocabularyData();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [restoreResult, setRestoreResult] = useState<BackupParseResult | null>(null);
   const [message, setMessage] = useState("");
+  const restoring = useRef(false);
+  const [isRestoring, setIsRestoring] = useState(false);
   const isPostgresRuntime = isPostgresClientStorageRuntime(storageRuntime);
 
   const downloadJsonBackup = () => {
@@ -128,21 +130,30 @@ export function ExportWorkspace() {
   };
 
   const restoreBackup = async () => {
-    if (!restoreResult?.ok) {
+    if (!restoreResult?.ok || restoring.current) {
       return;
     }
 
-    if (isPostgresRuntime) {
+    if (isPostgresRuntime || storageRuntime !== "local" || !isLoaded) {
       setMessage("Restore is unavailable in this workspace.");
       return;
     }
 
-    await commit(restoreResult.data);
-    setMessage(`Restored ${restoreResult.counts.items} ${restoreResult.counts.items === 1 ? "word" : "words"}`);
-    setRestoreResult(null);
+    restoring.current = true;
+    setIsRestoring(true);
+    try {
+      await restoreLocalBackup(restoreResult.data);
+      setMessage(`Restored ${restoreResult.counts.items} ${restoreResult.counts.items === 1 ? "word" : "words"}`);
+      setRestoreResult(null);
 
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    } catch {
+      setMessage("恢复未完成，原始存档仍受保护。请检查浏览器存储空间后重试。");
+    } finally {
+      restoring.current = false;
+      setIsRestoring(false);
     }
   };
 
@@ -207,7 +218,7 @@ export function ExportWorkspace() {
             <SummaryGrid data={restoreResult.data} />
             <PressableButton
               type="button"
-              disabled={isPostgresRuntime}
+              disabled={isPostgresRuntime || !isLoaded || storageRuntime !== "local" || isRestoring}
               onClick={() => void restoreBackup()}
               className="mimi-button mimi-focus-ring inline-flex items-center justify-center gap-2 px-4 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50"
             >

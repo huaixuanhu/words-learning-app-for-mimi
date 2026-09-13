@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 2026-09-13 AEST — V2.3 transfer and persistence safeguards
+
+- User explicitly requested on-demand card reads, bounded automatic refresh, duplicate-save protection and more frequent regular backups, and authorized upgrading the existing Vercel-managed Neon integration to Launch.
+- Current local implementation reduces card refresh/rating to target-scoped records, distinguishes committed writes from failed snapshot retrieval, fences uncertain generic writes, and preserves corrupt browser-local archives before explicit validated restore.
+- Daily backup preparation reuses the existing pinned Production target, encrypted destination and isolated restore verification, with one daily attempt and exclusive execution. Daily heartbeat `mimi` is configured PAUSED; activation and first real backup remain pending database recovery.
+- Vercel's existing integration requires a payment method; Launch was selected, but the form is waiting for the user to enter billing details. No successful upgrade, database recovery, deployment or push is claimed.
+- Canonical scope, validation and activation evidence: `plan_docs/PLAN_V2_3_STORAGE_STUDY_DAY_HOME.md`.
+
 ## 2026-09-13 AEST — V2.3 authorized connection diagnosis
 
 - User confirmed the local commit and existing credential access for read-only Production investigation. Saved the initial candidate as `0f242d5` on `codex/v2.3`.

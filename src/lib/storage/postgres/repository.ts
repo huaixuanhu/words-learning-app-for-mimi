@@ -10,7 +10,7 @@ import type {
   TimestampedPersonContext,
   VocabularyDeleteResult,
 } from "@/lib/storage/durable-repository-contract";
-import { getPostgresPool, type PostgresQueryable, withPostgresTransaction } from "./client";
+import { getPostgresPool, markPostgresMutationCommitted, type PostgresQueryable, withPostgresTransaction } from "./client";
 import {
   mapAiEnrichmentDraftRow,
   mapAiRunRow,
@@ -524,6 +524,7 @@ async function listDailyStudyDefaults(
 async function listDailyStudyPlans(
   queryable: PostgresQueryable,
   context: PersonScopedContext,
+  overlappingWindow?: DailyStudyPlanRecord,
 ) {
   assertPersonContext(context);
   const result = await queryable.query<DailyStudyPlanRow>(
@@ -545,12 +546,50 @@ async function listDailyStudyPlans(
         updated_at
       from daily_study_plans
       where person_id = $1
+      ${overlappingWindow ? `and review_profile = $2
+        and day_starts_at < $3::timestamptz and day_ends_at > $4::timestamptz` : ""}
       order by local_date desc, review_profile asc
     `,
-    [context.personId],
+    overlappingWindow
+      ? [context.personId, overlappingWindow.reviewProfile, overlappingWindow.dayEndsAt, overlappingWindow.dayStartsAt]
+      : [context.personId],
   );
 
   return result.rows.map(mapDailyStudyPlanRow);
+}
+
+async function readPromptDailyStudyPlan(
+  queryable: PostgresQueryable,
+  prompt: ReturnType<typeof verifyServerPromptToken>,
+  now: string,
+) {
+  assertDatabaseUuid(prompt.personId, "personId");
+  assertDatabaseUuid(prompt.planId, "planId");
+  const result = await queryable.query<DailyStudyPlanRow>(
+    `
+      select daily_plan.id, daily_plan.person_id, daily_plan.review_profile,
+        daily_plan.local_date, daily_plan.timezone, daily_plan.day_starts_at,
+        daily_plan.day_ends_at, daily_plan.suggested_review, daily_plan.review_goal,
+        daily_plan.new_word_goal, daily_plan.plan_version,
+        daily_plan.recommendation_version, daily_plan.calculated_at, daily_plan.updated_at
+      from daily_study_plans daily_plan
+      join people person on person.id = daily_plan.person_id and person.is_active = true
+      where daily_plan.person_id = $1 and daily_plan.id = $2
+        and daily_plan.local_date = $3::date and daily_plan.review_profile = $4
+        and not exists (
+          select 1 from daily_study_plans peer
+          where peer.person_id = daily_plan.person_id
+            and (peer.local_date = daily_plan.local_date or
+              (peer.day_starts_at <= $5::timestamptz and peer.day_ends_at > $5::timestamptz))
+            and (peer.local_date, peer.timezone, peer.day_starts_at, peer.day_ends_at)
+              is distinct from (daily_plan.local_date, daily_plan.timezone,
+                daily_plan.day_starts_at, daily_plan.day_ends_at)
+        )
+      limit 1
+    `,
+    [prompt.personId, prompt.planId, prompt.localDate, prompt.reviewProfile, now],
+  );
+  return result.rows[0] ? mapDailyStudyPlanRow(result.rows[0]) : null;
 }
 
 async function listVocabularyCreationFacts(
@@ -1077,28 +1116,22 @@ export async function refreshPostgresDailyStudyPrompt(
     );
   }
 
-  const resolved = await resolvePostgresDailyStudyToday(command.personId, now);
-  const plan = resolved.data.dailyStudyPlans.find(
-    (candidate) =>
-      candidate.id === trustedPrompt.planId &&
-      candidate.personId === command.personId &&
-      candidate.localDate === trustedPrompt.localDate &&
-      candidate.reviewProfile === trustedPrompt.reviewProfile &&
-      candidate.planVersion === trustedPrompt.planVersion,
-  );
-  const item = resolved.data.items.find(
-    (candidate) =>
-      candidate.id === trustedPrompt.vocabularyItemId &&
-      candidate.personId === command.personId &&
-      candidate.learningTrack === trustedPrompt.reviewProfile &&
-      candidate.status !== "archived" &&
-      candidate.archivedAt === null,
+  const queryable = getPostgresPool();
+  const plan = await readPromptDailyStudyPlan(queryable, trustedPrompt, now);
+  const item = await selectVocabularyItem(
+    queryable,
+    { personId: command.personId },
+    trustedPrompt.vocabularyItemId,
   );
   const nowTime = new Date(now).getTime();
 
   if (
     !plan ||
+    plan.planVersion !== trustedPrompt.planVersion ||
     !item ||
+    item.learningTrack !== trustedPrompt.reviewProfile ||
+    item.status === "archived" ||
+    item.archivedAt !== null ||
     (trustedPrompt.reviewProfile === "active" &&
       createActiveTargetRevision(item) !== trustedPrompt.targetRevision) ||
     nowTime < new Date(plan.dayStartsAt).getTime() ||
@@ -1512,8 +1545,9 @@ async function recordStudyReviewInTransaction(
   queryable: PostgresQueryable,
   command: StudyReviewCommand,
   plan?: DailyStudyPlanRecord,
+  lockedItem?: VocabularyItem,
 ) {
-  const item = await selectVocabularyItem(queryable, command, command.vocabularyItemId);
+  const item = lockedItem ?? await selectVocabularyItem(queryable, command, command.vocabularyItemId);
 
   if (
     !item ||
@@ -1537,10 +1571,11 @@ async function recordStudyReviewInTransaction(
           command,
           command.vocabularyItemId,
           command.reviewProfile,
+          plan,
         ),
         plan,
         command.vocabularyItemId,
-        await listDailyStudyPlans(queryable, command),
+        await listDailyStudyPlans(queryable, command, plan),
       )
     : [];
   const episodeSchedule = plan
@@ -1698,31 +1733,28 @@ export async function recordPostgresDailyStudyRating(
 
   const personId = String(input.personId);
   assertDatabaseUuid(personId, "personId");
-  const resolved = await resolvePostgresDailyStudyToday(personId, now);
   const promptToken = "promptToken" in input ? String(input.promptToken) : "";
   const trustedPrompt = verifyServerPromptToken(promptToken, now, secret);
-  const plan = resolved.data.dailyStudyPlans.find(
-    (candidate) =>
-      candidate.id === trustedPrompt.planId &&
-      candidate.personId === personId &&
-      candidate.localDate === trustedPrompt.localDate &&
-      candidate.reviewProfile === trustedPrompt.reviewProfile,
-  );
+
+  if (trustedPrompt.personId !== personId) {
+    throw new StudyPromptError("prompt_stale", "This study card does not match the selected learner.");
+  }
+
+  const queryable = getPostgresPool();
+  const plan = await readPromptDailyStudyPlan(queryable, trustedPrompt, now);
 
   if (!plan) {
     throw new Error("Rating command plan could not be resolved");
   }
 
-  const item = resolved.data.items.find(
-    (candidate) =>
-      candidate.id === trustedPrompt.vocabularyItemId &&
-      candidate.personId === personId &&
-      candidate.learningTrack === trustedPrompt.reviewProfile &&
-      candidate.status !== "archived" &&
-      candidate.archivedAt === null,
+  const item = await selectVocabularyItem(
+    queryable,
+    { personId },
+    trustedPrompt.vocabularyItemId,
   );
 
-  if (!item) {
+  if (!item || item.learningTrack !== trustedPrompt.reviewProfile ||
+    item.status === "archived" || item.archivedAt !== null) {
     throw new Error("Rating command vocabulary item could not be resolved");
   }
 
@@ -1847,6 +1879,7 @@ export async function recordPostgresDailyStudyRating(
         targetRevision: validated.targetRevision,
       },
       plan,
+      lockedItem,
     );
     const repeatPromptToken =
       command.evidence.memoryRating === "forgot" ||
@@ -2778,6 +2811,7 @@ async function listReviewEventsForVocabularyItem(
   context: PersonScopedContext,
   vocabularyItemId: string,
   reviewProfile: ReviewProfile = "recognition",
+  window?: DailyStudyPlanRecord,
 ) {
   assertPersonContext(context);
   assertDatabaseUuid(vocabularyItemId, "vocabularyItemId");
@@ -2806,9 +2840,12 @@ async function listReviewEventsForVocabularyItem(
       where person_id = $1
         and vocabulary_item_id = $2
         and review_profile = $3
+        ${window ? "and reviewed_at >= $4::timestamptz and reviewed_at < $5::timestamptz" : ""}
       order by reviewed_at asc, id asc
     `,
-    [context.personId, vocabularyItemId, reviewProfile],
+    window
+      ? [context.personId, vocabularyItemId, reviewProfile, window.dayStartsAt, window.dayEndsAt]
+      : [context.personId, vocabularyItemId, reviewProfile],
   );
 
   return result.rows.map(mapReviewEventRow);
@@ -3379,9 +3416,9 @@ export function createPostgresRepository(): DurableRepositoryPort {
           });
         }),
       archiveItem: (context, vocabularyItemId) =>
-        setVocabularyArchiveState(queryable, context, vocabularyItemId, true),
+        withPostgresTransaction((client) => setVocabularyArchiveState(client, context, vocabularyItemId, true)),
       restoreItem: (context, vocabularyItemId) =>
-        setVocabularyArchiveState(queryable, context, vocabularyItemId, false),
+        withPostgresTransaction((client) => setVocabularyArchiveState(client, context, vocabularyItemId, false)),
       deleteItem: (context, vocabularyItemId) =>
         deleteVocabularyItem(context, vocabularyItemId),
       deduplicateItems: (context, confirmation) =>
@@ -3488,7 +3525,12 @@ export function createPostgresRepository(): DurableRepositoryPort {
 
           return { batch, items };
         });
-        const data = await buildVocabularyDataSnapshot(queryable, context, context.now);
+        let data: VocabularyData;
+        try {
+          data = await buildVocabularyDataSnapshot(queryable, context, context.now);
+        } catch (error) {
+          throw markPostgresMutationCommitted(error);
+        }
 
         return {
           data,

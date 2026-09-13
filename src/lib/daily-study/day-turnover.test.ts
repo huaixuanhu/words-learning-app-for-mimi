@@ -111,4 +111,38 @@ describe("open study-day turnover", () => {
     browser.dispatchEvent(new Event("focus"));
     expect(refresh).toHaveBeenCalledTimes(2);
   });
+
+  it("caps unsuccessful automatic refreshes even during repeated focus and visibility bursts", async () => {
+    const refresh = vi.fn().mockRejectedValue(new Error("Offline"));
+    const onError = vi.fn();
+    cleanup.push(watchStudyDayTurnover({
+      dayEndsAt, getNow: () => null, refresh, onError,
+    }));
+
+    for (let minute = 0; minute < 8; minute += 1) {
+      for (let event = 0; event < 100; event += 1) {
+        browser.dispatchEvent(new Event("focus"));
+        page.dispatchEvent(new Event("visibilitychange"));
+        await vi.advanceTimersByTimeAsync(1);
+      }
+      await vi.advanceTimersByTimeAsync(60_000);
+    }
+    expect(refresh).toHaveBeenCalledTimes(3);
+    expect(onError).toHaveBeenLastCalledWith(expect.objectContaining({
+      message: "Automatic study refresh paused. Reload this page to try again.",
+    }));
+  });
+
+  it("defers hidden tabs and stops responses that leave the trusted clock unresolved", async () => {
+    page.visibilityState = "hidden";
+    const refresh = vi.fn(async () => ({ dayEndsAt }));
+    cleanup.push(watchStudyDayTurnover({ dayEndsAt, getNow: () => null, refresh, onError: vi.fn() }));
+    await vi.advanceTimersByTimeAsync(10 * 60_000);
+    expect(refresh).not.toHaveBeenCalled();
+
+    page.visibilityState = "visible";
+    page.dispatchEvent(new Event("visibilitychange"));
+    await vi.advanceTimersByTimeAsync(10 * 60_000);
+    expect(refresh).toHaveBeenCalledTimes(3);
+  });
 });

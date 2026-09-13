@@ -10,6 +10,22 @@ export type PostgresQueryable = {
 };
 
 let pool: Pool | null = null;
+const uncertainCommitErrors = new WeakSet<object>();
+const committedMutationErrors = new WeakSet<object>();
+
+export function isPostgresTransactionOutcomeUnknown(error: unknown): boolean {
+  return error !== null && typeof error === "object" && uncertainCommitErrors.has(error);
+}
+
+export function markPostgresMutationCommitted(error: unknown): Error {
+  const failure = error instanceof Error ? error : new Error("Saved data could not be refreshed", { cause: error });
+  committedMutationErrors.add(failure);
+  return failure;
+}
+
+export function isPostgresMutationCommitted(error: unknown): boolean {
+  return error !== null && typeof error === "object" && committedMutationErrors.has(error);
+}
 
 function assertServerRuntime() {
   if (typeof window !== "undefined") {
@@ -57,6 +73,7 @@ export async function withPostgresTransaction<T>(
   const client = await getPostgresPool().connect();
   let connectionFailure: Error | null = null;
   let discardConnection = false;
+  let commitAttempted = false;
   const onConnectionError = (error: unknown) => {
     connectionFailure = error instanceof Error
       ? error
@@ -72,11 +89,21 @@ export async function withPostgresTransaction<T>(
     if (connectionFailure) throw connectionFailure;
     const result = await callback(client);
     if (connectionFailure) throw connectionFailure;
+    commitAttempted = true;
     await client.query("commit");
     if (connectionFailure) throw connectionFailure;
 
     return result;
   } catch (error) {
+    // A failed COMMIT response cannot prove whether the server saved the write.
+    // Preserve the original error and expose only this outcome classification.
+    const failure = commitAttempted && (error === null || typeof error !== "object")
+      ? new Error("Database commit outcome is unknown", { cause: error })
+      : error;
+    if (commitAttempted) {
+      uncertainCommitErrors.add(failure as object);
+      discardConnection = true;
+    }
     if (!connectionFailure) {
       try {
         await client.query("rollback");
@@ -85,7 +112,7 @@ export async function withPostgresTransaction<T>(
         discardConnection = true;
       }
     }
-    throw error;
+    throw failure;
   } finally {
     try {
       client.release(discardConnection);

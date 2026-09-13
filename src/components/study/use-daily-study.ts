@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   isPostgresClientStorageRuntime,
   useVocabularyData,
@@ -109,32 +109,39 @@ async function postStudy<T>(
   operation: unknown,
   updateServerClock: (serverNow: string) => void,
 ) {
-  const response = await fetch("/api/study", {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      [UI_WRITE_CONFIRMATION_HEADER]: UI_WRITE_CONFIRMATION_VALUE,
-      ...v2ClientContractHeaders(),
-    },
-    body: JSON.stringify({ selectedPersonId, operation }),
-  });
-  const payload = (await response.json()) as StudyApiResponse<T>;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15_000);
+  try {
+    const response = await fetch("/api/study", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        [UI_WRITE_CONFIRMATION_HEADER]: UI_WRITE_CONFIRMATION_VALUE,
+        ...v2ClientContractHeaders(),
+      },
+      signal: controller.signal,
+      body: JSON.stringify({ selectedPersonId, operation }),
+    });
+    const payload = (await response.json()) as StudyApiResponse<T>;
 
-  if (!response.ok || !payload.ok || payload.result === undefined) {
-    const message = payload.error ?? payload.reason ?? "Study request failed";
+    if (!response.ok || !payload.ok || payload.result === undefined) {
+      const message = payload.error ?? payload.reason ?? "Study request failed";
 
-    if (isStudyPromptErrorCode(payload.errorCode)) {
-      throw new StudyPromptError(payload.errorCode, message);
+      if (isStudyPromptErrorCode(payload.errorCode)) {
+        throw new StudyPromptError(payload.errorCode, message);
+      }
+
+      throw new Error(message);
     }
 
-    throw new Error(message);
-  }
+    if (payload.serverNow) {
+      updateServerClock(payload.serverNow);
+    }
 
-  if (payload.serverNow) {
-    updateServerClock(payload.serverNow);
+    return payload.result;
+  } finally {
+    clearTimeout(timeout);
   }
-
-  return payload.result;
 }
 
 function parseDailyStudyRatingResult(value: unknown): DailyStudyRatingResult {
@@ -180,11 +187,21 @@ export function useDailyStudy() {
     updateServerClock,
     updateClientSnapshot,
   } = vocabulary;
+  const resolutionInFlightRef = useRef<{
+    personId: string;
+    runtime: typeof storageRuntime;
+    promise: Promise<ReturnType<typeof resolveDailyStudyToday>>;
+  } | null>(null);
 
-  const resolveCurrent = useCallback(async () => {
+  const resolveCurrent = useCallback(() => {
+    const inFlight = resolutionInFlightRef.current;
+    if (inFlight?.personId === data.selectedPersonId && inFlight.runtime === storageRuntime) {
+      return inFlight.promise;
+    }
+
     setIsTodayLoading(true);
 
-    try {
+    const request = (async () => {
       if (isPostgresClientStorageRuntime(storageRuntime)) {
         const runtimeNow = getRuntimeNow();
         const localResolution = runtimeNow
@@ -237,9 +254,18 @@ export function useDailyStudy() {
 
       setToday(resolved.today);
       return resolved;
-    } finally {
-      setIsTodayLoading(false);
-    }
+    })().finally(() => {
+      if (resolutionInFlightRef.current?.promise === request) {
+        resolutionInFlightRef.current = null;
+        setIsTodayLoading(false);
+      }
+    });
+    resolutionInFlightRef.current = {
+      personId: data.selectedPersonId,
+      runtime: storageRuntime,
+      promise: request,
+    };
+    return request;
   }, [
     commit,
     data,
@@ -254,19 +280,23 @@ export function useDailyStudy() {
     setTodayRefreshError("");
     return resolved.today;
   }, [resolveCurrent]);
+  const resolveTodayRef = useRef(resolveToday);
+  useEffect(() => { resolveTodayRef.current = resolveToday; }, [resolveToday]);
+  const todayPersonId = today?.personId;
+  const todayEndsAt = today?.dayEndsAt;
 
   useEffect(() => {
-    if (!vocabulary.isLoaded || !today || today.personId !== data.selectedPersonId) return;
+    if (!vocabulary.isLoaded || !todayEndsAt || todayPersonId !== data.selectedPersonId) return;
 
     return watchStudyDayTurnover({
-      dayEndsAt: today.dayEndsAt,
+      dayEndsAt: todayEndsAt,
       getNow: getRuntimeNow,
-      refresh: resolveToday,
+      refresh: () => resolveTodayRef.current(),
       onError: (error) => setTodayRefreshError(
         error instanceof Error ? error.message : "Could not refresh today’s study plan",
       ),
     });
-  }, [data.selectedPersonId, getRuntimeNow, resolveToday, today, vocabulary.isLoaded]);
+  }, [data.selectedPersonId, getRuntimeNow, todayEndsAt, todayPersonId, vocabulary.isLoaded]);
 
   const readQueue = useCallback(
     async (

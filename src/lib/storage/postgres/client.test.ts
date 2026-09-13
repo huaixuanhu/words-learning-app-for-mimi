@@ -61,13 +61,14 @@ describe("Postgres pool error handling", () => {
   });
 
   it("rolls back a failed mutation without replaying the callback", async () => {
-    const { getPostgresPool, withPostgresTransaction } = await import("./client");
+    const { getPostgresPool, withPostgresTransaction, isPostgresTransactionOutcomeUnknown } = await import("./client");
     const failure = new Error("fixture mutation failed");
     const { client, query, release } = createTransactionClient();
     const connect = vi.spyOn(getPostgresPool(), "connect").mockImplementation(() => Promise.resolve(client));
     const callback = vi.fn().mockRejectedValue(failure);
 
     await expect(withPostgresTransaction(callback)).rejects.toBe(failure);
+    expect(isPostgresTransactionOutcomeUnknown(failure)).toBe(false);
     expect(connect).toHaveBeenCalledTimes(1);
     expect(callback).toHaveBeenCalledExactlyOnceWith(client);
     expect(query.mock.calls).toEqual([["begin"], ["rollback"]]);
@@ -76,7 +77,7 @@ describe("Postgres pool error handling", () => {
   });
 
   it("preserves an uncertain commit error even when rollback also fails", async () => {
-    const { getPostgresPool, withPostgresTransaction } = await import("./client");
+    const { getPostgresPool, withPostgresTransaction, isPostgresTransactionOutcomeUnknown } = await import("./client");
     const commitFailure = new Error("fixture connection lost during commit");
     const query = vi.fn()
       .mockResolvedValueOnce({ rows: [] })
@@ -87,6 +88,7 @@ describe("Postgres pool error handling", () => {
     const callback = vi.fn().mockResolvedValue("fixture saved");
 
     await expect(withPostgresTransaction(callback)).rejects.toBe(commitFailure);
+    expect(isPostgresTransactionOutcomeUnknown(commitFailure)).toBe(true);
     expect(connect).toHaveBeenCalledTimes(1);
     expect(callback).toHaveBeenCalledExactlyOnceWith(client);
     expect(query.mock.calls).toEqual([["begin"], ["commit"], ["rollback"]]);

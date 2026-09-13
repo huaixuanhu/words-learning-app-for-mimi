@@ -1,5 +1,14 @@
 # AI Agent Log
 
+## 2026-09-13 AEST — follow-up reliability and upgrade authorization
+
+- Agreement: the user requested fixes for full-history card reads, sustained query loops and duplicate/uncertain saves; requested regular higher-frequency database backups; and decided to upgrade the existing Neon integration to the basic paid plan. Existing local-commit and read-only Production credential authority persists. Tier 3 is unchanged.
+- Implementation ownership remains the single V2.3 plan, Stages 2.3.6–2.3.9. Changes cover scoped Postgres reads and tests, finite/coalesced client recovery, commit-outcome classification, persistent uncertain-write fences, browser corruption preservation and explicit restore, plus a bounded daily backup wrapper using the existing custody/restore checks.
+- Billing inspection used the existing logged-in Vercel integration. Its Free→Launch flow showed the expected compute/storage rates and then required an integration payment method. User handoff is solely for missing billing data; no payment details were entered or retained by the agent and no completed upgrade is claimed.
+- Safety: no new provider, credentials, Production mutation/migration/restore, push or deployment. Backup and schedule activation will be recorded only after tool-confirmed completion; database counts are still blocked by the known quota until upgrade.
+- Final runtime validation: 107 files / 732 tests passed (one existing remote integration file/test skipped); lint, typecheck and all three backup fixture dry-runs passed. The canonical V2.3 owner retains final build/governance evidence, synthetic read/loop limits and residual guarantees.
+- Daily heartbeat `mimi` was created PAUSED, after the user chose to fill billing details later and finish local code first. No actual backup or activation occurred.
+
 ## 2026-09-13 AEST — authorized diagnosis follow-up
 
 - Task and agreement: user explicitly confirmed local commit and existing Production connection credential access for read-only status/count investigation, and requested root-cause and hidden-risk investigation. Tier 3 remains unchanged; billing, credentials changes, Production writes, remote Git and deployment are not authorized.

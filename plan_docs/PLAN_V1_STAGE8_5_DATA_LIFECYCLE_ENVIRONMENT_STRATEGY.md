@@ -74,7 +74,7 @@ Accepted on 2026-07-10:
 - Create one long-lived `staging` branch as the non-production baseline. Local Development and stable pre-production verification may use this target under explicit non-production guards.
 - Create temporary logical `preview/*` branches from `staging`, not from Production `main`. Provider-generated branch labels may differ from this logical namespace.
 - Keep real learning data in Production only. Staging and Preview use synthetic, fixture, or intentionally disposable test data.
-- Use a weekly encrypted logical backup target after formal data begins, plus event-driven backups before high-risk Production changes. Daily backup is deferred until an upgrade trigger is met.
+- Initial policy: weekly encrypted logical backups after formal data begins, plus event-driven backups before high-risk Production changes. The 2026-09-13 user request activates the policy upgrade decision to daily backups; implementation, activation evidence and local availability limits are owned by `PLAN_V2_3_STORAGE_STUDY_DAY_HOME.md`, Stage 2.3.8. Scheduling is not active until that owner records successful activation.
 
 This policy supersedes the earlier recommendation to prefer a separate Neon Production project for the present V1. A separate Production project remains a future isolation option when the product risk profile changes.
 

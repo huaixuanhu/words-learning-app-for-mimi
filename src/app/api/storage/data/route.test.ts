@@ -14,6 +14,13 @@ const repositoryMethodMocks = vi.hoisted(() => ({
   startFreshInTrack: vi.fn(),
   resetToday: vi.fn(),
   rollbackEvent: vi.fn(),
+  commitImportCandidates: vi.fn(),
+}));
+const transactionOutcomeMock = vi.hoisted(() => vi.fn(() => false));
+const mutationCommittedMock = vi.hoisted(() => vi.fn(() => false));
+vi.mock("@/lib/storage/postgres/client", () => ({
+  isPostgresTransactionOutcomeUnknown: transactionOutcomeMock,
+  isPostgresMutationCommitted: mutationCommittedMock,
 }));
 
 vi.mock("@/lib/storage/postgres/repository", () => repositoryMocks);
@@ -107,6 +114,8 @@ function dataPostRequest(
 
 describe("/api/storage/data runtime contract", () => {
   beforeEach(() => {
+    transactionOutcomeMock.mockReset().mockReturnValue(false);
+    mutationCommittedMock.mockReset().mockReturnValue(false);
     repositoryMocks.createPostgresPerson.mockReset();
     repositoryMocks.createPostgresRepository.mockReset();
     repositoryMocks.getPostgresVocabularyDataSnapshot.mockReset();
@@ -116,6 +125,7 @@ describe("/api/storage/data runtime contract", () => {
     repositoryMethodMocks.startFreshInTrack.mockReset();
     repositoryMethodMocks.resetToday.mockReset();
     repositoryMethodMocks.rollbackEvent.mockReset();
+    repositoryMethodMocks.commitImportCandidates.mockReset();
     repositoryMocks.createPostgresRepository.mockReturnValue({
       people: {
         listPeople: vi.fn(),
@@ -125,6 +135,7 @@ describe("/api/storage/data runtime contract", () => {
         deleteItem: repositoryMethodMocks.deleteItem,
         rollbackImportBatch: repositoryMethodMocks.rollbackImportBatch,
         startFreshInTrack: repositoryMethodMocks.startFreshInTrack,
+        commitImportCandidates: repositoryMethodMocks.commitImportCandidates,
       },
       review: {
         resetToday: repositoryMethodMocks.resetToday,
@@ -137,6 +148,64 @@ describe("/api/storage/data runtime contract", () => {
 
   afterAll(() => {
     process.env = { ...originalEnv };
+  });
+
+  it("reports a committed mutation when its following snapshot read fails", async () => {
+    setRuntimeEnv({ MIMI_STORAGE_RUNTIME: "postgres-production", VERCEL_ENV: "production", NODE_ENV: "production" });
+    repositoryMethodMocks.deleteItem.mockResolvedValue(undefined);
+    repositoryMocks.getPostgresVocabularyDataSnapshot.mockRejectedValue(new Error("readback unavailable"));
+    const { POST } = await import("./route");
+    const response = await POST(dataPostRequest({ selectedPersonId: personId, mutation: {
+      type: "vocabulary.delete", vocabularyItemId: "22222222-2222-4222-8222-222222222222",
+      now: "2026-09-13T09:00:00.000Z", timezone: "Australia/Melbourne",
+    } }, { authorization: basicAuthorization, "x-mimi-storage-request-id": "fixture-operation" }));
+
+    expect(response.status).toBe(202);
+    expect(await response.json()).toMatchObject({ ok: true, status: "committed-needs-refresh", mutationOutcome: "committed", selectedPersonId: personId, requestId: "fixture-operation" });
+    expect(repositoryMethodMocks.deleteItem).toHaveBeenCalledTimes(1);
+    expect(repositoryMocks.getPostgresVocabularyDataSnapshot).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([false, true])("distinguishes a rejected transaction from an unknown COMMIT outcome (%s)", async (unknownOutcome) => {
+    setRuntimeEnv({ MIMI_STORAGE_RUNTIME: "postgres-production", VERCEL_ENV: "production", NODE_ENV: "production" });
+    transactionOutcomeMock.mockReturnValue(unknownOutcome);
+    repositoryMethodMocks.deleteItem.mockRejectedValue(new Error("fixture transaction failure"));
+    const { POST } = await import("./route");
+    const response = await POST(dataPostRequest({ selectedPersonId: personId, mutation: {
+      type: "vocabulary.delete", vocabularyItemId: "22222222-2222-4222-8222-222222222222",
+      now: "2026-09-13T09:00:00.000Z", timezone: "Australia/Melbourne",
+    } }));
+    expect(response.status).toBe(400);
+    const payload = await response.json();
+    expect(payload).toMatchObject({ ok: false, mutationOutcome: unknownOutcome ? "unknown" : "rejected" });
+    if (unknownOutcome) expect(payload.error).not.toContain("fixture transaction failure");
+    expect(repositoryMocks.getPostgresVocabularyDataSnapshot).not.toHaveBeenCalled();
+  });
+
+  it("acknowledges an import whose internal readback failed after commit", async () => {
+    setRuntimeEnv({ MIMI_STORAGE_RUNTIME: "postgres-production", VERCEL_ENV: "production", NODE_ENV: "production" });
+    mutationCommittedMock.mockReturnValue(true);
+    repositoryMethodMocks.commitImportCandidates.mockRejectedValue(new Error("marked internal readback failure"));
+    const { POST } = await import("./route");
+    const response = await POST(dataPostRequest({ selectedPersonId: personId, mutation: {
+      type: "import.commitCandidates", batchInput: { sourceType: "paste" }, candidates: [], acceptedTempIds: [],
+      now: "2026-09-13T09:00:00.000Z", timezone: "Australia/Melbourne",
+    } }));
+    expect(response.status).toBe(202);
+    expect(await response.json()).toMatchObject({ ok: true, mutationOutcome: "committed", selectedPersonId: personId });
+    expect(repositoryMocks.getPostgresVocabularyDataSnapshot).not.toHaveBeenCalled();
+  });
+
+  it("requires an existing selected learner before mutation and never creates one as a side effect", async () => {
+    setRuntimeEnv({ MIMI_STORAGE_RUNTIME: "postgres-production", VERCEL_ENV: "production", NODE_ENV: "production" });
+    const { POST } = await import("./route");
+    const response = await POST(dataPostRequest({ mutation: {
+      type: "vocabulary.delete", vocabularyItemId: "22222222-2222-4222-8222-222222222222",
+      now: "2026-09-13T09:00:00.000Z", timezone: "Australia/Melbourne",
+    } }));
+    expect(response.status).toBe(400);
+    expect(repositoryMocks.createPostgresPerson).not.toHaveBeenCalled();
+    expect(repositoryMethodMocks.deleteItem).not.toHaveBeenCalled();
   });
 
   it("rejects Production data reads unless postgres-production is configured", async () => {

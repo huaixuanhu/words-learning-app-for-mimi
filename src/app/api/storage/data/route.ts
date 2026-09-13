@@ -22,6 +22,7 @@ import type {
 } from "@/lib/vocabulary/types";
 import type { DurableRepositoryPort, TimestampedPersonContext } from "@/lib/storage/durable-repository-contract";
 import type { VocabularyDeduplicationConfirmation } from "@/lib/vocabulary/deduplication";
+import { isPostgresMutationCommitted, isPostgresTransactionOutcomeUnknown } from "@/lib/storage/postgres/client";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -406,6 +407,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   const startedAt = Date.now();
+  const requestId = request.headers.get("x-mimi-storage-request-id");
+  let mutationCommitted = false;
+  let committedPersonId: string | null = null;
   const authResponse = requireProductionBasicAuth(request);
 
   if (authResponse) {
@@ -447,7 +451,12 @@ export async function POST(request: NextRequest) {
     }
 
     const selectedPersonId = optionalSelectedPersonId(body.selectedPersonId);
+    committedPersonId = selectedPersonId;
     const mutation = parseMutation(body.mutation);
+    if (mutation.type !== "people.add" && mutation.type !== "people.select" &&
+      (!selectedPersonId || !DATABASE_UUID_PATTERN.test(selectedPersonId))) {
+      throw new Error("A valid selectedPersonId is required before making changes");
+    }
     const repository = createPostgresRepository();
     let nextSelectedPersonId = selectedPersonId;
 
@@ -645,6 +654,8 @@ export async function POST(request: NextRequest) {
         break;
     }
 
+    mutationCommitted = true;
+    committedPersonId = nextSelectedPersonId;
     const snapshotNow = new Date().toISOString();
     const data = await getPostgresVocabularyDataSnapshot(
       nextSelectedPersonId,
@@ -656,6 +667,8 @@ export async function POST(request: NextRequest) {
       NextResponse.json({
         ok: true,
         status: "ready",
+        mutationOutcome: "committed",
+        requestId,
         runtime: runtimePayload(),
         serverNow,
         data,
@@ -664,13 +677,37 @@ export async function POST(request: NextRequest) {
       startedAt,
     );
   } catch (error) {
+    // The repository operation has already committed. A failed readback must
+    // never tell the browser to submit that operation again.
+    if (mutationCommitted || isPostgresMutationCommitted(error)) {
+      return addServerTiming(
+        NextResponse.json({
+          ok: true,
+          status: "committed-needs-refresh",
+          mutationOutcome: "committed",
+          requestId,
+          selectedPersonId: committedPersonId,
+          runtime: runtimePayload(),
+          serverNow: new Date().toISOString(),
+        }, { status: 202 }),
+        "mimi_storage",
+        startedAt,
+      );
+    }
+
     return addServerTiming(
       NextResponse.json(
         {
           ok: false,
           status: "error",
+          mutationOutcome: isPostgresTransactionOutcomeUnknown(error)
+            ? "unknown"
+            : "rejected",
+          requestId,
           runtime: runtimePayload(),
-          error: error instanceof Error ? error.message : "Unknown storage mutation error",
+          error: isPostgresTransactionOutcomeUnknown(error)
+            ? "The save outcome could not be confirmed. Check the saved workspace before retrying."
+            : error instanceof Error ? error.message : "Unknown storage mutation error",
         },
         { status: 400 },
       ),
