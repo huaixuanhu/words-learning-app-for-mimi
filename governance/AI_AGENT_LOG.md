@@ -2,6 +2,8 @@
 
 ## 2026-10-03 AEST — authorized monthly backup diagnosis and repair
 
+- Saved local fix `f8bc49b`; automatic approval review rejected the explicit reviewed-retry command before process creation because the earlier heartbeat forbade that flag. Preserved the rejection and checked original receipt hash unchanged, retry receipt absent and lock absent. No indirect command, safeguard bypass or remote retry followed; the user then explicitly authorized this task after the exact flag and rejection reason were explained. This renews only the single manual retry, not automated retries.
+
 - User authorized low-consequence repair followed by retry. Read-only control-plane checks confirmed the prior project/branch/endpoint identities and archive/unarchive operations bracketing the October failure. Scope is the local backup tool, focused validation, local commits and one reviewed monthly retry; no remote learner writes, restore, deployment, push or configuration change. V2.3 Stage 2.3.11 owns the cause, narrow design and outcome. Focused validation passed 76 tests in four files, scoped ESLint and diff checks; strict governance plus 22 tests passed, and independent review found no blocker. Current live main is already ready; the archived activation path is synthetic-only evidence.
 
 ## 2026-09-13 AEST — authorized V2.3 push and Production deployment

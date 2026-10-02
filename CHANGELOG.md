@@ -2,6 +2,8 @@
 
 ## 2026-10-03 AEST — monthly backup archive-state compatibility
 
+- Local fix committed as `f8bc49b`. The reviewed retry was blocked before process creation by automatic approval review over the prior scheduler restriction; no new backup or retry receipt exists. After the rejection and exact flag were explained, the user explicitly authorized this task; the manual retry may proceed while the scheduler restriction remains unchanged.
+
 - Neon archived the same Production main branch during the October backup window; the strict ready-only guard stopped before data access. Added a backup-only read-only wake and same-identity readiness check while retaining strict migration defaults, original failed evidence and one explicitly reviewed retry. Exact validation and retry results are owned by V2.3 Stage 2.3.11.
 
 ## 2026-09-13 AEST — V2.3 Production release
