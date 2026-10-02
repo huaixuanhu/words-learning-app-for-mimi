@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 2026-10-03 AEST — monthly backup archive-state compatibility
+
+- Neon archived the same Production main branch during the October backup window; the strict ready-only guard stopped before data access. Added a backup-only read-only wake and same-identity readiness check while retaining strict migration defaults, original failed evidence and one explicitly reviewed retry. Exact validation and retry results are owned by V2.3 Stage 2.3.11.
+
 ## 2026-09-13 AEST — V2.3 Production release
 
 - Pushed V2.3 candidate `2a84de5`, verified its Ready Preview, and fast-forwarded/pushed main. Git-linked Production deployment succeeded; authenticated Home/Library show 5,585 words and the revised Insights. Anonymous access remains 401. Canonical V2.3 Stage 2.3.12 records exact identities and the successful health/log checks and the old-client verification boundary.

@@ -104,9 +104,16 @@ export function selectTargetMetadata({
   endpoints,
   target,
   allowArchivedStaging = false,
+  allowArchivedMainForBackup = false,
   approvedProjectSha256 =
     V2_STAGE8_3_APPROVED_PRODUCTION_PROJECT_ID_SHA256,
 }) {
+  if (allowArchivedMainForBackup && target !== "production-main") {
+    reject(
+      "Archived main access is limited to the Production backup target",
+      "V2_1_NEON_MAIN_BRANCH_MISMATCH",
+    );
+  }
   const project = only(
     projects.filter((candidate) => sha256(candidate.id || "") === approvedProjectSha256),
     "The pinned Production Neon project was not resolved exactly once",
@@ -118,7 +125,8 @@ export function selectTargetMetadata({
         branch.project_id === project.id &&
         branch.name === "main" &&
         (branch.parent_id ?? null) === null &&
-        branch.current_state === "ready",
+        (branch.current_state === "ready" ||
+          (allowArchivedMainForBackup && branch.current_state === "archived")),
     ),
     "The ready root main branch was not resolved exactly once",
     "V2_1_NEON_MAIN_BRANCH_MISMATCH",
@@ -217,7 +225,7 @@ export function validateConnectionUri(uri, metadata) {
 
 export async function retrieveGuardedTarget(
   target,
-  { allowArchivedStaging = false } = {},
+  { allowArchivedStaging = false, allowArchivedMainForBackup = false } = {},
 ) {
   const apiKey = keychainApiKey();
   const projectId = keychainProjectId();
@@ -241,6 +249,7 @@ export async function retrieveGuardedTarget(
       : [],
     target,
     allowArchivedStaging,
+    allowArchivedMainForBackup,
   });
   const query = new URLSearchParams({
     branch_id: metadata.branch.id,

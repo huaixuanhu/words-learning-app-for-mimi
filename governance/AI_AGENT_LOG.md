@@ -1,5 +1,9 @@
 # AI Agent Log
 
+## 2026-10-03 AEST — authorized monthly backup diagnosis and repair
+
+- User authorized low-consequence repair followed by retry. Read-only control-plane checks confirmed the prior project/branch/endpoint identities and archive/unarchive operations bracketing the October failure. Scope is the local backup tool, focused validation, local commits and one reviewed monthly retry; no remote learner writes, restore, deployment, push or configuration change. V2.3 Stage 2.3.11 owns the cause, narrow design and outcome. Focused validation passed 76 tests in four files, scoped ESLint and diff checks; strict governance plus 22 tests passed, and independent review found no blocker. Current live main is already ready; the archived activation path is synthetic-only evidence.
+
 ## 2026-09-13 AEST — authorized V2.3 push and Production deployment
 
 - Released candidate `2a84de5` through a Ready Preview and non-force main push; GitHub Production deployment 6421972834 succeeded at 2026-09-13T13:18:37Z. Verified canonical anonymous 401 and authenticated Home/Library with 5,585 words and revised Insights; browser warning/error lists were empty. Chrome blocked rendering of the health response; the deployment-filtered Vercel log independently confirms health GET 200 and storage-data GET 200. Warning/Error/Fatal counts and HTTP 5xx were zero in the bounded post-release scan. No real old-client POST is claimed. No learner editing, rating, import, restore or paid-provider smoke was performed.

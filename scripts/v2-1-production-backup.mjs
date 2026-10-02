@@ -19,7 +19,10 @@ import {
   sha256,
   V21ProductionGuardError,
 } from "./v2-1-production-contract.mjs";
-import { retrieveGuardedTarget } from "./v2-1-neon-target.mjs";
+import {
+  readOnlyBackupWakeEnvironment,
+  retrieveGuardedBackupTarget,
+} from "./v2-1-backup-target.mjs";
 
 const POSTGRES_BIN = "/opt/homebrew/opt/postgresql@17/bin";
 const AGE_BIN = "/opt/homebrew/bin/age";
@@ -437,7 +440,18 @@ async function run() {
     const identity = readAgeIdentity();
     const recipient = recipientFromIdentity(identity);
     phase = "neon-target";
-    const target = await retrieveGuardedTarget("production-main");
+    const target = await retrieveGuardedBackupTarget({
+      wakeTarget: (archivedTarget) => {
+        const result = psql(
+          readOnlyBackupWakeEnvironment(pgEnvironment(archivedTarget.connectionString)),
+          "SELECT 1",
+          "The archived Production backup target could not be activated read-only",
+        );
+        if (result !== "1") {
+          reject("The backup activation result is invalid", "V2_1_BACKUP_COMMAND_FAILED");
+        }
+      },
+    });
     const sourceEnv = pgEnvironment(target.connectionString);
     phase = "source-inventory-before";
     const sourceBefore = databaseSnapshot(sourceEnv);

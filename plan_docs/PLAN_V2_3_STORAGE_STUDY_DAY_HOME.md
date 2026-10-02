@@ -1,7 +1,7 @@
 # V2.3 数据加载、学习日与 Home 修复
 
 Created: 2026-09-13 AEST
-Last updated: 2026-09-13 AEST
+Last updated: 2026-10-03 AEST
 
 Source plan:
 - `plan_docs/PLAN_V2_MASTER.md`
@@ -191,6 +191,17 @@ Exit criteria:
 - 最终相同目录结构的本机 PostgreSQL 实测 socket 路径为 82 bytes，启动成功，包装脚本清理成功；独立复核未发现剩余阻断项。修复已本地提交为 `2a1caa3`。
 - 唯一复核重试于 `2026-09-13T12:12:55.425Z` 验证完成：归档 `monthly-local-v1/mimi-production-schema6-v2-1-20260913T121235Z-2a1caa3aae54.dump.age` 为 1,498,231 bytes，权限 0600；隔离 PostgreSQL 17 恢复结果与 Production 备份基线一致，含 5,585 个词、363 条状态和 1,194 条复习事件。原失败回执校验值一致，重试单独记录在 `2026-09.retry-1.json`，互斥锁已释放，轮换删除数量为 0。忽略证据：`local_artifacts/v2-1-production/20260913T121235Z/production-backup-evidence.json`。
 - 月度任务 `mimi` 已通过应用工具更新为 ACTIVE，名称为“Mimi 数据库每月独立备份”，每月 1 日 07:00 Australia/Melbourne。执行提示仅包含普通月度命令，明确禁止调度使用复核重试参数；成功保持安静，失败或需要行动时通知。云端每日计划与本机月度任务均已配置，但未来按时运行尚需届时实际记录，不能用配置成功代替未来执行证据。
+
+### 2026-10-03 月度备份归档状态修复与复核重试
+
+- 用户明确要求检修失败原因，若可低风险修复则修复并 retry。本次仍为 Tier 3，范围限已有备份脚本、定向测试、本地提交和本月一次既有复核重试；不推送、不部署，不修改云端数据、分支结构、套餐或备份计划。
+- 10 月 1 日普通月度尝试在 `neon-target` 以 `V2_1_NEON_MAIN_BRANCH_MISMATCH` 停止；尚未读取学习数据或生成归档，原 `2026-10.json` 回执和旧备份保留，锁已释放。
+- 10 月 3 日只读核对确认项目、root `main` 分支和 Sydney 主端点与此前成功备份的身份校验值一致；当前分支为 `ready`，端点为正常 `idle`。近期操作记录显示同一 main 于 `2026-09-29T06:04:25Z` 完成 `timeline_archive`，于 `2026-10-02T12:08:31Z` 完成 `timeline_unarchive`，10 月 1 日失败落在该归档区间。原回执未保留完整当时状态，原因判断结合该历史与当前严格条件建立，不将正常端点休眠解释为目标更换。
+- [Neon archive storage](https://neon.com/blog/cutting-storage-costs) 说明闲置分支可自动归档，查询会自动重新启用。窄修复仅给备份调用开放明确的 `archived` 状态：仍先验证项目、名称、根分支、区域和端点，只发起一次有连接/语句时限的只读 `SELECT 1`；随后最多三次确认原身份已回到 `ready`，才开始全库备份。迁移调用默认仍要求 `ready`，不放宽未知/初始化状态或身份变更。
+- 验证覆盖默认严格拒绝、归档唤醒、目标变化、就绪等待上限、失败不进入整库读取；复用原加密、隔离恢复比对、月度三份保留和回执不覆盖规则。修复通过定向测试、lint、governance 和差异审查并提交后，只执行一次 `--retry-reviewed-monthly-backup`；该次重试绑定原失败回执的校验值，普通调度仍不带重试参数。
+- 脱敏元数据与操作记录分别保存在忽略且权限受限的 `local_artifacts/v2-3-diagnosis/october-target-check-result.json` 和 `october-operations-check-result.json`；未输出凭据、连接串或学习内容。真实补备份结果另行记录。
+- 修复已通过 4 个文件 / 76 项定向测试，覆盖备份目标、V2.1/V2.2 目标契约及月度执行包装；5 个脚本文件的定向 ESLint、governance 严格预检与 22 项治理测试、差异检查均通过。独立复核无阻断项。当前线上分支已经 ready，真实补备份预计走无需唤醒的路径；归档唤醒分支由合成测试验证，不为制造验收而主动归档线上数据库。
+
 
 ## Stage 2.3.12 V2.3 推送和生产部署
 

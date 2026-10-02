@@ -327,7 +327,9 @@ describe("monthly independent local archive retention", () => {
     expect(runner).toContain('const MONTHLY_NAMESPACE = "monthly-local-v1"');
     expect(runner).toContain('monthlyLocal ? join(BACKUP_DIR, MONTHLY_NAMESPACE) : BACKUP_DIR');
     expect(runner).toContain('"--i-confirm-v2-1-production-encrypted-backup"');
-    expect(runner).toContain('retrieveGuardedTarget("production-main")');
+    expect(runner).toContain('retrieveGuardedBackupTarget({');
+    expect(runner).toContain('readOnlyBackupWakeEnvironment(pgEnvironment(archivedTarget.connectionString))');
+    expect(runner).toContain('"SELECT 1"');
     expect(runner).toContain('snapshotMatched: true');
     expect(runner).toContain('assertGitClean()');
   });
