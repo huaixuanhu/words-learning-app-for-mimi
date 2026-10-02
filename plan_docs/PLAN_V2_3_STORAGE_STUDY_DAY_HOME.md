@@ -207,6 +207,9 @@ Exit criteria:
 
 - 平台拒绝原因与具体 `--retry-reviewed-monthly-backup` 参数说明后，用户明确回复“授权本任务”，补充授权本次人工检修后的唯一复核重试。普通自动任务仍禁止添加该参数；本次继续沿用原回执校验、互斥与固定目标只读边界。
 
+- 用户补充授权已保存为本地提交 `18dd8c1` 后，本月唯一复核重试成功：Melbourne 时间 2026-10-03 00:47:38（`2026-10-02T14:47:38.289Z`）完成。加密归档 `monthly-local-v1/mimi-production-schema6-v2-1-20261002T144712Z-18dd8c131fb6.dump.age` 为 2,944,679 bytes、权限 0600；归档与证据校验值吻合，PostgreSQL 17 隔离恢复 verified / snapshotMatched 均为 true，Production 目标身份与 9 月已验证副本一致。
+- 原失败回执 `2026-10.json` 字节校验不变；本次独立 `2026-10.retry-1.json` 正确绑定它。运行锁已释放，轮换完成、保留两份已验证月份、删除数量 0。忽略证据汇总为 `local_artifacts/v2-3-diagnosis/october-retry-verified-result.json`。本轮没有修改云端学习内容、调度、套餐或分支结构；代码和结果记录仅本地提交，未推送或部署。下一次普通月度任务沿用已修复脚本，仍不带复核重试参数。
+
 ## Stage 2.3.12 V2.3 推送和生产部署
 
 - 授权：用户在完成备份配置后明确要求“完整推送和部署”。当前/目标/工作分类仍为 Tier 3，沿用 GitHub `huaixuanhu/words-learning-app-for-mimi`、分支 `codex/v2.3` 与 `main`、既有 Vercel 项目和正式域名。安全的发布修复、验证、文档收尾提交与推送包含在此次完成范围内。

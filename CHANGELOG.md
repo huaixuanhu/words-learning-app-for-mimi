@@ -2,6 +2,8 @@
 
 ## 2026-10-03 AEST — monthly backup archive-state compatibility
 
+- The explicitly authorized October retry succeeded on local commit `18dd8c1`: 2,944,679-byte encrypted archive with 0600 permissions, isolated PostgreSQL 17 restore parity, original failed receipt unchanged, lock released and two verified months retained with no deletion. Fix/results remain local; no push or deployment.
+
 - Local fix committed as `f8bc49b`. The reviewed retry was blocked before process creation by automatic approval review over the prior scheduler restriction; no new backup or retry receipt exists. After the rejection and exact flag were explained, the user explicitly authorized this task; the manual retry may proceed while the scheduler restriction remains unchanged.
 
 - Neon archived the same Production main branch during the October backup window; the strict ready-only guard stopped before data access. Added a backup-only read-only wake and same-identity readiness check while retaining strict migration defaults, original failed evidence and one explicitly reviewed retry. Exact validation and retry results are owned by V2.3 Stage 2.3.11.
