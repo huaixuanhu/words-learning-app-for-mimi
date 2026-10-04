@@ -7,7 +7,7 @@ Last updated: 2026-10-04 AEDT
 
 治理维护入口为 `governance/README.md`，结构映射为 `governance/contract.json`，重要决策索引为 `governance/DECISIONS.md`。补齐集中入口沿用原项目专用 v0.7.5 预检；设计仍由 Stage 7 主文档及其链接的 V2/V2.3 演进记录管理。
 
-2026-10-04 的备份目的地演进由 V2.3 Stage 2.3.13 拥有：私有 R2 bucket `words-learning-app-for-mimi` 已建立（Standard / Oceania / Public Access Disabled）；`scripts/monthly-r2-backup.mjs` 复用原恢复验证，先检查云端当月清单，再决定是否需要一次新的数据库备份。生成期间使用忽略目录 `local_artifacts/monthly-r2-staging`；只有完整上传、读回校验及保存回执完成后才移除自己的暂存。云端保留月度历史，不自动删除旧对象。专用凭据已建立，9 月/10 月已恢复验证的加密归档及安全清单已上传，合计 4,442,910 bytes 的归档完整读回一致；没有重新读取 Production。原月度自动任务切换待最终本地提交完成。
+2026-10-04 的备份目的地演进由 V2.3 Stage 2.3.13 拥有：私有 R2 bucket `words-learning-app-for-mimi` 已建立（Standard / Oceania / Public Access Disabled）；`scripts/monthly-r2-backup.mjs` 复用原恢复验证，先检查云端当月清单，再决定是否需要一次新的数据库备份。生成期间使用忽略目录 `local_artifacts/monthly-r2-staging`；只有完整上传、读回校验及保存回执完成后才移除自己的暂存。云端保留月度历史，不自动删除旧对象。专用凭据已建立，9 月/10 月已恢复验证的加密归档及安全清单已上传，合计 4,442,910 bytes 的归档完整读回一致；没有重新读取 Production。原 `mimi` 自动任务已切换并核对为 ACTIVE，沿用 Australia/Melbourne 每月 1 日 07:00；在干净提交 `0c40e2b` 执行正式月度命令，正确复用 R2 上的 10 月副本而未重复读取数据库。
 
 根目录 `local_key` 只含五个可点击指针，原环境变量文件和 Keychain 密钥保持原位。`governance/CREDENTIAL_LOCATIONS.md` 是查找入口；该目录与环境变量、备份证据由 Git/Vercel 忽略规则排除。新 R2 秘密本体已保存在项目外 `~/.config/mimi-vocabulary/r2-backup.json`（目录 0700 / 文件 0600），脚本验证目录/文件所有权与权限后读取固定账户和 bucket 专用凭据；不在网页运行时加载或在日志中输出。
 
