@@ -77,13 +77,24 @@ export function createR2Store(config, { execute = executeRclone } = {}) {
     return `mimi_r2:${R2_BUCKET}/${key}`;
   };
   const get = async (key) => {
-    const result = await execute(["cat", remote(key), ...flags], env);
-    if (result.status === 3 || result.status === 4) return null;
+    const source = remote(key);
+    // `cat` can succeed with zero bytes for a missing S3 object. Stat first:
+    // bucket backends represent missing objects as empty directories.
+    const info = await execute(["lsjson", source, "--stat", "--no-modtime", "--no-mimetype", ...flags], env);
+    if (info.status === 3 || info.status === 4) return null;
+    if (info.status !== 0) throw new Error("R2_READ_FAILED");
+    let metadata;
+    try { metadata = JSON.parse(info.bytes.toString("utf8")); } catch { throw new Error("R2_OBJECT_METADATA_INVALID"); }
+    if (metadata?.IsDir === true && metadata.Size === -1) return null;
+    if (metadata?.IsDir !== false || !Number.isSafeInteger(metadata.Size) ||
+      metadata.Size <= 0 || metadata.Size > MAX_ARCHIVE_BYTES) throw new Error("R2_OBJECT_METADATA_INVALID");
+    const result = await execute(["cat", source, ...flags], env);
     if (result.status !== 0) throw new Error("R2_READ_FAILED");
+    if (result.bytes.length !== metadata.Size) throw new Error("R2_OBJECT_SIZE_CHANGED");
     return result.bytes;
   };
   const put = async (key, bytes) => {
-    if (!Buffer.isBuffer(bytes) || bytes.length > MAX_ARCHIVE_BYTES) throw new Error("R2_UPLOAD_SIZE_INVALID");
+    if (!Buffer.isBuffer(bytes) || bytes.length === 0 || bytes.length > MAX_ARCHIVE_BYTES) throw new Error("R2_UPLOAD_SIZE_INVALID");
     const destination = remote(key);
     const existing = await get(key);
     if (existing !== null) {

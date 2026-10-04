@@ -68,10 +68,11 @@ describe("R2 credential and transfer boundary", () => {
     await chmod(directory, 0o755); await expect(readR2Config(file)).rejects.toThrow("UNSAFE");
   });
   it("does not overwrite differing objects or retry read failures", async () => {
-    const execute = vi.fn(async () => ({ status: 0, bytes: Buffer.from("existing") }));
+    const execute = vi.fn(async (args) => ({ status: 0, bytes: args[0] === "lsjson"
+      ? Buffer.from(JSON.stringify({ IsDir: false, Size: 8 })) : Buffer.from("existing") }));
     const store = createR2Store(config, { execute });
     await expect(store.put(manifestKey, Buffer.from("different"))).rejects.toThrow("CONFLICT");
-    expect(execute).toHaveBeenCalledTimes(1);
+    expect(execute).toHaveBeenCalledTimes(2);
     execute.mockResolvedValue({ status: 1, bytes: Buffer.from("untrusted private diagnostic") });
     await expect(store.get(manifestKey)).rejects.toThrow("R2_READ_FAILED");
   });
@@ -81,6 +82,8 @@ describe("R2 credential and transfer boundary", () => {
       expect(args).toContain("/dev/null"); expect(args).toContain("--s3-no-check-bucket");
       expect(args.join(" ")).not.toContain(config.secretAccessKey); expect(env.RCLONE_CONFIG_MIMI_R2_SECRET_ACCESS_KEY).toBe(config.secretAccessKey);
       if (args[0] === "copyto") { expect(args).toContain("--immutable"); expect(await readFile(args[1])).toEqual(value); uploaded = true; return { status: 0 }; }
+      if (args[0] === "lsjson") return { status: 0, bytes: Buffer.from(JSON.stringify(uploaded
+        ? { IsDir: false, Size: value.length } : { IsDir: true, Size: -1 })) };
       return uploaded ? { status: 0, bytes: value } : { status: 4 };
     });
     const store = createR2Store(config, { execute });
@@ -88,6 +91,23 @@ describe("R2 credential and transfer boundary", () => {
     await expect(store.put(manifestKey, value)).resolves.toEqual({ reused: true });
     await expect(store.get("../another-bucket/key")).rejects.toThrow("SCOPE_INVALID");
     expect(execute.mock.calls.filter(([args]) => args[0] === "copyto")).toHaveLength(1);
+  });
+  it("recognizes the real missing-S3-object directory result without cat", async () => {
+    const execute = vi.fn(async () => ({ status: 0, bytes: Buffer.from('{"Path":"","Name":"","Size":-1,"IsDir":true}') }));
+    await expect(createR2Store(config, { execute }).get(manifestKey)).resolves.toBeNull();
+    expect(execute).toHaveBeenCalledTimes(1);
+    expect(execute.mock.calls[0][0][0]).toBe("lsjson");
+  });
+  it.each([0, -1, 128 * 1024 * 1024 + 1, "10"])("refuses invalid remote file size %s before downloading", async (Size) => {
+    const execute = vi.fn(async () => ({ status: 0, bytes: Buffer.from(JSON.stringify({ IsDir: false, Size })) }));
+    await expect(createR2Store(config, { execute }).get(manifestKey)).rejects.toThrow("METADATA_INVALID");
+    expect(execute).toHaveBeenCalledTimes(1);
+  });
+  it.each([0, 4])("fails closed when an existing object disappears or truncates during cat (status %s)", async (status) => {
+    const execute = vi.fn().mockResolvedValueOnce({ status: 0, bytes: Buffer.from('{"IsDir":false,"Size":100}') })
+      .mockResolvedValueOnce({ status, bytes: Buffer.alloc(0) });
+    await expect(createR2Store(config, { execute }).get(manifestKey)).rejects.toThrow(status === 0 ? "SIZE_CHANGED" : "READ_FAILED");
+    expect(execute).toHaveBeenCalledTimes(2);
   });
 });
 

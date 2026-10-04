@@ -46,7 +46,7 @@
 
 - V2.3 is live on the canonical Production domain behind Basic Auth（基础认证）. Vercel Production runs the `main` application in `syd1`; `plan_docs/PLAN_V2_3_STORAGE_STUDY_DAY_HOME.md` Stage 2.3.12 owns the authorized release and exact deployment/acceptance evidence.
 - Neon `main` is Production Schema Version 6 with the unique `(person_id, normalized_text)` vocabulary identity. Neon `staging` is the Development / protected Preview baseline at Schema 6.
-- Production and non-production credentials are distinct. Historical recovery points remain governed by the V2-8-3, V2.1 and V2.2 release records; V2.3 Stage 2.3.11 owns the active cloud and independent local backup policy and evidence.
+- Production and non-production credentials are distinct. Historical recovery points remain governed by the V2-8-3, V2.1 and V2.2 release records; V2.3 Stage 2.3.11 owns the native Neon backup policy, and Stage 2.3.13 owns independent monthly R2 copies, credential pointers and current scheduler status.
 - Gemini enrichment and Google Cloud Standard-C TTS are enabled under independent Production guards. Their exact active contracts are owned by the V2 master/cutover plans and must not be relaxed through incidental work.
 - Current stack: Next.js App Router, TypeScript, Tailwind CSS, ESLint, Vitest, npm, `@neondatabase/serverless`, `dotenv-cli`, `ts-fsrs`, Neon Postgres, and browser `localStorage` as the local fallback.
 - Shared Basic Auth protects the trusted group. Browser-selected `person_id` separates learning data but is not authentication, authorization, or confidential tenant isolation.
@@ -117,7 +117,7 @@ Forbidden without explicit approval:
 - Preserve exportability through JSON backup and CSV where semantically appropriate.
 - Before schema migration or destructive cleanup, plan and verify backup / restore behavior.
 - Production holds real learning data; Development / Staging / Preview use synthetic, fixture, or disposable data.
-- Follow the active lifecycle plan and its approved V2.3 Stage 2.3.11 override: native Neon daily snapshots, monthly independent encrypted local copies, and an additional verified backup before high-risk Production data changes. That stage owns retention, scheduling status and bounded failure handling; earlier weekly/manual cadence is historical.
+- Follow the active lifecycle plan and approved V2.3 overrides: Stage 2.3.11 native Neon daily snapshots, Stage 2.3.13 monthly independent encrypted R2 copies, and an additional verified backup before high-risk Production data changes. Those stages own retention, scheduling status and bounded failure handling. Monthly execution still requires the Mac; only newly owned staging may be removed after complete R2 readback and receipt persistence. Historical local/release recovery points remain protected.
 - Raw AI prompts and raw provider responses are not retained by default when structured accepted evidence is sufficient.
 - Speech Recognition and microphone audio are not collected or transmitted under the accepted baseline.
 

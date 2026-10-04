@@ -2,7 +2,8 @@
 
 ## 2026-10-04 AEDT — private R2 backup destination and credential shortcuts
 
-- Added a private R2 destination and a bounded monthly uploader that reuses verified encrypted archives, verifies complete cloud readback, persists receipts, and only then clears its own local staging. It does not automatically delete cloud history or prior release recovery points. Real upload/activation remains pending the dedicated credential.
+- Added a private R2 destination and a bounded monthly uploader that reuses verified encrypted archives, verifies complete cloud readback, persists receipts, and only then clears its own local staging. The September/October copies (4,442,910 bytes total) and safe manifests are uploaded and verified; historical local/release copies remain. Monthly scheduler cutover follows the final local commit.
+- Fixed the real S3 missing-object case: rclone `cat` may succeed with empty output, so reads now check object metadata first and reject empty, oversized or changed objects. The initial attempt stopped before upload and did not read Production. Eighty-six focused tests and scoped lint pass.
 - Root `local_key` holds clickable pointers only. Credential files stay at their original locations; existing environment-file permissions were tightened without changing values. Git and Vercel exclude the pointer directory and secrets; Keychain service names are documented without exporting values.
 - Filled missing centralized governance entry/contract/decision roles and registered the existing versioned design owner. Preserved the project-specific v0.7.5 preflight and all application behavior.
 

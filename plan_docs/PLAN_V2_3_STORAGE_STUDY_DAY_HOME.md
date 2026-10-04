@@ -242,5 +242,9 @@ Exit criteria:
 - 受影响文件：备份脚本与测试、密钥入口说明、忽略规则、AGENTS、架构与本计划；补齐集中治理包缺少的入口、结构契约和决策索引，保留现有专用预检和设计主文档。
 - 非范围：不推送、不部署、不改应用行为、套餐、Neon 云端备份频率或学习数据，不借用其他项目的 R2 凭据和存储桶，不输出密钥，不添加新云端计算服务。
 - 验收：定向测试覆盖凭据权限/链接拒绝、错误 bucket、重复上传、上传/校验失败、本地清理边界和调度去重；真实 R2 读回加密归档与已有恢复通过的字节完全一致；密钥不进入 Git 或部署；更新既有 `mimi` 自动任务并保留原时区/频率。
-- 当前已完成：创建私有 Standard / Oceania bucket，Public Access Disabled；建立四个 `local_key` 指针，目录 0700、两份原环境文件 0600，无密钥复制。79 项定向测试、定向 ESLint、治理结构检查、既有严格预检与 22 项治理测试及差异检查均通过。新凭据、真实上传、调度切换待完成；凭据表单已准备为仅此 bucket 的 Object Read & Write，长期有效至撤销，按浏览器操作规则等待创建前确认。
+- 准备已本地提交为 `9898a03`。用户随后对明确列出的账户、bucket、Object Read & Write 权限、长期有效期、项目外原始凭据路径、已有副本上传及原月度任务切换回复“确认”。专用凭据 `mimi-vocabulary-monthly-backup` 已创建并在列表显示 Active；只保存 S3 密钥对，未保留账户 API token。新文件目录 0700 / 文件 0600，秘密临时副本已清理，`local_key` 现有五个指针，原环境文件内容和路径保持原样。
+- 首次真实 R2 读取发现 rclone `cat` 在缺失对象时可能成功返回空内容；解析清单安全停止，未上传或读取 Production。按官方 `lsjson --stat` 的 S3 缺失对象契约增加元数据检查，已有空文件、过大对象及读取期间字节数变化均拒绝；未通过空内容猜测“未备份”而读取数据库。修复后 86 项定向测试和定向 ESLint 通过。
+- 2026-10-04 16:31 AEDT，9 月与 10 月已验证加密归档分别 1,498,231 / 2,944,679 bytes 上传至 `monthly-v1/2026-09/`、`monthly-v1/2026-10/`，各有一份 990-byte 安全清单；归档完整下载与 SHA-256 比对、清单读回、0600 本地回执保存均通过。回执为 `local_artifacts/monthly-r2-backups/2026-09.json` / `2026-10.json`。此前隔离 PostgreSQL 17 恢复证据通过原始回执绑定复用，本轮没有新的整库读取或恢复演练。两个旧本机归档保留，没有新暂存待清理。
+- 浏览器确认四个对象存在且 Public Access Disabled；截图保存在忽略目录 `local_artifacts/r2-backup-migration/verified-r2-backups.png`。页面 Bucket Size 汇总仍显示 0 B，视为统计延迟；真实对象大小与完整读回证据为本次验收依据。原月度任务待本轮代码/文档提交为干净状态后切换；Neon 每日配置不变。
 - 官方来源（2026-10-04）：[R2 pricing](https://developers.cloudflare.com/r2/pricing/)、[bucket creation](https://developers.cloudflare.com/r2/buckets/create-buckets/)、[R2 credentials](https://developers.cloudflare.com/r2/api/tokens/)。
+- 客户端边界依据：[rclone lsjson](https://rclone.org/commands/rclone_lsjson/)、[rclone cat](https://rclone.org/commands/rclone_cat/)。

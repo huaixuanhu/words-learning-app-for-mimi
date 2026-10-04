@@ -1,15 +1,15 @@
 # Words Learning App For Mimi Architecture
 
 Created: 2026-07-02 23:30 AEST
-Last updated: 2026-10-03 AEST
+Last updated: 2026-10-04 AEDT
 
 ## Current State
 
 治理维护入口为 `governance/README.md`，结构映射为 `governance/contract.json`，重要决策索引为 `governance/DECISIONS.md`。补齐集中入口沿用原项目专用 v0.7.5 预检；设计仍由 Stage 7 主文档及其链接的 V2/V2.3 演进记录管理。
 
-2026-10-04 的备份目的地演进由 V2.3 Stage 2.3.13 拥有：私有 R2 bucket `words-learning-app-for-mimi` 已建立（Standard / Oceania / Public Access Disabled）；`scripts/monthly-r2-backup.mjs` 复用原恢复验证，先检查云端当月清单，再决定是否需要一次新的数据库备份。生成期间使用忽略目录 `local_artifacts/monthly-r2-staging`；只有完整上传、读回校验及保存回执完成后才移除自己的暂存。云端保留月度历史，不自动删除旧对象。现有月度归档可直接迁移，无需重新读取 Production。专用凭据、真实上传和自动任务切换仍待完成，不能据此宣称已启用 R2 备份。
+2026-10-04 的备份目的地演进由 V2.3 Stage 2.3.13 拥有：私有 R2 bucket `words-learning-app-for-mimi` 已建立（Standard / Oceania / Public Access Disabled）；`scripts/monthly-r2-backup.mjs` 复用原恢复验证，先检查云端当月清单，再决定是否需要一次新的数据库备份。生成期间使用忽略目录 `local_artifacts/monthly-r2-staging`；只有完整上传、读回校验及保存回执完成后才移除自己的暂存。云端保留月度历史，不自动删除旧对象。专用凭据已建立，9 月/10 月已恢复验证的加密归档及安全清单已上传，合计 4,442,910 bytes 的归档完整读回一致；没有重新读取 Production。原月度自动任务切换待最终本地提交完成。
 
-根目录 `local_key` 只含可点击指针，原环境变量文件和 Keychain 密钥保持原位。`governance/CREDENTIAL_LOCATIONS.md` 是查找入口；该目录与环境变量、备份证据由 Git/Vercel 忽略规则排除。新 R2 秘密本体预定保存在项目外 `~/.config/mimi-vocabulary/r2-backup.json`，脚本验证目录/文件所有权与权限后读取固定账户和 bucket 专用凭据；不在网页运行时加载或在日志中输出。
+根目录 `local_key` 只含五个可点击指针，原环境变量文件和 Keychain 密钥保持原位。`governance/CREDENTIAL_LOCATIONS.md` 是查找入口；该目录与环境变量、备份证据由 Git/Vercel 忽略规则排除。新 R2 秘密本体已保存在项目外 `~/.config/mimi-vocabulary/r2-backup.json`（目录 0700 / 文件 0600），脚本验证目录/文件所有权与权限后读取固定账户和 bucket 专用凭据；不在网页运行时加载或在日志中输出。
 
 V2.3 is live on the canonical Production domain. The project remains Tier 3 under `human-ai-governance v0.7.5`; material tasks derive their working tier from the higher current/target authority on the affected surface. PF-001 is `High / Closed`; PF-002 and PF-003 are `Normal / Closed by explicit acceptance`. Vercel Production runs exact Git `main` in `syd1`; Neon `main` remains Schema Version 6 with the V2.1 unique `(person_id, normalized_text)` index and the V2.2 V1/V2 Parameter Set constraints from `0007`. The historical V2.2 release inventory retained 282 unique vocabulary items, 125 review states, 441 review events and all 38 import-batch audit rows. Independent Production Gemini and Google Cloud TTS identities continue under their long-term quota, Cache, Idempotency, accounting and Kill Switch guards. The prior recovery points plus independently restore-verified pre/post V2.2 encrypted backups remain available. The whole V2 release excludes SSO（Single Sign-On，单点登录）and confidential per-person authorization. `plan_docs/PLAN_V2_3_STORAGE_STUDY_DAY_HOME.md` Stage 2.3.12 owns the user-authorized current release, exact Git/Vercel identities and completed or pending online checks. The V2.2 release record retains its migration/release evidence and the disclosed absence of a fresh exact-text TTS request.
 
@@ -21,7 +21,7 @@ V2.3 将云端成功、服务器明确指定的本地运行与加载失败分开
 
 V2.3 将卡片提示刷新和评分缩小到当前词、当前配置和相关计划窗口的读取；跨页通知合并并限制自动重试。通用保存区分提交成功、明确拒绝与结果待核对，同一内容的并发保存合并，未确认操作阻止重复写入。浏览器损坏存档保留原文并锁住普通保存，仅明确本地运行下允许通过校验后的备份恢复。具体实现及验证由 V2.3 计划统一记录。
 
-Neon Launch 已生效。按用户最新选择，主备份由 Neon 云端执行：Production main 每天 21:00 UTC 创建快照并保留 14 天，项目历史恢复保留 7 天；首份云端快照已创建。Mac 仅承担每月一次的独立加密副本，保留最近三个成功月份，既有发布恢复点不参与轮换；月度脚本、恢复验证和任务激活证据由 V2.3 计划 Stage 2.3.11 记录。备份工具可在验证固定目标后以一次只读查询唤醒正常归档的 main，再有限核对同一目标回到 ready，才读取全库；共享迁移工具仍默认拒绝未就绪分支。US$5 组织费用提醒已设置；平台未提供 US$10 总账单自动封顶，替代资源额度需按该计划记录实际生效状态。
+Neon Launch 已生效。主备份沿用 Neon 云端执行：Production main 每天 21:00 UTC 创建快照并保留 14 天，项目历史恢复保留 7 天；该云端配置及首份快照证据由 V2.3 Stage 2.3.11 拥有，本次未改变或重新验收。Mac 仍承担每月一次独立加密副本的生成和恢复验证，长期保管目的地现为 R2；当前调度和上传证据见 Stage 2.3.13。旧本机副本及发布恢复点保留。备份工具可在验证固定目标后以一次只读查询唤醒正常归档的 main，再有限核对同一目标回到 ready，才读取全库；共享迁移工具仍默认拒绝未就绪分支。US$5 组织费用提醒已设置；平台未提供 US$10 总账单自动封顶，替代资源额度需按该计划记录实际生效状态。
 
 新的学习日使用学习者时区的 06:00 边界，AI/TTS 继续使用原自然日和月度额度。旧 Daily Plan（每日计划）的窗口和历史事件保持不变：尚未结束的旧计划继续使用，必要时创建一次通常为 30 小时的衔接计划，然后进入正常 06:00→06:00；夏令时与时区切换通过逐个本地边界解析处理。Home/Study 在存储窗口结束、回到页面或服务器时钟失效时刷新，并保留过期请求拒绝和 reset 的两次确认。
 
