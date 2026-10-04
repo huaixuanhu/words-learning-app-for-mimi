@@ -240,7 +240,7 @@ Exit criteria:
 - 月度任务仍由本机发起，目的地改为 R2 不代表全天候云端执行器已经存在。延续失败不自动重新读取整库、无复核重试参数的调度约束；上传失败保留加密暂存和证据。
 - 凭据：用户随后明确修正为本体保留原地，`local_key` 仅放可点击指针。目录 0700、原秘密文件 0600；Git 与 Vercel 上传均排除指针。原环境变量文件保持路径/内容。Keychain 继续作为现有凭据的运行来源，项目记录服务名和系统钥匙串入口。新 R2 凭据使用项目外专用目录 `~/.config/mimi-vocabulary/`，项目内只建立链接，不复制密钥。
 - 受影响文件：备份脚本与测试、密钥入口说明、忽略规则、AGENTS、架构与本计划；补齐集中治理包缺少的入口、结构契约和决策索引，保留现有专用预检和设计主文档。
-- 非范围：不推送、不部署、不改应用行为、套餐、Neon 云端备份频率或学习数据，不借用其他项目的 R2 凭据和存储桶，不输出密钥，不添加新云端计算服务。
+- 准备和迁移阶段非范围：不推送、不部署、不改应用行为、套餐、Neon 云端备份频率或学习数据，不借用其他项目的 R2 凭据和存储桶，不输出密钥，不添加新云端计算服务。后续用户明确要求远端推送，追加授权与核对见本阶段末尾。
 - 验收：定向测试覆盖凭据权限/链接拒绝、错误 bucket、重复上传、上传/校验失败、本地清理边界和调度去重；真实 R2 读回加密归档与已有恢复通过的字节完全一致；密钥不进入 Git 或部署；更新既有 `mimi` 自动任务并保留原时区/频率。
 - 准备已本地提交为 `9898a03`。用户随后对明确列出的账户、bucket、Object Read & Write 权限、长期有效期、项目外原始凭据路径、已有副本上传及原月度任务切换回复“确认”。专用凭据 `mimi-vocabulary-monthly-backup` 已创建并在列表显示 Active；只保存 S3 密钥对，未保留账户 API token。新文件目录 0700 / 文件 0600，秘密临时副本已清理，`local_key` 现有五个指针，原环境文件内容和路径保持原样。
 - 首次真实 R2 读取发现 rclone `cat` 在缺失对象时可能成功返回空内容；解析清单安全停止，未上传或读取 Production。按官方 `lsjson --stat` 的 S3 缺失对象契约增加元数据检查，已有空文件、过大对象及读取期间字节数变化均拒绝；未通过空内容猜测“未备份”而读取数据库。修复后 86 项定向测试和定向 ESLint 通过。
@@ -250,3 +250,4 @@ Exit criteria:
 - 在上述干净提交实际运行一次该月度命令，通过 R2 读回复用当月副本，未调用数据库备份；安全验收回执为 `local_artifacts/r2-backup-migration/activation-result.json`。86 项受影响测试、定向 ESLint、结构检查、严格治理预检和 22 项治理测试均通过；五个指针和忽略规则已核对。代码与文档仅本地提交，未推送或部署；新增月份的真实生成仍等待下次计划触发，本轮验收不冒充新的 Production 恢复演练。
 - 官方来源（2026-10-04）：[R2 pricing](https://developers.cloudflare.com/r2/pricing/)、[bucket creation](https://developers.cloudflare.com/r2/buckets/create-buckets/)、[R2 credentials](https://developers.cloudflare.com/r2/api/tokens/)。
 - 客户端边界依据：[rclone lsjson](https://rclone.org/commands/rclone_lsjson/)、[rclone cat](https://rclone.org/commands/rclone_cat/)。
+- 2026-10-04 用户追加要求“OK 帮我推送到远端”：授权将当前 `main` 已验证的六个本地提交及此次记录普通推送到既有 `origin/main`。起点为干净 `2b5e978`，远端实查仍为 `69211cd`，没有分叉；应用源码、依赖锁和 Vercel 配置未变。沿用现有 Git-linked Vercel 自动构建并只读查看结果，不另行执行部署命令或修改数据库/账户配置。86 项受影响测试与既有通过证据保持适用；推送前另验收文档治理、提交范围及秘密文件隔离。确切推送 SHA、远端比对和自动构建状态留在忽略回执 `local_artifacts/r2-backup-migration/push-result.json`，不把待运行或成功推送等同于部署完成。

@@ -1,5 +1,9 @@
 # AI Agent Log
 
+## 2026-10-04 AEDT — authorized remote synchronization
+
+- User explicitly requested remote push after verified R2 activation. Scope is the six existing local `main` commits plus this authorization record, a normal push to the existing GitHub repository, and read-only observation of its existing Vercel integration. At entry, the clean local tip was `2b5e978` and live remote `main` was `69211cd` with no divergence. Application source, dependency lock and Vercel configuration are unchanged. Stage 2.3.13 and its ignored push receipt own exact execution evidence; no new credential, database or deployment configuration action is included.
+
 ## 2026-10-04 AEDT — R2 independent backup and original-location credential pointers
 
 - Agreement: user requested moving independent backup custody to their R2, named after the project, with private access and Git exclusion. Their later correction requires original credential files to stay in place and `local_key` to contain clickable pointers only. Tier 3; existing environment values and Keychain custody remain unchanged.

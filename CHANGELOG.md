@@ -2,6 +2,7 @@
 
 ## 2026-10-04 AEDT — private R2 backup destination and credential shortcuts
 
+- User subsequently authorized publishing the verified backup fixes and R2 tooling to the existing GitHub `main`. Stage 2.3.13 records the synchronization scope; exact remote SHA and the existing automatic Vercel build result are retained in its ignored push receipt. This adds no application behavior or database migration.
 - Added a private R2 destination and a bounded monthly uploader that reuses verified encrypted archives, verifies complete cloud readback, persists receipts, and only then clears its own local staging. The September/October copies (4,442,910 bytes total) and safe manifests are uploaded and verified; historical local/release copies remain. Existing monthly heartbeat `mimi` is ACTIVE on the R2 command, preserving Melbourne 1st-of-month 07:00 and quiet-success behavior. A real monthly invocation on clean `0c40e2b` reused the October cloud copy without a fresh database read.
 - Fixed the real S3 missing-object case: rclone `cat` may succeed with empty output, so reads now check object metadata first and reject empty, oversized or changed objects. The initial attempt stopped before upload and did not read Production. Eighty-six focused tests and scoped lint pass.
 - Root `local_key` holds clickable pointers only. Credential files stay at their original locations; existing environment-file permissions were tightened without changing values. Git and Vercel exclude the pointer directory and secrets; Keychain service names are documented without exporting values.
