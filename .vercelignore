@@ -1,0 +1,8 @@
+.git/
+node_modules/
+.next/
+local_artifacts/
+local_key/
+.env*
+*.pem
+*.key

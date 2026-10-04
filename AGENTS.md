@@ -24,6 +24,9 @@
 ## Project Map
 
 - Project root: `/Users/anoria/Documents/python_coding/small_project/learningWordsformimi`
+- Central governance package: `governance/README.md` and `governance/contract.json`; significant decisions: `governance/DECISIONS.md`. Read the matched current plan and only the additional owners relevant to the task.
+- Credential locations: `governance/CREDENTIAL_LOCATIONS.md`; ignored root `local_key/` contains clickable pointers only. Keep credential files and existing environment values at their original locations; never commit or deploy their targets. Reading secrets still requires the relevant task's authority.
+- Versioned design owner: `plan_docs/PLAN_V1_STAGE7_UI_VISUAL_DESIGN.md`, including its linked V2/V2.3 evolution. Backup and credential maintenance does not change the design baseline.
 - User-provided GitHub repository: `https://github.com/huaixuanhu/words-learning-app-for-mimi.git`
 - Default Git branch: `main`; verify the checked-out branch from Git before branch-sensitive work.
 - Architecture and current runtime: `ARCHITECTURE.md`.

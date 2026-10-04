@@ -5,6 +5,12 @@ Last updated: 2026-10-03 AEST
 
 ## Current State
 
+治理维护入口为 `governance/README.md`，结构映射为 `governance/contract.json`，重要决策索引为 `governance/DECISIONS.md`。补齐集中入口沿用原项目专用 v0.7.5 预检；设计仍由 Stage 7 主文档及其链接的 V2/V2.3 演进记录管理。
+
+2026-10-04 的备份目的地演进由 V2.3 Stage 2.3.13 拥有：私有 R2 bucket `words-learning-app-for-mimi` 已建立（Standard / Oceania / Public Access Disabled）；`scripts/monthly-r2-backup.mjs` 复用原恢复验证，先检查云端当月清单，再决定是否需要一次新的数据库备份。生成期间使用忽略目录 `local_artifacts/monthly-r2-staging`；只有完整上传、读回校验及保存回执完成后才移除自己的暂存。云端保留月度历史，不自动删除旧对象。现有月度归档可直接迁移，无需重新读取 Production。专用凭据、真实上传和自动任务切换仍待完成，不能据此宣称已启用 R2 备份。
+
+根目录 `local_key` 只含可点击指针，原环境变量文件和 Keychain 密钥保持原位。`governance/CREDENTIAL_LOCATIONS.md` 是查找入口；该目录与环境变量、备份证据由 Git/Vercel 忽略规则排除。新 R2 秘密本体预定保存在项目外 `~/.config/mimi-vocabulary/r2-backup.json`，脚本验证目录/文件所有权与权限后读取固定账户和 bucket 专用凭据；不在网页运行时加载或在日志中输出。
+
 V2.3 is live on the canonical Production domain. The project remains Tier 3 under `human-ai-governance v0.7.5`; material tasks derive their working tier from the higher current/target authority on the affected surface. PF-001 is `High / Closed`; PF-002 and PF-003 are `Normal / Closed by explicit acceptance`. Vercel Production runs exact Git `main` in `syd1`; Neon `main` remains Schema Version 6 with the V2.1 unique `(person_id, normalized_text)` index and the V2.2 V1/V2 Parameter Set constraints from `0007`. The historical V2.2 release inventory retained 282 unique vocabulary items, 125 review states, 441 review events and all 38 import-batch audit rows. Independent Production Gemini and Google Cloud TTS identities continue under their long-term quota, Cache, Idempotency, accounting and Kill Switch guards. The prior recovery points plus independently restore-verified pre/post V2.2 encrypted backups remain available. The whole V2 release excludes SSO（Single Sign-On，单点登录）and confidential per-person authorization. `plan_docs/PLAN_V2_3_STORAGE_STUDY_DAY_HOME.md` Stage 2.3.12 owns the user-authorized current release, exact Git/Vercel identities and completed or pending online checks. The V2.2 release record retains its migration/release evidence and the disclosed absence of a fresh exact-text TTS request.
 
 ### V2.3 Release And Recovered Database Access

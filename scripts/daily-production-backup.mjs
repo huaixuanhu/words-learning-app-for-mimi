@@ -163,13 +163,13 @@ export async function cleanRestoreDirectory(workRoot, {
   }
 }
 
-async function executeExistingBackup({ monthly = false } = {}) {
+async function executeExistingBackup({ monthly = false, r2Staging = false } = {}) {
   const workRoot = await createBackupWorkRoot();
   let result;
   try {
     result = await runBoundedProcess(process.execPath, [
       RUNNER, "production", "--i-confirm-v2-1-production-encrypted-backup",
-      ...(monthly ? ["--monthly-local-archive"] : []),
+      ...(monthly ? [r2Staging ? "--monthly-r2-archive" : "--monthly-local-archive"] : []),
     ], {
       env: { ...process.env, PGCONNECT_TIMEOUT: "10", TMPDIR: workRoot },
     });
@@ -228,7 +228,7 @@ async function verifyMonthlyArchive(archiveRoot, archive) {
   return path;
 }
 
-async function verifiedMonthlyResult(result, { archiveRoot, evidenceRoot, attemptedAt, completedAt }) {
+export async function verifiedMonthlyResult(result, { archiveRoot, evidenceRoot, attemptedAt, completedAt }) {
   if (!result?.ok || !result.evidence || !SHA256.test(result.evidence.sha256)) return null;
   const evidenceDirectory = dirname(result.evidence.path);
   const timestamp = evidenceDirectory.split(/[\\/]/u).at(-1);
@@ -317,9 +317,11 @@ async function retainMonthlyArchives({ stateRoot, archiveRoot, evidenceRoot, cur
 export async function runDailyProductionBackup({
   now = new Date(), stateRoot = STATE_ROOT, execute,
   cadence = "daily", backupRoot = BACKUP_ROOT, evidenceRoot = EVIDENCE_ROOT, reviewedRetry = false,
+  r2Staging = false,
 } = {}) {
   if (cadence !== "daily" && cadence !== "monthly") throw new Error("Unsupported backup cadence");
   if (reviewedRetry && cadence !== "monthly") throw new Error("Reviewed retry is monthly only");
+  if (r2Staging && (cadence !== "monthly" || reviewedRetry)) throw new Error("R2 staging requires an ordinary monthly attempt");
   const monthly = cadence === "monthly";
   const date = monthly ? backupDateKey(now).slice(0, 7) : backupDateKey(now);
   const archiveRoot = join(backupRoot, MONTHLY_NAMESPACE);
@@ -396,7 +398,7 @@ export async function runDailyProductionBackup({
         await ownedDirectory(archiveRoot);
         await chmod(archiveRoot, 0o700);
       }
-      result = await (execute ?? (() => executeExistingBackup({ monthly })))();
+      result = await (execute ?? (() => executeExistingBackup({ monthly, r2Staging })))();
     } catch { result = { ok: false }; }
     retainLock = result?.cleanupRequired === true;
     const completedAt = new Date().toISOString();
@@ -416,7 +418,7 @@ export async function runDailyProductionBackup({
     };
     await updateReceipt(receiptPath, completed);
     let retention;
-    if (monthly && verified && !retainLock) {
+    if (monthly && verified && !retainLock && !r2Staging) {
       try { retention = await retainMonthlyArchives({ stateRoot, archiveRoot, evidenceRoot, currentMonth: date, currentArchive: archive }); }
       catch { retention = { status: "review-required" }; }
       await updateReceipt(receiptPath, { ...completed, retention });

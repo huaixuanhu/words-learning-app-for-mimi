@@ -1,5 +1,14 @@
 # AI Agent Log
 
+## 2026-10-04 AEDT — R2 independent backup and original-location credential pointers
+
+- Agreement: user requested moving independent backup custody to their R2, named after the project, with private access and Git exclusion. Their later correction requires original credential files to stay in place and `local_key` to contain clickable pointers only. Tier 3; existing environment values and Keychain custody remain unchanged.
+- Implemented locally: fixed bucket/account S3 target, existing rclone client with isolated in-memory credentials and bounded operations, source receipt/restore binding, complete cloud readback, local receipt persistence and cleanup limited to new R2 staging. Existing 9/10 archives will be migrated without a fresh Production database read. Cloud monthly history is retained; no cloud delete operation exists in the uploader.
+- External state: created `words-learning-app-for-mimi` with Standard storage in Oceania; dashboard confirms Public Access Disabled. Dedicated bucket-scoped credential, real transfers and scheduler cutover are not yet complete.
+- Credential audit: only `.env.local` and `.env.stage2.local` are existing local secret files found by the scoped filename/variable-name audit; paths and bytes unchanged, both now 0600. Three known Keychain entries are present. Four clickable local pointers exist in a 0700 ignored directory; no secret copies were made.
+- Governance repair: added missing package entry, contract and decision owner; reused Stage 7 design main document and its recorded V2.3 evolution without a UI change or fresh visual-acceptance claim. Structure check passed. Existing project preflight retained.
+- Validation: 79 focused backup/target/credential tests passed; targeted ESLint, the governance structure check, existing strict preflight and 22 governance tests, and diff whitespace checks passed. A scoped 79-file key-pattern audit printed locations only and found no additional matching key files. One obsolete source-string assertion was updated for the new staging root. Real R2 readback remains pending the dedicated credential. No application push/deploy or Production write/restore.
+
 ## 2026-10-03 AEST — authorized monthly backup diagnosis and repair
 
 - After fresh explicit approval, ran the single reviewed monthly retry on clean `18dd8c1`. It verified at 2026-10-03 00:47:38 Australia/Melbourne: encrypted archive/evidence digests match, isolated PostgreSQL 17 restore parity true, same Production identity as September, original failure digest unchanged, retry bound correctly, no lock remaining, two verified months retained and zero archives removed. Safe proof is in ignored october-retry-verified-result.json. No remote data mutation, settings change, push or deployment occurred.

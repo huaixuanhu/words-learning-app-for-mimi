@@ -420,8 +420,10 @@ async function run() {
   let archivePath;
   let partialPath;
   let archiveKeep = false;
-  const monthlyLocal = process.argv.includes("--monthly-local-archive");
-  const backupDirectory = monthlyLocal ? join(BACKUP_DIR, MONTHLY_NAMESPACE) : BACKUP_DIR;
+  const r2Staging = process.argv.includes("--monthly-r2-archive");
+  const monthlyLocal = process.argv.includes("--monthly-local-archive") || r2Staging;
+  const backupRoot = r2Staging ? resolve(process.cwd(), "local_artifacts", "monthly-r2-staging") : BACKUP_DIR;
+  const backupDirectory = monthlyLocal ? join(backupRoot, MONTHLY_NAMESPACE) : backupRoot;
   try {
     if (
       process.argv[2] !== "production" ||
@@ -463,8 +465,8 @@ async function run() {
     await chmod(identityPath, 0o600);
 
     if (monthlyLocal) {
-      await mkdir(BACKUP_DIR, { mode: 0o700, recursive: true });
-      if (!(await lstat(BACKUP_DIR)).isDirectory()) {
+      await mkdir(backupRoot, { mode: 0o700, recursive: true });
+      if (!(await lstat(backupRoot)).isDirectory()) {
         reject("The backup root must be an owned directory", "V2_1_BACKUP_DIRECTORY_INVALID");
       }
     }
@@ -629,7 +631,7 @@ async function run() {
     const evidence = {
       archive: {
         bytes: archiveStat.size,
-        custody: "external-user-backup-directory",
+        custody: r2Staging ? "temporary-local-r2-upload-staging" : "external-user-backup-directory",
         ...(monthlyLocal ? { namespace: MONTHLY_NAMESPACE } : {}),
         encryption: "age",
         filename: basename(archivePath),

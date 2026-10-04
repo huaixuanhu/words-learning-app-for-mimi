@@ -69,7 +69,8 @@
     "db:inspect:schema5:prod": "STAGE6B_DATABASE_TARGET=production MIMI_PRODUCTION_DATABASE_ACTION=inspect VERCEL_ENV=production node scripts/inspect-database-schema5-production.mjs --i-confirm-production-read",
     "governance:preflight": "python3 governance/preflight.py --tier 3 --strict-side-effects --require-skill-marker",
     "governance:test": "python3 -B -m unittest governance.test_preflight",
-    "governance:check": "npm run governance:preflight && npm run governance:test"
+    "governance:check": "npm run governance:package && npm run governance:preflight && npm run governance:test",
+    "governance:package": "python3 -B governance/governance_package_check.py --project-root . --target . --project-lifecycle durable"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",

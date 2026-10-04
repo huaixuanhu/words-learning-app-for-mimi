@@ -1,5 +1,10 @@
 # Words Learning App For Mimi Stage 7: UI Visual Design
 
+Design revision: `7.7-with-v2.3-home` (maintenance identity recovered 2026-10-04).
+Scope and status: retain the Stage 7 sage design and the subsequent accepted V2/V2.2/V2.3 interaction changes documented in their canonical plans. This file remains the design owner; its original Stage 7 execution scope below is historical.
+Authority and evidence: Stage 7.7 owns initial acceptance; V2.3 Stage 2.3.3 owns the user's simplified Home intent (new/review word counts and grouped load/recall charts), and Stage 2.3.12 owns its release evidence. Current code alone does not prove additional design approval. This entry repair performs no fresh rendered verification or UI change.
+Evolution: V2/V2.2 permanent track, review and audio behavior remains in the current AGENTS and canonical plans. Future visual changes update this revision and their affected acceptance evidence; unresolved new choices remain candidates. Token and component implementations remain owned by `src/app/globals.css` and `src/components/`.
+
 Source plan: `plan_docs/PLAN_V1_MASTER.md`
 Derived from: `plan_docs/PLAN_V1_STAGE6A_PRODUCTION_RELEASE_GATE.md`, the Stage 7 handoff requirements, the user-provided ChatGPT UI prompt, and the uploaded LexiCalm-style visual reference.
 Scope: redesign the existing Next.js App Router UI（用户界面）for a calm, darker sage green vocabulary flashcard experience; improve mobile and desktop layouts; add gentle but tactile interaction animation（交互动效）with Motion for React; preserve existing vocabulary import, local storage, review, export, and settings behavior.

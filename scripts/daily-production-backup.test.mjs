@@ -325,7 +325,8 @@ describe("monthly independent local archive retention", () => {
     const runner = await readFile(new URL("./v2-1-production-backup.mjs", import.meta.url), "utf8");
     expect(runner).toContain('process.argv.includes("--monthly-local-archive")');
     expect(runner).toContain('const MONTHLY_NAMESPACE = "monthly-local-v1"');
-    expect(runner).toContain('monthlyLocal ? join(BACKUP_DIR, MONTHLY_NAMESPACE) : BACKUP_DIR');
+    expect(runner).toContain('monthlyLocal ? join(backupRoot, MONTHLY_NAMESPACE) : backupRoot');
+    expect(runner).toContain('r2Staging ? resolve(process.cwd(), "local_artifacts", "monthly-r2-staging") : BACKUP_DIR');
     expect(runner).toContain('"--i-confirm-v2-1-production-encrypted-backup"');
     expect(runner).toContain('retrieveGuardedBackupTarget({');
     expect(runner).toContain('readOnlyBackupWakeEnvironment(pgEnvironment(archivedTarget.connectionString))');
