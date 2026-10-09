@@ -21,6 +21,7 @@ describe("V2 Stage 4 mobile foundation", () => {
     ]);
     expect(mobileMoreItem.label).toBe("More");
     expect(mobileMoreNavItems.map((item) => [item.label, item.href])).toEqual([
+      ["WFD · Listen & remember", "/wfd"],
       ["Add Words", "/import"],
       ["Practice Lab", "/practice-lab"],
       ["Settings", "/settings"],
