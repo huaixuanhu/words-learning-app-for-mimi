@@ -8,6 +8,7 @@ import {
   RotateCcw,
   Settings,
   Upload,
+  Headphones,
 } from "lucide-react";
 import type { ReviewRating } from "@/lib/review/types";
 
@@ -25,11 +26,13 @@ export const appNavItems = [
   { href: "/import", label: "Add Words", icon: Upload },
   { href: "/settings", label: "Settings", icon: Settings },
   { href: "/export", label: "Backup", icon: Download },
+  { href: "/wfd", label: "WFD · Listen & remember", icon: Headphones },
 ] as const;
 
 export const mobilePrimaryNavItems = appNavItems.slice(0, 4);
 
 export const mobileMoreNavItems = [
+  appNavItems[8],
   appNavItems[5],
   appNavItems[4],
   appNavItems[6],
