@@ -1,5 +1,22 @@
 # CHANGELOG
 
+## 2026-10-10 AEDT — WFD implementation, acceptance and branch publication
+
+- Implemented the independent WFD learning-memory and dictation-review route with original visual demos, sentence/phrase playback using local English voices only, cue fading, word-level practice feedback, assisted/independent attempt tracking, heuristic review timing and browser-local JSON backup. Existing cloud vocabulary schemas/providers are unchanged.
+- Imported 257 unique Firefly source IDs through the UI into the private browser bank; six source sentences have curated pictures, including four new items. Five `Needs verification` records stay excluded from grading. The private JSON deliverable and desktop preview are stored outside the repository; the complete commercial bank is not bundled with public code.
+- Browser evidence confirms Karen en-AU local playback, an assisted missing-word answer at 89% (8/9), an independent 100% (9/9) dictation saved, JSON export download, and confirmed restore through the paste input with an old-data recovery download. The actual file chooser subsequently read the private JSON and previewed 257 sentences, six illustrated and 251 awaiting translation; no repeat import was submitted. Full restore by file remains untested. A 390px iframe has no horizontal overflow; real mobile Safari was not verified. These two synthetic attempts are acceptance data, not the user's measured learning performance.
+- Validation: 840 tests passed and one remote database test skipped across 115 files; ESLint, TypeScript, governance with 22 tests, three backup fixture dry-runs and Next production build passed. The build includes prerendered `/wfd`.
+- Implementation saved locally as `148c456`, with acceptance documentation in `744359c`. After explicit approval, the user manually enabled the Chrome extension's file URL permission. Six GitHub browser commits published code and original images to `mimiplay` through `7297be5`; fetch and an empty `src/` / `public/` diff confirm parity with the tested local implementation. The private 257-question bank was not uploaded.
+- GitHub reports successful Vercel Preview deployment for final code version `7297be5` at 2026-10-10 00:56 GMT+11. Browser access to `/wfd` redirects to Vercel login, so online UI acceptance remains pending while the local browser results stand. Existing protection settings were retained. No `main` merge, Production release, database operation or provider configuration change occurred. The WFD plan owns the exact Preview URL, publication evidence and remaining verification.
+
+## 2026-10-09 AEDT — WFD visual learning implementation plan
+
+- Added `plan_docs/PLAN_WFD_VISUAL_LEARNING.md` as the bounded, user-approved WFD extension of the V2/V2.3 product and Stage 7 visual baseline. The user accepted separate learning-memory and dictation-review entries, sentence-aligned visuals with English audio, and selected animations on `mimiplay`.
+- Defined the delivery as a private local import of the 257-question Firefly prediction edition, with six illustrated source sentences, plus six separate original public demos. The 257 source records have been extracted from the authorized page DOM; six shared scene assets have been visually verified. Actual browser import and final implementation/media acceptance remain pending; this entry does not claim all 257 sentences have visuals or that the feature is deployed.
+- Recorded primary memory evidence, prediction-source limits, cue fading toward audio-only recall, and an explicitly heuristic spaced-review schedule. WFD JSON v1 and browser progress remain separate from vocabulary Schema 6 / Backup 4; no Production database or provider configuration change is included.
+- Added the WFD route/component/storage/audio map to Architecture and its child-plan pointer to AGENTS. WFD audio selects local English device voices only, with visible failure instead of a cloud/API fallback. Existing vocabulary provider behavior is unchanged.
+- Validation, exact changed-file inventory, commit, push and deployment evidence will be updated by the implementation closeout after those actions actually occur.
+
 ## 2026-10-04 AEDT — private R2 backup destination and credential shortcuts
 
 - User subsequently authorized publishing the verified backup fixes and R2 tooling to the existing GitHub `main`. Stage 2.3.13 records the synchronization scope; exact remote SHA and the existing automatic Vercel build result are retained in its ignored push receipt. This adds no application behavior or database migration.

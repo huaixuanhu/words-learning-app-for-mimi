@@ -1,9 +1,26 @@
 # Words Learning App For Mimi Architecture
 
 Created: 2026-07-02 23:30 AEST
-Last updated: 2026-10-04 AEDT
+Last updated: 2026-10-10 AEDT
 
 ## Current State
+
+### WFD Local Learning Extension
+
+`plan_docs/PLAN_WFD_VISUAL_LEARNING.md` owns the user-approved WFD extension on `mimiplay`, derived from current V2.3 and Stage 7 visual design. It adds `/wfd` with learning-memory and dictation-review modes. Its verified code and images have been published to GitHub `mimiplay` at `7297be5`; this branch publication does not imply a Production release. The existing V2.3 Production state below remains its separately recorded baseline.
+
+| Component | Responsibility and boundary |
+| --- | --- |
+| `src/app/wfd/`, `src/components/wfd/` | WFD route, scene/phrase presentation, cue fading, typed practice feedback, local import and backup controls. |
+| `src/lib/wfd/` | Sentence/import validation, original demo records, word alignment, independent-attempt scheduling and browser persistence. WFD does not share vocabulary Track histories or FSRS parameters. |
+| `public/wfd/images/` | Six original scene assets, verified visually. Six public `demo` sentences are original teaching examples. The separate private 257-question Firefly import enriches six corresponding source sentences with these assets and its own exact text/chunks; it is not a public 257-question bundle. |
+| `src/components/wfd/use-wfd-audio.ts` | Browser SpeechSynthesis with an explicitly selected local English voice (`localService`). No WFD cloud/API request or remote-voice fallback; missing local voices fail visibly. Natural playback completion and assistance state determine eligibility for independent dictation. |
+
+WFD persists `WfdData.version = 1` under browser `localStorage` keys `mimi:wfd:v1:<personId>`. Selected-person scope is convenience separation, not confidential tenant isolation or authentication. Its independent JSON v1 export/restore includes the private imported bank, typed attempts and progress; vocabulary server Schema 6 / JSON Backup 4 and existing Neon/R2 backups do not cover it. No WFD database table, migration, Production data write path or provider configuration change is added.
+
+The 257 unique source records have been imported through the UI from the user-authorized page DOM（页面文档结构）. Six source sentences have curated images, including four marked new by the source; five records marked `Needs verification` remain excluded from grading. Local English playback, assisted recall, independent dictation, JSON export and confirmed paste-based restore have browser evidence. A 390px iframe has no horizontal overflow; this is not a real mobile-device acceptance. Fetch and an empty `src/` / `public/` diff confirm that remote `7297be5` matches the tested local code and images. GitHub reports successful Vercel Preview deployment for final code version `7297be5` at 2026-10-10 00:56 GMT+11. Its `/wfd` route redirects to Vercel login, so online UI acceptance is still blocked by existing access protection; no protection settings, `main` or Production release were changed. The WFD plan owns the exact Preview URL, publication evidence and local/online validation boundary. The default review intervals are explicit heuristics, not measured forgetting probabilities or an official Pearson score.
+
+### Existing V2.3 Production And Governance Baseline
 
 治理维护入口为 `governance/README.md`，结构映射为 `governance/contract.json`，重要决策索引为 `governance/DECISIONS.md`。补齐集中入口沿用原项目专用 v0.7.5 预检；设计仍由 Stage 7 主文档及其链接的 V2/V2.3 演进记录管理。
 

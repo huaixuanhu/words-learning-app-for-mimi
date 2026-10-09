@@ -35,6 +35,7 @@
 - Canonical V2.1 repair and release: `plan_docs/PLAN_V2_1_DUPLICATE_IMPORT_DEDUPLICATION.md` and `plan_docs/PLAN_V2_1_PRODUCTION_DUPLICATE_REPAIR_RELEASE.md`.
 - Canonical V2.2 product and release: `plan_docs/PLAN_V2_2_REVIEW_CADENCE_CARD_AUDIO.md` and `plan_docs/PLAN_V2_2_PRODUCTION_RELEASE.md`.
 - Canonical V2.3 storage, study-day, Home and Production release: `plan_docs/PLAN_V2_3_STORAGE_STUDY_DAY_HOME.md`.
+- Authorized WFD visual learning extension on `mimiplay`: `plan_docs/PLAN_WFD_VISUAL_LEARNING.md`; browser-local WFD data and backup are separate from the vocabulary cloud schema.
 - Canonical V1 launch record: `plan_docs/PLAN_V1_STAGE6B_P1_G_C_5_LIVE_PRODUCTION_EXECUTION.md`.
 - Active data lifecycle policy: `plan_docs/PLAN_V1_STAGE8_5_DATA_LIFECYCLE_ENVIRONMENT_STRATEGY.md`.
 - Version hold for SSO（Single Sign-On，单点登录）and confidential per-person isolation: `plan_docs/PLAN_VERSION_HOLD_MULTI_USER_CONFIDENTIAL_ISOLATION.md`.
