@@ -1,7 +1,7 @@
 # V2.3 数据加载、学习日与 Home 修复
 
 Created: 2026-09-13 AEST
-Last updated: 2026-10-04 AEDT
+Last updated: 2026-10-15 22:54 AEDT
 
 Source plan:
 - `plan_docs/PLAN_V2_MASTER.md`
@@ -39,6 +39,14 @@ Exit criteria:
 - 午夜不再拆开新的学习日；06:00、夏令时、旧窗口过渡、过期请求和页面休眠后刷新均有覆盖。
 - 左图新学与复习采用不同词数，保留轨道隔离；右侧为当前数据计算的估计，缺少依据时不给出伪造数值。
 - 本地验证完成；线上恢复、数据完整性核对和发布状态单独报告。
+
+## 2026-10-15 治理发布与当前接续
+
+2026-10-15，用户授权后由 Claude Code 将 `main` 从 `3ed1f43` 推送至 [`185ae78`](https://github.com/huaixuanhu/words-learning-app-for-mimi/commit/185ae78f1fdaae245750cd6a1ba18475e972d4b3)，共 2 个提交；Codex 随后用实时 `git ls-remote` 核对该远端提交与本地一致。 用户在原会话明确允许公开这两笔提交并触发现有生产部署；本轮又授权仅补齐事实、验证、提交和推送。
+
+GitHub Production deployment `7091357591` 绑定 `185ae78f1fdaae245750cd6a1ba18475e972d4b3`，[Vercel 部署](https://vercel.com/anorias-projects/words-learning-app-for-mimi/9N5XUVqUf4it3SgNRQBCBYDccKCy)于 `2026-10-15T11:31:20Z` 记录 success，网址为 `words-learning-app-for-mimi-7gpnwwmcf-anorias-projects.vercel.app`。正式域名与该部署的 `/`、`/api/health` 共 4 次匿名请求均为 401；未进行登录后学习流程或数据验收。
+
+该事件是两笔治理提交的发布，未改变 V2.3 应用、Schema 6、备份调度或学习数据。Stage 2.3.12、2.3.13 继续持有原产品验收与备份结果；此前章节和日志的“未推送/未部署”保留为当时事实。新工作先从本段及最新 [AI 日志](../governance/AI_AGENT_LOG.md)接续，再按任务读取原阶段；本次收尾不启动新产品阶段。远端 `mimiplay` 分支未修改。
 
 ## Stage 2.3.1 Library 调查和加载修复
 

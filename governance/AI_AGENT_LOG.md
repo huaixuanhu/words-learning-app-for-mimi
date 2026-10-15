@@ -1,5 +1,18 @@
 # AI Agent Log
 
+## 2026-10-15 22:54 AEDT — 已核实发布事实收尾
+
+- Executor: Codex (GPT-6; exact model variant unavailable).
+- Task: 将已完成的 Git 发布及相关部署事实归入项目自己的责任文件；bounded。
+- Plan agreed: 用户已在 Claude Code 会话中授权此前推送；本轮又明确要求补齐这些项目的事实收尾，保留历史和规则，验证后按既有约定直接提交并推送。旧条目的未推送/未授权描述只代表当时切片，不回写为已经授权。 此前另有明确的公开这两笔治理提交及自动部署授权；本轮文档推送沿用现有流水线。
+- Working tier: Tier 3；仅记录事实，原有项目权限和能力等级不变。
+- Changed files: `plan_docs/PLAN_V2_3_STORAGE_STUDY_DAY_HOME.md`、`CHANGELOG.md`、`governance/AI_AGENT_LOG.md`。
+- Reason: 跨项目共享笔记已有发布结果，但项目自己的入口仍停在本地交付，容易使后续宿主误判当前状态或重复索取已经执行的发布授权。
+- Publication evidence: 2026-10-15，用户授权后由 Claude Code 将 `main` 从 `3ed1f43` 推送至 [`185ae78`](https://github.com/huaixuanhu/words-learning-app-for-mimi/commit/185ae78f1fdaae245750cd6a1ba18475e972d4b3)，共 2 个提交；Codex 随后用实时 `git ls-remote` 核对该远端提交与本地一致。 GitHub Production deployment `7091357591` 绑定 `185ae78f1fdaae245750cd6a1ba18475e972d4b3`，[Vercel 部署](https://vercel.com/anorias-projects/words-learning-app-for-mimi/9N5XUVqUf4it3SgNRQBCBYDccKCy)于 `2026-10-15T11:31:20Z` 记录 success，网址为 `words-learning-app-for-mimi-7gpnwwmcf-anorias-projects.vercel.app`。正式域名与该部署的 `/`、`/api/health` 共 4 次匿名请求均为 401；未进行登录后学习流程或数据验收。
+- Validation: 本次补记前已再次核对本地分支、干净工作区与实时远端身份。上一轮只读复核的详细证据和本次检查结果记在本条；这不构成新的运行或产品验收。 上一轮 Codex 独立复核通过 29 项治理测试；原两笔提交仅改变治理、测试及文档，未改变应用、数据库、备份或部署配置。公开仓库的本次追加仍只包含事实记录。 本次 `npm run governance:check` 通过结构检查、严格 Tier 3 预检及 29 项治理测试。 已逐字核对全部历史日志和旧状态正文保留，仅当前日期/入口说明更新；本次仅三个文档，`git diff --check` 通过。提交前继续检查暂存内容。
+- Safety notes: 规则、源码、测试、配置和历史记录原文保留；只提交本次三个责任文件并普通推送当前分支，不改历史或安装。 沿用已有 main 自动部署；不改变鉴权、域名、凭据、付费服务、数据库或用户数据，不创建保护绕过链接。
+- Continuation: 从治理契约登记的当前状态继续；这条记录对应已经发生的发布事件，不把未来 main/分支 HEAD 或后续构建状态写成永久最新值。本收尾提交的推送及自动部署结果在最终交接核对，不为记录收尾自身再创建提交。
+
 ## 2026-10-15 — governance v0.8.4 adoption and development handoff
 
 - Task: 提交已验收的日志识别修复，将项目实际适配至治理 v0.8.4，然后等待用户未来的开发请求。
