@@ -12,6 +12,85 @@ from governance import preflight
 PREFLIGHT_SCRIPT = Path(preflight.__file__).resolve()
 
 
+class LatestEntryTests(unittest.TestCase):
+    def assert_latest_heading_selected(self, heading: str) -> None:
+        newest_body = "\n\n- Current work.\n\n"
+        text = (
+            f"# Log\n\n{heading}{newest_body}"
+            "## 2026-09-04 00:19 AEST\n\n- Reason: Older work.\n"
+        )
+
+        self.assertEqual(
+            preflight.LatestEntry("2026-10-15", newest_body),
+            preflight.latest_entry(text),
+        )
+
+    def test_titled_latest_entry_precedes_older_timestamp(self) -> None:
+        self.assert_latest_heading_selected("## 2026-10-15 AEDT — Repair")
+
+    def test_date_only_latest_heading(self) -> None:
+        self.assert_latest_heading_selected("## 2026-10-15")
+
+    def test_timestamp_zone_and_title_latest_heading(self) -> None:
+        self.assert_latest_heading_selected("## 2026-10-15 15:00 AEDT — Repair")
+
+    def test_non_date_headings_and_subsections_are_not_entries(self) -> None:
+        for heading in (
+            "## Notes",
+            "## Notes for 2026-10-15",
+            "### 2026-10-15 15:00 AEDT",
+            "## 2026-10-150",
+        ):
+            with self.subTest(heading=heading):
+                text = f"{heading}\n\n- Not an entry.\n\n"
+                self.assertIsNone(preflight.latest_entry(text))
+                entry = preflight.latest_entry(
+                    text + "## 2026-09-04 00:19 AEST\n\n- Actual entry.\n"
+                )
+                self.assertIsNotNone(entry)
+                self.assertEqual("- Actual entry.", entry.body.strip())
+
+    def test_next_date_heading_ends_latest_entry(self) -> None:
+        for older_heading in (
+            "## 2026-10-14",
+            "## 2026-10-14 AEDT — Older work",
+        ):
+            with self.subTest(older_heading=older_heading):
+                text = (
+                    "## 2026-10-15 15:00 AEDT\n\n- Current work.\n\n"
+                    f"{older_heading}\n\n- Reason: Older work.\n"
+                )
+                self.assertEqual(
+                    ["latest CHANGELOG.md entry lacks Reason:"],
+                    preflight.validate_changelog(text),
+                )
+
+    def test_changelog_checks_newest_titled_entry_fields(self) -> None:
+        text = (
+            "## 2026-10-15 AEDT — Repair\n\n- Current work.\n\n"
+            "## 2026-09-04 00:19 AEST\n\n- Reason: Older work.\n"
+        )
+        self.assertEqual(
+            ["latest CHANGELOG.md entry lacks Reason:"],
+            preflight.validate_changelog(text),
+        )
+
+    def test_ai_log_checks_newest_titled_entry_fields(self) -> None:
+        required = (
+            "Task:", "Plan agreed:", "Changed files:",
+            "Reason:", "Validation:", "Safety notes:",
+        )
+        text = (
+            "## 2026-10-15 AEDT — Repair\n\n- Current work.\n\n"
+            "## 2026-09-04 00:19 AEST\n\n"
+            + "".join(f"- {field} Older work.\n" for field in required)
+        )
+        self.assertEqual(
+            [f"latest governance/AI_AGENT_LOG.md entry lacks {field}" for field in required],
+            preflight.validate_ai_log(text),
+        )
+
+
 class TemporaryGitRepository:
     """Small committed repository used to exercise preflight against real Git state."""
 
@@ -384,7 +463,7 @@ class PreflightV075ContractTests(unittest.TestCase):
         output = self.combined_output(result)
 
         self.assertEqual(1, result.returncode, output)
-        self.assertIn("CHANGELOG.md needs a latest minute-level timestamp", output)
+        self.assertIn("CHANGELOG.md needs a latest date heading", output)
         self.assertIn("staged index", output)
 
     def test_staged_env_deletion_has_no_retained_secret_snapshot(self) -> None:

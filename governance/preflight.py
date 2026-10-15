@@ -31,7 +31,7 @@ ARCHITECTURE_CANDIDATES = ("ARCHITECTURE.md", "PROJECT_MAP.md")
 PLAN_DOC_PREFIXES = ("plan_docs/", "docs/plans/")
 
 TIMESTAMP_HEADING_RE = re.compile(
-    r"^## (?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}(?: [A-Z]{2,5})?)\s*$",
+    r"^## (?P<timestamp>\d{4}-\d{2}-\d{2})(?!\d)[^\n]*$",
     re.MULTILINE,
 )
 
@@ -470,7 +470,7 @@ def latest_entry(text: str) -> LatestEntry | None:
 def validate_changelog(text: str) -> list[str]:
     entry = latest_entry(text)
     if entry is None:
-        return [f"{CHANGELOG} needs a latest minute-level timestamp heading"]
+        return [f"{CHANGELOG} needs a latest date heading (## YYYY-MM-DD ...)"]
     issues: list[str] = []
     if "Reason:" not in entry.body:
         issues.append(f"latest {CHANGELOG} entry lacks Reason:")
@@ -482,7 +482,7 @@ def validate_changelog(text: str) -> list[str]:
 def validate_ai_log(text: str) -> list[str]:
     entry = latest_entry(text)
     if entry is None:
-        return [f"{AI_AGENT_LOG} needs a latest minute-level timestamp heading"]
+        return [f"{AI_AGENT_LOG} needs a latest date heading (## YYYY-MM-DD ...)"]
     required = (
         "Task:",
         "Plan agreed:",

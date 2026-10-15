@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 2026-10-15 15:26 AEDT — latest-entry heading repair
+
+- 将 `governance/preflight.py` 的条目标题匹配改为识别所有以 `## YYYY-MM-DD` 开头的日期标题，并同步两条缺少标题提示；保留项目必填字段、其他检查和 `v0.8.1` 版本标记。
+- Reason: 从日期为 2026-09-13 的条目开始，两份日志的最新条目就被旧标题规则跳过，预检仍选中 `2026-09-04 00:19 AEST`；首个保留的对应提交是 `0f242d5`。修复前顶端 2026-10-06 条目的字段缺失属于既有遗漏，旧条目保留原样，本条及本次 AI log 成为最新检查对象。
+- 新增 7 项回归测试，覆盖带标题、只有日期、时间/时区加标题、非日期标题与三级小节，以及条目边界和最新字段检查；旧正则产生 7 个失败断言（含子场景），新正则下 7 项全部通过。本次仅本地修复，未提交、推送或部署。
+
 ## 2026-10-04 AEDT — private R2 backup destination and credential shortcuts
 
 - User subsequently authorized publishing the verified backup fixes and R2 tooling to the existing GitHub `main`. Stage 2.3.13 records the synchronization scope; exact remote SHA and the existing automatic Vercel build result are retained in its ignored push receipt. This adds no application behavior or database migration.

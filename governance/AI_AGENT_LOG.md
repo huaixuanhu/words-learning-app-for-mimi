@@ -1,5 +1,14 @@
 # AI Agent Log
 
+## 2026-10-15 15:26 AEDT — latest-entry heading repair
+
+- Task: 修复预检跳过最新日志条目的问题，新增回归测试并保留旧记录。Executor: Codex (GPT-6)；用户转述的 Claude Code 发现是本次输入，日期追溯由 Codex 只读子代理核对。
+- Plan agreed: 用户明确限定为本地定点修复：只改标题正则、两条日期标题提示、相关测试及本次日志；不升级版本、不补写旧条目、不提交、不推送。项目及本次工作保持 Tier 3，作用范围仅本地治理检查，无新增外部权限。
+- Changed files: `governance/preflight.py`、`governance/test_preflight.py`、`CHANGELOG.md`、`governance/AI_AGENT_LOG.md`；保留进入任务时已有的 10 文件未提交修改和 `v0.8.1` 标记。
+- Reason: 从 2026-09-13 起的新条目未被旧规则选中，两份日志仍检查 `2026-09-04 00:19 AEST`。首个保留的对应提交 `0f242d5` 新增带标题的 CHANGELOG 条目和只有日期/时区的 AI log 条目，当时预检已经使用旧正则。修复后直接检查原顶端 2026-10-06 条目，确认 CHANGELOG 缺 `Reason:`，AI log 缺全部六个精确字段；这些既有遗漏保留原样。历史和源码证明选择行为及最早保留记录，不代表逐次重放过所有历史预检执行。
+- Validation: 先在旧正则下运行新增测试，7 项测试产生 7 个失败断言（6 项测试失败，其中条目边界测试含两个子场景），排除非日期标题/三级小节的测试通过；替换后 `python3 -B -m unittest governance.test_preflight.LatestEntryTests` 的 7 项全部通过。原顶端条目的缺字段诊断已直接复现。`npm run governance:check` 已通过结构检查、Tier 3 严格预检及全部 29 项测试；结果仅覆盖本地治理检查。
+- Safety notes: 未读取凭据或执行远端操作；未更改应用、数据库、备份、设计基线、必填字段或其他预检规则。未提交、推送或部署；本次补丁留在本地供用户确认。
+
 ## 2026-10-04 AEDT — authorized remote synchronization
 
 - User explicitly requested remote push after verified R2 activation. Scope is the six existing local `main` commits plus this authorization record, a normal push to the existing GitHub repository, and read-only observation of its existing Vercel integration. At entry, the clean local tip was `2b5e978` and live remote `main` was `69211cd` with no divergence. Application source, dependency lock and Vercel configuration are unchanged. Stage 2.3.13 and its ignored push receipt own exact execution evidence; no new credential, database or deployment configuration action is included.
