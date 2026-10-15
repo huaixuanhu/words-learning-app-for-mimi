@@ -1,10 +1,21 @@
 # CHANGELOG
 
+## 2026-10-15 — governance v0.8.4 adoption
+
+- 按用户确认先将最新日志识别修复单独提交为 `2835996`，再将项目治理适配至 `human-ai-governance v0.8.4`，纳入此前未提交的 v0.8.1 费用说明。
+- 补齐 Codex / Claude Code 共享治理、执行者记录及证据范围规则；推理模式指引限定为 Codex，`CLAUDE.md` 仅通过 `@AGENTS.md` 引用同一规则。同步当前版本引用，保留历史记录、项目专用检查和产品行为。
+- Reason: 用户要求项目实际采用 v0.8.4 并为之后继续开发保留入口；已核对中间版本的规则与导航变化，避免只升级版本标记。本次仅本地治理维护与提交，不推送、部署或启动新产品开发。
+
 ## 2026-10-15 15:26 AEDT — latest-entry heading repair
 
 - 将 `governance/preflight.py` 的条目标题匹配改为识别所有以 `## YYYY-MM-DD` 开头的日期标题，并同步两条缺少标题提示；保留项目必填字段、其他检查和 `v0.8.1` 版本标记。
 - Reason: 从日期为 2026-09-13 的条目开始，两份日志的最新条目就被旧标题规则跳过，预检仍选中 `2026-09-04 00:19 AEST`；首个保留的对应提交是 `0f242d5`。修复前顶端 2026-10-06 条目的字段缺失属于既有遗漏，旧条目保留原样，本条及本次 AI log 成为最新检查对象。
 - 新增 7 项回归测试，覆盖带标题、只有日期、时间/时区加标题、非日期标题与三级小节，以及条目边界和最新字段检查；旧正则产生 7 个失败断言（含子场景），新正则下 7 项全部通过。本次仅本地修复，未提交、推送或部署。
+
+## 2026-10-06 AEDT — governance v0.8.1 adaptation
+
+- Added proactive numeric cost disclosure for external services, distinguishing estimates, actual bills, unknowns and spending limits. Valid existing authorization remains reusable; cost alone does not add approval or justify silently changing the agreed approach.
+- Reused the centralized package and project-specific checks; synchronized current version references and test fixtures without changing application, backup, design or provider behavior.
 
 ## 2026-10-04 AEDT — private R2 backup destination and credential shortcuts
 

@@ -1,13 +1,16 @@
 # AGENTS.md
 
-<!-- Generated/adapted from human-ai-governance v0.7.5 -->
+<!-- Generated/adapted from human-ai-governance v0.8.4 -->
 
 ## Collaboration
 
 - Use strict low-hallucination mode. Verify uncertain or drift-prone claims from the relevant source before treating them as current.
+- Before material work, read the currently installed `human-ai-governance` skill and this project's mapped owners. Report unreadable sources or rule conflicts and continue unaffected authorized work. The project marker records adopted rules; a global skill update does not automatically migrate this project.
 - Plan before material changes. One accepted plan covers safe local implementation inside its declared scope.
-- Pause again only for a material scope expansion, consequential external action, unresolved material choice, or an explicit approval gate in this file.
+- Reuse valid agreement and authorization, preserving one-shot limits, expiry and cumulative limits. Pause again only for a material scope expansion, consequential external action outside the accepted envelope, unresolved material choice, or an explicit approval or renewal condition that remains unsatisfied.
 - When the user explicitly requests completion persistence, keep the accepted outcome and safe in-scope diagnosis, repair, validation and preparation active across failed attempts. Route retries by credible single and cumulative consequence; pause only at the next consequence-bearing action outside the accepted envelope or another existing approval boundary.
+- Keep the accepted objective active across side questions and compatible updates. On explicit cancellation or replacement, stop future incompatible actions, reconcile already-started operations, retain unaffected work, and claim stopping or reversal only from confirming evidence.
+- When evidence contradicts the current explanation, reassess it and relevant tool or validation assumptions. Repetition alone does not require a different method. Preserve useful diagnostic errors and context, exclude authentication secrets, and retain applicable data protections; compact reporting does not justify deleting evidence.
 - Keep changes focused, protect user-owned work, and never revert unrelated changes without explicit approval.
 - Update a document when its current claim would otherwise become false, incomplete, or misleading. Prefer one canonical owner plus links over repeated status history.
 - Child or branch plans must declare `Source plan`, `Derived from`, `Scope`, `Non-Scope`, and `Exit criteria` near the top.
@@ -16,10 +19,17 @@
 - Treat platform sandbox, approval, connector, and access settings as technical capability boundaries. They do not expand the accepted task scope or this project's authorization boundaries.
 - Keep engineering-governance writing for plans, Architecture, specifications, runbooks, evidence and approval records. Route audience-facing expression by the purpose of each content unit; expression may change prose and organization while facts, uncertainty, evidence ceilings, disclosures, safety controls, authority, approval and validation remain exact.
 - Treat repeated contrast, punctuation and list patterns as semantic revision signals. Do not use phrase counts, regular-expression style checks, punctuation quotas or AI-detector scores as acceptance gates.
-- For important main-workspace tasks, use `xhigh` for bounded direct work, Max for deep coupled reasoning, and Ultra when adaptive separable work materially improves coverage. Reasoning mode remains separate from Tier, authorization and evidence, and must not become a preflight rule.
+- In Codex only, use `xhigh` for bounded direct work, Max for deep coupled reasoning, and Ultra when adaptive separable work materially improves coverage. Other hosts, including Claude Code, keep the user's current setting without a Codex-mode mapping or recommendation. Reasoning mode remains separate from Tier, authorization and evidence, and must not become a preflight rule.
 - Prefer Chinese for planning and handoff documents while preserving English technical terms with a Chinese explanation on first mention when useful.
 - Ordinary product UI should use short, natural English for immersion. Chinese or bilingual copy remains appropriate for irreversible actions, privacy, credentials, backup replacement, and external AI data transmission.
 - Treat technical-language choice as separate from writing mode and review density. The standing project preference selects `plain` for user-facing technical explanations: use common language and add one short explanation when a narrower term is necessary, while preserving exact engineering work, evidence, identifiers, safety controls and authorization boundaries.
+
+## Cross-Host Collaboration
+
+- Codex and Claude Code share `AGENTS.md` and the same governance package. `CLAUDE.md` imports this entrypoint without maintaining another rule set. Project facts, decisions and current status must remain in their mapped owners, never solely in host-private memory or conversation history.
+- Use one writing host per work slice; another host may advise or verify read-only. The user carries its findings to the writing host, which records adopted findings. This does not limit agents inside one host, and the user may direct another arrangement.
+- Each new AI log entry names `Executor: <host product> (<model when known>)`. Name an independent verifier separately when one actually participated; leave unknown models unknown. Keep attribution at entry level, without sentence-level author labels.
+- Scope evidence to the host, model and environment observed. Self-review and independent verification are distinct; checks in one host do not prove another host loaded or followed the instructions. Confirm actual loading from current host documentation or a directly observed session and state that evidence ceiling.
 
 ## Project Map
 
@@ -110,6 +120,14 @@ Forbidden without explicit approval:
 - Publicly expose study history, review history, AI drafts, personal data, or credentials.
 - Treat browser-selected `person_id` as verified identity.
 
+## External Service Costs
+
+- Before introducing or changing Gemini, TTS, Neon, Vercel, R2 or other external charges, proactively state the supported amount/range, currency, billing unit/period, expected volume/frequency and relevant limits in the conversation. A document link alone is insufficient. Distinguish added cost from the existing total, one-time/recurring/usage charges, estimates from actual bills, and forecasts/alerts from hard caps; mention material exclusions.
+- Verify changing rates from current official prices or already-authorized billing evidence. State unknown prices, volume or account terms with supported partial figures or a formula; do not call an unknown amount zero or assume a nominal free allowance is still available. Include relevant allowance/expiry/overage conditions, retain sources and assumptions, and do not expand credential access to refine an estimate.
+- Disclose known costs before incurring them. If discovered after execution starts, distinguish incurred, pending, uncertain and future costs. Avoid unsupported labels such as negligible or too expensive.
+- Disclosure neither grants spending authority nor adds an approval gate. Continue within valid service, scope and budget authorization without silently switching providers or reducing quality because of cost alone. Preserve purchase/subscription, explicit spending limits, platform restrictions and the approval boundaries above. If an unknown prevents checking a spending limit, hold that affected action and continue independent work.
+- Reuse current pricing/authorization for unchanged usage and group repeated charges by batch or billing period. Refresh disclosure when price, expected volume, total exposure or authority changes. Keep useful assumptions and decisions in the existing relevant plan/evidence owner; do not add a billing subsystem, universal threshold or approval registry for this rule.
+
 ## Data Persistence Policy
 
 - Vocabulary records, timestamps, review history, typed attempts, AI enrichment, and self-rated rarity can be personal study data.
@@ -148,13 +166,14 @@ During implementation:
 - Update canonical docs only when their current claims would otherwise become stale.
 - Keep child/branch plan lineage explicit and avoid creating a peer plan for a bounded single-session change.
 - Preserve project-specific guards and tests before adapting generic templates.
+- Before adding a safeguard that expands system paths, operating burden or maintenance beyond the accepted design, explain the risk, existing protections, added costs and simpler alternatives, then wait for the user's choice. Ordinary error handling, required controls and already-approved safeguards remain in scope; continue unaffected work while a material choice is pending.
 - Place each control at the trust, authority, representation, persistence or irreversibility boundary that owns its failure mode. Prefer one canonical owner inside a boundary while retaining independent layers that control distinct failures.
 - Before building a complex shared, security-sensitive or maintenance-heavy capability, inspect suitable project, platform, standard-library or maintained open-source options and choose by fit and lifecycle risk.
 
 Before handoff:
 
 1. Update the Tier 3 Changelog/AI log when the change is material.
-2. Run the smallest meaningful validation that covers changed behavior and relevant safety invariants.
+2. Run the smallest meaningful validation that directly covers changed behavior and relevant safety invariants; for a repair, verify that the original problem is resolved and state the evidence limits.
 3. Reuse passing evidence only while its subject, relevant inputs, contract, verifier, acceptance rule and environment remain unchanged; invalidate the affected claims rather than unrelated evidence.
 4. Run an aggregate gate once when it already includes the relevant child checks; rerun a child only for diagnosis or distinct evidence. Stop when every affected acceptance claim and permanent safety invariant has current sufficient evidence.
 5. Review the diff and file inventory.

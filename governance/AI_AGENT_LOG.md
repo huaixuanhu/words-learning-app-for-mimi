@@ -1,5 +1,15 @@
 # AI Agent Log
 
+## 2026-10-15 — governance v0.8.4 adoption and development handoff
+
+- Task: 提交已验收的日志识别修复，将项目实际适配至治理 v0.8.4，然后等待用户未来的开发请求。
+- Executor: Codex (GPT-6)。本次治理升级由本工具检查和实现；未启动 Claude Code 或其他独立核验会话。
+- Plan agreed: 用户明确要求本地提交修复并完成 v0.8.4 适配。第一笔修复提交 `2835996` 只含原修复四文件；此前 v0.8.1 的未提交治理修改完整保留并纳入后续升级提交。项目、当前/目标能力和工作分类均为 Tier 3；推送、部署、线上配置与数据操作未获本次授权。
+- Changed files: `AGENTS.md`、`CLAUDE.md`、`ARCHITECTURE.md`、`CHANGELOG.md`、`governance/README.md`、`governance/contract.json`、`governance/DECISIONS.md`、`governance/AI_AGENT_LOG.md`、`governance/preflight.py`、`governance/test_preflight.py`、`plan_docs/PLAN_V1_MASTER.md`。
+- Reason: 核对已安装 v0.8.4 来源及 v0.8.1 至 v0.8.4 的累计变化，补齐跨工具共享事实、写入/核验职责、执行者记录、Codex 专用推理指引及既有授权/证据规则；保留修复后的日期标题识别和全部项目专用检查。具体来源、选择及边界由 `governance/DECISIONS.md` 的同日决定统一维护。
+- Validation: 第一笔修复此前通过 29 项治理测试及旧/新正则对照。本次 `npm run governance:check` 已通过结构检查、v0.8.4 Tier 3 严格预检及全部 29 项测试，`git diff --check` 通过；已核对结构检查器与安装源逐字一致、当前版本引用、Claude 文件引用入口，以及完整最新日志和实际修改范围。未运行应用测试或线上检查，因为产品源码与运行配置未变；未声称 Claude Code 新会话已加载本项目规则。
+- Safety notes: 未读取密钥、修改全局设置、调用外部付费服务、改变现有备份调度或线上数据；不推送、不部署。本次本地维护结束后等待用户再次提出开发需求，接续从 `AGENTS.md` → `governance/README.md` → 匹配计划进入；当前产品与备份状态仍由 V2.3 计划负责。
+
 ## 2026-10-15 15:26 AEDT — latest-entry heading repair
 
 - Task: 修复预检跳过最新日志条目的问题，新增回归测试并保留旧记录。Executor: Codex (GPT-6)；用户转述的 Claude Code 发现是本次输入，日期追溯由 Codex 只读子代理核对。
@@ -8,6 +18,12 @@
 - Reason: 从 2026-09-13 起的新条目未被旧规则选中，两份日志仍检查 `2026-09-04 00:19 AEST`。首个保留的对应提交 `0f242d5` 新增带标题的 CHANGELOG 条目和只有日期/时区的 AI log 条目，当时预检已经使用旧正则。修复后直接检查原顶端 2026-10-06 条目，确认 CHANGELOG 缺 `Reason:`，AI log 缺全部六个精确字段；这些既有遗漏保留原样。历史和源码证明选择行为及最早保留记录，不代表逐次重放过所有历史预检执行。
 - Validation: 先在旧正则下运行新增测试，7 项测试产生 7 个失败断言（6 项测试失败，其中条目边界测试含两个子场景），排除非日期标题/三级小节的测试通过；替换后 `python3 -B -m unittest governance.test_preflight.LatestEntryTests` 的 7 项全部通过。原顶端条目的缺字段诊断已直接复现。`npm run governance:check` 已通过结构检查、Tier 3 严格预检及全部 29 项测试；结果仅覆盖本地治理检查。
 - Safety notes: 未读取凭据或执行远端操作；未更改应用、数据库、备份、设计基线、必填字段或其他预检规则。未提交、推送或部署；本次补丁留在本地供用户确认。
+
+## 2026-10-06 AEDT — minimal governance v0.8.1 adaptation
+
+- 用户明确要求当前分支适配并从简；入口为干净 `main` / `3ed1f43`。核对安装 skill v0.8.1 与源提交 `792761b`，现有集中治理包完整，结构检查器与新版一致；设计主文档保持 `7.7-with-v2.3-home`，本轮不涉及界面验收。
+- 在 AGENTS 统一补充费用数字、计费单位、用量、来源/不确定性和授权复用规则；同步契约、当前架构/主计划引用及预检/测试版本。Tier 3、精确 Git 检查、秘密保护、既有外部权限与预算边界保持原样，无新增治理文件或运行功能。
+- 验证通过：`npm run governance:check` 的结构检查、Tier 3 严格预检及 22 项测试，另通过 `git diff --check`；费用语义对照 skill 原文人工复核。不把结构/文本检查当作实际账单核验或未来代理必然遵守的证明。本轮不读取凭据、执行云端操作、推送或部署。
 
 ## 2026-10-04 AEDT — authorized remote synchronization
 

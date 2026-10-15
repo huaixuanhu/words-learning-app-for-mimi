@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "source_skill_version": "0.8.0",
+  "source_skill_version": "0.8.4",
   "package_root": "governance",
   "coverage": ["."],
   "design": {
