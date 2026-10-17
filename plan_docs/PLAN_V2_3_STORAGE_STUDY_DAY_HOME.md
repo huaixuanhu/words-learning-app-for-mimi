@@ -3,7 +3,7 @@
 Created: 2026-09-13 AEST
 Last updated: 2026-10-17 AEDT
 
-Current work: Stage 2.3.14 在 `codex-anoria/library-bulk-delete` 完成词库多选删除本地实现；用户随后授权先提交，再用 Neon staging 合成数据实际验证，成功后提交、推送和部署。该阶段持有本次验证/发布事实，执行前线上状态仍由 Stage 2.3.12 及 2026-10-15 发布记录持有。
+Current work: Stage 2.3.14 已首次提交为 `5f1ecd4`，Neon staging 合成数据验证及清理均通过，正在按用户授权完成证据提交和 Git/Vercel 发布。该阶段持有本次验证/发布事实，发布前线上状态仍由 Stage 2.3.12 及 2026-10-15 发布记录持有。
 
 Source plan:
 - `plan_docs/PLAN_V2_MASTER.md`
@@ -268,12 +268,18 @@ GitHub Production deployment `7091357591` 绑定 `185ae78f1fdaae245750cd6a1ba184
 
 - Agreement：用户 2026-10-17 确认本地小分支 `codex-anoria/library-bulk-delete`，在 Library 勾选任意词条、全选当前搜索/筛选结果及清空选择；手机、电脑与键盘均可操作。搜索、筛选或学习者改变后清空选择。
 - 用户追加要求两次确认：第一次显示待删除清单与关联复习记录删除提示，按钮为左 `No · 取消`、右 `Yes · 继续`；第二次询问“再次确认真的确认要删除吗？”，交换为左 `Yes · 确认删除`、右 `No · 取消`。任一步取消或 Escape 均不写入；提交期间阻止重复点击和关闭。第二步重新打开对话框并将焦点置于可滚动清单，避免连续 Enter 触发最终删除。
-- Current/target/working authority：Tier 3。范围仅代码、合成数据测试、现有责任文档；不包含提交、推送、部署、真实学习数据操作、凭据或外部服务调用。历史发布授权不扩大本阶段范围。
+- Initial authority：当前、目标与工作均为 Tier 3；首轮仅代码、合成数据测试、现有责任文档，未包含提交或外部操作。本阶段随后追加的执行授权见下文。
 - Implementation：`vocabulary.deleteMany` 携带固定所选 ID，浏览器存储与 Postgres 均先核对完整列表。Postgres 在一个 Transaction（事务）内锁定当前学习者的全部所选行，再一次删除；空、重复、无效、失效或其他学习者 ID 整体拒绝。沿用已有保存结果核对机制，未知结果不自动重发，只有全部选中 ID 已不存在才判定预期删除状态成立。
 - Data contract：移除所选词条、关联复习状态/事件、AI 草稿与词汇关联，断开 AI 运行记录的来源引用；保留导入批次审计、创建事实/撤销事实、学习日计划及未选词条。即使选中整个批次也不调用批次撤销。Schema 6、JSON backup Version 4、原单词删除及整批撤销行为保持。
 - Design：沿用现有 sage 视觉、原生复选框和 ResponsiveDialog；选择状态、禁用状态、成功反馈和错误状态明确。设计责任仍在 Stage 7 主文档，不新增平级计划或设计文件。
 - Initial validation（首轮本地验证）：完整 Vitest 112 个文件 / 860 项通过，1 项既有远端数据库测试跳过；ESLint、typecheck、三种备份 fixture（合成样本）dry-run 通过。隔离临时目录只复制源代码与公共资源，未复制环境文件，在清空继承环境后完成 Next webpack 正式构建；本机浏览器使用该构建及合成数据完成 390×844、1280×900 两种尺寸验证，确认两步取消、交换按钮、键盘焦点/Enter/Escape、跨批次选词、删除后刷新持久性、保留批次记录、搜索清空与筛选全选。未发现页面异常或横向溢出；截图及结果位于忽略目录 `local_artifacts/bulk-delete-verification/`。浏览器测试请求限制为本机来源。首轮 lint 通过后复制验证脚本引入的工作区遗漏及补验见下条。
-- Review and status：子代理对 UI/客户端与本地数据删除进行了独立源码复核，后端由实现者自查；无阻断发现。新测试同时覆盖全部选词消失才解除未知结果状态、单次请求、失效/其他学习者 ID 整体拒绝与重复点击。无真实 Postgres 执行或 Production 页面验收；当前完成本地实现，未提交、推送或部署。
+- Initial review and status：子代理对 UI/客户端与本地数据删除进行了独立源码复核，后端由实现者自查；无阻断发现。新测试同时覆盖全部选词消失才解除未知结果状态、单次请求、失效/其他学习者 ID 整体拒绝与重复点击。首轮仅完成本地实现；当时无真实 Postgres 执行、提交、推送、部署或 Production 页面验收。
 - 2026-10-17 交叉验证简修：用户转述 Claude Code 发现并要求从简修改。Codex 复现验证脚本引起的 3 项 lint 错误，将脚本移出项目并保留截图/结果，完整 `npm run lint` 已重新通过。批量失效选词提示与服务端统一；客户端只在计算操作身份时对 ID 副本排序，使同一集合反序仍可核对未知结果，其他集合继续受阻。修复前两条回归断言失败，修复后相关 77 项测试与 typecheck 通过；界面及切换学习者重置行为保持。最新事实由同日 AI 日志条目记录。
 - 后续执行授权：用户明确要求先提交现有修改，再在 Neon `staging` 用合成数据验证批量删除及关联清理；没有错误后提交、推送和部署。沿用当前 GitHub/Vercel/Neon 项目与既有凭据，只创建和清理本次合成数据，不执行 Production 数据写入、数据库迁移、凭据或配置变更。普通推送功能分支及 `main` 快进发布在本次范围内；验证失败先修复并重验，未通过不发布。
-- 发布前待办：核实 staging 固定身份与 Schema 6，实际验证选中词条及关联清理、未选和另一合成学习者保留、审计记录保留、整组拒绝及本次数据清理；随后记录候选提交与验证结果，通过现有 Git-linked Vercel 流程发布并核对提交/部署身份。当前真实验证尚未执行。
+- 首次提交：`5f1ecd4c03caecd1031f5e9f7569d94adf57c56d`；发布前实时核对远端 `main` 仍为其父提交 `ef1238b8f118b75dcf6783f311b441a40b0875e4`。
+- Staging 实证：2026-10-17 `10:29:24Z–10:29:49Z`，显式启用 `scripts/v2-3-bulk-delete.staging.test.ts`，直接调用应用 `repository.vocabulary.deleteItems`。既有 Keychain/源码固定项目检查首次发现 staging 为 archived；沿用已有归档连接入口唤醒后，复核同一身份 ready、数据库/角色与 Schema 6 表/字段才写入。未修改目标检查、结构或配置。
+- 结果：2 个临时学习者、5 个词、2 个批次。跨批次删除 Recognition/Active 各 1 词；词条、复习状态、事件、AI 草稿均从 5 变 3，关联从 4 变 1。5 条 AI 运行保留，其中两条来源置空；5 条创建事实和 2 条批次审计保留，包括被删空的批次。未选及另一学习者的记录逐字段一致。空、重复、无效、失效及其他学习者 ID 均整体拒绝且快照不变。最终清理本次所有者数据并逐表验证残留为 0。
+- 安全回执：忽略目录 `local_artifacts/bulk-delete-verification/staging-eed4cf80-1a85-4640-a845-9fb2959a9b0a.json`；绑定候选、合成对象 ID、数量及清理状态，不含凭据或真实学习内容。目标摘要 `a7b5d1254900d47d1326accea2885845a1f7678dfbf6c5fa1c3a6d08f55ab973`。普通测试默认跳过该用例，后续执行仍须对应 staging 写入授权。
+- 本轮本地验证：ESLint、typecheck、完整 Vitest 112 文件 / 861 项通过，2 项远端用例默认跳过；上述真实 staging 用例单独 1 项通过。新增脚本修正 UUID 数组过窄的静态类型，未改变产品代码。无凭据临时目录 `/private/tmp/mimi-bulk-release.mimpuh` 完成 Next webpack 构建；备份 fixture 与页面验证复用首轮相同功能实现的结果。
+- 费用及边界：沿用现有 Neon Launch，执行前按官方 `US$0.106/CU-hour` 及现有 0.25–8 CU 披露 10 分钟计算约 `US$0.0044–0.1413`，不含存储、历史、流量，不作为实际账单或硬上限；休眠字段 0 对应默认 5 分钟，未改配置。[Neon pricing](https://neon.com/pricing)、[Neon API rule](https://github.com/neondatabase/ai-rules/blob/main/neon-api-projects.mdc)。未调用 AI/TTS 或写入 Production 学习数据。Vercel 沿用既有 Git 部署，不新增套餐或服务。
+- 发布待办：提交安全证据后推送功能分支，确认 Preview，再将 `main` 快进推送并核对 Production 提交/部署/域名；线上仅验收读取与取消，不执行真实删除。

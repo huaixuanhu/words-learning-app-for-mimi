@@ -1,5 +1,16 @@
 # AI Agent Log
 
+## 2026-10-17 — 批量删除 staging 实证与发布准备
+
+- Executor: Codex (GPT-6; exact model variant unavailable). 本轮没有新增独立宿主核验。
+- Task: 先提交，再用 Neon staging 合成数据实测，成功后提交、推送并部署；bounded。
+- Plan agreed: 用户明确追加授权，V2.3 Stage 2.3.14 持有范围。首次提交 `5f1ecd4` 已完成；限既有服务和凭据、本次合成数据、现有 Git/Vercel 发布，不含 Production 数据写入、迁移、配置或套餐变更。
+- Working tier: 当前、目标及工作均为 Tier 3。
+- Changed files: 默认跳过的 `scripts/v2-3-bulk-delete.staging.test.ts`、V2.3 计划、Changelog 与本日志；产品代码与首次提交一致。
+- Reason: 用真实数据库补齐模拟 SQL 测试的证据缺口，保留目标校验、合成对象所有权和最终清理证据。
+- Validation: staging 实测 1 项通过；跨批次删除及全部关联清理、审计保留、5 类非法输入整体拒绝、未选及另一学习者逐字段不变均通过，清理后逐表残留为 0。完整 lint、typecheck、112 文件 / 861 项本地测试通过（2 项远端用例默认跳过），隔离无凭据的 Next webpack 构建通过。治理结构检查、严格预检与 29 项治理测试通过，差异格式检查通过。详细安全回执与时间见 Stage 2.3.14；发布结果在完成后接续。
+- Safety notes: 首次严格检查识别 archived staging，沿用既有归档连接入口唤醒，复核同一身份 ready 才写入；未弱化检查。连接凭据只在进程内使用，无 Production 数据写入、AI/TTS 请求或配置变化；已披露计算估算。脚本准备阶段修正 UUID 数组静态类型，未改产品行为。
+
 ## 2026-10-17 — Claude Code 交叉验证后的简修
 
 - Subsequent authority: 用户随后明确授权先提交本地修改，在现有 Neon staging 使用合成数据验证批量删除与关联清理，成功后提交验证记录、推送并部署。该执行从 Stage 2.3.14 接续；只使用既有凭据和服务，合成数据创建/清理限本次所有权，Production 学习数据写入与数据库迁移均不在范围内。以下简修的“未提交”等为当时状态。
