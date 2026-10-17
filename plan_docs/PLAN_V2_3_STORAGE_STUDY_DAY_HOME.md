@@ -274,6 +274,7 @@ GitHub Production deployment `7091357591` 绑定 `185ae78f1fdaae245750cd6a1ba184
 - 月度 R2 的历史来源与旧 Schema 5 备份工具仍固定旧目录，已将两处路径收敛到项目 `local_backups/`；保留固定位置检查、文件名限制、禁止链接目录、加密及恢复核验。月度 R2 暂存、目的地、任务和密钥保持。
 - 本地验证：3 文件 76 项备份测试及定向 ESLint 通过；迁移后通过默认新路径调用月度流程，以真实的 9 月/10 月密文和原始证据完成来源验证，存储仅为内存模拟，数据库调用和远端调用均为 0。10 个迁入文件及原有文件再次校验一致。未新增解密或恢复演练；历史恢复验证与云端上传证据保留其原范围。
 - 私有证据：`local_artifacts/backup-location-consolidation-2026-10-18/move-receipt.json`、`flow-verification.json`。路径修正和记录仅本地提交，保持既有备份要求的干净提交；提交不会授权推送或部署。
+- 推送收尾授权：用户随后明确确认“变更进行推送收尾”。本地路径修正已提交为 `ca66234`；推送前工作区干净，远端 main 为 `fd428ae`，仅相差该笔提交。授权将修正及本条记录普通推送至既有 origin/main，并核验由原有 Git 连接触发的 Vercel 自动构建；不改变运行配置或连接数据库。前述“不推送”保留迁移时的授权边界；本次精确推送及自动构建结果由私有 `local_artifacts/backup-location-consolidation-2026-10-18/push-result.json` 持有。
 
 ## Stage 2.3.14 Library 自选批量删除
 
