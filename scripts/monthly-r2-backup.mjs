@@ -1,5 +1,4 @@
 import { chmod, mkdir, open, readdir, rm, rmdir } from "node:fs/promises";
-import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { backupDateKey, runMonthlyProductionBackup, verifiedMonthlyResult } from "./daily-production-backup.mjs";
@@ -12,7 +11,7 @@ const DEFAULTS = {
   attemptRoot: join(ROOT, "local_artifacts", "daily-production-backups"),
   evidenceRoot: join(ROOT, "local_artifacts", "v2-1-production"),
   stagingRoot: join(ROOT, "local_artifacts", "monthly-r2-staging"),
-  legacyRoot: join(homedir(), "Documents", "Mimi Vocabulary Backups"),
+  legacyRoot: join(ROOT, "local_backups"),
 };
 const NAMESPACE = "monthly-local-v1";
 const DIGEST = /^[a-f0-9]{64}$/u;

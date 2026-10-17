@@ -1,9 +1,9 @@
 # V2.3 数据加载、学习日与 Home 修复
 
 Created: 2026-09-13 AEST
-Last updated: 2026-10-17 AEDT
+Last updated: 2026-10-18 AEDT
 
-Current work: Stage 2.3.15 已完成当前备份及恢复验证、精确归档、3 词自编双语补入和独立读回。修复提交 `724078e` 已从 codex-anoria/mimi-save-recovery 推送、快进合入 main 并部署；正式域名、线上读取与鉴权已核验。Mimi 原设备的旧保存标记需本人按引导核对后继续。个人数据数量、词条 ID 与完整核验回执只保留在受限本机目录。
+Current work: Stage 2.3.15 已完成当前备份及恢复验证、精确归档、3 词自编双语补入和独立读回。修复提交 `724078e` 已从 codex-anoria/mimi-save-recovery 推送、快进合入 main 并部署；正式域名、线上读取与鉴权已核验。Mimi 原设备的旧保存标记需本人按引导核对后继续。2026-10-18 历史本机备份归并及路径适配见 Stage 2.3.13 补记。个人数据数量、词条 ID 与完整核验回执只保留在受限本机目录。
 
 Source plan:
 - `plan_docs/PLAN_V2_MASTER.md`
@@ -266,6 +266,14 @@ GitHub Production deployment `7091357591` 绑定 `185ae78f1fdaae245750cd6a1ba184
 - 官方来源（2026-10-04）：[R2 pricing](https://developers.cloudflare.com/r2/pricing/)、[bucket creation](https://developers.cloudflare.com/r2/buckets/create-buckets/)、[R2 credentials](https://developers.cloudflare.com/r2/api/tokens/)。
 - 客户端边界依据：[rclone lsjson](https://rclone.org/commands/rclone_lsjson/)、[rclone cat](https://rclone.org/commands/rclone_cat/)。
 - 2026-10-04 用户追加要求“OK 帮我推送到远端”：授权将当前 `main` 已验证的六个本地提交及此次记录普通推送到既有 `origin/main`。起点为干净 `2b5e978`，远端实查仍为 `69211cd`，没有分叉；应用源码、依赖锁和 Vercel 配置未变。沿用现有 Git-linked Vercel 自动构建并只读查看结果，不另行执行部署命令或修改数据库/账户配置。86 项受影响测试与既有通过证据保持适用；推送前另验收文档治理、提交范围及秘密文件隔离。确切推送 SHA、远端比对和自动构建状态留在忽略回执 `local_artifacts/r2-backup-migration/push-result.json`，不把待运行或成功推送等同于部署完成。
+
+### 2026-10-18 历史本机备份统一位置
+
+- 用户明确确认将旧目录 10 份历史词库备份移至项目根 `local_backups/`，保留文件名、目录结构及既有备份/恢复流程。当前、目标及工作仍为 Tier 3；仅本机文件迁移和必要路径适配，不推送、部署或连接远端。
+- 原目录根部 8 份及 `monthly-local-v1/` 内 2 份均已逐字节摘要核验后迁入，原有备份保持，合计 11 份；旧空目录移除。原始恢复/上传回执不改写，私有迁移清单负责旧位置到新位置映射。目录 0700、归档 0600，仍排除 Git/Vercel。
+- 月度 R2 的历史来源与旧 Schema 5 备份工具仍固定旧目录，已将两处路径收敛到项目 `local_backups/`；保留固定位置检查、文件名限制、禁止链接目录、加密及恢复核验。月度 R2 暂存、目的地、任务和密钥保持。
+- 本地验证：3 文件 76 项备份测试及定向 ESLint 通过；迁移后通过默认新路径调用月度流程，以真实的 9 月/10 月密文和原始证据完成来源验证，存储仅为内存模拟，数据库调用和远端调用均为 0。10 个迁入文件及原有文件再次校验一致。未新增解密或恢复演练；历史恢复验证与云端上传证据保留其原范围。
+- 私有证据：`local_artifacts/backup-location-consolidation-2026-10-18/move-receipt.json`、`flow-verification.json`。路径修正和记录仅本地提交，保持既有备份要求的干净提交；提交不会授权推送或部署。
 
 ## Stage 2.3.14 Library 自选批量删除
 

@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { homedir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 export const V2_STAGE8_3_BACKUP_METHOD =
   "postgres17-custom-age-keychain-v1";
@@ -8,10 +9,10 @@ export const V2_STAGE8_3_BACKUP_EVIDENCE_KIND =
   "v2-8-3-encrypted-backup-restore-v1";
 export const V2_STAGE8_3_BACKUP_KEYCHAIN_SERVICE =
   "mimi-vocabulary-backup-age-identity-v1";
-export const V2_STAGE8_3_BACKUP_DIR = join(
-  homedir(),
-  "Documents",
-  "Mimi Vocabulary Backups",
+export const V2_STAGE8_3_BACKUP_DIR = resolve(
+  dirname(fileURLToPath(import.meta.url)),
+  "..",
+  "local_backups",
 );
 export const V2_STAGE8_3_BACKUP_IDENTITY_DIR = join(
   homedir(),

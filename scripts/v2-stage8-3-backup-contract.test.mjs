@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
@@ -211,14 +212,16 @@ describe("V2-8-3 Gate 3 inventory and evidence contract", () => {
     });
   });
 
-  it("permits only the fixed external backup filename", () => {
+  it("permits the project-local archive and rejects the retired external location", () => {
+    const filename = "mimi-production-schema5-20260723T010203Z-abcdef123456.dump.age";
     const valid = join(
-      homedir(),
-      "Documents",
-      "Mimi Vocabulary Backups",
-      "mimi-production-schema5-20260723T010203Z-abcdef123456.dump.age",
+      resolve(dirname(fileURLToPath(import.meta.url)), "..", "local_backups"),
+      filename,
     );
     expect(assertBackupFileName(valid)).toBe(valid);
+    expect(() => assertBackupFileName(join(homedir(), "Documents", "Mimi Vocabulary Backups", filename))).toThrow(
+      /outside the approved location/u,
+    );
     expect(() => assertBackupFileName(join(process.cwd(), "backup.dump.age"))).toThrow(
       /outside the approved location/u,
     );
