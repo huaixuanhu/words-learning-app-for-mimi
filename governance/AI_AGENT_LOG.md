@@ -1,5 +1,15 @@
 # AI Agent Log
 
+## 2026-10-17 23:37 AEDT — Mimi 保存恢复发布与补导入核验
+
+- Executor: Codex (GPT-6; exact model variant unavailable). 发布前同宿主子代理只读复核无阻断发现，不声称独立宿主验收。
+- Task: 完成三词补入、应用提交、推送、合入 main、部署及核验；bounded。
+- Plan agreed: 用户明确确认上述操作；V2.3 Stage 2.3.15 持有范围。当前、目标及工作均为 Tier 3，沿用既有项目、身份、服务与费用边界。
+- Changed files: 本次收尾更新 AGENTS、Architecture、设计状态、V2.3 计划和两份日志；应用源码保持 `724078e`，私有备份、内容与执行回执不进入公共仓库。
+- Reason: 将实际导入、Git 与部署结果同步到当前责任文件，并保留 Mimi 原设备仍需核对的证据边界。
+- Validation: 正式 UI 一次保存 3 词成功；前后独立只读事务确认仅新增授权词条、批次与创建事实，全部旧行与其他表不变。应用 Preview / Production 均 success；Vercel Ready / Production / Current、main 精确提交及正式域名相符。部署后 Library 内容和分类与私有读回一致，浏览器错误日志为空，匿名请求 401。复用摘要相同的 871 项测试、定向恢复检查、lint、typecheck、三种备份检查与隔离构建证据；纯文档收尾运行治理与差异检查，最终部署身份见私有 release-final.json。
+- Safety notes: 无整库恢复、永久删除、结构迁移、其他学习者修改、AI/TTS 请求、凭据、提供方或套餐变化。Vercel connector 对现有团队返回 403，使用原有 Git 集成与已登录页面完成核验，没有扩大权限。Mimi 原设备无法在本机访问，最初网络原因仍未证实；提供明确恢复步骤，不声称已经在其设备完成验收。纯文档收尾按同一授权推送并观察构建，功能分支保留。
+
 ## 2026-10-17 — Mimi 精确归档与旧保存恢复
 
 - Executor: Codex (GPT-6; exact model variant unavailable). 本轮实现和验证由 Codex 完成；发布前另一 Codex 子代理进行只读源码复核，无阻断发现，属于同宿主分工复核。

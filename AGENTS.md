@@ -45,7 +45,7 @@
 - Canonical V2.1 repair and release: `plan_docs/PLAN_V2_1_DUPLICATE_IMPORT_DEDUPLICATION.md` and `plan_docs/PLAN_V2_1_PRODUCTION_DUPLICATE_REPAIR_RELEASE.md`.
 - Canonical V2.2 product and release: `plan_docs/PLAN_V2_2_REVIEW_CADENCE_CARD_AUDIO.md` and `plan_docs/PLAN_V2_2_PRODUCTION_RELEASE.md`.
 - Canonical V2.3 storage, study-day, Home and Production release: `plan_docs/PLAN_V2_3_STORAGE_STUDY_DAY_HOME.md`.
-- Current V2.3 continuation: Stage 2.3.15 owns the save-recovery candidate, the completed exact-list Mimi archive and the project-local backup location; Stage 2.3.14 retains the latest deployed application release.
+- Current V2.3 continuation: Stage 2.3.15 owns the deployed save-recovery repair, the completed exact-list Mimi archive, the three-word supplement and the project-local backup location; Stage 2.3.14 retains the preceding Library bulk-delete release.
 - Canonical V1 launch record: `plan_docs/PLAN_V1_STAGE6B_P1_G_C_5_LIVE_PRODUCTION_EXECUTION.md`.
 - Active data lifecycle policy: `plan_docs/PLAN_V1_STAGE8_5_DATA_LIFECYCLE_ENVIRONMENT_STRATEGY.md`.
 - Version hold for SSO（Single Sign-On，单点登录）and confidential per-person isolation: `plan_docs/PLAN_VERSION_HOLD_MULTI_USER_CONFIDENTIAL_ISOLATION.md`.
@@ -55,7 +55,7 @@
 
 ## Current Product And Runtime
 
-- V2.3 is live on the canonical Production domain behind Basic Auth（基础认证）. Vercel Production runs the `main` application in `syd1`; `plan_docs/PLAN_V2_3_STORAGE_STUDY_DAY_HOME.md` Stage 2.3.14 owns the latest Library bulk-delete release and acceptance evidence; Stage 2.3.12 retains the original V2.3 release record.
+- V2.3 is live on the canonical Production domain behind Basic Auth（基础认证）. Vercel Production runs the `main` application in `syd1`; `plan_docs/PLAN_V2_3_STORAGE_STUDY_DAY_HOME.md` Stage 2.3.15 owns the latest save-recovery release and acceptance evidence; Stage 2.3.14 retains the bulk-delete release and Stage 2.3.12 the original V2.3 release record.
 - Neon `main` is Production Schema Version 6 with the unique `(person_id, normalized_text)` vocabulary identity. Neon `staging` is the Development / protected Preview baseline at Schema 6.
 - Production and non-production credentials are distinct. Historical recovery points remain governed by the V2-8-3, V2.1 and V2.2 release records; V2.3 Stage 2.3.11 owns the native Neon backup policy, and Stage 2.3.13 owns independent monthly R2 copies, credential pointers and current scheduler status.
 - Gemini enrichment and Google Cloud Standard-C TTS are enabled under independent Production guards. Their exact active contracts are owned by the V2 master/cutover plans and must not be relaxed through incidental work.

@@ -3,7 +3,7 @@
 Created: 2026-09-13 AEST
 Last updated: 2026-10-17 AEDT
 
-Current work: Stage 2.3.15 已完成当前备份及恢复验证、精确名单的可恢复归档和独立读回。用户现已确认补入 3 词及自编双语例句，并授权提交、推送、合入 main 与既有正式站部署；在 codex-anoria/mimi-save-recovery 执行，发布结果由本阶段接续。个人数据数量、词条 ID 与完整核验回执只保留在受限本机目录。
+Current work: Stage 2.3.15 已完成当前备份及恢复验证、精确归档、3 词自编双语补入和独立读回。修复提交 `724078e` 已从 codex-anoria/mimi-save-recovery 推送、快进合入 main 并部署；正式域名、线上读取与鉴权已核验。Mimi 原设备的旧保存标记需本人按引导核对后继续。个人数据数量、词条 ID 与完整核验回执只保留在受限本机目录。
 
 Source plan:
 - `plan_docs/PLAN_V2_MASTER.md`
@@ -307,3 +307,8 @@ GitHub Production deployment `7091357591` 绑定 `185ae78f1fdaae245750cd6a1ba184
 - Release authority：用户本轮明确确认补入三词、提交修复、推送、合入 main 并部署及核验。范围限既有 GitHub/Vercel/Neon 项目、原有身份与运行保护；不进行结构迁移、整库恢复、额外清理、AI/TTS 调用、密钥或定时任务变更。沿用现有服务费用和 Git 部署；发布后仍需 Mimi 在原设备完成旧标记核对，本机不能代替该设备验收。
 
 - Pre-release review：另一 Codex 子代理只读复核恢复路径，无阻断发布发现；此为同宿主分工复核。保守的摘要比较仍按记录顺序，SQL 并列排序时可能要求重新核对；当前两个学习者均有持久设置行，未触发缺省设置时间变化问题。完整私有数据证据只保留在忽略目录，公共文档仅记录实施及验证结论。
+
+- Release result：应用提交 `724078eed2a9dcebb14f4f3f013448ff6a6a861b` 已推送 feature 分支；Preview `dpl_5cuwZcc8AgSeu9KfmvyT3ypP77fu` 于 `2026-10-17T12:33:17Z` 获 GitHub deployment success。确认 origin/main 无外部分叉后快进并推送 main；Production `dpl_AEawrVtb81z9ErrkWHKsMfTaZy5T` 于 `2026-10-17T12:34:22Z` 获 success。Vercel 页面显示 Ready / Production / Current，来源 main 与精确提交匹配，正式域名绑定正确。
+- Production acceptance：部署后重新载入正式 Library，补入词及中英文例句、当前分类数量与私有数据库读回一致；浏览器错误日志为空，匿名 Library 请求仍为 401。未在 Production 注入模拟旧标记或额外归档，恢复路径使用已验证且摘要一致的本地证据；Mimi 原设备不可访问，不能将本机读取冒充该设备验收。截图和应用部署回执保存在忽略目录 `local_artifacts/mimi-save-recovery/`。
+- User handoff：关闭网站其他页面，重新打开正式站并选择 Mimi；如仍有待确认提示，Retry 成功后核对词库与最近操作，点击“核对后继续”，勾选已关闭其他页面且完成核对，再点“使用当前云端数据继续”。三词已保存，不重复导入；不需要清空浏览器数据或恢复整库。读取失败或内容变化时保留保护并重新核对。
+- Release closeout：本次只同步当前导航、Architecture、设计状态及日志，不改应用源码；按用户既有授权提交、推送纯文档收尾，并核验自动触发的最后一次部署。最终提交与部署身份保存在私有 `release-final.json`，避免为记录自身提交重复提交。功能分支保留。
