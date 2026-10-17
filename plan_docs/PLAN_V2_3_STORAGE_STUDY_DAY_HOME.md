@@ -3,7 +3,7 @@
 Created: 2026-09-13 AEST
 Last updated: 2026-10-17 AEDT
 
-Current work: Stage 2.3.14 的 Library 批量删除已发布。首次提交 `5f1ecd4` 经 Neon staging 合成数据实际验证及清理，证据提交 `0394cd4` 已通过 Preview、快进 `main` 并成为 Ready 的 Production；正式页面读取、两次确认与取消验收通过。该阶段持有本次发布事实；Stage 2.3.12 和 2026-10-15 条目保留历史证据。
+Current work: Stage 2.3.15 已完成当前备份及恢复验证、精确名单的可恢复归档和独立读回。用户现已确认补入 3 词及自编双语例句，并授权提交、推送、合入 main 与既有正式站部署；在 codex-anoria/mimi-save-recovery 执行，发布结果由本阶段接续。个人数据数量、词条 ID 与完整核验回执只保留在受限本机目录。
 
 Source plan:
 - `plan_docs/PLAN_V2_MASTER.md`
@@ -14,6 +14,7 @@ Derived from:
 - 用户 2026-09-13 的 V2.3 修复请求，以及随后确认的每日 06:00 刷新时间。
 
 Scope:
+- 用户 2026-10-17 要求调查并修复 Mimi 保存故障；先备份当前数据，再按提供的 3,972 个精确 ID 归档，重新检查后来学习的词并跳过，保留全部历史及其他学习者。随后先因例句缺失跳过，现已确认使用 Codex 自编双语例句补入 3 词，并授权提交、推送、合入 main 与部署；本机备份统一存入项目根目录的专用文件夹。
 - 用户 2026-10-17 确认 Library 自选批量删除，并要求两次弹窗确认、第二次交换 Yes / No 左右顺序；本轮范围见 Stage 2.3.14。
 - 用户 2026-10-04 请求将独立副本改存其现有 R2，并将 `local_key` 设为原始密钥位置的快捷指针目录；最新目的地、凭据和任务切换由 Stage 2.3.13 拥有。
 - 用户随后明确要求“完整推送和部署”；本计划 Stage 2.3.12 拥有 V2.3 GitHub 推送、`main` 快进及既有 Vercel Production 发布和验证。
@@ -26,7 +27,8 @@ Scope:
 - 修正正式构建发现的原有 TTS 路由辅助函数导出位置；原服务选择与处理逻辑逐字保留。
 
 Non-Scope:
-- 本次发布沿用既有项目、域名、鉴权和凭据，不进行数据库迁移、学习记录写入/清理/恢复或凭据修改。现有 Neon Launch 套餐升级、常态化备份和后续 GitHub/Vercel 发布分别由用户请求授权；不升级 Vercel 团队套餐，除 Stage 2.3.13 明确授权的现有 R2 备份目的地外，不添加其他付费服务。Home 正常启动可能生成当前学习日计划，作为线上验收的有限运行副作用单独记录。
+- Stage 2.3.15 不包含永久删除、整库恢复、历史计划改写、其他学习者数据修改或数据库结构迁移。旧阶段的发布授权已执行结束；本次代码提交、推送与部署分别记录实际授权及结果。
+- Stage 2.3.12 / 2.3.14 的发布沿用既有项目、域名、鉴权和凭据，未授权数据库迁移、学习记录写入/清理/恢复或凭据修改；Stage 2.3.15 的精确归档有独立用户授权。现有 Neon Launch 套餐升级、常态化备份和后续 GitHub/Vercel 发布分别由用户请求授权；不升级 Vercel 团队套餐，除 Stage 2.3.13 明确授权的现有 R2 备份目的地外，不添加其他付费服务。Home 正常启动可能生成当前学习日计划，作为线上验收的有限运行副作用单独记录。
 - 不改变 AI/TTS 服务、额度、自然日计账规则、鉴权或数据发送范围。
 - 不改写旧计划窗口、历史事件和已有 FSRS 参数；不将当前读取错误解释成已经证实的数据删除。
 
@@ -37,6 +39,7 @@ Authority and safety:
 - 本地测试不能单独证明线上恢复或发布；线上身份与验收由 Stage 2.3.12 记录。后续云端备份配置、既有目的地的每月加密副本和 US$5 提醒由用户明确授权；US$10 总账单硬上限需按平台实际能力说明，不将提醒冒充封顶。
 
 Exit criteria:
+- Stage 2.3.15：旧未知保存经新鲜读取及用户核对后可解除本机阻塞，恢复动作不写入云端；精确归档有当前恢复验证备份、执行时历史重查及保留数据的前后核验，3 词按最新确认的自编双语内容补入，完成发布和线上核验。
 - Stage 2.3.14：任意所选词条在两次明确确认后一次性删除，取消不写入，保留未选词条、其他学习者及导入审计记录；完成本地交互与失败路径验证。
 - 明确区分成功的云端读取、服务器明确指定的本地运行和读取失败；失败时保留学习者选择、提供重试并保护数据写入。
 - 空闲数据库连接异常可被处理，查询和事务错误仍向调用方报告，写入不自动重放。
@@ -285,3 +288,22 @@ GitHub Production deployment `7091357591` 绑定 `185ae78f1fdaae245750cd6a1ba184
 - 发布完成：证据提交 `0394cd4072492d432e6604fe4ae8e558d2bb6238` 已普通推送功能分支，Preview `dpl_F7JdvLqk9yyAbGSVVUYaxw8sCvMZ` 于 `2026-10-17T10:33:41Z` 记录 success，控制台 Ready。`main` 随后从 `ef1238b` 快进至该提交并推送；Production `dpl_GC5TEXKNTNQghjdRMxRfPQHhoxgy` / GitHub deployment `7138318587` 于 `10:34:56Z` 记录 success。控制台核对 Ready / Production / Current Domains、精确来源提交及正式域名 `words-learning-app-for-mimi.vercel.app`。[应用发布记录](https://vercel.com/anorias-projects/words-learning-app-for-mimi/GC5TEXKNTNQghjdRMxRfPQHhoxgy)。
 - 线上验收：沿用现有浏览器登录，直接访问 `/library`；正常读取并显示 500 条，选择 2 条验证两步取消。第一步 No/Yes 的横坐标为 578/783，第二步 Yes/No 为 578/782，标题和安全初始焦点符合要求。没有点击最终确认删除；退出选择、刷新仍为 500 条，页面 console error 为 0。匿名 Library 请求返回 401。截图保存在忽略目录 `local_artifacts/bulk-delete-verification/production-second-confirmation.png`，不纳入 Git。此项只证明有界线上读取及取消流程，真实删除证据来自合成 staging。
 - 发布收尾：同步本计划、AGENTS 导航、Architecture、设计状态及两份日志，产品源码不变；本次纯文档提交继续按用户授权推送，因既有 Git 连接再触发一次构建，已在会话披露。应用发布身份以上述候选为证据锚点；最终文档提交与部署核对回执保存在忽略目录 `local_artifacts/bulk-delete-verification/release-final.json`，不会为记录自身提交哈希重复创建提交。
+
+## Stage 2.3.15 Mimi 保存恢复与精确归档
+
+- Agreement：用户要求使用分支调查、修复并处理明确的 Mimi 名单；授权当前数据备份、现有服务的必要读取和精确名单的可恢复归档。工作分支 `codex-anoria/mimi-save-recovery` 从干净 `main` / `36a73e7` 建立。当前、目标与工作均为 Tier 3；本阶段容量为 dense_but_coherent，数据处理与应用恢复分别保留验收结果。
+- Data boundary：只变更名单中仍未学习词条的归档状态；任一复习状态或复习事件均作为已学习依据，执行时重新核对。全部词条内容、学习历史、当前计划、原有归档和另一学习者的数据须保留。未列入名单的词条全部逐字段保护，覆盖用户要求保留的重叠词与新增词。补导入不扩展到整份 212 词。
+- Input：两份清理 JSON 字节相同，SHA-256 `757a99e617e06160f746bcdb4006ad466b7a9ff582d0066a20ae7b6c86728b82`，3,972 个唯一 ID。源文件及包含个人 ID 的回执仅留在受限本机，不进入 Git。用户确认故障在 Mimi 另一台设备，当前电脑无法直接检查该浏览器的保存标记。
+- Observed before execution：只读清点确认全部目标属于获授权学习者，词名及轨道匹配；初次清点无已学习或已归档目标。3 个待补词均不存在。精确数量与明细保存在私有 inventory-before.json，不上传公共仓库。
+- Diagnosis：浏览器只持久保存请求身份及摘要，刷新后失去预期内容；旧未确认标记即使成功重新读取也持续阻止所有新保存。当前电脑正式 Library 可成功读取，暂未证明数据体积或平台限制是此次保存故障原因。修复需保留未知结果不自动重发、允许核对最新数据后明确恢复操作的边界。
+- Backup：`20261017T115016Z` 当前生产加密备份已通过 PostgreSQL 17 隔离恢复与逐表摘要比对，22 张表的结构与数据摘要一致。归档 2,984,100 bytes，SHA-256 `cbc1a62d703d6028a7f5c6f3cbcdfd7768afdd608492c60fa4f51dca0eda7c5b`；迁入 `local_backups/` 后再核对字节摘要。原始恢复证据保留，位置变更单独记录于 `local_artifacts/mimi-save-recovery/backup-location.json`。
+- Local custody：`local_backups/` 为新本机词库备份默认目录，0700 目录、0600 文件，Git 与 Vercel 上传排除。现有 R2 月度计划及临时上传目录保持；历史回执和旧发布恢复点不改写。下载目录两份 `mimi-complete-backup` 实际为事项、评论、附件格式，不能当作词库备份，暂留原位；截图中其他项目文件不移动。
+- Archive result：2026-10-17T12:01:41.671Z 提交成功。事务按 ID 锁定目标后重新检查复习状态和事件，仅修改归档状态及对应时间；所有目标完成可恢复归档，无已学习目标被归档、无永久删除。22 表的受保护内容摘要全部匹配，包含名单外词条、学习记录、当前计划、导入审计及另一学习者全部数据。详细数量和保护证据仅存私有 archive-result.json。
+- Independent readback：2026-10-17T12:04:01.919Z 通过新的数据库连接确认归档时间与执行结果一致、受保护摘要匹配、待归档剩余为零。私有证据为 local_artifacts/mimi-save-recovery/archive-result.json、archive-readback.json；原始精确名单与完整回执不进入 Git。归档前 PostgreSQL 17 合成演练通过 10 项检查，覆盖已学习、已归档、改名/换轨道、错误学习者、缺失/重复 ID、保留字段和回滚。
+- Import decision：用户先要求缺少原始例句时跳过，现已明确接受 interpreter、fallible、inapplicable 的自编双语例句并授权补入；来源注明自编，不标为 WFD 或阅读真题原句。已通过正式站现有 JSON 粘贴入口一次保存成功；前后独立 READ ONLY（只读）事务确认仅增加 3 词、1 条导入批次和 3 条创建事实，中英文例句与来源说明匹配，全部旧行及其他表保持一致。完整回执为 local_artifacts/mimi-save-recovery/three-word-import-before.json 与 three-word-import-after.json。
+- Recovery implementation：新鲜云端读取成功且当前学习者与旧标记一致时，显示“核对后继续”。对话框要求核对最近操作并关闭其他页面；确认时等待本页写入结束、再次读取，并核对请求、学习者和数据摘要。读取失败、内容变化或标记变化均保留阻塞；通过后只保存最小本机核对回执并解除旧标记，不重发旧请求、不覆盖云端。旧请求的结果仍明确记录为 unknown-reviewed-by-user。
+- Local validation：旧实现复现旧标记刷新后持续阻塞；修复测试覆盖无写入恢复、新归档与三条合成词导入、断网、数据改变、请求改变、学习者切换、取消及重复点击。完整测试 113 文件 / 871 项通过，2 项远端用例按默认跳过；最终四文件 46 项定向测试、lint、typecheck、三个备份 fixture（合成样本）检查通过。隔离无环境文件的生产构建、治理结构/严格预检/29 项治理测试和差异检查通过；构建中的三项运行时代码摘要与当前候选一致。回执为 `local_artifacts/mimi-save-recovery/validation.json` 与 `build-result.json`。
+- Rendered validation：本机 Chrome 桌面实际视口 1,554×855，旧标记刷新仍存在；取消及 Escape 保留状态，焦点返回入口。确认恢复 GET 由 1 增至 2、POST 保持 0，随后主动 Archive 只产生 1 次 POST，刷新仍已归档。390×844 同源 iframe（内嵌页面）检查小屏布局、未勾选禁用与成功恢复，作为 CSS 窄屏证据，不冒充实体手机验收。截图与浏览器回执保存在 `local_artifacts/mimi-save-recovery/`。开发服务器曾遇本机文件监视数量限制，改用本地生产构建完成窄屏验证；验证服务器已停止。
+- Release authority：用户本轮明确确认补入三词、提交修复、推送、合入 main 并部署及核验。范围限既有 GitHub/Vercel/Neon 项目、原有身份与运行保护；不进行结构迁移、整库恢复、额外清理、AI/TTS 调用、密钥或定时任务变更。沿用现有服务费用和 Git 部署；发布后仍需 Mimi 在原设备完成旧标记核对，本机不能代替该设备验收。
+
+- Pre-release review：另一 Codex 子代理只读复核恢复路径，无阻断发布发现；此为同宿主分工复核。保守的摘要比较仍按记录顺序，SQL 并列排序时可能要求重新核对；当前两个学习者均有持久设置行，未触发缺省设置时间变化问题。完整私有数据证据只保留在忽略目录，公共文档仅记录实施及验证结论。

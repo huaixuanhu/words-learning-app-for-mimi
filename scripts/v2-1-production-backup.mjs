@@ -11,8 +11,9 @@ import {
   stat,
   writeFile,
 } from "node:fs/promises";
-import { homedir, tmpdir } from "node:os";
-import { basename, join, resolve } from "node:path";
+import { tmpdir } from "node:os";
+import { basename, dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import {
   safeFailure,
@@ -29,7 +30,7 @@ const AGE_BIN = "/opt/homebrew/bin/age";
 const AGE_KEYGEN_BIN = "/opt/homebrew/bin/age-keygen";
 const SECURITY_BIN = "/usr/bin/security";
 const AGE_KEYCHAIN_SERVICE = "mimi-vocabulary-backup-age-identity-v1";
-const BACKUP_DIR = join(homedir(), "Documents", "Mimi Vocabulary Backups");
+const BACKUP_DIR = resolve(dirname(fileURLToPath(import.meta.url)), "..", "local_backups");
 const MONTHLY_NAMESPACE = "monthly-local-v1";
 const EVIDENCE_ROOT = resolve(
   process.cwd(),
@@ -631,7 +632,7 @@ async function run() {
     const evidence = {
       archive: {
         bytes: archiveStat.size,
-        custody: r2Staging ? "temporary-local-r2-upload-staging" : "external-user-backup-directory",
+        custody: r2Staging ? "temporary-local-r2-upload-staging" : "private-project-local-backups",
         ...(monthlyLocal ? { namespace: MONTHLY_NAMESPACE } : {}),
         encryption: "age",
         filename: basename(archivePath),

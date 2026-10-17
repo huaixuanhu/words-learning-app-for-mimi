@@ -118,6 +118,8 @@ function makeWorkspace(data: VocabularyData = createEmptyVocabularyData()): Work
     loadError: null,
     isRefreshing: false,
     localRecoveryRequired: false,
+    pendingSaveRecovery: null,
+    acknowledgePendingSave: vi.fn(),
     storageRuntime: "local",
     commit: vi.fn(async (nextData) => nextData),
     restoreLocalBackup: vi.fn(),

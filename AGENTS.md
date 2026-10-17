@@ -45,6 +45,7 @@
 - Canonical V2.1 repair and release: `plan_docs/PLAN_V2_1_DUPLICATE_IMPORT_DEDUPLICATION.md` and `plan_docs/PLAN_V2_1_PRODUCTION_DUPLICATE_REPAIR_RELEASE.md`.
 - Canonical V2.2 product and release: `plan_docs/PLAN_V2_2_REVIEW_CADENCE_CARD_AUDIO.md` and `plan_docs/PLAN_V2_2_PRODUCTION_RELEASE.md`.
 - Canonical V2.3 storage, study-day, Home and Production release: `plan_docs/PLAN_V2_3_STORAGE_STUDY_DAY_HOME.md`.
+- Current V2.3 continuation: Stage 2.3.15 owns the save-recovery candidate, the completed exact-list Mimi archive and the project-local backup location; Stage 2.3.14 retains the latest deployed application release.
 - Canonical V1 launch record: `plan_docs/PLAN_V1_STAGE6B_P1_G_C_5_LIVE_PRODUCTION_EXECUTION.md`.
 - Active data lifecycle policy: `plan_docs/PLAN_V1_STAGE8_5_DATA_LIFECYCLE_ENVIRONMENT_STRATEGY.md`.
 - Version hold for SSO（Single Sign-On，单点登录）and confidential per-person isolation: `plan_docs/PLAN_VERSION_HOLD_MULTI_USER_CONFIDENTIAL_ISOLATION.md`.
@@ -137,6 +138,7 @@ Forbidden without explicit approval:
 - Production holds real learning data; Development / Staging / Preview use synthetic, fixture, or disposable data.
 - Follow the active lifecycle plan and approved V2.3 overrides: Stage 2.3.11 native Neon daily snapshots, Stage 2.3.13 monthly independent encrypted R2 copies, and an additional verified backup before high-risk Production data changes. Those stages own retention, scheduling status and bounded failure handling. Monthly execution still requires the Mac; only newly owned staging may be removed after complete R2 readback and receipt persistence. Historical local/release recovery points remain protected.
 - Raw AI prompts and raw provider responses are not retained by default when structured accepted evidence is sufficient.
+- New local vocabulary backups belong in the private root `local_backups/` directory, excluded from Git and deployment uploads. Preserve historical recovery points and receipts; Stage 2.3.13 still owns monthly R2 custody and scheduling.
 - Speech Recognition and microphone audio are not collected or transmitted under the accepted baseline.
 
 ## Runtime And Environment

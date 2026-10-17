@@ -5,6 +5,10 @@ Last updated: 2026-10-17 AEDT
 
 ## Current State
 
+2026-10-17 保存恢复候选位于 `codex-anoria/mimi-save-recovery`，尚未部署。旧未知保存只持久保存请求身份，刷新后缺少预期内容，成功读取也无法解除写入阻塞；新入口允许当前学习者核对最新数据后明确继续。确认重新读取并检查请求与数据摘要，只清除本机旧标记，保留 unknown-reviewed-by-user 回执，不重发旧操作。V2.3 Stage 2.3.15 持有实现、合成验证与发布边界，原设备仍待上线后验收。
+
+同阶段已按用户授权，在当前加密备份及隔离恢复核验后，将精确名单中仍未学习的词可恢复归档，全部词条内容、学习记录、当日计划、原有归档及另一学习者数据经摘要与独立读回保持。用户现已授权补入 3 词及自编双语例句，并提交、推送和部署本次修复。新本机备份写入根目录 local_backups/（Git/Vercel 忽略、私有权限）；历史恢复点与月度 R2 调度保留。个人数据数量、精确 ID 与私有证据仅存忽略目录，执行及发布事实见 Stage 2.3.15。
+
 2026-10-17 Library 自选批量删除已从 `codex-anoria/library-bulk-delete` 快进发布到 `main`，应用候选 `0394cd4` 的 Vercel Production 已 Ready 并绑定正式域名。选择只作用于当前学习者和可见结果，固定所选 ID 经两次确认后发送一笔 `vocabulary.deleteMany`。本地存储先验证全部 ID；Postgres 在一笔 Transaction（事务）内按学习者锁定并核对全部行，再复用原有硬删除及关联清理。导入审计、创建事实和学习日计划保留。客户端继续核对未知保存结果，不自动重发。Neon staging 合成数据实际删除和最终清理通过；线上仅验证读取、两步弹窗及取消，未删除真实数据。界面、授权、验证及后续文档收尾发布由 V2.3 Stage 2.3.14 持有；数据库结构不变。
 
 治理维护入口为 `governance/README.md`，结构映射为 `governance/contract.json`，重要决策索引为 `governance/DECISIONS.md`。当前规则适配 `human-ai-governance v0.8.4`，费用说明及 Codex / Claude Code 协作规则统一由 AGENTS 管理，CLAUDE 入口只引用 AGENTS；保留现有结构检查和项目专用预检，日期标题识别修复已单独提交。跨工具实际加载尚未在本项目的新会话中核验。设计仍由 Stage 7 主文档及其链接的 V2/V2.3 演进记录管理。

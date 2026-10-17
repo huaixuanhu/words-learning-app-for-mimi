@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ReactElement, ReactNode } from "react";
-import { addVocabularyItem, createEmptyVocabularyData, deleteVocabularyItems, updateVocabularyItem } from "@/lib/vocabulary/repository";
+import { addVocabularyItem, archiveVocabularyItem, commitImportCandidates, createEmptyVocabularyData, deleteVocabularyItems, updateVocabularyItem } from "@/lib/vocabulary/repository";
+import { parseJsonImport } from "@/lib/vocabulary/import-parser";
 import { VOCABULARY_STORAGE_KEY } from "@/lib/vocabulary/local-storage-repository";
 import { VocabularyDataProvider, type useVocabularyData } from "./use-vocabulary-data";
 
@@ -414,6 +415,77 @@ describe("workspace load recovery and storage preservation", () => {
     expect(storage.has(fenceKey)).toBe(false);
     expect(render().workspace.loadError).toBeNull();
     expect(fetch.mock.calls.filter(([, init]) => init?.method === "POST")).toHaveLength(1);
+  });
+
+  function legacyFence() {
+    const fence = { requestId: "legacy-save", personId: cloudPersonId, fingerprint: "a".repeat(64), committed: false };
+    storage.set("mimi-pte-pending-storage-write-v1:postgres-production", JSON.stringify(fence));
+    return fence;
+  }
+
+  it("lets a reviewed legacy unknown save resume from fresh cloud data without replaying it", async () => {
+    const fixture = editFixture();
+    const fence = legacyFence();
+    const fetch = vi.fn().mockImplementation(() => Promise.resolve(readyResponse(fixture.before)));
+    vi.stubGlobal("fetch", fetch);
+    await render().workspace.revalidateAfterMutation();
+    const recovery = render().workspace.pendingSaveRecovery;
+    expect(recovery?.requestId).toBe(fence.requestId);
+    expect(render().workspace.loadError).toContain("could not be confirmed");
+    await render().workspace.acknowledgePendingSave(recovery!);
+    expect(render().workspace.loadError).toBeNull();
+    expect(storage.has("mimi-pte-pending-storage-write-v1:postgres-production")).toBe(false);
+    expect(JSON.parse(storage.get("mimi-pte-pending-storage-write-v1:postgres-production:reviewed")!)).toMatchObject({
+      requestId: fence.requestId, outcome: "unknown-reviewed-by-user",
+    });
+    expect(fetch.mock.calls.filter(([, init]) => init?.method === "POST")).toHaveLength(0);
+    fetch.mockResolvedValueOnce(readyResponse(fixture.after));
+    await expect(render().workspace.commit(fixture.after, fixture.mutation)).resolves.toBeDefined();
+    expect(fetch.mock.calls.filter(([, init]) => init?.method === "POST")).toHaveLength(1);
+  });
+
+  it("allows an explicitly new archive and three-word import after legacy recovery, with no old POST replay", async () => {
+    const fixture = editFixture();
+    legacyFence();
+    const fetch = vi.fn().mockImplementation(() => Promise.resolve(readyResponse(fixture.before)));
+    vi.stubGlobal("fetch", fetch);
+    await render().workspace.revalidateAfterMutation();
+    await render().workspace.acknowledgePendingSave(render().workspace.pendingSaveRecovery!);
+    const now = "2026-10-17T12:00:00.000Z";
+    const archived = archiveVocabularyItem(fixture.before, fixture.before.items[0].id, now);
+    fetch.mockResolvedValueOnce(readyResponse(archived));
+    await render().workspace.commit(archived, { type: "vocabulary.archive", vocabularyItemId: fixture.before.items[0].id, now, timezone: "Australia/Melbourne" });
+    expect(render().workspace.data.items[0].archivedAt).toBe(now);
+    const candidates = parseJsonImport(JSON.stringify(["alpha", "beta", "gamma"].map((word) => ({ word, meaningZh: "合成测试", example: "This is a synthetic test word.", exampleTranslationZh: "这是一个合成测试单词。", track: "recognition", notes: "Synthetic fixture only" }))));
+    const acceptedTempIds = candidates.map((candidate) => candidate.tempId);
+    const batchInput = { sourceType: "json_file" as const, fileName: "synthetic-three-words.json" };
+    const imported = commitImportCandidates(archived, batchInput, candidates, acceptedTempIds, "Australia/Melbourne", now);
+    expect(imported.items).toHaveLength(3);
+    fetch.mockResolvedValueOnce(readyResponse(imported.data));
+    await render().workspace.commit(imported.data, { type: "import.commitCandidates", batchInput, candidates, acceptedTempIds, now, timezone: "Australia/Melbourne" });
+    expect(render().workspace.data.items).toHaveLength(4);
+    expect(fetch.mock.calls.filter(([, init]) => init?.method === "POST").map(([,init]) => JSON.parse(init.body).mutation.type)).toEqual(["vocabulary.archive", "import.commitCandidates"]);
+  });
+
+  it.each(["offline", "changed", "different-request", "different-person"])("retains the unknown marker when recovery cannot confirm the reviewed snapshot: %s", async (scenario) => {
+    const fixture = editFixture();
+    if (scenario === "different-person") fixture.before.people.push({ ...fixture.before.people[0], id: "other-person", displayName: "Other" });
+    legacyFence();
+    const fetch = vi.fn().mockResolvedValueOnce(readyResponse(fixture.before));
+    vi.stubGlobal("fetch", fetch);
+    await render().workspace.revalidateAfterMutation();
+    const recovery = render().workspace.pendingSaveRecovery!;
+    if (scenario === "offline") fetch.mockRejectedValueOnce(new Error("offline"));
+    else fetch.mockResolvedValueOnce(readyResponse(scenario === "changed" ? fixture.after : fixture.before));
+    if (scenario === "different-request") {
+      storage.set("mimi-pte-pending-storage-write-v1:postgres-production", JSON.stringify({ ...legacyFence(), requestId: "new-request" }));
+    }
+    if (scenario === "different-person") {
+      await render().workspace.commit(fixture.before, { type: "people.select", personId: "other-person" });
+    }
+    await expect(render().workspace.acknowledgePendingSave(recovery)).rejects.toThrow();
+    expect(storage.has("mimi-pte-pending-storage-write-v1:postgres-production")).toBe(true);
+    expect(fetch.mock.calls.filter(([, init]) => init?.method === "POST")).toHaveLength(0);
   });
 
   it("reconciles the same bulk deletion in a different ID order after reload without another POST", async () => {

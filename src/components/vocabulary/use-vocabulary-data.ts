@@ -39,6 +39,7 @@ import {
 import { v2ClientContractHeaders } from "@/lib/security/v2-client-contract";
 import type { VocabularyDeduplicationConfirmation } from "@/lib/vocabulary/deduplication";
 import { VocabularyDataStatus } from "./vocabulary-data-status";
+import type { PendingSaveRecovery } from "./pending-save-recovery";
 import { LocalBackupRecovery } from "./local-backup-recovery";
 
 export type ClientStorageRuntime = "loading" | StorageRuntimeMode;
@@ -176,6 +177,8 @@ type VocabularyDataContextValue = Readonly<{
   loadError: string | null;
   isRefreshing: boolean;
   localRecoveryRequired: boolean;
+  pendingSaveRecovery: PendingSaveRecovery | null;
+  acknowledgePendingSave(recovery: PendingSaveRecovery): Promise<void>;
   storageRuntime: ClientStorageRuntime;
   commit(
     nextData: VocabularyData,
@@ -380,6 +383,14 @@ async function mutationFingerprint(key: string) {
   return Array.from(new Uint8Array(bytes), (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
+function snapshotFingerprint(data: VocabularyData) {
+  // The read timestamp and this browser's learner preference are not saved
+  // content. Every persisted collection still participates in review consent.
+  return mutationFingerprint(canonicalJson(Object.fromEntries(
+    Object.entries(data).filter(([key]) => key !== "updatedAt" && key !== "selectedPersonId"),
+  )));
+}
+
 class StorageMutationError extends Error {
   constructor(message: string, readonly outcome: "rejected" | "unknown") {
     super(message);
@@ -480,6 +491,7 @@ function useVocabularyDataStore(): VocabularyDataContextValue {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [localRecoveryRequired, setLocalRecoveryRequired] = useState(false);
+  const [pendingSaveRecovery, setPendingSaveRecovery] = useState<PendingSaveRecovery | null>(null);
   const [storageRuntime, setStorageRuntime] = useState<ClientStorageRuntime>("loading");
   const dataRef = useRef(data);
   const isLoadedRef = useRef(isLoaded);
@@ -536,6 +548,7 @@ function useVocabularyDataStore(): VocabularyDataContextValue {
 
     const revisionAtStart = clientRevisionRef.current;
     lastRefreshSucceededRef.current = false;
+    setPendingSaveRecovery(null);
     setIsRefreshing(true);
     const request = (async () => {
       const requestedPersonId = getStoredSelectedPersonId();
@@ -572,6 +585,20 @@ function useVocabularyDataStore(): VocabularyDataContextValue {
               (!pending.expected || !pending.mutation ||
                 !mutationStateMatches(postgresData.data, pending.expected, pending.personId, pending.mutation))) {
               setLoadError(SAVE_UNKNOWN_ERROR);
+              if (getSelectedPersonId(dataRef.current) === pending.personId) {
+                const snapshotDigest = await snapshotFingerprint(postgresData.data);
+                // Hashing is asynchronous: a newer selection/write invalidates
+                // this particular snapshot's manual recovery offer.
+                if (clientRevisionRef.current === revisionAtStart &&
+                  readMutationFence(postgresData.runtime)?.requestId === pending.requestId) {
+                  setPendingSaveRecovery({
+                    requestId: pending.requestId,
+                    personId: pending.personId,
+                    personName: postgresData.data.people.find((person) => person.id === pending.personId)?.displayName ?? "Selected learner",
+                    snapshotFingerprint: snapshotDigest,
+                  });
+                }
+              }
             } else {
               if (pending) clearMutationFence(postgresData.runtime, pending);
               pendingMutationRef.current = null;
@@ -642,6 +669,50 @@ function useVocabularyDataStore(): VocabularyDataContextValue {
     [refresh],
   );
 
+  const acknowledgePendingSave = useCallback(async (recovery: PendingSaveRecovery) => {
+    const runtime = storageRuntimeRef.current;
+    const original = readMutationFence(runtime);
+    if (!isPostgresClientStorageRuntime(runtime) || !lastRefreshSucceededRef.current ||
+      !original || original.requestId !== recovery.requestId || original.personId !== recovery.personId ||
+      getSelectedPersonId(dataRef.current) !== recovery.personId) {
+      throw new Error("请先重新加载并核对这位学习者的数据。");
+    }
+
+    // Acknowledgement is a read-only recovery action. Wait for this page's
+    // current write, then require a fresh read of exactly what was reviewed.
+    await revalidateAfterMutation();
+    const current = readMutationFence(runtime);
+    if (!lastRefreshSucceededRef.current || runtime !== storageRuntimeRef.current ||
+      getSelectedPersonId(dataRef.current) !== recovery.personId) {
+      throw new Error("未能重新读取这位学习者的云端数据，旧保存标记仍保留。请重试。");
+    }
+    if (!current) return; // The refresh positively confirmed the original save.
+    if (current.requestId !== original.requestId || current.personId !== original.personId) {
+      throw new Error("待核对的保存已改变，请关闭此窗口并重新核对。");
+    }
+    const reviewedData = dataRef.current;
+    const reviewedRevision = clientRevisionRef.current;
+    if (await snapshotFingerprint(reviewedData) !== recovery.snapshotFingerprint) {
+      throw new Error("云端数据已更新，请关闭此窗口，核对最新内容后再继续。");
+    }
+    // Hashing yields: check the marker and learner again before changing local
+    // bookkeeping. The old outcome remains explicitly unknown in this receipt.
+    if (readMutationFence(runtime)?.requestId !== original.requestId ||
+      dataRef.current !== reviewedData || clientRevisionRef.current !== reviewedRevision ||
+      getSelectedPersonId(dataRef.current) !== recovery.personId || mutationFlightsRef.current.size > 0) {
+      throw new Error("保存状态已改变，请重新核对。");
+    }
+    window.localStorage.setItem(`${MUTATION_FENCE_PREFIX}${runtime}:reviewed`, JSON.stringify({
+      requestId: original.requestId, personId: original.personId, fingerprint: original.fingerprint,
+      outcome: "unknown-reviewed-by-user", reviewedAt: new Date().toISOString(),
+    }));
+    clearMutationFence(runtime, original);
+    pendingMutationRef.current = null;
+    setPendingSaveRecovery(null);
+    setLoadError(null);
+    signalPostgresDataChange();
+  }, [revalidateAfterMutation]);
+
   const getRuntimeNow = useCallback(() => {
     if (isPostgresClientStorageRuntime(storageRuntimeRef.current)) {
       return serverClockRef.current
@@ -708,6 +779,7 @@ function useVocabularyDataStore(): VocabularyDataContextValue {
         }
 
         if (mutation.type === "people.select") {
+          setPendingSaveRecovery(null);
           const selectedData = {
             ...dataRef.current,
             selectedPersonId: mutation.personId,
@@ -907,6 +979,8 @@ function useVocabularyDataStore(): VocabularyDataContextValue {
       loadError,
       isRefreshing,
       localRecoveryRequired,
+      pendingSaveRecovery,
+      acknowledgePendingSave,
       storageRuntime,
       commit,
       restoreLocalBackup,
@@ -923,6 +997,8 @@ function useVocabularyDataStore(): VocabularyDataContextValue {
       loadError,
       isRefreshing,
       localRecoveryRequired,
+      pendingSaveRecovery,
+      acknowledgePendingSave,
       revalidateAfterMutation,
       storageRuntime,
       restoreLocalBackup,
@@ -943,6 +1019,8 @@ export function VocabularyDataProvider({ children }: { children: ReactNode }) {
       loadError: value.loadError,
       isRefreshing: value.isRefreshing,
       onRetry: () => { void value.revalidateAfterMutation(); },
+      recovery: value.pendingSaveRecovery,
+      onContinue: value.acknowledgePendingSave,
     }),
     value.isLoaded ? children : null,
     value.localRecoveryRequired
