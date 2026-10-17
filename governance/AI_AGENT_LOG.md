@@ -1,5 +1,31 @@
 # AI Agent Log
 
+## 2026-10-17 — Claude Code 交叉验证后的简修
+
+- Subsequent authority: 用户随后明确授权先提交本地修改，在现有 Neon staging 使用合成数据验证批量删除与关联清理，成功后提交验证记录、推送并部署。该执行从 Stage 2.3.14 接续；只使用既有凭据和服务，合成数据创建/清理限本次所有权，Production 学习数据写入与数据库迁移均不在范围内。以下简修的“未提交”等为当时状态。
+
+- Executor: Codex (GPT-6; exact model variant unavailable). Independent verifier: Claude Code（模型未知，发现由用户转述）；本轮复现与修复验证由 Codex 执行。
+- Task: 修复当前工作区 lint 失败及批量删除的两项小问题；bounded。
+- Plan agreed: 用户要求按交叉验证从简修改；仅移出本机验证脚本、统一失效提示、让同一 ID 集合的未知结果核对不受顺序影响。保持既有界面及学习者切换行为；远端 staging 操作仍需单独授权。
+- Working tier: 当前、目标与工作均为 Tier 3；沿用本地实现和合成测试范围。
+- Changed files: `src/lib/vocabulary/repository.ts`、`src/components/vocabulary/use-vocabulary-data.ts` 及两份直接测试；Stage 2.3.14、Changelog 与本日志。忽略脚本移至 `/private/tmp/mimi-bulk-verification.GUkfpO/browser-check.cjs`，项目内截图与结果保留。
+- Reason: 首轮 lint 之后将 CommonJS 浏览器脚本复制回项目，收尾未再检查，导致当时交付工作区出现 3 项 `no-require-imports` 错误。此前通过记录仅对应复制前状态，本条补齐差异与修复证据。两个附带问题也已按当前源码复现。
+- Validation: 修复前 `npm run lint` 复现 3 项脚本错误，新增/调整的两条回归断言均失败；修复后全项目 `npm run lint`、typecheck 及 5 个相关文件 / 77 项测试通过。覆盖失效词条拒绝后数据保持、重新载入后的相同集合反序核对、不同集合仍阻止、仅一笔 POST；不扩展为真实数据库验证。
+- Safety notes: 未放宽 ESLint 或保存结果保护，未改变后端 SQL、数据库结构、弹窗顺序或学习者切换行为；未读取凭据、调用远端服务、提交、推送或部署。首轮页面/备份结果保留其既有证据范围，本轮无新增页面构建或线上验收。
+
+## 2026-10-17 — Library 自选批量删除及二次确认
+
+- Executor: Codex (GPT-6; exact model variant unavailable).
+- Task: 在本地小分支实现任意所选单词的批量删除；bounded。
+- Plan agreed: 用户确认 Select words、全选当前结果、搜索/筛选清空、手机与电脑支持及本地验证；随后明确追加两次确认和第二次交换 Yes / No。范围由 V2.3 Stage 2.3.14 持有，分支 `codex-anoria/library-bulk-delete`。不包含提交、推送、部署或真实学习数据操作。
+- Working tier: 当前、目标与工作均为 Tier 3，仍只具有本地实现与合成数据验证权限。
+- Changed files: Library 与新 BulkDeleteDialog、共享数据客户端及恢复测试、本地词汇仓库、Postgres 仓库与接口契约、storage API 及对应测试；V2.3 计划、Stage 7 设计责任文件、Architecture、Changelog 和本日志。
+- Reason: 原代码支持逐词删除和整批撤销，缺少任意组合多选；复用已有硬删除和保存结果边界，以单次事务避免部分成功，并保留导入审计和创建事实。
+- Validation: 完整 Vitest 112 文件 / 860 项通过，既有远端测试 1 项跳过；ESLint、typecheck、三种备份 fixture dry-run、隔离无凭据目录的 Next webpack 构建通过。390×844 与 1280×900 本机合成数据浏览器验证通过，截图及结果在忽略目录 `local_artifacts/bulk-delete-verification/`，具体检查和证据上限见 Stage 2.3.14。初次新增恢复测试因 fixture 插入顺序取错目标而出现 2 项断言失败，按名称选定目标后两种未知结果情形均通过；没有为测试修改删除行为。
+- Independent verification: Codex 子代理对 UI/客户端与本地仓库进行源码复核，无阻断项；后端实现者的后端复核属于自查。浏览器检查由主代理执行，不代表另一个宿主或真实数据库已验收。
+- Closeout validation: `npm run governance:check` 的结构检查、严格预检与 29 项治理测试通过，`git diff --check` 通过。运行时代码与隔离构建源目录核对；新增稀疏 ID 数组拒绝分支有定向测试，最终构建包含该校验。
+- Safety notes: 使用独立临时浏览器与合成数据，未读取环境文件、秘密或真实学习记录；未调用外部服务、改变数据库结构、提交、推送或部署。单词历史删除须经两次明确操作；未知写入结果沿用现有阻止重发机制。设计演进为 `7.7-with-v2.3-home.1`，已本地验证，线上仍为原发布。
+
 ## 2026-10-15 22:54 AEDT — 已核实发布事实收尾
 
 - Executor: Codex (GPT-6; exact model variant unavailable).

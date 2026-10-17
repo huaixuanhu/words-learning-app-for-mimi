@@ -13,6 +13,7 @@ import { getSelectedPersonId } from "@/lib/people/repository";
 import {
   archiveVocabularyItem,
   deleteVocabularyItem,
+  deleteVocabularyItems,
   getActiveVocabularyItems,
   getActiveTrackVocabularyItems,
   getArchivedVocabularyItems,
@@ -31,6 +32,7 @@ import {
   normalizeVocabularyTags,
 } from "@/lib/vocabulary/normalize";
 import { useVocabularyData } from "./use-vocabulary-data";
+import { BulkDeleteDialog } from "./bulk-delete-dialog";
 import { PressableButton } from "@/components/ui/motion-primitives";
 import { getLearningStage } from "@/lib/daily-study/runtime-engine";
 import { AiEnrichmentDialog } from "@/components/ai/ai-enrichment-dialog";
@@ -165,13 +167,18 @@ function getBatchLabel(batch: ImportBatch) {
 }
 
 export function VocabularyLibrary() {
+  const workspace = useVocabularyData();
+  return <VocabularyLibraryContent key={getSelectedPersonId(workspace.data)} workspace={workspace} />;
+}
+
+export function VocabularyLibraryContent({ workspace }: { workspace: ReturnType<typeof useVocabularyData> }) {
   const {
     data,
     isLoaded,
     storageRuntime,
     commit,
     revalidateAfterMutation,
-  } = useVocabularyData();
+  } = workspace;
   const refreshAfterFormalMutation = useCallback(
     () => revalidateAfterMutation({ broadcast: true }),
     [revalidateAfterMutation],
@@ -183,6 +190,9 @@ export function VocabularyLibrary() {
   const [pendingAction, setPendingAction] = useState<PendingLibraryAction | null>(null);
   const [message, setMessage] = useState("");
   const [aiPreviewItemId, setAiPreviewItemId] = useState<string | null>(null);
+  const [isSelecting, setIsSelecting] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDeleteItems, setBulkDeleteItems] = useState<VocabularyItem[] | null>(null);
 
   const selectedPersonId = getSelectedPersonId(data);
   const allItems = getVocabularyItemsForSelectedPerson(data);
@@ -316,6 +326,20 @@ export function VocabularyLibrary() {
         buildVocabularyExamplePairs(item).some((pair) => pair.zh.includes(query.trim())),
     );
   }, [activeItems, activeTrackItems, allItems, archivedItems, filter, itemsNeedingTranslation, learningStageById, query, recognitionItems, weakWordIds]);
+  const selectedItems = visibleItems.filter((item) => selectedIds.has(item.id));
+  const deleteSelectedItems = async () => {
+    if (!bulkDeleteItems?.length) return;
+    const now = new Date().toISOString();
+    const vocabularyItemIds = bulkDeleteItems.map((item) => item.id);
+    const result = deleteVocabularyItems(data, vocabularyItemIds, now);
+    await commit(result.data, {
+      type: "vocabulary.deleteMany", vocabularyItemIds, now, timezone: detectTimezone(),
+    });
+    setBulkDeleteItems(null);
+    setSelectedIds(new Set());
+    setIsSelecting(false);
+    setMessage(`Deleted ${result.deletedItemsCount} ${result.deletedItemsCount === 1 ? "word" : "words"}.`);
+  };
   const aiPreviewItem = aiPreviewItemId
     ? data.items.find(
         (item) => item.id === aiPreviewItemId && item.personId === selectedPersonId,
@@ -535,7 +559,7 @@ export function VocabularyLibrary() {
             <Search aria-hidden="true" className="absolute bottom-3 left-3 size-4 text-[#5f6d62]" />
             <input
               value={query}
-              onChange={(event) => setQuery(event.target.value)}
+              onChange={(event) => { setQuery(event.target.value); setSelectedIds(new Set()); }}
               placeholder="word, meaning, example"
               className="mimi-input px-9 text-base"
             />
@@ -546,7 +570,7 @@ export function VocabularyLibrary() {
               <button
                 key={tab.value}
                 type="button"
-                onClick={() => setFilter(tab.value)}
+                onClick={() => { setFilter(tab.value); setSelectedIds(new Set()); }}
                 aria-pressed={filter === tab.value}
                 className={`mimi-focus-ring rounded-md border px-3 py-2 text-sm font-semibold transition duration-200 ease-[var(--mimi-ease)] ${
                   filter === tab.value
@@ -631,16 +655,45 @@ export function VocabularyLibrary() {
           ) : null}
         </div>
 
-        {message ? <p className="mt-3 rounded-md bg-[#d9e5d5] px-3 py-2 text-sm text-[#274331]">{message}</p> : null}
+        {message ? <p role="status" className="mt-3 rounded-md bg-[#d9e5d5] px-3 py-2 text-sm text-[#274331]">{message}</p> : null}
       </div>
 
       <div className="mimi-panel overflow-hidden">
-        <div className="border-b border-[#d8d1c2] px-4 py-3">
-          <p className="text-sm text-[#5f6d62]">
+        <div className="grid gap-3 border-b border-[#d8d1c2] px-4 py-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-[#5f6d62]">
             {isLoaded
               ? `${visibleItems.length} shown / ${allItems.length} total`
               : "Loading Library..."}
-          </p>
+            </p>
+            <PressableButton
+              type="button"
+              disabled={!isLoaded || (!isSelecting && visibleItems.length === 0)}
+              onClick={() => {
+                setIsSelecting(!isSelecting);
+                setSelectedIds(new Set());
+                setEditingId(null);
+                setDraft(null);
+                setMessage("");
+              }}
+              className="mimi-button-secondary mimi-focus-ring min-h-11 px-3 text-sm font-semibold disabled:opacity-50"
+            >
+              {isSelecting ? "Done" : "Select words"}
+            </PressableButton>
+          </div>
+          {isSelecting ? (
+            <div className="grid gap-2">
+              <p role="status" className="text-sm font-semibold text-[var(--mimi-text)]">{selectedItems.length} selected</p>
+              <div className="flex flex-wrap gap-2">
+                <PressableButton type="button" disabled={!visibleItems.length} onClick={() => setSelectedIds(new Set(visibleItems.map((item) => item.id)))} className="mimi-button-secondary mimi-focus-ring min-h-11 px-3 text-sm font-semibold disabled:opacity-50">Select all shown</PressableButton>
+                <PressableButton type="button" disabled={!selectedItems.length} onClick={() => setSelectedIds(new Set())} className="mimi-button-secondary mimi-focus-ring min-h-11 px-3 text-sm font-semibold disabled:opacity-50">Clear selection</PressableButton>
+                <PressableButton type="button" disabled={!selectedItems.length} onClick={() => setBulkDeleteItems([...selectedItems])} className="mimi-button mimi-focus-ring inline-flex min-h-11 items-center gap-2 px-3 text-sm font-semibold disabled:opacity-50">
+                  <Trash2 aria-hidden="true" className="size-4" />Delete selected ({selectedItems.length})
+                </PressableButton>
+              </div>
+              <p className="text-xs text-[var(--mimi-text-soft)]">Changing search or filters clears your selection.</p>
+            </div>
+          ) : null}
         </div>
 
         {visibleItems.length ? (
@@ -656,7 +709,20 @@ export function VocabularyLibrary() {
                 !historyProfiles?.has(otherTrack);
 
               return (
-                <div key={item.id} className="grid gap-3 p-4 transition hover:bg-[#fffaf1]/72">
+                <div key={item.id} className={`grid gap-3 p-4 transition hover:bg-[#fffaf1]/72 ${isSelecting && selectedIds.has(item.id) ? "bg-[var(--mimi-primary-soft)]" : ""}`}>
+                  {isSelecting ? (
+                    <label className="flex min-h-11 w-fit cursor-pointer items-center gap-3 text-sm font-semibold text-[var(--mimi-text)]">
+                      <input type="checkbox" checked={selectedIds.has(item.id)} aria-label={`Select ${item.surfaceText}`} onChange={(event) => {
+                        const checked = event.target.checked;
+                        setSelectedIds((current) => {
+                          const next = new Set(current);
+                          if (checked) next.add(item.id); else next.delete(item.id);
+                          return next;
+                        });
+                      }} className="mimi-focus-ring size-5 accent-[var(--mimi-primary)]" />
+                      {selectedIds.has(item.id) ? "Selected" : "Select word"}
+                    </label>
+                  ) : null}
                   {isEditing ? (
                     <div className="grid gap-3">
                       <div className="grid gap-3 md:grid-cols-2">
@@ -889,7 +955,7 @@ export function VocabularyLibrary() {
                           Added {new Date(item.createdAt).toLocaleDateString()}
                         </p>
                       </div>
-                      <div className="flex flex-wrap items-start gap-2 md:justify-end">
+                      {!isSelecting ? <div className="flex flex-wrap items-start gap-2 md:justify-end">
                         {!item.archivedAt ? (
                           <PressableButton
                             type="button"
@@ -940,7 +1006,7 @@ export function VocabularyLibrary() {
                           <Trash2 aria-hidden="true" className="size-4" />
                           Delete
                         </PressableButton>
-                      </div>
+                      </div> : null}
                     </div>
                   )}
                 </div>
@@ -957,6 +1023,8 @@ export function VocabularyLibrary() {
           </p>
         )}
       </div>
+
+      {bulkDeleteItems ? <BulkDeleteDialog items={bulkDeleteItems} onCancel={() => setBulkDeleteItems(null)} onDelete={deleteSelectedItems} /> : null}
 
       <AiEnrichmentDialog
         open={Boolean(aiPreviewItem)}

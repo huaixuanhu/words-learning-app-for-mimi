@@ -83,6 +83,12 @@ type StorageUiMutation =
       timezone: string;
     }
   | {
+      type: "vocabulary.deleteMany";
+      vocabularyItemIds: string[];
+      now: string;
+      timezone: string;
+    }
+  | {
       type: "vocabulary.deduplicate";
       confirmation: VocabularyDeduplicationConfirmation;
       now: string;
@@ -158,6 +164,25 @@ function requiredString(value: unknown, label: string) {
 
 function optionalSelectedPersonId(value: unknown) {
   return typeof value === "string" && value.trim() ? value : null;
+}
+
+function requiredVocabularyItemIds(value: unknown) {
+  if (!Array.isArray(value) || value.length === 0) {
+    throw new Error("mutation.vocabularyItemIds must be a non-empty array");
+  }
+
+  const ids = value.map((id) => {
+    if (typeof id !== "string" || !DATABASE_UUID_PATTERN.test(id)) {
+      throw new Error("mutation.vocabularyItemIds must contain valid vocabulary item IDs");
+    }
+    return id.toLowerCase();
+  });
+
+  if (new Set(ids).size !== ids.length) {
+    throw new Error("mutation.vocabularyItemIds must contain unique IDs");
+  }
+
+  return ids;
 }
 
 function requiredNonNegativeInteger(value: unknown, label: string) {
@@ -279,6 +304,13 @@ function parseMutation(value: unknown): StorageUiMutation {
     case "review.rollbackEvent":
     case "reviewSettings.update":
       return value as StorageUiMutation;
+    case "vocabulary.deleteMany":
+      return {
+        type,
+        vocabularyItemIds: requiredVocabularyItemIds(value.vocabularyItemIds),
+        now: requiredString(value.now, "mutation.now"),
+        timezone: requiredString(value.timezone, "mutation.timezone"),
+      };
     case "vocabulary.deduplicate":
       return {
         type,
@@ -564,6 +596,19 @@ export async function POST(request: NextRequest) {
           );
 
           await repository.vocabulary.deleteItem(context, mutation.vocabularyItemId);
+          nextSelectedPersonId = context.personId;
+        }
+        break;
+      case "vocabulary.deleteMany":
+        {
+          const context = await mutationContext(
+            repository,
+            selectedPersonId,
+            mutation.now,
+            mutation.timezone,
+          );
+
+          await repository.vocabulary.deleteItems(context, mutation.vocabularyItemIds);
           nextSelectedPersonId = context.personId;
         }
         break;

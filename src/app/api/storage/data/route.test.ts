@@ -11,6 +11,7 @@ const repositoryMocks = vi.hoisted(() => ({
 const repositoryMethodMocks = vi.hoisted(() => ({
   deduplicateItems: vi.fn(),
   deleteItem: vi.fn(),
+  deleteItems: vi.fn(),
   rollbackImportBatch: vi.fn(),
   startFreshInTrack: vi.fn(),
   resetToday: vi.fn(),
@@ -122,6 +123,7 @@ describe("/api/storage/data runtime contract", () => {
     repositoryMocks.createPostgresRepository.mockReset();
     repositoryMocks.getPostgresVocabularyDataSnapshot.mockReset();
     repositoryMethodMocks.deleteItem.mockReset();
+    repositoryMethodMocks.deleteItems.mockReset();
     repositoryMethodMocks.deduplicateItems.mockReset();
     repositoryMethodMocks.rollbackImportBatch.mockReset();
     repositoryMethodMocks.startFreshInTrack.mockReset();
@@ -135,6 +137,7 @@ describe("/api/storage/data runtime contract", () => {
       vocabulary: {
         deduplicateItems: repositoryMethodMocks.deduplicateItems,
         deleteItem: repositoryMethodMocks.deleteItem,
+        deleteItems: repositoryMethodMocks.deleteItems,
         rollbackImportBatch: repositoryMethodMocks.rollbackImportBatch,
         startFreshInTrack: repositoryMethodMocks.startFreshInTrack,
         commitImportCandidates: repositoryMethodMocks.commitImportCandidates,
@@ -458,6 +461,106 @@ describe("/api/storage/data runtime contract", () => {
       },
       "22222222-2222-4222-8222-222222222222",
     );
+  });
+
+  describe("selected vocabulary deletion", () => {
+    const vocabularyItemIds = [
+      "a2222222-2222-4222-8222-222222222222",
+      "33333333-3333-4333-8333-333333333333",
+    ];
+    const mutation = {
+      type: "vocabulary.deleteMany",
+      vocabularyItemIds,
+      now: "2026-10-17T09:00:00.000Z",
+      timezone: "Australia/Melbourne",
+    };
+
+    beforeEach(() => {
+      setRuntimeEnv({
+        MIMI_STORAGE_RUNTIME: "postgres-production",
+        VERCEL_ENV: "production",
+        NODE_ENV: "production",
+      });
+      repositoryMethodMocks.deleteItems.mockResolvedValue({ deletedItemsCount: 2 });
+    });
+
+    it("forwards the exact selection once and returns one refreshed snapshot", async () => {
+      const { POST } = await import("./route");
+      const response = await POST(dataPostRequest({ selectedPersonId: personId, mutation }));
+
+      expect(response.status).toBe(200);
+      expect(await response.json()).toMatchObject({ ok: true, mutationOutcome: "committed", data: fakeData });
+      expect(repositoryMethodMocks.deleteItems).toHaveBeenCalledExactlyOnceWith(
+        { personId, now: mutation.now, timezone: mutation.timezone }, vocabularyItemIds,
+      );
+      expect(repositoryMethodMocks.deleteItem).not.toHaveBeenCalled();
+      expect(repositoryMethodMocks.rollbackImportBatch).not.toHaveBeenCalled();
+      expect(repositoryMocks.getPostgresVocabularyDataSnapshot).toHaveBeenCalledTimes(1);
+    });
+
+    it.each([
+      { label: "missing IDs", ids: undefined },
+      { label: "non-array IDs", ids: vocabularyItemIds[0] },
+      { label: "empty IDs", ids: [] },
+      { label: "blank ID", ids: [""] },
+      { label: "invalid ID", ids: ["not-an-id"] },
+      { label: "non-string ID", ids: [12] },
+      { label: "duplicate ID", ids: [vocabularyItemIds[0], vocabularyItemIds[0]] },
+      { label: "duplicate UUID casing", ids: [vocabularyItemIds[0], vocabularyItemIds[0].toUpperCase()] },
+    ])("rejects $label before repository access", async ({ ids }) => {
+      const { POST } = await import("./route");
+      const response = await POST(dataPostRequest({
+        selectedPersonId: personId, mutation: { ...mutation, vocabularyItemIds: ids },
+      }));
+
+      expect(response.status).toBe(400);
+      expect(await response.json()).toMatchObject({ ok: false, mutationOutcome: "rejected" });
+      expect(repositoryMocks.createPostgresRepository).not.toHaveBeenCalled();
+      expect(repositoryMethodMocks.deleteItems).not.toHaveBeenCalled();
+      expect(repositoryMocks.getPostgresVocabularyDataSnapshot).not.toHaveBeenCalled();
+    });
+
+    it.each(["auth", "client-revision", "person"])("preserves the %s guard before deletion", async (guard) => {
+      const { POST } = await import("./route");
+      const request = dataPostRequest({
+        ...(guard === "person" ? {} : { selectedPersonId: personId }), mutation,
+      });
+      if (guard === "auth") request.headers.delete("authorization");
+      if (guard === "client-revision") request.headers.delete(V2_STORAGE_CLIENT_REVISION_HEADER);
+      const response = await POST(request);
+
+      expect(response.status).toBe(guard === "auth" ? 401 : guard === "client-revision" ? 428 : 400);
+      expect(repositoryMocks.createPostgresRepository).not.toHaveBeenCalled();
+      expect(repositoryMethodMocks.deleteItems).not.toHaveBeenCalled();
+      expect(repositoryMocks.getPostgresVocabularyDataSnapshot).not.toHaveBeenCalled();
+    });
+
+    it("acknowledges committed deletion when snapshot readback fails", async () => {
+      repositoryMocks.getPostgresVocabularyDataSnapshot.mockRejectedValue(new Error("fixture readback failure"));
+      const { POST } = await import("./route");
+      const response = await POST(dataPostRequest({ selectedPersonId: personId, mutation }));
+
+      expect(response.status).toBe(202);
+      expect(await response.json()).toMatchObject({
+        ok: true, status: "committed-needs-refresh", mutationOutcome: "committed", selectedPersonId: personId,
+      });
+      expect(repositoryMethodMocks.deleteItems).toHaveBeenCalledTimes(1);
+      expect(repositoryMocks.getPostgresVocabularyDataSnapshot).toHaveBeenCalledTimes(1);
+    });
+
+    it.each([false, true])("preserves rejected versus unknown transaction outcome (%s)", async (unknownOutcome) => {
+      transactionOutcomeMock.mockReturnValue(unknownOutcome);
+      repositoryMethodMocks.deleteItems.mockRejectedValue(new Error("fixture deletion failure"));
+      const { POST } = await import("./route");
+      const response = await POST(dataPostRequest({ selectedPersonId: personId, mutation }));
+
+      expect(response.status).toBe(400);
+      expect(await response.json()).toMatchObject({
+        ok: false, mutationOutcome: unknownOutcome ? "unknown" : "rejected",
+      });
+      expect(repositoryMethodMocks.deleteItems).toHaveBeenCalledTimes(1);
+      expect(repositoryMocks.getPostgresVocabularyDataSnapshot).not.toHaveBeenCalled();
+    });
   });
 
   it("routes a count-bound duplicate cleanup confirmation through Postgres", async () => {

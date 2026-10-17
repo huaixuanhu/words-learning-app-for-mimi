@@ -93,6 +93,12 @@ export type VocabularyStorageMutation =
       timezone: string;
     }
   | {
+      type: "vocabulary.deleteMany";
+      vocabularyItemIds: string[];
+      now: string;
+      timezone: string;
+    }
+  | {
       type: "vocabulary.deduplicate";
       confirmation: VocabularyDeduplicationConfirmation;
       now: string;
@@ -389,7 +395,10 @@ function canonicalJson(value: unknown): string {
 function mutationKey(personId: string, mutation: VocabularyStorageMutation) {
   // Repeated ratings are separate events. Content saves clicked twice while
   // pending share a flight even if their incidental click timestamps differ.
-  const content = mutation.type === "review.record" ? mutation : { ...mutation, now: undefined };
+  const content = mutation.type === "vocabulary.deleteMany"
+    // Selection order does not change the deletion being reconciled.
+    ? { ...mutation, vocabularyItemIds: [...mutation.vocabularyItemIds].sort(), now: undefined }
+    : mutation.type === "review.record" ? mutation : { ...mutation, now: undefined };
   return canonicalJson({ personId, mutation: content });
 }
 
@@ -422,6 +431,10 @@ function mutationStateMatches(
   }
   if (mutation.type === "vocabulary.delete") {
     return !actual.items.some((entry) => entry.id === mutation.vocabularyItemId && entry.personId === personId);
+  }
+  if (mutation.type === "vocabulary.deleteMany") {
+    const ids = new Set(mutation.vocabularyItemIds);
+    return ids.size > 0 && !actual.items.some((entry) => entry.personId === personId && ids.has(entry.id));
   }
   return false;
 }

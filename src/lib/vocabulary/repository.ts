@@ -451,6 +451,48 @@ export function restoreVocabularyItem(data: VocabularyData, id: string, now = ne
   };
 }
 
+function deleteSelectedVocabularyItems(
+  data: VocabularyData,
+  personId: string,
+  itemIds: ReadonlySet<string>,
+  now: string,
+): VocabularyData {
+  return {
+    ...data,
+    items: data.items.filter(
+      (candidate) => !(itemIds.has(candidate.id) && candidate.personId === personId),
+    ),
+    reviewStates: data.reviewStates.filter(
+      (state) =>
+        !(itemIds.has(state.vocabularyItemId) && state.personId === personId),
+    ),
+    reviewEvents: data.reviewEvents.filter(
+      (event) =>
+        !(itemIds.has(event.vocabularyItemId) && event.personId === personId),
+    ),
+    aiRuns: data.aiRuns.map((run) =>
+      run.personId === personId &&
+      run.sourceVocabularyItemId !== null &&
+      itemIds.has(run.sourceVocabularyItemId)
+        ? { ...run, sourceVocabularyItemId: null }
+        : run,
+    ),
+    aiEnrichmentDrafts: data.aiEnrichmentDrafts.filter(
+      (draft) =>
+        !(draft.personId === personId && itemIds.has(draft.sourceVocabularyItemId)),
+    ),
+    vocabularyRelations: data.vocabularyRelations.filter(
+      (relation) =>
+        !(
+          relation.personId === personId &&
+          (itemIds.has(relation.sourceVocabularyItemId) ||
+            itemIds.has(relation.targetVocabularyItemId))
+        ),
+    ),
+    updatedAt: now,
+  };
+}
+
 export function deleteVocabularyItem(data: VocabularyData, id: string, now = new Date().toISOString()) {
   const selectedPersonId = getSelectedPersonId(data);
   const item = data.items.find(
@@ -462,38 +504,42 @@ export function deleteVocabularyItem(data: VocabularyData, id: string, now = new
   }
 
   return {
-    data: {
-      ...data,
-      items: data.items.filter(
-        (candidate) => !(candidate.id === id && candidate.personId === selectedPersonId),
-      ),
-      reviewStates: data.reviewStates.filter(
-        (state) =>
-          !(state.vocabularyItemId === id && state.personId === selectedPersonId),
-      ),
-      reviewEvents: data.reviewEvents.filter(
-        (event) =>
-          !(event.vocabularyItemId === id && event.personId === selectedPersonId),
-      ),
-      aiRuns: data.aiRuns.map((run) =>
-        run.personId === selectedPersonId && run.sourceVocabularyItemId === id
-          ? { ...run, sourceVocabularyItemId: null }
-          : run,
-      ),
-      aiEnrichmentDrafts: data.aiEnrichmentDrafts.filter(
-        (draft) =>
-          !(draft.personId === selectedPersonId && draft.sourceVocabularyItemId === id),
-      ),
-      vocabularyRelations: data.vocabularyRelations.filter(
-        (relation) =>
-          !(
-            relation.personId === selectedPersonId &&
-            (relation.sourceVocabularyItemId === id || relation.targetVocabularyItemId === id)
-          ),
-      ),
-      updatedAt: now,
-    },
+    data: deleteSelectedVocabularyItems(data, selectedPersonId, new Set([id]), now),
     item,
+  };
+}
+
+export function deleteVocabularyItems(
+  data: VocabularyData,
+  ids: string[],
+  now = new Date().toISOString(),
+) {
+  if (
+    !Array.isArray(ids) || ids.length === 0 ||
+    Array.from(ids).some((id) => typeof id !== "string" || !id.trim())
+  ) {
+    throw new Error("Select at least one valid vocabulary item to delete.");
+  }
+
+  const itemIds = new Set(ids);
+  if (itemIds.size !== ids.length) {
+    throw new Error("Selected vocabulary item IDs must be unique.");
+  }
+
+  const selectedPersonId = getSelectedPersonId(data);
+  const availableIds = new Set(
+    data.items
+      .filter((item) => item.personId === selectedPersonId)
+      .map((item) => item.id),
+  );
+  const missingId = ids.find((id) => !availableIds.has(id));
+  if (missingId !== undefined) {
+    throw new Error("Some selected words are no longer available. Refresh Library and select them again.");
+  }
+
+  return {
+    data: deleteSelectedVocabularyItems(data, selectedPersonId, itemIds, now),
+    deletedItemsCount: itemIds.size,
   };
 }
 

@@ -1,9 +1,11 @@
 # Words Learning App For Mimi Architecture
 
 Created: 2026-07-02 23:30 AEST
-Last updated: 2026-10-15 AEDT
+Last updated: 2026-10-17 AEDT
 
 ## Current State
+
+2026-10-17 本地分支 `codex-anoria/library-bulk-delete` 增加 Library 自选批量删除，尚未发布。选择只作用于当前学习者和可见结果，确认弹窗固定所选 ID，经两次确认后发送一笔 `vocabulary.deleteMany`。本地存储先验证全部 ID；Postgres 在一笔 Transaction（事务）内按学习者锁定并核对全部行，再复用原有硬删除及关联清理。导入审计、词条创建事实和学习日计划保留。客户端沿用 V2.3 未知保存结果核对，不自动重发。界面、授权与验证由 V2.3 Stage 2.3.14 持有；数据库结构和线上状态不变。
 
 治理维护入口为 `governance/README.md`，结构映射为 `governance/contract.json`，重要决策索引为 `governance/DECISIONS.md`。当前规则适配 `human-ai-governance v0.8.4`，费用说明及 Codex / Claude Code 协作规则统一由 AGENTS 管理，CLAUDE 入口只引用 AGENTS；保留现有结构检查和项目专用预检，日期标题识别修复已单独提交。跨工具实际加载尚未在本项目的新会话中核验。设计仍由 Stage 7 主文档及其链接的 V2/V2.3 演进记录管理。
 

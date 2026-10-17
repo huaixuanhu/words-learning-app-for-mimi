@@ -55,6 +55,10 @@ export type VocabularyDeleteResult = Readonly<{
   item: VocabularyItem;
 }>;
 
+export type VocabularyDeleteItemsResult = Readonly<{
+  deletedItemsCount: number;
+}>;
+
 export type ImportBatchRollbackResult = Readonly<{
   batch: ImportBatch;
   deletedItemsCount: number;
@@ -146,6 +150,10 @@ export type VocabularyRepositoryPort = Readonly<{
     context: TimestampedPersonContext,
     vocabularyItemId: string,
   ): Promise<VocabularyDeleteResult>;
+  deleteItems(
+    context: TimestampedPersonContext,
+    vocabularyItemIds: string[],
+  ): Promise<VocabularyDeleteItemsResult>;
   deduplicateItems(
     context: TimestampedPersonContext,
     confirmation: VocabularyDeduplicationConfirmation,

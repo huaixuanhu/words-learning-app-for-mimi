@@ -8,6 +8,7 @@ import type {
   ResetTodayReviewResult,
   RollbackReviewEventResult,
   TimestampedPersonContext,
+  VocabularyDeleteItemsResult,
   VocabularyDeleteResult,
 } from "@/lib/storage/durable-repository-contract";
 import { getPostgresPool, markPostgresMutationCommitted, type PostgresQueryable, withPostgresTransaction } from "./client";
@@ -2564,6 +2565,53 @@ async function deleteVocabularyItem(
   });
 }
 
+async function deleteVocabularyItems(
+  context: TimestampedPersonContext,
+  vocabularyItemIds: string[],
+): Promise<VocabularyDeleteItemsResult> {
+  assertPersonContext(context);
+
+  if (!Array.isArray(vocabularyItemIds) || vocabularyItemIds.length === 0) {
+    throw new Error("Select at least one word to delete.");
+  }
+
+  const itemIds = vocabularyItemIds.map((id) => {
+    if (typeof id !== "string") {
+      throw new Error("vocabularyItemId must be a database UUID");
+    }
+    assertDatabaseUuid(id, "vocabularyItemId");
+    return id.toLowerCase();
+  });
+
+  if (new Set(itemIds).size !== itemIds.length) {
+    throw new Error("Selected vocabulary item IDs must be unique.");
+  }
+
+  return withPostgresTransaction(async (client) => {
+    const selected = await client.query<{ id: string }>(
+      `
+        select id
+        from vocabulary_items
+        where person_id = $1 and id = any($2::uuid[])
+        order by id
+        for update
+      `,
+      [context.personId, itemIds],
+    );
+    const selectedIds = new Set(selected.rows.map((row) => row.id));
+
+    if (itemIds.some((id) => !selectedIds.has(id))) {
+      throw new Error("Some selected words are no longer available. Refresh Library and select them again.");
+    }
+
+    // Reuse hard-delete cascades without reversing creation facts or removing
+    // import-batch audit rows, even when every remaining batch word is selected.
+    await deleteVocabularyItemRows(client, context.personId, itemIds);
+
+    return { deletedItemsCount: itemIds.length };
+  });
+}
+
 async function deduplicateVocabularyItemsInPostgres(
   context: TimestampedPersonContext,
   confirmation: VocabularyDeduplicationConfirmation,
@@ -3421,6 +3469,8 @@ export function createPostgresRepository(): DurableRepositoryPort {
         withPostgresTransaction((client) => setVocabularyArchiveState(client, context, vocabularyItemId, false)),
       deleteItem: (context, vocabularyItemId) =>
         deleteVocabularyItem(context, vocabularyItemId),
+      deleteItems: (context, vocabularyItemIds) =>
+        deleteVocabularyItems(context, vocabularyItemIds),
       deduplicateItems: (context, confirmation) =>
         deduplicateVocabularyItemsInPostgres(context, confirmation),
       commitImportCandidates: async (

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ReactElement, ReactNode } from "react";
-import { addVocabularyItem, createEmptyVocabularyData, updateVocabularyItem } from "@/lib/vocabulary/repository";
+import { addVocabularyItem, createEmptyVocabularyData, deleteVocabularyItems, updateVocabularyItem } from "@/lib/vocabulary/repository";
 import { VOCABULARY_STORAGE_KEY } from "@/lib/vocabulary/local-storage-repository";
 import { VocabularyDataProvider, type useVocabularyData } from "./use-vocabulary-data";
 
@@ -277,6 +277,36 @@ describe("workspace load recovery and storage preservation", () => {
     expect(JSON.parse(fetch.mock.calls[1][1].body).selectedPersonId).toBe(cloudPersonId);
   });
 
+  it.each([false, true])("reconciles uncertain bulk deletion only when every selected word is absent (partial: %s)", async (partial) => {
+    let before = cloudSnapshot();
+    for (const word of ["alpha", "beta", "kept"]) {
+      before = addVocabularyItem(before, { surfaceText: word, source: "manual", timezone: "Australia/Melbourne" }, "2026-09-13T08:00:00.000Z").data;
+    }
+    const ids = before.items.filter((item) => item.surfaceText !== "kept").map((item) => item.id);
+    const after = deleteVocabularyItems(before, ids).data;
+    const observed = partial ? deleteVocabularyItems(before, [ids[0]]).data : after;
+    const mutation = { type: "vocabulary.deleteMany" as const, vocabularyItemIds: ids, now: "2026-09-13T09:00:00.000Z", timezone: "Australia/Melbourne" };
+    const fetch = vi.fn().mockResolvedValueOnce(readyResponse(before))
+      .mockRejectedValueOnce(new TypeError("response lost"))
+      .mockResolvedValueOnce(readyResponse(observed))
+      .mockResolvedValueOnce(readyResponse(after));
+    vi.stubGlobal("fetch", fetch);
+    await render().workspace.revalidateAfterMutation();
+    const deleting = render().workspace.commit(after, mutation);
+    if (partial) {
+      await expect(deleting).rejects.toThrow("could not be confirmed");
+      await expect(render().workspace.commit(after, mutation)).rejects.toThrow("could not be confirmed");
+      await render().workspace.revalidateAfterMutation();
+    } else {
+      await expect(deleting).resolves.toMatchObject({ items: after.items });
+    }
+    expect(render().workspace.data.items.map((item) => item.surfaceText)).toEqual(["kept"]);
+    expect(render().workspace.loadError).toBeNull();
+    const writes = fetch.mock.calls.filter(([, init]) => init?.method === "POST");
+    expect(writes).toHaveLength(1);
+    expect(JSON.parse(writes[0][1].body).mutation.vocabularyItemIds).toEqual(ids);
+  });
+
   it("releases a rejected save so corrected content can be submitted with a new identity", async () => {
     const fixture = editFixture();
     const fetch = vi.fn().mockResolvedValueOnce(readyResponse(fixture.before))
@@ -384,6 +414,32 @@ describe("workspace load recovery and storage preservation", () => {
     expect(storage.has(fenceKey)).toBe(false);
     expect(render().workspace.loadError).toBeNull();
     expect(fetch.mock.calls.filter(([, init]) => init?.method === "POST")).toHaveLength(1);
+  });
+
+  it("reconciles the same bulk deletion in a different ID order after reload without another POST", async () => {
+    let before = cloudSnapshot();
+    for (const word of ["alpha", "beta", "kept"]) {
+      before = addVocabularyItem(before, { surfaceText: word, source: "manual", timezone: "Australia/Melbourne" }).data;
+    }
+    const ids = before.items.filter((item) => item.surfaceText !== "kept").map((item) => item.id);
+    const after = deleteVocabularyItems(before, ids).data;
+    const mutation = { type: "vocabulary.deleteMany" as const, vocabularyItemIds: ids, now: "2026-09-13T09:00:00.000Z", timezone: "Australia/Melbourne" };
+    const fetch = vi.fn().mockResolvedValueOnce(readyResponse(before))
+      .mockRejectedValueOnce(new TypeError("response lost"))
+      .mockResolvedValueOnce(readyResponse(before))
+      .mockResolvedValueOnce(readyResponse(after));
+    vi.stubGlobal("fetch", fetch);
+    await render().workspace.revalidateAfterMutation();
+    await expect(render().workspace.commit(after, mutation)).rejects.toThrow("could not be confirmed");
+
+    host.cells = []; // Preserve the saved fence across a provider reload.
+    await render().workspace.revalidateAfterMutation();
+    await expect(render().workspace.commit(after, { ...mutation, vocabularyItemIds: [ids[0]] })).rejects.toThrow("could not be confirmed");
+    await expect(render().workspace.commit(after, { ...mutation, vocabularyItemIds: [...ids].reverse() })).resolves.toMatchObject({ items: after.items });
+    expect(render().workspace.loadError).toBeNull();
+    expect(storage.has("mimi-pte-pending-storage-write-v1:postgres-production")).toBe(false);
+    expect(fetch.mock.calls.filter(([, init]) => init?.method === "POST")).toHaveLength(1);
+    expect(mutation.vocabularyItemIds).toEqual(ids);
   });
 
   it("allows confirmed local recovery after a corrupt local read and never enables it for cloud failure", async () => {
