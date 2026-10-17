@@ -3,7 +3,7 @@
 Created: 2026-09-13 AEST
 Last updated: 2026-10-17 AEDT
 
-Current work: Stage 2.3.14 已首次提交为 `5f1ecd4`，Neon staging 合成数据验证及清理均通过，正在按用户授权完成证据提交和 Git/Vercel 发布。该阶段持有本次验证/发布事实，发布前线上状态仍由 Stage 2.3.12 及 2026-10-15 发布记录持有。
+Current work: Stage 2.3.14 的 Library 批量删除已发布。首次提交 `5f1ecd4` 经 Neon staging 合成数据实际验证及清理，证据提交 `0394cd4` 已通过 Preview、快进 `main` 并成为 Ready 的 Production；正式页面读取、两次确认与取消验收通过。该阶段持有本次发布事实；Stage 2.3.12 和 2026-10-15 条目保留历史证据。
 
 Source plan:
 - `plan_docs/PLAN_V2_MASTER.md`
@@ -282,4 +282,6 @@ GitHub Production deployment `7091357591` 绑定 `185ae78f1fdaae245750cd6a1ba184
 - 安全回执：忽略目录 `local_artifacts/bulk-delete-verification/staging-eed4cf80-1a85-4640-a845-9fb2959a9b0a.json`；绑定候选、合成对象 ID、数量及清理状态，不含凭据或真实学习内容。目标摘要 `a7b5d1254900d47d1326accea2885845a1f7678dfbf6c5fa1c3a6d08f55ab973`。普通测试默认跳过该用例，后续执行仍须对应 staging 写入授权。
 - 本轮本地验证：ESLint、typecheck、完整 Vitest 112 文件 / 861 项通过，2 项远端用例默认跳过；上述真实 staging 用例单独 1 项通过。新增脚本修正 UUID 数组过窄的静态类型，未改变产品代码。无凭据临时目录 `/private/tmp/mimi-bulk-release.mimpuh` 完成 Next webpack 构建；备份 fixture 与页面验证复用首轮相同功能实现的结果。
 - 费用及边界：沿用现有 Neon Launch，执行前按官方 `US$0.106/CU-hour` 及现有 0.25–8 CU 披露 10 分钟计算约 `US$0.0044–0.1413`，不含存储、历史、流量，不作为实际账单或硬上限；休眠字段 0 对应默认 5 分钟，未改配置。[Neon pricing](https://neon.com/pricing)、[Neon API rule](https://github.com/neondatabase/ai-rules/blob/main/neon-api-projects.mdc)。未调用 AI/TTS 或写入 Production 学习数据。Vercel 沿用既有 Git 部署，不新增套餐或服务。
-- 发布待办：提交安全证据后推送功能分支，确认 Preview，再将 `main` 快进推送并核对 Production 提交/部署/域名；线上仅验收读取与取消，不执行真实删除。
+- 发布完成：证据提交 `0394cd4072492d432e6604fe4ae8e558d2bb6238` 已普通推送功能分支，Preview `dpl_F7JdvLqk9yyAbGSVVUYaxw8sCvMZ` 于 `2026-10-17T10:33:41Z` 记录 success，控制台 Ready。`main` 随后从 `ef1238b` 快进至该提交并推送；Production `dpl_GC5TEXKNTNQghjdRMxRfPQHhoxgy` / GitHub deployment `7138318587` 于 `10:34:56Z` 记录 success。控制台核对 Ready / Production / Current Domains、精确来源提交及正式域名 `words-learning-app-for-mimi.vercel.app`。[应用发布记录](https://vercel.com/anorias-projects/words-learning-app-for-mimi/GC5TEXKNTNQghjdRMxRfPQHhoxgy)。
+- 线上验收：沿用现有浏览器登录，直接访问 `/library`；正常读取并显示 500 条，选择 2 条验证两步取消。第一步 No/Yes 的横坐标为 578/783，第二步 Yes/No 为 578/782，标题和安全初始焦点符合要求。没有点击最终确认删除；退出选择、刷新仍为 500 条，页面 console error 为 0。匿名 Library 请求返回 401。截图保存在忽略目录 `local_artifacts/bulk-delete-verification/production-second-confirmation.png`，不纳入 Git。此项只证明有界线上读取及取消流程，真实删除证据来自合成 staging。
+- 发布收尾：同步本计划、AGENTS 导航、Architecture、设计状态及两份日志，产品源码不变；本次纯文档提交继续按用户授权推送，因既有 Git 连接再触发一次构建，已在会话披露。应用发布身份以上述候选为证据锚点；最终文档提交与部署核对回执保存在忽略目录 `local_artifacts/bulk-delete-verification/release-final.json`，不会为记录自身提交哈希重复创建提交。

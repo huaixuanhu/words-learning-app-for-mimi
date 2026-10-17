@@ -1,5 +1,15 @@
 # AI Agent Log
 
+## 2026-10-17 — Library 批量删除发布与线上验收
+
+- Executor: Codex (GPT-6; exact model variant unavailable).
+- Task: 完成已授权的推送、部署及发布事实收尾；bounded。
+- Plan agreed: 用户要求 staging 实际验证无误后提交、推送和部署；实证通过后，功能和验证两笔提交均已推送，`main` 已快进发布。当前、目标及工作均为 Tier 3，继续原有权限边界。
+- Changed files: AGENTS、Architecture、设计基线状态、V2.3 计划及两份日志；本次收尾不改产品代码。
+- Reason: 将已观察到的 staging、Git、Vercel 与线上界面事实归入对应责任文件，避免后续会话仍判断为未发布。
+- Validation: 应用候选 `0394cd4` 的 Preview 和 Production 均 Ready，GitHub deployment 均 success；Production 来源 main、精确提交及正式域名匹配。线上 Library 500 条读取正常，两步确认及两次取消通过，第二次 Yes/No 位置交换、清单安全焦点和指定中文标题成立；退出后刷新仍 500 条，页面无 console error，匿名请求 401。未执行线上删除。应用测试、构建、真实 staging 与清理复用前一条的确切候选证据；纯文档收尾检查和最终部署身份保存在 Stage 2.3.14 指定回执。
+- Safety notes: 没有 Production 学习数据写入、迁移、配置、套餐或提供方变更。Vercel connector 对既有团队返回 403，改用现有 Git 集成与浏览器登录核验，没有扩大权限。纯文档收尾再推送一次并观察现有构建；功能分支保留，未重写历史。
+
 ## 2026-10-17 — 批量删除 staging 实证与发布准备
 
 - Executor: Codex (GPT-6; exact model variant unavailable). 本轮没有新增独立宿主核验。

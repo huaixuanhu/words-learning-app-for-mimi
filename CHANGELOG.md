@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 2026-10-17 — Library 批量删除上线
+
+- Released: `5f1ecd4` 功能实现及 `0394cd4` staging 实证已推送；`main` 快进到应用候选，Vercel Preview / Production 均 Ready，正式域名绑定已核对。
+- Verified: 线上读取、多选、两次弹窗、交换按钮与取消后刷新通过；匿名访问仍受保护。真实删除及关联清理仅在合成 staging 完成，测试残留为 0。
+- Reason: 完成用户已授权的提交、实测、推送和部署；详细身份、证据范围及文档收尾由 V2.3 Stage 2.3.14 持有。
+
 ## 2026-10-17 — 批量删除 staging 验证
 
 - Added: 显式启用、默认跳过的 staging 验证用例，只创建和清理本次合成数据，复用应用删除入口与既有 Neon 身份检查。

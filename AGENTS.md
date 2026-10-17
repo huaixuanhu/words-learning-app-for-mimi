@@ -54,7 +54,7 @@
 
 ## Current Product And Runtime
 
-- V2.3 is live on the canonical Production domain behind Basic Auth（基础认证）. Vercel Production runs the `main` application in `syd1`; `plan_docs/PLAN_V2_3_STORAGE_STUDY_DAY_HOME.md` Stage 2.3.12 owns the authorized release and exact deployment/acceptance evidence.
+- V2.3 is live on the canonical Production domain behind Basic Auth（基础认证）. Vercel Production runs the `main` application in `syd1`; `plan_docs/PLAN_V2_3_STORAGE_STUDY_DAY_HOME.md` Stage 2.3.14 owns the latest Library bulk-delete release and acceptance evidence; Stage 2.3.12 retains the original V2.3 release record.
 - Neon `main` is Production Schema Version 6 with the unique `(person_id, normalized_text)` vocabulary identity. Neon `staging` is the Development / protected Preview baseline at Schema 6.
 - Production and non-production credentials are distinct. Historical recovery points remain governed by the V2-8-3, V2.1 and V2.2 release records; V2.3 Stage 2.3.11 owns the native Neon backup policy, and Stage 2.3.13 owns independent monthly R2 copies, credential pointers and current scheduler status.
 - Gemini enrichment and Google Cloud Standard-C TTS are enabled under independent Production guards. Their exact active contracts are owned by the V2 master/cutover plans and must not be relaxed through incidental work.
